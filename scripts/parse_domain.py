@@ -10,7 +10,7 @@ import sys
 
 sys.path.insert(0, str(ROOT / "src"))
 
-from afa_agent.domains.regulatory import RegulatoryPlugin
+from afa_agent.domains.registry import get_plugin
 
 
 def main() -> None:
@@ -22,10 +22,7 @@ def main() -> None:
     output_path = ROOT / "artifacts" / "parsed" / args.domain / "parsed.json"
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if args.domain == "regulatory":
-        RegulatoryPlugin().parse(manifest_path, output_path)
-    else:
-        raise ValueError(f"Unsupported domain for parsing: {args.domain}")
+    get_plugin(args.domain).parse(manifest_path, output_path)
     print(output_path)
 
 

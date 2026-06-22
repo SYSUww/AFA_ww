@@ -58,3 +58,18 @@ def export_answer_csv(path: Path, results: list[AnswerResult]) -> None:
                     "total_tokens": result.token_usage.total_tokens,
                 }
             )
+
+
+def export_grouped_results(base_dir: Path, results: list[AnswerResult]) -> None:
+    grouped: dict[str, list[AnswerResult]] = {}
+    for result in results:
+        grouped.setdefault(result.question_type, []).append(result)
+    for question_type, items in grouped.items():
+        type_dir = base_dir / question_type
+        ensure_dir(type_dir)
+        export_answers_json(type_dir / "answers.json", items)
+        export_evidence_json(type_dir / "evidence.json", items)
+        (type_dir / "qids.txt").write_text(
+            "\n".join(result.qid for result in items) + "\n",
+            encoding="utf-8",
+        )

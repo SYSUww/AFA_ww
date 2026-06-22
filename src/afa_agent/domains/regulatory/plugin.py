@@ -20,6 +20,12 @@ from afa_agent.models import Document, Question
 
 class RegulatoryPlugin(DomainPlugin):
     name = "regulatory"
+    strategy_label = "rule+bm25+article-judgment"
+    strategy_details = [
+        "txt/html优先，附件PDF兜底",
+        "按法条切分并做相邻条款回溯",
+        "逐选项判别，必要时单选/多选复核",
+    ]
 
     def parse(self, manifest_path: Path, output_path: Path) -> None:
         manifest = read_json(manifest_path)

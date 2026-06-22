@@ -11,10 +11,12 @@ import sys
 sys.path.insert(0, str(ROOT / "src"))
 
 from afa_agent.config import build_run_config
-from afa_agent.domains.regulatory import RegulatoryPlugin
+from afa_agent.domains.registry import get_plugin
 from afa_agent.exporters import export_answer_csv, export_answers_json, export_evidence_json
-from afa_agent.io_utils import read_json, timestamp_id, write_json, write_jsonl
+from afa_agent.exporters import export_grouped_results
+from afa_agent.io_utils import ensure_run_subdirs, read_json, timestamp_id, write_json, write_jsonl
 from afa_agent.models import Question
+from afa_agent.run_metadata import build_run_manifest, initialize_run_layout
 
 
 def load_questions(domain: str, split: str) -> list[Question]:
@@ -59,18 +61,30 @@ def main() -> None:
     parsed_path = ROOT / "artifacts" / "parsed" / args.domain / "parsed.json"
     index_path = ROOT / "artifacts" / "index" / args.domain / "index.json"
 
-    if args.domain != "regulatory":
-        raise ValueError(f"Unsupported domain for answering: {args.domain}")
-
     run_id = timestamp_id(f"{args.domain.lower()}_{args.split.lower()}")
     run_dir = Path(args.resume_run_dir) if args.resume_run_dir else (ROOT / "artifacts" / "runs" / run_id)
     run_dir.mkdir(parents=True, exist_ok=True)
-    write_json(run_dir / "run_config.json", build_run_config().to_public_dict())
-
-    plugin = RegulatoryPlugin()
+    plugin = get_plugin(args.domain)
+    config = build_run_config()
+    run_manifest = build_run_manifest(
+        run_id=run_dir.name,
+        run_dir=run_dir,
+        domain=args.domain,
+        split=args.split,
+        question_count=len(questions),
+        qid=args.qid,
+        limit=args.limit,
+        plugin_name=plugin.__class__.__name__,
+        strategy_label=plugin.strategy_label,
+        strategy_details=plugin.strategy_details,
+        model_name=config.model.model_name if config.model else "unknown",
+        resumed=bool(args.resume_run_dir),
+    )
+    layout = initialize_run_layout(run_dir, run_manifest, config.to_public_dict())
     existing_results = []
-    if (run_dir / "answers.json").exists():
-        existing_results = read_json(run_dir / "answers.json")
+    answers_path = layout["debug"] / "answers.json"
+    if answers_path.exists():
+        existing_results = read_json(answers_path)
     completed_qids = {row["qid"] for row in existing_results}
     if args.qid:
         existing_results = [row for row in existing_results if row["qid"] != args.qid]
@@ -81,7 +95,7 @@ def main() -> None:
             continue
         result = plugin.answer_one(question, parsed_path, index_path)
         results.append(result.to_dict())
-        export_answers_json(run_dir / "answers.json", [
+        export_answers_json(layout["debug"] / "answers.json", [
             type("AnswerProxy", (), {"to_dict": lambda self, row=row: row})() for row in results
         ])
 
@@ -140,11 +154,12 @@ def main() -> None:
             return self.row["debug_meta"]
 
     proxy_results = [AnswerProxy(row) for row in results]
-    export_answers_json(run_dir / "answers.json", proxy_results)
-    export_evidence_json(run_dir / "evidence.json", proxy_results)
-    export_answer_csv(run_dir / "answer.csv", proxy_results)
+    export_answers_json(layout["debug"] / "answers.json", proxy_results)
+    export_evidence_json(layout["debug"] / "evidence.json", proxy_results)
+    export_answer_csv(layout["submission"] / "answer.csv", proxy_results)
+    export_grouped_results(layout["by_type"], proxy_results)
     write_json(
-        run_dir / "token_usage.json",
+        layout["debug"] / "token_usage.json",
         {
             "prompt_tokens": sum(item.token_usage.prompt_tokens for item in proxy_results),
             "completion_tokens": sum(item.token_usage.completion_tokens for item in proxy_results),
@@ -152,7 +167,7 @@ def main() -> None:
             "question_count": len(proxy_results),
         },
     )
-    write_jsonl(run_dir / "logs.jsonl", [item.to_dict() for item in proxy_results])
+    write_jsonl(layout["debug"] / "logs.jsonl", [item.to_dict() for item in proxy_results])
     print(run_dir)
 
 

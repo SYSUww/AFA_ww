@@ -7,6 +7,8 @@ from afa_agent.models import AnswerResult, Document, EvidenceUnit, Question
 
 class DomainPlugin:
     name: str
+    strategy_label: str = "unspecified"
+    strategy_details: list[str] = []
 
     def parse(self, manifest_path: Path, output_path: Path) -> None:
         raise NotImplementedError

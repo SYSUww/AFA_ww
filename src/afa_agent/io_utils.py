@@ -32,3 +32,15 @@ def write_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> None:
 def timestamp_id(prefix: str) -> str:
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     return f"{prefix}_{stamp}"
+
+
+def ensure_run_subdirs(run_dir: Path) -> dict[str, Path]:
+    layout = {
+        "meta": ensure_dir(run_dir / "meta"),
+        "outputs": ensure_dir(run_dir / "outputs"),
+        "submission": ensure_dir(run_dir / "outputs" / "submission"),
+        "debug": ensure_dir(run_dir / "outputs" / "debug"),
+        "by_type": ensure_dir(run_dir / "outputs" / "by_type"),
+        "analysis": ensure_dir(run_dir / "analysis"),
+    }
+    return layout

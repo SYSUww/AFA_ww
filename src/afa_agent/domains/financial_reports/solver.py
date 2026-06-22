@@ -1,0 +1,213 @@
+from __future__ import annotations
+
+import re
+from collections import defaultdict
+from typing import Any
+
+from afa_agent.domains.llm_utils import ask_answer_fallback, ask_option_judgment, format_hits
+from afa_agent.models import AnswerResult, Question, TokenUsage
+
+
+METRIC_ALIASES = {
+    "研发占比": ["研发投入占营业收入的比例"],
+    "现金分红": ["每10股派", "现金分红", "末期股息"],
+    "营业收入": ["营业收入", "营业总收入", "营业额"],
+    "归母净利润": ["归属于上市公司股东的净利润", "归母净利润", "母公司拥有人应占溢利"],
+    "经营现金流": ["经营活动产生的现金流量净额"],
+    "研发投入": ["研发投入"],
+}
+
+
+class FinancialReportsSolver:
+    def __init__(self, client, retriever, units: list[dict[str, Any]]):
+        self.client = client
+        self.retriever = retriever
+        self.units = units
+        self.metric_index = self._build_metric_index(units)
+
+    def solve(self, question: Question) -> AnswerResult:
+        total_usage = TokenUsage()
+        option_labels: dict[str, bool] = {}
+        option_payloads: list[dict[str, Any]] = []
+        reasoning_chunks: list[str] = []
+
+        for option_key, option_text in question.options.items():
+            rule_label, rule_reason, rule_evidence = self._rule_evaluate(question, option_text)
+            hits = self.retriever.search(
+                question.doc_ids,
+                f"{question.question}\n{option_text}",
+                top_k=6,
+                unit_type_boosts={"metric_row": 1.8, "paragraph": 1.0},
+                ensure_per_doc=len(question.doc_ids) > 1,
+            )
+            if rule_label is not None:
+                label = rule_label
+                reasoning = rule_reason
+                evidence_items = rule_evidence + [hit.to_dict() for hit in hits[:2]]
+            else:
+                parsed, usage = ask_option_judgment(
+                    self.client,
+                    "你是财报问答助手。优先依据财务指标、年份和比较关系判断选项真伪。只能依据证据作答，输出必须是 JSON。",
+                    question.question,
+                    question.answer_format,
+                    option_key,
+                    option_text,
+                    format_hits(hits),
+                    "请优先核对年份、同比、现金分红、研发占比等财务指标，不要只做模糊语义判断。",
+                )
+                total_usage.add(usage)
+                label = bool(parsed.get("label", False))
+                reasoning = str(parsed.get("reasoning_summary", "")).strip()
+                evidence_items = [hit.to_dict() for hit in hits]
+            option_labels[option_key] = label
+            option_payloads.append(
+                {
+                    "option": option_key,
+                    "label": label,
+                    "reasoning_summary": reasoning,
+                    "evidence_items": evidence_items[:6],
+                }
+            )
+            reasoning_chunks.append(f"{option_key}: {reasoning}")
+
+        pred_answer = self._compose_answer(question.answer_format, option_labels)
+        if question.answer_format == "mcq" and len([k for k, v in option_labels.items() if v]) != 1:
+            answer, usage = ask_answer_fallback(
+                self.client,
+                "你是财报单选题裁决器。根据各选项判断摘要，选出唯一最可能正确的字母，只输出 JSON。",
+                question.question,
+                option_payloads,
+                question.answer_format,
+                list(question.options.keys()),
+            )
+            total_usage.add(usage)
+            pred_answer = answer[:1]
+        elif question.answer_format == "multi" and not pred_answer:
+            answer, usage = ask_answer_fallback(
+                self.client,
+                "你是财报多选题复核器。根据各选项判断摘要，挑出所有正确选项，只输出 JSON。",
+                question.question,
+                option_payloads,
+                question.answer_format,
+                list(question.options.keys()),
+            )
+            total_usage.add(usage)
+            pred_answer = answer
+        elif question.answer_format == "tf":
+            pred_answer = "A" if option_labels.get("A", False) else "B"
+
+        evidence_items = []
+        for payload in option_payloads:
+            if payload["label"]:
+                evidence_items.extend(payload["evidence_items"][:3])
+        if not evidence_items and option_payloads:
+            evidence_items.extend(option_payloads[0]["evidence_items"][:3])
+
+        return AnswerResult(
+            qid=question.qid,
+            domain=question.domain,
+            question_type=question.answer_format,
+            pred_answer=pred_answer,
+            option_labels=option_labels,
+            evidence_items=evidence_items,
+            reasoning_summary=" | ".join(reasoning_chunks),
+            token_usage=total_usage,
+            debug_meta={"doc_ids": question.doc_ids, "type": question.type},
+        )
+
+    def _build_metric_index(self, units: list[dict[str, Any]]) -> dict[str, dict[str, list[dict[str, Any]]]]:
+        metric_index: dict[str, dict[str, list[dict[str, Any]]]] = defaultdict(lambda: defaultdict(list))
+        for unit in units:
+            if unit.get("unit_type") != "metric_row":
+                continue
+            meta = unit.get("metadata", {})
+            metric_name = meta.get("metric_name")
+            if not metric_name:
+                continue
+            metric_key = self._normalize_metric(metric_name)
+            metric_index[unit["doc_id"]][metric_key].append(unit)
+        return metric_index
+
+    def _rule_evaluate(self, question: Question, option_text: str):
+        metric_key = self._detect_metric_key(option_text)
+        if not metric_key or len(question.doc_ids) < 2:
+            return None, "", []
+        doc_metrics = [self.metric_index.get(doc_id, {}).get(metric_key, []) for doc_id in question.doc_ids[:2]]
+        if not all(doc_metrics):
+            return None, "", []
+        values = []
+        evidence = []
+        for doc_units in doc_metrics:
+            best_unit = self._choose_best_unit(doc_units)
+            parsed_value = self._extract_best_number(best_unit["text"], metric_key)
+            if parsed_value is None:
+                return None, "", []
+            values.append(parsed_value)
+            evidence.append(
+                {
+                    "unit_id": best_unit["unit_id"],
+                    "doc_id": best_unit["doc_id"],
+                    "score": 999.0,
+                    "title_path": best_unit["title_path"],
+                    "text": best_unit["text"],
+                    "metadata": best_unit.get("metadata", {}),
+                }
+            )
+        label = None
+        if any(keyword in option_text for keyword in ["增长", "高于", "优于", "提升"]):
+            label = values[1] > values[0]
+        elif any(keyword in option_text for keyword in ["下降", "低于", "减少", "下滑"]):
+            label = values[1] < values[0]
+        if label is None:
+            return None, "", []
+        reason = f"规则比较到 {metric_key} 在两份报告中的候选值分别为 {values[0]} 和 {values[1]}，据此判断选项为 {'正确' if label else '错误'}。"
+        return label, reason, evidence
+
+    def _detect_metric_key(self, text: str) -> str | None:
+        for metric_key, aliases in METRIC_ALIASES.items():
+            if any(alias in text for alias in aliases):
+                return metric_key
+        return None
+
+    def _normalize_metric(self, metric_name: str) -> str:
+        for metric_key, aliases in METRIC_ALIASES.items():
+            if any(alias in metric_name for alias in aliases):
+                return metric_key
+        return metric_name
+
+    @staticmethod
+    def _choose_best_unit(units: list[dict[str, Any]]) -> dict[str, Any]:
+        def score(unit: dict[str, Any]) -> tuple[int, int]:
+            text = unit.get("text", "")
+            quality = 0
+            if "同比" in text:
+                quality += 3
+            if "（元）" in text or "元）" in text:
+                quality += 2
+            if "占营业收入比例" in text:
+                quality += 2
+            if "\n" not in text:
+                quality += 1
+            return quality, len(text)
+
+        return max(units, key=score)
+
+    @staticmethod
+    def _extract_best_number(text: str, metric_key: str) -> float | None:
+        raw_numbers = re.findall(r"\d[\d,]*(?:\.\d+)?", text)
+        if not raw_numbers:
+            return None
+        values = [float(item.replace(",", "")) for item in raw_numbers]
+        if metric_key == "研发占比":
+            percents = [value for value in values if value <= 100]
+            return percents[-1] if percents else values[-1]
+        return max(values)
+
+    @staticmethod
+    def _compose_answer(answer_format: str, option_labels: dict[str, bool]) -> str:
+        if answer_format == "tf":
+            return "A" if option_labels.get("A", False) else "B"
+        selected = sorted([option for option, label in option_labels.items() if label])
+        if answer_format == "mcq":
+            return selected[0] if selected else "A"
+        return "".join(selected)
