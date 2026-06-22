@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+artifacts/
+*.pdf
+*.PDF
+results/
+*.zip
+*.log
+*.jpg
+*.png
+*.jpeg
+*.gif
+*.bmp
+*.zip
+indices/heading_index.json
+.env
+public_dataset_upload/*
