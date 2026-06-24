@@ -5,21 +5,29 @@ from typing import Any
 
 from afa_agent.client import OpenAICompatibleClient, extract_json_object
 from afa_agent.models import AnswerResult, Question, TokenUsage
+from afa_agent.strategy import build_query_variants, get_stage_settings, serialize_hits
 
 
 class RegulatorySolver:
-    def __init__(self, client: OpenAICompatibleClient, retriever):
+    def __init__(self, client: OpenAICompatibleClient, retriever, strategy: str):
         self.client = client
         self.retriever = retriever
+        self.domain = strategy
+        self.retrieval_settings = get_stage_settings(strategy, "retrieval")
+        self.answering_settings = get_stage_settings(strategy, "answering")
 
     def solve(self, question: Question) -> AnswerResult:
         total_usage = TokenUsage()
         option_labels: dict[str, bool] = {}
         option_payloads: list[dict[str, Any]] = []
         reasoning_chunks: list[str] = []
+        option_debug: list[dict[str, Any]] = []
+        query_variants_all: list[str] = []
 
         for option_key, option_text in question.options.items():
-            hits = self.retriever.search(question.doc_ids, f"{question.question}\n{option_text}", top_k=6)
+            query_variants = build_query_variants(question, option_key, option_text, self.retrieval_settings)
+            query_variants_all.extend(query_variants)
+            hits = self.retriever.search(question.doc_ids, query_variants[0], top_k=self.retrieval_settings.get("top_k", 6))
             payload = self._judge_option(question, option_key, option_text, hits)
             total_usage.add(payload["token_usage"])
             option_labels[option_key] = payload["label"]
@@ -29,6 +37,13 @@ class RegulatorySolver:
                     "label": payload["label"],
                     "reasoning_summary": payload["reasoning_summary"],
                     "evidence_items": [hit.to_dict() for hit in hits],
+                }
+            )
+            option_debug.append(
+                {
+                    "option": option_key,
+                    "query_variants": query_variants,
+                    "retrieval_topk": serialize_hits(hits, limit=self.retrieval_settings.get("top_k", 6)),
                 }
             )
             reasoning_chunks.append(f"{option_key}: {payload['reasoning_summary']}")
@@ -58,7 +73,17 @@ class RegulatorySolver:
             evidence_items=evidence_items,
             reasoning_summary=" | ".join(reasoning_chunks),
             token_usage=total_usage,
-            debug_meta={"doc_ids": question.doc_ids, "type": question.type},
+            debug_meta={
+                "doc_ids": question.doc_ids,
+                "type": question.type,
+                "prompt_template_id": self.answering_settings.get("prompt_template_id", "default"),
+                "query_variants": query_variants_all,
+                "retrieval_topk": [hit for item in option_debug for hit in item["retrieval_topk"]][: self.retrieval_settings.get("top_k", 6)],
+                "selected_evidence_ids": [item.get("unit_id", "") for item in evidence_items if item.get("unit_id")],
+                "rule_outputs": [],
+                "option_debug": option_debug,
+                "consistency_answers": [pred_answer],
+            },
         )
 
     def _judge_option(self, question: Question, option_key: str, option_text: str, hits) -> dict[str, Any]:
@@ -66,12 +91,13 @@ class RegulatorySolver:
         for idx, hit in enumerate(hits, start=1):
             title_path = " > ".join(hit.title_path)
             evidence_lines.append(f"[{idx}] {hit.doc_id} | {title_path}\n{hit.text}")
+        evidence_text = "\n\n".join(evidence_lines[: self.answering_settings.get("max_hits", 6)])
+        extra_context = self.answering_settings.get("extra_context", "").strip()
         messages = [
             {
                 "role": "system",
                 "content": (
-                    "你是金融法规问答助手。你只能依据给定证据判断选项真伪，"
-                    "不能使用常识补全。输出必须是 JSON。"
+                    self._system_prompt()
                 ),
             },
             {
@@ -80,11 +106,11 @@ class RegulatorySolver:
                     f"题目：{question.question}\n"
                     f"题型：{question.answer_format}\n"
                     f"选项 {option_key}：{option_text}\n\n"
-                    f"证据：\n{'\n\n'.join(evidence_lines)}\n\n"
+                    f"{extra_context}\n\n证据：\n{evidence_text}\n\n"
                     '请输出 JSON，格式为 {"label": true/false, "reasoning_summary": "...", "used_evidence_ids": [1,2]}。'
-                ),
-            },
-        ]
+                    ),
+                },
+            ]
         response = self.client.chat_json(messages)
         parsed = extract_json_object(response.content)
         return {
@@ -161,3 +187,11 @@ class RegulatorySolver:
         if answer_format == "mcq":
             return selected[0] if selected else "A"
         return "".join(selected)
+
+    def _system_prompt(self) -> str:
+        prompt_id = self.answering_settings.get("prompt_template_id", "default")
+        if prompt_id == "evidence_strict":
+            return "你是金融法规问答助手。你只能依据给定证据判断选项真伪，不能使用常识补全，必须逐条对应法条并输出 JSON。"
+        if prompt_id == "compact":
+            return "你是金融法规问答助手。请基于最关键法条快速判断选项真伪，只输出 JSON。"
+        return "你是金融法规问答助手。你只能依据给定证据判断选项真伪，不能使用常识补全。输出必须是 JSON。"

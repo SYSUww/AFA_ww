@@ -1,0 +1,83 @@
+{
+  "version": "autoresearch_v1",
+  "strategy_id": "baseline",
+  "proxy_objective_version": "proxy_v1",
+  "domains": {
+    "__all__": {
+      "pdf_parse": {
+        "pdf_backend": "pypdf",
+        "keep_page_markers": true,
+        "normalize_whitespace": true,
+        "drop_short_lines": false
+      },
+      "segmentation": {
+        "paragraph_max_chars": 1000,
+        "article_max_chars": 1200,
+        "metric_max_chars": 600,
+        "element_max_chars": 700,
+        "clause_max_chars": 900,
+        "duplicate_highlight_units": true
+      },
+      "retrieval": {
+        "query_mode": "question_option",
+        "include_question_type": true,
+        "include_doc_id_hint": false,
+        "top_k": 6,
+        "max_hits_for_prompt": 6,
+        "ensure_per_doc": true,
+        "expand_neighbors": true,
+        "unit_type_boosts": {}
+      },
+      "rule_layer": {
+        "enabled": true,
+        "high_confidence_threshold": 0.9,
+        "prefer_rule_result": true
+      },
+      "answering": {
+        "prompt_template_id": "default",
+        "fallback_template_id": "default",
+        "max_hits": 6,
+        "extra_context": "",
+        "consistency_repeats": 1
+      }
+    },
+    "financial_reports": {
+      "retrieval": {
+        "unit_type_boosts": {
+          "metric_row": 1.8,
+          "paragraph": 1.0
+        }
+      }
+    },
+    "insurance": {
+      "retrieval": {
+        "top_k": 4,
+        "max_hits_for_prompt": 4,
+        "unit_type_boosts": {
+          "formula_block": 1.8,
+          "clause_block": 1.1
+        }
+      }
+    },
+    "research": {
+      "retrieval": {
+        "top_k": 7,
+        "max_hits_for_prompt": 7,
+        "unit_type_boosts": {
+          "conclusion_block": 1.6,
+          "paragraph": 1.0
+        }
+      }
+    },
+    "financial_contracts": {
+      "retrieval": {
+        "top_k": 7,
+        "max_hits_for_prompt": 7,
+        "unit_type_boosts": {
+          "element_block": 1.8,
+          "paragraph": 1.0
+        }
+      }
+    }
+  }
+}

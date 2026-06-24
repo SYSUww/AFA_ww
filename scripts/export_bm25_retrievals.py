@@ -16,6 +16,15 @@ from afa_agent.domains.generic_retriever import GenericBM25Retriever
 from afa_agent.domains.regulatory.retriever import RegulatoryRetriever
 from afa_agent.io_utils import ensure_dir, read_json, write_json
 from afa_agent.models import Question
+from afa_agent.text_utils import tokenize_zh
+
+
+def hit_with_token_debug(hit, query_tokens: list[str]) -> dict:
+    payload = hit.to_dict()
+    hit_tokens = set(tokenize_zh(hit.text))
+    matched_tokens = [token for token in query_tokens if token in hit_tokens]
+    payload["matched_tokens"] = matched_tokens[:80]
+    return payload
 
 
 def load_questions(domain: str, split: str) -> list[Question]:
@@ -45,14 +54,16 @@ def regulatory_trace(question: Question, index_payload: dict) -> dict:
     option_traces = []
     for option_key, option_text in question.options.items():
         query = f"{question.question}\n{option_text}"
+        query_tokens = tokenize_zh(query)
         hits = retriever.search(question.doc_ids, query, top_k=6)
         option_traces.append(
             {
                 "option": option_key,
                 "query": query,
+                "query_tokens": query_tokens,
                 "top_k": 6,
                 "doc_ids": question.doc_ids,
-                "hits": [hit.to_dict() for hit in hits],
+                "hits": [hit_with_token_debug(hit, query_tokens) for hit in hits],
             }
         )
     return {"qid": question.qid, "trace_mode": "per_option", "option_traces": option_traces}
@@ -60,10 +71,11 @@ def regulatory_trace(question: Question, index_payload: dict) -> dict:
 
 def financial_reports_trace(question: Question, index_payload: dict) -> dict:
     retriever = GenericBM25Retriever(index_payload["units"])
-    solver = FinancialReportsSolver(client=None, retriever=retriever, units=index_payload["units"])
+    solver = FinancialReportsSolver(client=None, retriever=retriever, units=index_payload["units"], strategy="financial_reports")
     option_traces = []
     for option_key, option_text in question.options.items():
         query = f"{question.question}\n{option_text}"
+        query_tokens = tokenize_zh(query)
         hits = retriever.search(
             question.doc_ids,
             query,
@@ -80,6 +92,7 @@ def financial_reports_trace(question: Question, index_payload: dict) -> dict:
             {
                 "option": option_key,
                 "query": query,
+                "query_tokens": query_tokens,
                 "top_k": 6,
                 "unit_type_boosts": {"metric_row": 1.8, "paragraph": 1.0},
                 "ensure_per_doc": len(question.doc_ids) > 1,
@@ -87,7 +100,7 @@ def financial_reports_trace(question: Question, index_payload: dict) -> dict:
                 "metric_key": metric_key,
                 "rule_label": rule_label,
                 "rule_reason": rule_reason,
-                "hits": [hit.to_dict() for hit in hits],
+                "hits": [hit_with_token_debug(hit, query_tokens) for hit in hits],
             }
         )
     return {"qid": question.qid, "trace_mode": "per_option", "option_traces": option_traces}
@@ -96,6 +109,7 @@ def financial_reports_trace(question: Question, index_payload: dict) -> dict:
 def insurance_trace(question: Question, index_payload: dict) -> dict:
     retriever = GenericBM25Retriever(index_payload["units"])
     query = f"{question.question}\n{json.dumps(question.options, ensure_ascii=False)}"
+    query_tokens = tokenize_zh(query)
     hits = retriever.search(
         question.doc_ids,
         query,
@@ -107,11 +121,12 @@ def insurance_trace(question: Question, index_payload: dict) -> dict:
         "qid": question.qid,
         "trace_mode": "whole_question",
         "query": query,
+        "query_tokens": query_tokens,
         "top_k": 4,
         "unit_type_boosts": {"formula_block": 1.8, "clause_block": 1.1},
         "ensure_per_doc": len(question.doc_ids) > 1,
         "doc_ids": question.doc_ids,
-        "hits": [hit.to_dict() for hit in hits],
+        "hits": [hit_with_token_debug(hit, query_tokens) for hit in hits],
     }
 
 
@@ -120,6 +135,7 @@ def research_trace(question: Question, index_payload: dict) -> dict:
     option_traces = []
     for option_key, option_text in question.options.items():
         query = f"{question.question}\n{option_text}"
+        query_tokens = tokenize_zh(query)
         hits = retriever.search(
             question.doc_ids,
             query,
@@ -131,11 +147,12 @@ def research_trace(question: Question, index_payload: dict) -> dict:
             {
                 "option": option_key,
                 "query": query,
+                "query_tokens": query_tokens,
                 "top_k": 7,
                 "unit_type_boosts": {"conclusion_block": 1.6, "paragraph": 1.0},
                 "ensure_per_doc": len(question.doc_ids) > 1,
                 "doc_ids": question.doc_ids,
-                "hits": [hit.to_dict() for hit in hits],
+                "hits": [hit_with_token_debug(hit, query_tokens) for hit in hits],
             }
         )
     return {"qid": question.qid, "trace_mode": "per_option", "option_traces": option_traces}
@@ -146,6 +163,7 @@ def contracts_trace(question: Question, index_payload: dict) -> dict:
     option_traces = []
     for option_key, option_text in question.options.items():
         query = f"{question.question}\n{option_text}"
+        query_tokens = tokenize_zh(query)
         hits = retriever.search(
             question.doc_ids,
             query,
@@ -157,11 +175,12 @@ def contracts_trace(question: Question, index_payload: dict) -> dict:
             {
                 "option": option_key,
                 "query": query,
+                "query_tokens": query_tokens,
                 "top_k": 7,
                 "unit_type_boosts": {"element_block": 1.8, "paragraph": 1.0},
                 "ensure_per_doc": len(question.doc_ids) > 1,
                 "doc_ids": question.doc_ids,
-                "hits": [hit.to_dict() for hit in hits],
+                "hits": [hit_with_token_debug(hit, query_tokens) for hit in hits],
             }
         )
     return {"qid": question.qid, "trace_mode": "per_option", "option_traces": option_traces}

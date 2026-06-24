@@ -10,6 +10,7 @@ from afa_agent.domains.generic_retriever import GenericBM25Retriever
 from afa_agent.domains.research.solver import ResearchSolver
 from afa_agent.io_utils import read_json, write_json
 from afa_agent.models import Document, Question
+from afa_agent.strategy import get_stage_settings
 
 
 RESEARCH_KEYWORDS = ["预计", "同比", "市场规模", "渗透率", "增速", "结论", "判断", "投资建议"]
@@ -25,6 +26,8 @@ class ResearchPlugin(DomainPlugin):
     ]
 
     def parse(self, manifest_path: Path, output_path: Path) -> None:
+        parse_settings = get_stage_settings(self.name, "pdf_parse")
+        segmentation_settings = get_stage_settings(self.name, "segmentation")
         manifest = read_json(manifest_path)
         domain_manifest = manifest["domains"][self.name]
         referenced_doc_ids = set(domain_manifest.get("referenced_doc_ids", []))
@@ -34,7 +37,7 @@ class ResearchPlugin(DomainPlugin):
             if referenced_doc_ids and doc_id not in referenced_doc_ids:
                 continue
             source_path = Path(record["source_path"])
-            text, metadata = load_text_by_source(source_path, record["source_type"])
+            text, metadata = load_text_by_source(source_path, record["source_type"], options=parse_settings)
             title = detect_title(text, doc_id)
             document = Document(
                 doc_id=doc_id,
@@ -45,7 +48,13 @@ class ResearchPlugin(DomainPlugin):
                 metadata=metadata,
             )
             docs_payload.append(document.to_dict())
-            sections = split_text_into_sections(text, title, "sec", unit_type="paragraph", max_chars=1000)
+            sections = split_text_into_sections(
+                text,
+                title,
+                "sec",
+                unit_type="paragraph",
+                max_chars=segmentation_settings.get("paragraph_max_chars", 1000),
+            )
             highlight_sections = []
             for section in sections:
                 if any(keyword in section["text"] for keyword in RESEARCH_KEYWORDS):
@@ -69,5 +78,5 @@ class ResearchPlugin(DomainPlugin):
         config = build_run_config()
         if not config.model:
             raise RuntimeError("Missing model config in .env")
-        solver = ResearchSolver(OpenAICompatibleClient(config.model), retriever)
+        solver = ResearchSolver(OpenAICompatibleClient(config.model), retriever, strategy=self.name)
         return solver.solve(question)

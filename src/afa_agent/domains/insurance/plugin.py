@@ -10,6 +10,7 @@ from afa_agent.domains.generic_retriever import GenericBM25Retriever
 from afa_agent.domains.insurance.solver import InsuranceSolver
 from afa_agent.io_utils import read_json, write_json
 from afa_agent.models import Document, Question
+from afa_agent.strategy import get_stage_settings
 
 
 INSURANCE_KEYWORDS = [
@@ -35,6 +36,8 @@ class InsurancePlugin(DomainPlugin):
     ]
 
     def parse(self, manifest_path: Path, output_path: Path) -> None:
+        parse_settings = get_stage_settings(self.name, "pdf_parse")
+        segmentation_settings = get_stage_settings(self.name, "segmentation")
         manifest = read_json(manifest_path)
         domain_manifest = manifest["domains"][self.name]
         referenced_doc_ids = set(domain_manifest.get("referenced_doc_ids", []))
@@ -44,7 +47,7 @@ class InsurancePlugin(DomainPlugin):
             if referenced_doc_ids and doc_id not in referenced_doc_ids:
                 continue
             source_path = Path(record["source_path"])
-            text, metadata = load_text_by_source(source_path, record["source_type"])
+            text, metadata = load_text_by_source(source_path, record["source_type"], options=parse_settings)
             title = detect_title(text, f"insurance_{doc_id}")
             document = Document(
                 doc_id=doc_id,
@@ -55,7 +58,13 @@ class InsurancePlugin(DomainPlugin):
                 metadata=metadata,
             )
             docs_payload.append(document.to_dict())
-            sections = split_text_into_sections(text, title, "sec", unit_type="clause_block", max_chars=900)
+            sections = split_text_into_sections(
+                text,
+                title,
+                "sec",
+                unit_type="clause_block",
+                max_chars=segmentation_settings.get("clause_max_chars", 900),
+            )
             special_sections = []
             for section in sections:
                 if any(keyword in section["text"] for keyword in INSURANCE_KEYWORDS):
@@ -78,5 +87,5 @@ class InsurancePlugin(DomainPlugin):
         config = build_run_config()
         if not config.model:
             raise RuntimeError("Missing model config in .env")
-        solver = InsuranceSolver(OpenAICompatibleClient(config.model), retriever)
+        solver = InsuranceSolver(OpenAICompatibleClient(config.model), retriever, strategy=self.name)
         return solver.solve(question)

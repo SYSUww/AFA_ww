@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,13 +20,15 @@ from afa_agent.models import Question
 from afa_agent.run_metadata import build_run_manifest, initialize_run_layout
 
 
-def load_questions(domain: str, split: str) -> list[Question]:
+def load_questions(domain: str, split: str, qid_filter: set[str] | None = None) -> list[Question]:
     manifest = read_json(ROOT / "artifacts" / "manifest" / "dataset_manifest.json")
     question_path = Path(manifest["domains"][domain]["question_path"])
     rows = read_json(question_path)
     questions = []
     for row in rows:
         if row.get("split") != split:
+            continue
+        if qid_filter and row["qid"] not in qid_filter:
             continue
         questions.append(
             Question(
@@ -49,20 +52,41 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--resume-run-dir", default="")
     parser.add_argument("--qid", default="")
+    parser.add_argument("--qid-file", default="")
+    parser.add_argument("--strategy-config", default="")
+    parser.add_argument("--parsed-path", default="")
+    parser.add_argument("--index-path", default="")
+    parser.add_argument("--run-root-dir", default="")
+    parser.add_argument("--run-id", default="")
     args = parser.parse_args()
 
-    questions = load_questions(args.domain, args.split)
+    if args.strategy_config:
+        os.environ["AFA_STRATEGY_CONFIG"] = str(Path(args.strategy_config).resolve())
+
+    qid_filter = None
+    if args.qid_file:
+        qid_filter = {
+            line.strip()
+            for line in Path(args.qid_file).read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        }
+
+    questions = load_questions(args.domain, args.split, qid_filter=qid_filter)
     if args.qid:
         questions = [question for question in questions if question.qid == args.qid]
     if args.limit > 0:
         questions = questions[: args.limit]
-    question_order = {question.qid: index for index, question in enumerate(load_questions(args.domain, args.split))}
+    question_order = {
+        question.qid: index
+        for index, question in enumerate(load_questions(args.domain, args.split, qid_filter=qid_filter))
+    }
 
-    parsed_path = ROOT / "artifacts" / "parsed" / args.domain / "parsed.json"
-    index_path = ROOT / "artifacts" / "index" / args.domain / "index.json"
+    parsed_path = Path(args.parsed_path) if args.parsed_path else (ROOT / "artifacts" / "parsed" / args.domain / "parsed.json")
+    index_path = Path(args.index_path) if args.index_path else (ROOT / "artifacts" / "index" / args.domain / "index.json")
 
-    run_id = timestamp_id(f"{args.domain.lower()}_{args.split.lower()}")
-    run_dir = Path(args.resume_run_dir) if args.resume_run_dir else (ROOT / "artifacts" / "runs" / run_id)
+    run_id = args.run_id or timestamp_id(f"{args.domain.lower()}_{args.split.lower()}")
+    run_root_dir = Path(args.run_root_dir) if args.run_root_dir else (ROOT / "artifacts" / "runs")
+    run_dir = Path(args.resume_run_dir) if args.resume_run_dir else (run_root_dir / run_id)
     run_dir.mkdir(parents=True, exist_ok=True)
     plugin = get_plugin(args.domain)
     config = build_run_config()
@@ -80,6 +104,10 @@ def main() -> None:
         model_name=config.model.model_name if config.model else "unknown",
         resumed=bool(args.resume_run_dir),
     )
+    if args.strategy_config:
+        run_manifest["generation_method"]["strategy_config_path"] = str(Path(args.strategy_config).resolve())
+    if args.qid_file:
+        run_manifest["question_scope"]["qid_file"] = str(Path(args.qid_file).resolve())
     layout = initialize_run_layout(run_dir, run_manifest, config.to_public_dict())
     existing_results = []
     answers_path = layout["debug"] / "answers.json"

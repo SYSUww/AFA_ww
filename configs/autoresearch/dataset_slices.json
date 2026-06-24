@@ -1,0 +1,23 @@
+{
+  "dev_mini": {
+    "regulatory": ["reg_a_001", "reg_a_003", "reg_a_008", "reg_a_018"],
+    "financial_reports": ["fin_a_001", "fin_a_003", "fin_a_008", "fin_a_018"],
+    "insurance": ["ins_a_002", "ins_a_005", "ins_a_013", "ins_a_020"],
+    "research": ["res_a_001", "res_a_003", "res_a_008", "res_a_018"],
+    "financial_contracts": ["fc_a_001", "fc_a_003", "fc_a_008", "fc_a_018"]
+  },
+  "dev_stage": {
+    "regulatory": ["reg_a_001", "reg_a_002", "reg_a_003", "reg_a_006", "reg_a_008", "reg_a_011", "reg_a_015", "reg_a_018"],
+    "financial_reports": ["fin_a_001", "fin_a_002", "fin_a_003", "fin_a_006", "fin_a_008", "fin_a_011", "fin_a_015", "fin_a_018"],
+    "insurance": ["ins_a_001", "ins_a_002", "ins_a_005", "ins_a_007", "ins_a_010", "ins_a_013", "ins_a_016", "ins_a_020"],
+    "research": ["res_a_001", "res_a_002", "res_a_003", "res_a_006", "res_a_008", "res_a_011", "res_a_015", "res_a_018"],
+    "financial_contracts": ["fc_a_001", "fc_a_002", "fc_a_003", "fc_a_008", "fc_a_011", "fc_a_013", "fc_a_015", "fc_a_018"]
+  },
+  "full_group_a": {
+    "regulatory": "__all__",
+    "financial_reports": "__all__",
+    "insurance": "__all__",
+    "research": "__all__",
+    "financial_contracts": "__all__"
+  }
+}

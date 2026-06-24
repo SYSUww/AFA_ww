@@ -42,6 +42,21 @@ LLM_API_BASE=...
 LLM_MODEL=...
 ```
 
+如果要跑 `autoresearch + loop engine + mineru`，建议使用独立的 `conda` 环境：
+
+```bash
+conda create -n afa-autoresearch python=3.11 -y
+conda activate afa-autoresearch
+python -m pip install -U pip
+python -m pip install -r requirements.txt
+```
+
+仓库中已导出环境文件：
+
+```bash
+conda env create -f environment.autoresearch.yml
+```
+
 ## 运行方式
 
 ### 1. 构建文档清单
@@ -113,6 +128,102 @@ python3 scripts/evaluate.py --run-dir artifacts/runs/<run_id>
 python3 scripts/export_submission.py --run-dir artifacts/runs/<run_id>
 ```
 
+### 6. AutoResearch 单阶段实验
+
+```bash
+python3 scripts/run_autoresearch.py \
+  --stage pdf_parse \
+  --domains regulatory \
+  --dataset-slice dev_mini \
+  --baseline-config configs/autoresearch/default_strategy.json \
+  --candidate-set configs/autoresearch/candidate_sets.json
+```
+
+说明：
+
+- `configs/autoresearch/default_strategy.json` 定义当前基线策略
+- `configs/autoresearch/candidate_sets.json` 定义每个阶段的候选变体
+- `configs/autoresearch/dataset_slices.json` 定义 `dev_mini / dev_stage / full_group_a`
+- 结果输出到 `artifacts/autoresearch/experiments/<experiment_id>/`
+
+### 7. Loop Engine 串行迭代
+
+```bash
+python3 scripts/run_loop_engine.py --plan-config configs/autoresearch/plan_config.json
+```
+
+说明：
+
+- 默认按 `pdf_parse -> segmentation -> retrieval -> rule_layer -> answering` 顺序推进
+- 每阶段先在小题集上挑选最优候选，再在 `full_group_a` 上做验证
+- 每轮都会生成 `experiment_manifest.json`、`candidate_config.json`、`aggregate_metrics.json`、`ranking.json`、`notes.md`
+
+### 8. PDF 解析后端切换
+
+默认 PDF 仍使用 `pypdf`。如果环境中已安装 `mineru` 或 `magic-pdf`，可以在策略配置中切换：
+
+```json
+{
+  "domains": {
+    "__all__": {
+      "pdf_parse": {
+        "pdf_backend": "mineru",
+        "mineru_backend": "pipeline",
+        "mineru_method": "auto",
+        "mineru_lang": "ch"
+      }
+    }
+  }
+}
+```
+
+当前实现会优先尝试 `mineru`，失败时自动回退到 `pypdf`，不会阻断主流程。
+
+注意：
+
+- 基础版 `mineru` 默认可能无法直接跑本地高精度后端
+- 如果要启用本地 `pipeline/hybrid`，通常还需要补装 `mineru[pipeline]` 或等效依赖
+- 如果未来改走远端服务，也可以继续通过策略配置切换 `backend`
+
+### 9. 使用 MinerU 预解析项目 PDF
+
+如果希望把项目中的 PDF 先统一解析成持久化中间产物，再交给后续 `build_manifest / parse_domain` 使用，可以运行：
+
+```bash
+python3 scripts/parse_pdfs_with_mineru.py --domain research --limit 1
+python3 scripts/parse_pdfs_with_mineru.py --domain research
+```
+
+常用参数：
+
+```bash
+python3 scripts/parse_pdfs_with_mineru.py \
+  --domain research \
+  --doc-id pack2_text01 \
+  --backend pipeline \
+  --method txt \
+  --model-source modelscope \
+  --timeout-seconds 1800 \
+  --force
+```
+
+MinerU 产物目录约定：
+
+- `artifacts/mineru/manifest.json`
+- `artifacts/mineru/docs/<domain>/<doc_id>/raw_output/`
+- `artifacts/mineru/docs/<domain>/<doc_id>/normalized/content.md`
+- `artifacts/mineru/docs/<domain>/<doc_id>/normalized/content.txt`
+- `artifacts/mineru/docs/<domain>/<doc_id>/logs/stdout.log`
+- `artifacts/mineru/docs/<domain>/<doc_id>/logs/stderr.log`
+- `artifacts/mineru/docs/<domain>/<doc_id>/meta.json`
+
+说明：
+
+- `raw_output/` 保存 MinerU 原始输出，便于排查表格、图片、json 和 markdown 结构
+- `normalized/` 保存后续流程稳定消费的统一文本入口
+- `meta.json` 记录命令、返回码、耗时、日志路径、选择了哪个主文本文件
+- 运行 `scripts/build_manifest.py` 后，如果某个 PDF 已经有成功的 MinerU 结果，manifest 会优先引用 `normalized/content.md`
+
 ## 运行产物
 
 每次运行都会生成一个 `artifacts/runs/<run_id>/` 目录，包含：
@@ -132,6 +243,12 @@ python3 scripts/export_submission.py --run-dir artifacts/runs/<run_id>
 - [artifacts/runs/regulatory_a_20260622_200749/evidence.json](/Users/abandon/Documents/AFA_ww/artifacts/runs/regulatory_a_20260622_200749/evidence.json)
 
 该次运行共完成 `20` 题，累计 `251616` tokens。
+
+`autoresearch` 相关产物会额外写入：
+
+- `artifacts/autoresearch/experiments/<experiment_id>/`
+- `artifacts/autoresearch/leaderboard.json`
+- `artifacts/autoresearch/loops/<loop_id>/`
 
 ## 当前实现要点
 

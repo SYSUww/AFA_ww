@@ -1,0 +1,15 @@
+{
+  "baseline_config": "configs/autoresearch/default_strategy.json",
+  "candidate_set": "configs/autoresearch/candidate_sets.json",
+  "dataset_slices": "configs/autoresearch/dataset_slices.json",
+  "output_root": "artifacts/autoresearch",
+  "domains": ["all"],
+  "stages": ["pdf_parse", "segmentation", "retrieval", "rule_layer", "answering"],
+  "default_stage_slice": "dev_mini",
+  "stage_dataset_overrides": {
+    "retrieval": "dev_stage",
+    "rule_layer": "dev_stage",
+    "answering": "dev_stage"
+  },
+  "validation_slice": "full_group_a"
+}

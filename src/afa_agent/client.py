@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -30,17 +31,29 @@ class OpenAICompatibleClient:
             "temperature": self.config.temperature,
             "response_format": {"type": "json_object"},
         }
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": f"Bearer {self.config.api_key}",
-                "Content-Type": "application/json",
-            },
-            data=json.dumps(payload),
-            timeout=self.config.timeout_seconds,
-        )
-        response.raise_for_status()
-        parsed = response.json()
+        last_error: Exception | None = None
+        for attempt in range(3):
+            try:
+                response = requests.post(
+                    url,
+                    headers={
+                        "Authorization": f"Bearer {self.config.api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    data=json.dumps(payload),
+                    timeout=self.config.timeout_seconds,
+                )
+                response.raise_for_status()
+                parsed = response.json()
+                break
+            except (requests.Timeout, requests.ConnectionError, requests.HTTPError) as exc:
+                last_error = exc
+                if attempt >= 2:
+                    raise
+                time.sleep(2 * (attempt + 1))
+        else:
+            assert last_error is not None
+            raise last_error
         content = parsed["choices"][0]["message"]["content"]
         usage_payload = parsed.get("usage", {})
         usage = TokenUsage(

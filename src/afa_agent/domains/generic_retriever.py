@@ -22,6 +22,7 @@ class GenericBM25Retriever:
         top_k: int = 6,
         unit_type_boosts: dict[str, float] | None = None,
         ensure_per_doc: bool = False,
+        expand_neighbors: bool = True,
     ) -> list[RetrievalHit]:
         query_tokens = tokenize_zh(query)
         scored: list[tuple[int, float]] = []
@@ -40,7 +41,9 @@ class GenericBM25Retriever:
         else:
             selected = scored[:top_k]
         hits = [self._make_hit(idx, score) for idx, score in selected]
-        return self._expand_neighbors(hits, doc_ids, top_k=top_k)
+        if expand_neighbors:
+            return self._expand_neighbors(hits, doc_ids, top_k=top_k)
+        return hits
 
     def _ensure_per_doc(self, scored: list[tuple[int, float]], doc_ids: list[str], top_k: int) -> list[tuple[int, float]]:
         selected: list[tuple[int, float]] = []

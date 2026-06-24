@@ -1,0 +1,156 @@
+{
+  "stage_candidates": {
+    "pdf_parse": [
+      {
+        "candidate_id": "pdf_default",
+        "strategy_override": {}
+      },
+      {
+        "candidate_id": "pdf_mineru_auto",
+        "strategy_override": {
+          "domains": {
+            "__all__": {
+              "pdf_parse": {
+                "pdf_backend": "mineru",
+                "mineru_backend": "pipeline",
+                "mineru_method": "auto",
+                "mineru_lang": "ch"
+              }
+            }
+          }
+        }
+      },
+      {
+        "candidate_id": "pdf_drop_short_lines",
+        "strategy_override": {
+          "domains": {
+            "__all__": {
+              "pdf_parse": {
+                "drop_short_lines": true
+              }
+            }
+          }
+        }
+      }
+    ],
+    "segmentation": [
+      {
+        "candidate_id": "seg_default",
+        "strategy_override": {}
+      },
+      {
+        "candidate_id": "seg_compact_chunks",
+        "strategy_override": {
+          "domains": {
+            "__all__": {
+              "segmentation": {
+                "paragraph_max_chars": 850,
+                "article_max_chars": 950,
+                "clause_max_chars": 780
+              }
+            }
+          }
+        }
+      },
+      {
+        "candidate_id": "seg_long_chunks",
+        "strategy_override": {
+          "domains": {
+            "__all__": {
+              "segmentation": {
+                "paragraph_max_chars": 1200,
+                "article_max_chars": 1400,
+                "clause_max_chars": 1050
+              }
+            }
+          }
+        }
+      }
+    ],
+    "retrieval": [
+      {
+        "candidate_id": "ret_question_option",
+        "strategy_override": {}
+      },
+      {
+        "candidate_id": "ret_type_question_option",
+        "strategy_override": {
+          "domains": {
+            "__all__": {
+              "retrieval": {
+                "query_mode": "type_question_option"
+              }
+            }
+          }
+        }
+      },
+      {
+        "candidate_id": "ret_doc_balanced",
+        "strategy_override": {
+          "domains": {
+            "__all__": {
+              "retrieval": {
+                "include_doc_id_hint": true,
+                "top_k": 8,
+                "max_hits_for_prompt": 6,
+                "ensure_per_doc": true
+              }
+            }
+          }
+        }
+      }
+    ],
+    "rule_layer": [
+      {
+        "candidate_id": "rule_on",
+        "strategy_override": {}
+      },
+      {
+        "candidate_id": "rule_off",
+        "strategy_override": {
+          "domains": {
+            "__all__": {
+              "rule_layer": {
+                "enabled": false,
+                "prefer_rule_result": false
+              }
+            }
+          }
+        }
+      }
+    ],
+    "answering": [
+      {
+        "candidate_id": "ans_default",
+        "strategy_override": {}
+      },
+      {
+        "candidate_id": "ans_evidence_strict",
+        "strategy_override": {
+          "domains": {
+            "__all__": {
+              "answering": {
+                "prompt_template_id": "evidence_strict",
+                "extra_context": "请逐条核对证据，不要使用常识补全。若证据不足，只能在 reasoning_summary 中说明证据不足。",
+                "max_hits": 5
+              }
+            }
+          }
+        }
+      },
+      {
+        "candidate_id": "ans_compact_context",
+        "strategy_override": {
+          "domains": {
+            "__all__": {
+              "answering": {
+                "prompt_template_id": "compact",
+                "max_hits": 4
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

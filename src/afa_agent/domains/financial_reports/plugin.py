@@ -12,6 +12,7 @@ from afa_agent.domains.financial_reports.solver import FinancialReportsSolver
 from afa_agent.domains.generic_retriever import GenericBM25Retriever
 from afa_agent.io_utils import read_json, write_json
 from afa_agent.models import Document, Question
+from afa_agent.strategy import get_stage_settings
 
 
 FINANCIAL_METRICS = [
@@ -38,6 +39,8 @@ class FinancialReportsPlugin(DomainPlugin):
     ]
 
     def parse(self, manifest_path: Path, output_path: Path) -> None:
+        parse_settings = get_stage_settings(self.name, "pdf_parse")
+        segmentation_settings = get_stage_settings(self.name, "segmentation")
         manifest = read_json(manifest_path)
         domain_manifest = manifest["domains"][self.name]
         referenced_doc_ids = set(domain_manifest.get("referenced_doc_ids", []))
@@ -47,7 +50,7 @@ class FinancialReportsPlugin(DomainPlugin):
             if referenced_doc_ids and doc_id not in referenced_doc_ids:
                 continue
             source_path = Path(record["source_path"])
-            text, metadata = load_text_by_source(source_path, record["source_type"])
+            text, metadata = load_text_by_source(source_path, record["source_type"], options=parse_settings)
             title = detect_title(text, doc_id)
             document = Document(
                 doc_id=doc_id,
@@ -58,8 +61,19 @@ class FinancialReportsPlugin(DomainPlugin):
                 metadata=metadata,
             )
             docs_payload.append(document.to_dict())
-            sections = split_text_into_sections(text, title, "sec", unit_type="paragraph", max_chars=1000)
-            metric_sections = self._extract_metric_sections(text, title, doc_id)
+            sections = split_text_into_sections(
+                text,
+                title,
+                "sec",
+                unit_type="paragraph",
+                max_chars=segmentation_settings.get("paragraph_max_chars", 1000),
+            )
+            metric_sections = self._extract_metric_sections(
+                text,
+                title,
+                doc_id,
+                max_chars=segmentation_settings.get("metric_max_chars", 600),
+            )
             units = make_units_from_sections(document, sections) + make_units_from_sections(document, metric_sections)
             units_payload.extend([unit.to_dict() for unit in units])
         write_json(output_path, {"documents": docs_payload, "units": units_payload})
@@ -86,10 +100,10 @@ class FinancialReportsPlugin(DomainPlugin):
         if not config.model:
             raise RuntimeError("Missing model config in .env")
         client = OpenAICompatibleClient(config.model)
-        solver = FinancialReportsSolver(client, retriever, index_payload["units"])
+        solver = FinancialReportsSolver(client, retriever, index_payload["units"], strategy=self.name)
         return solver.solve(question)
 
-    def _extract_metric_sections(self, text: str, title: str, doc_id: str) -> list[dict[str, Any]]:
+    def _extract_metric_sections(self, text: str, title: str, doc_id: str, max_chars: int = 600) -> list[dict[str, Any]]:
         lines = [line.strip() for line in text.splitlines() if line.strip()]
         sections: list[dict[str, Any]] = []
         section_index = 1
@@ -114,7 +128,7 @@ class FinancialReportsPlugin(DomainPlugin):
                         "year": year_match.group(1) if year_match else "",
                         "numbers": [str(num) for num in re.findall(r"\d[\d,]*(?:\.\d+)?", window)],
                     },
-                    "max_chars": 600,
+                    "max_chars": max_chars,
                 }
             )
             section_index += 1

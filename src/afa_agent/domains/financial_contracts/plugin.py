@@ -12,6 +12,7 @@ from afa_agent.domains.financial_contracts.solver import FinancialContractsSolve
 from afa_agent.domains.generic_retriever import GenericBM25Retriever
 from afa_agent.io_utils import read_json, write_json
 from afa_agent.models import Document, Question
+from afa_agent.strategy import get_stage_settings
 
 
 CONTRACT_KEYWORDS = [
@@ -40,6 +41,8 @@ class FinancialContractsPlugin(DomainPlugin):
     ]
 
     def parse(self, manifest_path: Path, output_path: Path) -> None:
+        parse_settings = get_stage_settings(self.name, "pdf_parse")
+        segmentation_settings = get_stage_settings(self.name, "segmentation")
         manifest = read_json(manifest_path)
         domain_manifest = manifest["domains"][self.name]
         referenced_doc_ids = set(domain_manifest.get("referenced_doc_ids", []))
@@ -49,7 +52,7 @@ class FinancialContractsPlugin(DomainPlugin):
             if referenced_doc_ids and doc_id not in referenced_doc_ids:
                 continue
             source_path = Path(record["source_path"])
-            text, metadata = load_text_by_source(source_path, record["source_type"])
+            text, metadata = load_text_by_source(source_path, record["source_type"], options=parse_settings)
             title = detect_title(text, doc_id)
             document = Document(
                 doc_id=doc_id,
@@ -60,8 +63,18 @@ class FinancialContractsPlugin(DomainPlugin):
                 metadata=metadata,
             )
             docs_payload.append(document.to_dict())
-            sections = split_text_into_sections(text, title, "sec", unit_type="paragraph", max_chars=900)
-            element_sections = self._extract_element_sections(text, title)
+            sections = split_text_into_sections(
+                text,
+                title,
+                "sec",
+                unit_type="paragraph",
+                max_chars=segmentation_settings.get("paragraph_max_chars", 900),
+            )
+            element_sections = self._extract_element_sections(
+                text,
+                title,
+                max_chars=segmentation_settings.get("element_max_chars", 700),
+            )
             units = make_units_from_sections(document, sections) + make_units_from_sections(document, element_sections)
             units_payload.extend([unit.to_dict() for unit in units])
         write_json(output_path, {"documents": docs_payload, "units": units_payload})
@@ -79,10 +92,10 @@ class FinancialContractsPlugin(DomainPlugin):
         config = build_run_config()
         if not config.model:
             raise RuntimeError("Missing model config in .env")
-        solver = FinancialContractsSolver(OpenAICompatibleClient(config.model), retriever)
+        solver = FinancialContractsSolver(OpenAICompatibleClient(config.model), retriever, strategy=self.name)
         return solver.solve(question)
 
-    def _extract_element_sections(self, text: str, title: str) -> list[dict[str, Any]]:
+    def _extract_element_sections(self, text: str, title: str, max_chars: int = 700) -> list[dict[str, Any]]:
         lines = [line.strip() for line in text.splitlines() if line.strip()]
         sections: list[dict[str, Any]] = []
         for idx, line in enumerate(lines):
@@ -100,7 +113,7 @@ class FinancialContractsPlugin(DomainPlugin):
                         "element_name": matched,
                         "numbers": re.findall(r"\d[\d,]*(?:\.\d+)?", window),
                     },
-                    "max_chars": 700,
+                    "max_chars": max_chars,
                 }
             )
         return sections

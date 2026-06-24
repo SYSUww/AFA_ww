@@ -4,36 +4,45 @@ from typing import Any
 
 from afa_agent.domains.llm_utils import ask_answer_fallback, ask_option_judgment, format_hits
 from afa_agent.models import AnswerResult, Question, TokenUsage
+from afa_agent.strategy import build_query_variants, get_stage_settings, serialize_hits
 
 
 class ResearchSolver:
-    def __init__(self, client, retriever):
+    def __init__(self, client, retriever, strategy: str):
         self.client = client
         self.retriever = retriever
+        self.domain = strategy
+        self.retrieval_settings = get_stage_settings(strategy, "retrieval")
+        self.answering_settings = get_stage_settings(strategy, "answering")
 
     def solve(self, question: Question) -> AnswerResult:
         total_usage = TokenUsage()
         option_labels: dict[str, bool] = {}
         option_payloads: list[dict[str, Any]] = []
         reasoning_chunks: list[str] = []
+        option_debug: list[dict[str, Any]] = []
+        query_variants_all: list[str] = []
 
         for option_key, option_text in question.options.items():
+            query_variants = build_query_variants(question, option_key, option_text, self.retrieval_settings)
+            query_variants_all.extend(query_variants)
             hits = self.retriever.search(
                 question.doc_ids,
-                f"{question.question}\n{option_text}",
-                top_k=7,
-                unit_type_boosts={"conclusion_block": 1.6, "paragraph": 1.0},
-                ensure_per_doc=len(question.doc_ids) > 1,
+                query_variants[0],
+                top_k=self.retrieval_settings.get("top_k", 7),
+                unit_type_boosts=self.retrieval_settings.get("unit_type_boosts", {"conclusion_block": 1.6, "paragraph": 1.0}),
+                ensure_per_doc=self.retrieval_settings.get("ensure_per_doc", len(question.doc_ids) > 1),
+                expand_neighbors=self.retrieval_settings.get("expand_neighbors", True),
             )
             parsed, usage = ask_option_judgment(
                 self.client,
-                "你是行业研报问答助手。你需要核对行业结论、数据、市场规模与趋势判断。请区分原文明示信息和推断信息，只能依据证据作答。",
+                self._system_prompt(),
                 question.question,
                 question.answer_format,
                 option_key,
                 option_text,
-                format_hits(hits, max_items=7),
-                "如果题目涉及多个研报，请优先对齐每份研报中的对应结论或数据，不要让单一文档覆盖另一份文档。",
+                format_hits(hits, max_items=self.answering_settings.get("max_hits", 7)),
+                self._extra_context(),
             )
             total_usage.add(usage)
             label = bool(parsed.get("label", False))
@@ -45,6 +54,13 @@ class ResearchSolver:
                     "label": label,
                     "reasoning_summary": reasoning,
                     "evidence_items": [hit.to_dict() for hit in hits],
+                }
+            )
+            option_debug.append(
+                {
+                    "option": option_key,
+                    "query_variants": query_variants,
+                    "retrieval_topk": serialize_hits(hits, limit=self.retrieval_settings.get("top_k", 7)),
                 }
             )
             reasoning_chunks.append(f"{option_key}: {reasoning}")
@@ -91,8 +107,31 @@ class ResearchSolver:
             evidence_items=evidence_items,
             reasoning_summary=" | ".join(reasoning_chunks),
             token_usage=total_usage,
-            debug_meta={"doc_ids": question.doc_ids, "type": question.type},
+            debug_meta={
+                "doc_ids": question.doc_ids,
+                "type": question.type,
+                "prompt_template_id": self.answering_settings.get("prompt_template_id", "default"),
+                "query_variants": query_variants_all,
+                "retrieval_topk": [hit for item in option_debug for hit in item["retrieval_topk"]][: self.retrieval_settings.get("top_k", 7)],
+                "selected_evidence_ids": [item.get("unit_id", "") for item in evidence_items if item.get("unit_id")],
+                "rule_outputs": [],
+                "option_debug": option_debug,
+                "consistency_answers": [pred_answer],
+            },
         )
+
+    def _system_prompt(self) -> str:
+        prompt_id = self.answering_settings.get("prompt_template_id", "default")
+        if prompt_id == "evidence_strict":
+            return "你是行业研报问答助手。你必须区分原文明示信息和推断信息，严格依据证据核对行业结论、数据与趋势判断，只能输出 JSON。"
+        if prompt_id == "compact":
+            return "你是行业研报问答助手。请基于最关键证据快速判断选项真伪，只输出 JSON。"
+        return "你是行业研报问答助手。你需要核对行业结论、数据、市场规模与趋势判断。请区分原文明示信息和推断信息，只能依据证据作答。"
+
+    def _extra_context(self) -> str:
+        extra = self.answering_settings.get("extra_context", "").strip()
+        base = "如果题目涉及多个研报，请优先对齐每份研报中的对应结论或数据，不要让单一文档覆盖另一份文档。"
+        return f"{base}\n{extra}".strip()
 
     @staticmethod
     def _compose_answer(answer_format: str, option_labels: dict[str, bool]) -> str:

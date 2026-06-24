@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import os
 import re
+import shutil
+import subprocess
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -29,14 +33,104 @@ def extract_text_from_txt(path: Path) -> tuple[str, dict[str, Any]]:
     return normalize_whitespace(text), {}
 
 
-def extract_text_from_pdf(path: Path) -> tuple[str, dict[str, Any]]:
+def extract_text_from_markdown(path: Path) -> tuple[str, dict[str, Any]]:
+    text = path.read_text(encoding="utf-8", errors="ignore")
+    return normalize_whitespace(text), {}
+
+
+def extract_text_from_pdf(path: Path, options: dict[str, Any] | None = None) -> tuple[str, dict[str, Any]]:
+    options = options or {}
+    backend = options.get("pdf_backend", "pypdf")
+    if backend == "mineru":
+        mineru_result = _extract_text_from_pdf_via_mineru(path, options)
+        if mineru_result is not None:
+            return mineru_result
+        mineru_error = getattr(_extract_text_from_pdf_via_mineru, "_last_error", "")
+    else:
+        mineru_error = ""
     reader = PdfReader(str(path))
     pages = []
     for page_index, page in enumerate(reader.pages, start=1):
         text = page.extract_text() or ""
         if text.strip():
-            pages.append(f"[PAGE {page_index}]\n{text.strip()}")
-    return normalize_whitespace("\n\n".join(pages)), {"page_count": len(reader.pages)}
+            cleaned = text.strip()
+            if options.get("drop_short_lines"):
+                cleaned = "\n".join(line for line in cleaned.splitlines() if len(line.strip()) >= 3)
+            if options.get("keep_page_markers", True):
+                pages.append(f"[PAGE {page_index}]\n{cleaned}")
+            else:
+                pages.append(cleaned)
+    return normalize_whitespace("\n\n".join(pages)), {
+        "page_count": len(reader.pages),
+        "pdf_backend": "pypdf",
+        "requested_pdf_backend": backend,
+        "pdf_backend_fallback_reason": mineru_error,
+    }
+
+
+def _extract_text_from_pdf_via_mineru(path: Path, options: dict[str, Any]) -> tuple[str, dict[str, Any]] | None:
+    command_factory = _resolve_mineru_command(path, options)
+    if not command_factory:
+        return None
+    with tempfile.TemporaryDirectory(prefix="afa_reg_mineru_") as temp_dir:
+        output_dir = Path(temp_dir)
+        env = os.environ.copy()
+        model_source = options.get("mineru_model_source", "")
+        if model_source:
+            env["MINERU_MODEL_SOURCE"] = str(model_source)
+        try:
+            proc = subprocess.run(command_factory(output_dir), check=True, capture_output=True, text=True, env=env)
+        except Exception as exc:
+            setattr(_extract_text_from_pdf_via_mineru, "_last_error", str(exc))
+            return None
+        text = _collect_mineru_output_text(output_dir)
+        if not text.strip():
+            setattr(
+                _extract_text_from_pdf_via_mineru,
+                "_last_error",
+                f"mineru returned code {proc.returncode} but no markdown/txt output was collected",
+            )
+            return None
+        if options.get("drop_short_lines"):
+            text = "\n".join(line for line in text.splitlines() if len(line.strip()) >= 3)
+        normalized = normalize_whitespace(text)
+        if options.get("keep_page_markers", True):
+            normalized = f"[PAGE 1]\n{normalized}"
+        setattr(_extract_text_from_pdf_via_mineru, "_last_error", "")
+        return normalized, {"page_count": 0, "pdf_backend": "mineru"}
+
+
+def _resolve_mineru_command(path: Path, options: dict[str, Any]):
+    mineru_bin = shutil.which("mineru")
+    if mineru_bin:
+        return lambda output_dir: _build_mineru_args(mineru_bin, path, output_dir, options)
+    magic_pdf_bin = shutil.which("magic-pdf")
+    if magic_pdf_bin:
+        return lambda output_dir: [magic_pdf_bin, "-p", str(path), "-o", str(output_dir)]
+    return None
+
+
+def _collect_mineru_output_text(output_dir: Path) -> str:
+    candidates = sorted(output_dir.rglob("*.md")) + sorted(output_dir.rglob("*.markdown")) + sorted(output_dir.rglob("*.txt"))
+    for candidate in candidates:
+        text = candidate.read_text(encoding="utf-8", errors="ignore").strip()
+        if text:
+            return text
+    return ""
+
+
+def _build_mineru_args(binary: str, path: Path, output_dir: Path, options: dict[str, Any]) -> list[str]:
+    args = [binary, "--path", str(path), "--output", str(output_dir)]
+    backend = options.get("mineru_backend")
+    method = options.get("mineru_method")
+    lang = options.get("mineru_lang")
+    if backend:
+        args.extend(["--backend", str(backend)])
+    if method:
+        args.extend(["--method", str(method)])
+    if lang:
+        args.extend(["--lang", str(lang)])
+    return args
 
 
 def detect_title(text: str, fallback: str) -> str:
@@ -54,7 +148,7 @@ def detect_title(text: str, fallback: str) -> str:
     return lines[0][:80]
 
 
-def split_regulatory_units(doc: Document, text: str) -> list[EvidenceUnit]:
+def split_regulatory_units(doc: Document, text: str, max_chars: int = 1200) -> list[EvidenceUnit]:
     lines = clean_lines(text.splitlines())
     units: list[EvidenceUnit] = []
     chapter = ""
@@ -76,7 +170,7 @@ def split_regulatory_units(doc: Document, text: str) -> list[EvidenceUnit]:
         full_text = f"{current_article_no} {current_article_title}".strip()
         if article_text:
             full_text = f"{full_text}\n{article_text}".strip()
-        units.extend(split_long_unit(doc, unit_id, title_path, current_article_no, full_text))
+        units.extend(split_long_unit(doc, unit_id, title_path, current_article_no, full_text, max_chars=max_chars))
         current_buffer = []
 
     for line in lines:
