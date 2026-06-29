@@ -10,6 +10,24 @@
 - 已支持运行结果、token 统计、证据链导出
 - 已预留多领域扩展接口，下一优先域为 `financial_reports`
 
+## 当前最佳版本快照
+
+截至 `2026-06-29`，当前效果最好的 Group A 100 题合并产物为：
+
+- 本地产物目录：`artifacts/submissions/group_a_current_best_merged_20260629/`
+- 提交文件：`answer.csv`
+- 合并方式：
+  - 以 `artifacts/submissions/group_a_20260628_preprocessed_loop_full/answer.csv` 的 100 题顺序为准
+  - 用 `artifacts/submissions/risk53_current_best_20260629/answer.csv` 覆盖其中 53 个风险题
+  - 其余 47 题保留原答案
+- 当前人工/外部评测反馈准确率：`71%`
+- token 消耗：
+  - prompt tokens: `1,053,990`
+  - completion tokens: `251,889`
+  - total tokens: `1,305,879`
+
+这版通过 evidence gate / rescue / answer finalization / regulatory supplemental rescue 提升了准确率，但 token 消耗明显增加，导致综合得分下降。后续优化重点应放在降低高置信 case 的重复 LLM 调用、压缩 insurance 和 financial_contracts 的多选复核 prompt，以及只对低确定性 case 触发二次检索和二次回答。
+
 ## 目录结构
 
 ```text
