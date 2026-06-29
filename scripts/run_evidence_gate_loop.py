@@ -8,6 +8,7 @@ import os
 import subprocess
 import sys
 from collections import Counter, defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -487,6 +488,7 @@ def main() -> None:
     parser.add_argument("--target-high-certainty", type=float, default=0.7)
     parser.add_argument("--min-improvement", type=float, default=0.05)
     parser.add_argument("--llm-audit", choices=["off", "low_or_changed", "all"], default="low_or_changed")
+    parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -515,16 +517,36 @@ def main() -> None:
         strategy_path = build_round_strategy(Path(args.strategy_config), round_dir, round_index)
         qid_files = write_qid_files(remaining_rows, round_dir)
         run_dirs: dict[str, Path] = {}
-        for domain, qid_file in sorted(qid_files.items()):
-            run_dirs[domain] = run_domain_round(
-                domain=domain,
-                qid_file=qid_file,
-                round_dir=round_dir,
-                strategy_path=strategy_path,
-                parsed_root=Path(args.parsed_root),
-                index_root=Path(args.index_root),
-                dry_run=args.dry_run,
-            )
+        jobs = sorted(qid_files.items())
+        if args.workers > 1 and len(jobs) > 1:
+            with ThreadPoolExecutor(max_workers=args.workers) as executor:
+                futures = {
+                    executor.submit(
+                        run_domain_round,
+                        domain=domain,
+                        qid_file=qid_file,
+                        round_dir=round_dir,
+                        strategy_path=strategy_path,
+                        parsed_root=Path(args.parsed_root),
+                        index_root=Path(args.index_root),
+                        dry_run=args.dry_run,
+                    ): domain
+                    for domain, qid_file in jobs
+                }
+                for future in as_completed(futures):
+                    domain = futures[future]
+                    run_dirs[domain] = future.result()
+        else:
+            for domain, qid_file in jobs:
+                run_dirs[domain] = run_domain_round(
+                    domain=domain,
+                    qid_file=qid_file,
+                    round_dir=round_dir,
+                    strategy_path=strategy_path,
+                    parsed_root=Path(args.parsed_root),
+                    index_root=Path(args.index_root),
+                    dry_run=args.dry_run,
+                )
         write_json(
             round_dir / "run_manifest.json",
             {
