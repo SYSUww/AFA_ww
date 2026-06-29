@@ -9,6 +9,7 @@ from afa_agent.domains.regulatory.facts import (
     format_rule_summary,
     summarize_rule_alignment,
 )
+from afa_agent.evidence_gate import answer_consistency_issues, evaluate_evidence, gate_enabled, rescue_evidence
 from afa_agent.models import AnswerResult, Question, TokenUsage
 from afa_agent.strategy import get_stage_settings, serialize_hits
 
@@ -20,6 +21,7 @@ class RegulatorySolver:
         self.domain = strategy
         self.retrieval_settings = get_stage_settings(strategy, "retrieval")
         self.answering_settings = get_stage_settings(strategy, "answering")
+        self.gate_settings = get_stage_settings(strategy, "evidence_gate")
 
     def solve(self, question: Question) -> AnswerResult:
         total_usage = TokenUsage()
@@ -50,6 +52,22 @@ class RegulatorySolver:
                 ensure_per_doc=ensure_per_doc,
                 expand_neighbors=self.retrieval_settings.get("expand_neighbors", True),
             )
+            gate_debug: dict[str, Any] = {}
+            if gate_enabled(self.gate_settings):
+                initial_gate = evaluate_evidence(question, option_key, option_text, hits, question.domain, self.gate_settings)
+                rescue_result = rescue_evidence(
+                    question=question,
+                    option_key=option_key,
+                    option_text=option_text,
+                    domain=question.domain,
+                    retriever=self.retriever,
+                    initial_hits=hits,
+                    retrieval_settings=self.retrieval_settings,
+                    gate_settings=self.gate_settings,
+                    initial_gate=initial_gate,
+                )
+                hits = rescue_result.hits
+                gate_debug = rescue_result.to_dict()
             rule_summary = summarize_rule_alignment(option_text if question.answer_format != "tf" else question.question, hits)
             payload = self._judge_option(question, option_key, option_text, hits, rule_summary)
             total_usage.add(payload["token_usage"])
@@ -64,6 +82,8 @@ class RegulatorySolver:
                     "reasoning_summary": payload["reasoning_summary"],
                     "evidence_items": [hit.to_dict() for hit in hits],
                     "rule_summary": rule_summary,
+                    "gate_status": gate_debug.get("final_gate", {}).get("status", ""),
+                    "gate_reasons": gate_debug.get("final_gate", {}).get("reasons", []),
                 }
             )
             rule_outputs.append({"option": option_key, **rule_summary})
@@ -77,6 +97,7 @@ class RegulatorySolver:
                     "rule_summary": rule_summary,
                     "label": payload["label"],
                     "support_score": payload["support_score"],
+                    "evidence_gate": gate_debug,
                 }
             )
             reasoning_chunks.append(f"{option_key}({payload['support_score']:.2f}): {payload['reasoning_summary']}")
@@ -91,6 +112,15 @@ class RegulatorySolver:
 
         if question.answer_format == "tf":
             pred_answer = "A" if option_labels.get("A", False) else "B"
+        consistency_issues = []
+        if gate_enabled(self.gate_settings):
+            consistency_issues = answer_consistency_issues(pred_answer, option_payloads, question.answer_format)
+            if consistency_issues and self.gate_settings.get("final_consistency_retry", True):
+                if question.answer_format == "mcq":
+                    pred_answer = self._fallback_single_choice(question, option_payloads, total_usage)
+                elif question.answer_format == "multi":
+                    pred_answer = self._fallback_multi_choice(question, option_payloads, total_usage)
+            consistency_issues = answer_consistency_issues(pred_answer, option_payloads, question.answer_format)
 
         evidence_items = []
         for item in option_payloads:
@@ -118,6 +148,7 @@ class RegulatorySolver:
                 "rule_outputs": rule_outputs,
                 "option_debug": option_debug,
                 "consistency_answers": [pred_answer],
+                "final_consistency_check": {"issues": consistency_issues},
             },
         )
 

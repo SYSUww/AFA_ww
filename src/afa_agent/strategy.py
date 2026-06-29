@@ -46,6 +46,16 @@ DEFAULT_STAGE_SETTINGS: dict[str, dict[str, Any]] = {
         "extra_context": "",
         "consistency_repeats": 1,
     },
+    "evidence_gate": {
+        "enabled": False,
+        "max_rescue_rounds": 2,
+        "rescue_top_k": 12,
+        "per_doc_quota": 2,
+        "min_hit_chars": 24,
+        "max_hits_after_rescue": 12,
+        "use_llm_coverage_check": False,
+        "final_consistency_retry": True,
+    },
 }
 
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from afa_agent.domains.llm_utils import ask_answer_fallback, ask_option_judgment, format_hits
+from afa_agent.evidence_gate import answer_consistency_issues, evaluate_evidence, gate_enabled, rescue_evidence
 from afa_agent.models import AnswerResult, Question, TokenUsage
 from afa_agent.strategy import build_query_variants, get_stage_settings, serialize_hits
 
@@ -14,6 +15,7 @@ class ResearchSolver:
         self.domain = strategy
         self.retrieval_settings = get_stage_settings(strategy, "retrieval")
         self.answering_settings = get_stage_settings(strategy, "answering")
+        self.gate_settings = get_stage_settings(strategy, "evidence_gate")
 
     def solve(self, question: Question) -> AnswerResult:
         total_usage = TokenUsage()
@@ -34,6 +36,22 @@ class ResearchSolver:
                 ensure_per_doc=self.retrieval_settings.get("ensure_per_doc", len(question.doc_ids) > 1),
                 expand_neighbors=self.retrieval_settings.get("expand_neighbors", True),
             )
+            gate_debug: dict[str, Any] = {}
+            if gate_enabled(self.gate_settings):
+                initial_gate = evaluate_evidence(question, option_key, option_text, hits, question.domain, self.gate_settings)
+                rescue_result = rescue_evidence(
+                    question=question,
+                    option_key=option_key,
+                    option_text=option_text,
+                    domain=question.domain,
+                    retriever=self.retriever,
+                    initial_hits=hits,
+                    retrieval_settings=self.retrieval_settings,
+                    gate_settings=self.gate_settings,
+                    initial_gate=initial_gate,
+                )
+                hits = rescue_result.hits
+                gate_debug = rescue_result.to_dict()
             parsed, usage = ask_option_judgment(
                 self.client,
                 self._system_prompt(),
@@ -54,6 +72,8 @@ class ResearchSolver:
                     "label": label,
                     "reasoning_summary": reasoning,
                     "evidence_items": [hit.to_dict() for hit in hits],
+                    "gate_status": gate_debug.get("final_gate", {}).get("status", ""),
+                    "gate_reasons": gate_debug.get("final_gate", {}).get("reasons", []),
                 }
             )
             option_debug.append(
@@ -61,6 +81,7 @@ class ResearchSolver:
                     "option": option_key,
                     "query_variants": query_variants,
                     "retrieval_topk": serialize_hits(hits, limit=self.retrieval_settings.get("top_k", 7)),
+                    "evidence_gate": gate_debug,
                 }
             )
             reasoning_chunks.append(f"{option_key}: {reasoning}")
@@ -92,6 +113,23 @@ class ResearchSolver:
             pred_answer = self._ensure_multi_minimum(pred_answer, question, option_labels)
         elif question.answer_format == "tf":
             pred_answer = "A" if option_labels.get("A", False) else "B"
+        consistency_issues = []
+        if gate_enabled(self.gate_settings):
+            consistency_issues = answer_consistency_issues(pred_answer, option_payloads, question.answer_format)
+            if consistency_issues and self.gate_settings.get("final_consistency_retry", True):
+                answer, usage = ask_answer_fallback(
+                    self.client,
+                    "你是研报答案一致性复核器。只能选择 label=true 且 evidence gate 未失败的选项；若证据不足，请基于摘要选择最稳答案，只输出 JSON。",
+                    question.question,
+                    option_payloads,
+                    question.answer_format,
+                    list(question.options.keys()),
+                )
+                total_usage.add(usage)
+                pred_answer = answer[:1] if question.answer_format == "mcq" else answer
+                if question.answer_format == "multi":
+                    pred_answer = self._ensure_multi_minimum(pred_answer, question, option_labels)
+            consistency_issues = answer_consistency_issues(pred_answer, option_payloads, question.answer_format)
 
         evidence_items = []
         for payload in option_payloads:
@@ -119,6 +157,7 @@ class ResearchSolver:
                 "rule_outputs": [],
                 "option_debug": option_debug,
                 "consistency_answers": [pred_answer],
+                "final_consistency_check": {"issues": consistency_issues},
             },
         )
 
