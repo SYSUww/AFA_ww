@@ -11,7 +11,7 @@ from afa_agent.strategy import build_query_variants, get_stage_settings, seriali
 
 
 METRIC_ALIASES = {
-    "研发占比": ["研发投入占营业收入的比例"],
+    "研发占比": ["研发投入占营业收入的比例", "研发投入占营业收入比例", "研发费用占营业收入比例"],
     "现金分红": ["每10股派", "现金分红", "末期股息"],
     "营业收入": ["营业收入", "营业总收入", "营业额"],
     "归母净利润": ["归属于上市公司股东的净利润", "归母净利润", "母公司拥有人应占溢利"],
@@ -223,13 +223,22 @@ class FinancialReportsSolver:
             metric_name = meta.get("metric_name")
             if not metric_name:
                 continue
-            metric_key = self._normalize_metric(metric_name)
-            metric_index[unit["doc_id"]][metric_key].append(unit)
+            metric_keys = {self._normalize_metric(metric_name)}
+            text = unit.get("text", "")
+            for alias_key, aliases in METRIC_ALIASES.items():
+                if any(alias in text for alias in aliases):
+                    metric_keys.add(alias_key)
+            for metric_key in metric_keys:
+                bucket = metric_index[unit["doc_id"]][metric_key]
+                if all(existing.get("unit_id") != unit.get("unit_id") for existing in bucket):
+                    bucket.append(unit)
         return metric_index
 
     def _rule_evaluate(self, question: Question, option_text: str):
         metric_key = self._detect_metric_key(option_text)
         if not metric_key or len(question.doc_ids) < 2:
+            return None, "", []
+        if metric_key in {"现金分红", "研发投入"}:
             return None, "", []
         doc_metrics = [self.metric_index.get(doc_id, {}).get(metric_key, []) for doc_id in question.doc_ids[:2]]
         if not all(doc_metrics):
@@ -237,8 +246,7 @@ class FinancialReportsSolver:
         values = []
         evidence = []
         for doc_units in doc_metrics:
-            best_unit = self._choose_best_unit(doc_units)
-            parsed_value = self._extract_best_number(best_unit["text"], metric_key)
+            best_unit, parsed_value = self._choose_best_metric_unit(doc_units, metric_key)
             if parsed_value is None:
                 return None, "", []
             values.append(parsed_value)
@@ -274,6 +282,36 @@ class FinancialReportsSolver:
                 return metric_key
         return metric_name
 
+    def _choose_best_metric_unit(self, units: list[dict[str, Any]], metric_key: str) -> tuple[dict[str, Any], float | None]:
+        scored = []
+        for unit in units:
+            values = self._extract_metric_values(unit.get("text", ""), metric_key)
+            if not values:
+                continue
+            scored.append((self._metric_unit_score(unit, metric_key, values), unit, values[0]))
+        if not scored:
+            return self._choose_best_unit(units), None
+        _, unit, value = max(scored, key=lambda item: item[0])
+        return unit, value
+
+    def _metric_unit_score(self, unit: dict[str, Any], metric_key: str, values: list[float]) -> tuple[int, int, int]:
+        text = unit.get("text", "")
+        aliases = METRIC_ALIASES.get(metric_key, [metric_key])
+        quality = 0
+        if any(re.search(rf"{re.escape(alias)}(?:\([^)]*\))?\s*\|", text) for alias in aliases):
+            quality += 8
+        if "本年比上年增减" in text or "同比增减" in text:
+            quality += 4
+        if "第一季度" in text or "第二季度" in text or "第三季度" in text or "第四季度" in text:
+            quality -= 6
+        if "相关数据同比发生重大变动" in text:
+            quality -= 4
+        if len(values) >= 2:
+            quality += 3
+        if metric_key == "研发占比" and "%" in text:
+            quality += 4
+        return quality, len(values), -len(text)
+
     @staticmethod
     def _choose_best_unit(units: list[dict[str, Any]]) -> dict[str, Any]:
         def score(unit: dict[str, Any]) -> tuple[int, int]:
@@ -291,16 +329,45 @@ class FinancialReportsSolver:
 
         return max(units, key=score)
 
-    @staticmethod
-    def _extract_best_number(text: str, metric_key: str) -> float | None:
-        raw_numbers = re.findall(r"\d[\d,]*(?:\.\d+)?", text)
-        if not raw_numbers:
-            return None
-        values = [float(item.replace(",", "")) for item in raw_numbers]
+    def _extract_metric_values(self, text: str, metric_key: str) -> list[float]:
+        segment = self._metric_segment(text, metric_key)
+        if not segment:
+            return []
+        tokens = re.findall(r"-?\d[\d,]*(?:\.\d+)?%?", segment)
         if metric_key == "研发占比":
-            percents = [value for value in values if value <= 100]
-            return percents[-1] if percents else values[-1]
-        return max(values)
+            return [float(token.rstrip("%").replace(",", "")) for token in tokens if token.endswith("%")]
+        values = []
+        for token in tokens:
+            if token.endswith("%"):
+                continue
+            value = float(token.replace(",", ""))
+            if 1900 <= value <= 2100 and f"{int(value)}年" in segment:
+                continue
+            values.append(value)
+        while len(values) > 2 and abs(values[0]) < 100 and abs(values[1]) > 1000:
+            values.pop(0)
+        return values
+
+    @staticmethod
+    def _metric_segment(text: str, metric_key: str) -> str:
+        aliases = METRIC_ALIASES.get(metric_key, [metric_key])
+        matches = [(text.find(alias), alias) for alias in aliases if text.find(alias) >= 0]
+        if not matches:
+            return ""
+        start = min(pos for pos, _ in matches)
+        protected_end = max(pos + len(alias) for pos, alias in matches if pos == start)
+        next_positions = []
+        for other_key, other_aliases in METRIC_ALIASES.items():
+            for alias in other_aliases:
+                pos = text.find(alias, start + 1)
+                if pos >= protected_end and other_key != metric_key:
+                    next_positions.append(pos)
+        for marker in [" 基本每股", " 稀释每股", " 上述财务指标", " 分行业", " #"]:
+            pos = text.find(marker, start + 1)
+            if pos >= protected_end:
+                next_positions.append(pos)
+        end = min(next_positions) if next_positions else min(len(text), start + 260)
+        return text[start:end]
 
     @staticmethod
     def _compose_answer(answer_format: str, option_labels: dict[str, bool]) -> str:
