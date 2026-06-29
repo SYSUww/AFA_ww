@@ -49,7 +49,7 @@ CLAUSE_TERMS = {
         "免赔额",
         "保单贷款",
         "账户价值",
-        "基本保额",
+        "基本保险金额",
         "退保",
     ],
     "financial_contracts": [
@@ -70,6 +70,13 @@ CLAUSE_TERMS = {
     ],
     "regulatory": ["第", "条", "报告", "披露", "施行", "客户尽职调查", "受益所有人", "银行卡清算机构"],
     "research": ["同比", "增速", "市场规模", "预计", "收入", "净利润", "结论", "风险提示"],
+}
+
+TERM_ALIASES = {
+    "insurance": {
+        "账户价值": ["账户价值", "保单账户价值", "个人账户价值"],
+        "基本保险金额": ["基本保险金额", "基本保额", "基本保险额"],
+    }
 }
 
 
@@ -153,10 +160,16 @@ def evaluate_evidence(
     if weak_ratio >= 0.75:
         reasons.append(REASON_WRONG_CHUNK)
 
-    expected_terms = _expected_terms(option_text, domain)
+    expected_terms = _expected_terms(f"{question.question} {option_text}", domain)
     matched_terms = _matched_terms(expected_terms, hit_rows)
     if expected_terms and not matched_terms:
         reasons.append(REASON_MISSING_METRIC if domain == "financial_reports" else REASON_MISSING_CLAUSE)
+    elif domain == "insurance" and expected_terms and len(matched_terms) < len(expected_terms):
+        reasons.append(REASON_MISSING_CLAUSE)
+    if domain == "insurance" and _is_insurance_formula_question(question.question, option_text):
+        min_hits = int(settings.get("formula_rescue_min_hits", settings.get("max_hits_after_rescue", 12)))
+        if len(hit_rows) < min_hits:
+            reasons.append(REASON_LOW_CERTAINTY)
 
     contradiction = _simple_contradiction(option_text, hit_rows)
     if contradiction:
@@ -368,9 +381,15 @@ def _rescue_search_specs(
 ) -> list[dict[str, Any]]:
     channels = gate_settings.get("rescue_channels") or DEFAULT_RESCUE_CHANNELS
     enabled_channels = [channel for channel in channels if channel in DEFAULT_RESCUE_CHANNELS]
+    if domain == "insurance" and "clause_formula_search" in enabled_channels:
+        preferred = ["clause_formula_search", "per_doc_search", "neighbor_expansion"]
+        enabled_channels = [
+            *[channel for channel in preferred if channel in enabled_channels],
+            *[channel for channel in enabled_channels if channel not in preferred],
+        ]
     top_k = int(gate_settings.get("rescue_top_k", max(retrieval_settings.get("top_k", 6), 12)))
     base_variants = build_query_variants(question, option_key, option_text, retrieval_settings)
-    term_text = " ".join(_expected_terms(option_text, domain))
+    term_text = " ".join(_expected_terms(f"{question.question} {option_text}", domain))
     focused_terms = _focused_terms(question, option_text, domain)
     focused = " ".join(part for part in [question.question, option_text, focused_terms, term_text] if part).strip()
     specs: list[dict[str, Any]] = []
@@ -441,7 +460,7 @@ def _preferred_unit_boosts(domain: str, base_boosts: dict[str, float]) -> dict[s
 def _focused_terms(question: Question, option_text: str, domain: str) -> str:
     text = f"{question.question} {option_text}"
     parts = [
-        " ".join(_expected_terms(option_text, domain)),
+        " ".join(_expected_terms(text, domain)),
         " ".join(re.findall(r"\d{4}年?|\d+(?:\.\d+)?%?|\d+(?:\.\d+)?(?:万|亿)?元", text)),
     ]
     if domain == "insurance":
@@ -470,8 +489,29 @@ def _insurance_clause_query(question_text: str, option_text: str) -> str:
     text = f"{question_text} {option_text}"
     products = re.findall(r"(?:平安|国寿|太保|泰康|新华|人保|友邦|招商信诺|中信保诚)[\u4e00-\u9fa5A-Za-z0-9]{2,18}", text)
     clause_terms = [term for term in CLAUSE_TERMS["insurance"] if term in text]
-    formula_terms = [term for term in ["给付", "赔付", "较大者", "比例", "基本保额", "账户价值", "现金价值", "已交保费"] if term in text]
+    formula_terms = [
+        term
+        for term in [
+            "给付",
+            "赔付",
+            "较大者",
+            "较大值",
+            "下列两者",
+            "比例",
+            "基本保额",
+            "基本保险金额",
+            "账户价值",
+            "现金价值",
+            "已交保费",
+        ]
+        if term in text
+    ]
     return " ".join(_dedupe_strings([*products, *clause_terms, *formula_terms]))
+
+
+def _is_insurance_formula_question(question_text: str, option_text: str) -> bool:
+    text = f"{question_text} {option_text}"
+    return "身故保险金" in text and any(term in text for term in ["计算", "排序", "金额", "多少", "基本保额", "账户价值", "现金价值"])
 
 
 def _expected_terms(option_text: str, domain: str) -> list[str]:
@@ -480,6 +520,9 @@ def _expected_terms(option_text: str, domain: str) -> list[str]:
         for terms in METRIC_TERMS.values():
             if any(term in option_text for term in terms):
                 expected.extend(terms)
+    for canonical, aliases in TERM_ALIASES.get(domain, {}).items():
+        if any(alias in option_text for alias in aliases):
+            expected.append(canonical)
     for term in CLAUSE_TERMS.get(domain, []):
         if term in option_text:
             expected.append(term)

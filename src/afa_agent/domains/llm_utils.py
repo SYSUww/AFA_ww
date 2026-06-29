@@ -8,12 +8,39 @@ from afa_agent.client import OpenAICompatibleClient, extract_json_object
 from afa_agent.models import RetrievalHit, TokenUsage
 
 
-def format_hits(hits: list[RetrievalHit], max_items: int = 6) -> str:
+def format_hits(
+    hits: list[RetrievalHit],
+    max_items: int = 6,
+    max_chars: int | None = None,
+    focus_terms: list[str] | None = None,
+) -> str:
     lines = []
     for idx, hit in enumerate(hits[:max_items], start=1):
         title = " > ".join(hit.title_path)
-        lines.append(f"[{idx}] {hit.doc_id} | {title}\n{hit.text}")
+        text = truncate_text(hit.text, max_chars=max_chars, focus_terms=focus_terms)
+        lines.append(f"[{idx}] {hit.doc_id} | {title}\n{text}")
     return "\n\n".join(lines)
+
+
+def truncate_text(text: str, *, max_chars: int | None = None, focus_terms: list[str] | None = None) -> str:
+    if not max_chars or max_chars <= 0 or len(text) <= max_chars:
+        return text
+    focus_terms = [term for term in focus_terms or [] if term]
+    center = -1
+    for term in focus_terms:
+        position = text.find(term)
+        if position >= 0:
+            center = position
+            break
+    if center >= 0:
+        start = max(0, center - max_chars // 3)
+    else:
+        start = 0
+    end = min(len(text), start + max_chars)
+    start = max(0, end - max_chars)
+    prefix = "...[truncated]\n" if start > 0 else ""
+    suffix = "\n...[truncated]" if end < len(text) else ""
+    return f"{prefix}{text[start:end].rstrip()}{suffix}"
 
 
 def ask_option_judgment(
