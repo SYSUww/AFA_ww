@@ -73,7 +73,8 @@
     "regulatory": {
       "retrieval": {
         "top_k": 8,
-        "max_hits_for_prompt": 8
+        "max_hits_for_prompt": 8,
+        "supplemental_units_path": "artifacts/preprocessed/regulatory/chunks_no_manifest/bm25_compare/details.json"
       }
     },
     "research": {

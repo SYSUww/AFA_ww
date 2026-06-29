@@ -146,13 +146,16 @@ def load_round_answers(run_dirs: dict[str, Path]) -> list[dict[str, Any]]:
 
 
 def format_error(answer: str, answer_format: str, options: dict[str, str]) -> str:
+    if answer_format == "tf":
+        tf_answer = "".join(ch for ch in answer.upper() if ch in {"A", "B"})
+        if len(tf_answer) != 1:
+            return "tf_requires_a_or_b"
+        return ""
     cleaned = "".join(ch for ch in answer.upper() if ch in options)
     if answer_format == "mcq" and len(cleaned) != 1:
         return "mcq_requires_one"
     if answer_format == "multi" and len(set(cleaned)) < 2:
         return "multi_requires_two_or_more"
-    if answer_format == "tf" and cleaned not in {"A", "B"}:
-        return "tf_requires_a_or_b"
     return ""
 
 
@@ -231,6 +234,7 @@ def rule_audit_answer(
     pred_answer = str(answer_row.get("pred_answer", "")).strip().upper()
     option_debug = answer_row.get("debug_meta", {}).get("option_debug", [])
     final_issues = answer_row.get("debug_meta", {}).get("final_consistency_check", {}).get("issues", [])
+    answer_finalization = answer_row.get("debug_meta", {}).get("answer_finalization", {}) or {}
     gates = {}
     rescue_rounds = 0
     for item in option_debug:
@@ -261,6 +265,12 @@ def rule_audit_answer(
         low_reasons.append("missing_doc")
     if final_issues:
         low_reasons.extend(final_issues)
+    if answer_finalization.get("format_forced"):
+        low_reasons.append("multi_choice_forced" if question.get("answer_format") == "multi" else "answer_format_forced")
+    if answer_finalization.get("no_supported_fallback"):
+        low_reasons.append("no_supported_option")
+    if answer_finalization.get("invalid_model_answer"):
+        low_reasons.append("invalid_model_answer")
     if certainty_score < high_threshold:
         low_reasons.append("low_certainty_score")
     changed = bool(baseline_answer and pred_answer != baseline_answer)
@@ -278,6 +288,7 @@ def rule_audit_answer(
         "empty_evidence": not bool(answer_row.get("evidence_items")),
         "missing_doc_ids": missing_docs,
         "final_consistency_issues": final_issues,
+        "answer_finalization": answer_finalization,
         "rescue_rounds": rescue_rounds,
         "gate_statuses": {option: gate.get("status", "") for option, gate in gates.items()},
         "gate_reasons": {option: gate.get("reasons", []) for option, gate in gates.items()},
@@ -401,6 +412,7 @@ def comparison_fields() -> list[str]:
         "empty_evidence",
         "missing_doc_ids",
         "final_consistency_issues",
+        "answer_finalization",
         "rescue_rounds",
         "gate_statuses",
         "gate_reasons",
@@ -415,7 +427,7 @@ def normalize_csv_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         item = dict(row)
         for key in ["low_reasons", "missing_doc_ids", "final_consistency_issues"]:
             item[key] = ",".join(map(str, item.get(key, [])))
-        for key in ["gate_statuses", "gate_reasons", "token_usage"]:
+        for key in ["answer_finalization", "gate_statuses", "gate_reasons", "token_usage"]:
             item[key] = json.dumps(item.get(key, {}), ensure_ascii=False)
         normalized.append(item)
     return normalized

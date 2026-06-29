@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from afa_agent.domains.llm_utils import ask_answer_fallback, ask_option_judgment, format_hits
+from afa_agent.domains.llm_utils import (
+    ask_answer_fallback,
+    ask_option_judgment,
+    collect_evidence_items,
+    finalize_answer,
+    format_hits,
+)
 from afa_agent.evidence_gate import answer_consistency_issues, evaluate_evidence, gate_enabled, rescue_evidence
 from afa_agent.models import AnswerResult, Question, TokenUsage
 from afa_agent.strategy import build_query_variants, get_stage_settings, serialize_hits
@@ -25,7 +31,8 @@ class ResearchSolver:
         option_debug: list[dict[str, Any]] = []
         query_variants_all: list[str] = []
 
-        for option_key, option_text in question.options.items():
+        option_items = [("A", question.question)] if question.answer_format == "tf" else list(question.options.items())
+        for option_key, option_text in option_items:
             query_variants = build_query_variants(question, option_key, option_text, self.retrieval_settings)
             query_variants_all.extend(query_variants)
             hits = self.retriever.search(
@@ -98,7 +105,7 @@ class ResearchSolver:
             )
             total_usage.add(usage)
             pred_answer = answer[:1]
-        elif question.answer_format == "multi" and not pred_answer:
+        elif question.answer_format == "multi" and len(pred_answer) < 2:
             answer, usage = ask_answer_fallback(
                 self.client,
                 "你是研报多选题复核器。根据各选项与证据摘要，选出所有正确选项；答案必须至少包含两个选项字母，只输出 JSON。",
@@ -109,10 +116,15 @@ class ResearchSolver:
             )
             total_usage.add(usage)
             pred_answer = answer
-        if question.answer_format == "multi":
-            pred_answer = self._ensure_multi_minimum(pred_answer, question, option_labels)
-        elif question.answer_format == "tf":
-            pred_answer = "A" if option_labels.get("A", False) else "B"
+        pred_answer, answer_finalization = finalize_answer(
+            pred_answer,
+            answer_format=question.answer_format,
+            allowed_options=list(question.options.keys()),
+            option_labels=option_labels,
+            option_payloads=option_payloads,
+        )
+        if question.answer_format == "tf":
+            option_labels["B"] = pred_answer == "B"
         consistency_issues = []
         if gate_enabled(self.gate_settings):
             consistency_issues = answer_consistency_issues(pred_answer, option_payloads, question.answer_format)
@@ -127,16 +139,22 @@ class ResearchSolver:
                 )
                 total_usage.add(usage)
                 pred_answer = answer[:1] if question.answer_format == "mcq" else answer
-                if question.answer_format == "multi":
-                    pred_answer = self._ensure_multi_minimum(pred_answer, question, option_labels)
+                retry_answer, retry_finalization = finalize_answer(
+                    pred_answer,
+                    answer_format=question.answer_format,
+                    allowed_options=list(question.options.keys()),
+                    option_labels=option_labels,
+                    option_payloads=option_payloads,
+                )
+                pred_answer = retry_answer
+                answer_finalization = {
+                    **retry_finalization,
+                    "consistency_retry": True,
+                    "pre_retry": answer_finalization,
+                }
             consistency_issues = answer_consistency_issues(pred_answer, option_payloads, question.answer_format)
 
-        evidence_items = []
-        for payload in option_payloads:
-            if payload["label"]:
-                evidence_items.extend(payload["evidence_items"][:3])
-        if not evidence_items and option_payloads:
-            evidence_items.extend(option_payloads[0]["evidence_items"][:3])
+        evidence_items = collect_evidence_items(option_payloads, doc_ids=question.doc_ids)
 
         return AnswerResult(
             qid=question.qid,
@@ -158,6 +176,7 @@ class ResearchSolver:
                 "option_debug": option_debug,
                 "consistency_answers": [pred_answer],
                 "final_consistency_check": {"issues": consistency_issues},
+                "answer_finalization": answer_finalization,
             },
         )
 

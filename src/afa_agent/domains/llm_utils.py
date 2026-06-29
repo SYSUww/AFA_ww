@@ -129,6 +129,177 @@ def ask_answer_fallback(
     return fallback, total_usage
 
 
+def finalize_answer(
+    answer: str,
+    *,
+    answer_format: str,
+    allowed_options: list[str],
+    option_labels: dict[str, bool],
+    option_payloads: list[dict[str, Any]] | None = None,
+) -> tuple[str, dict[str, Any]]:
+    """Normalize final answer while recording when format constraints force a choice."""
+    metadata: dict[str, Any] = {
+        "raw_answer": answer,
+        "answer_format": answer_format,
+        "format_forced": False,
+        "forced_options": [],
+        "no_supported_fallback": False,
+        "invalid_model_answer": False,
+    }
+    allowed = [option.upper() for option in allowed_options]
+    if answer_format == "tf":
+        letters = [ch for ch in answer.upper() if ch in {"A", "B"}]
+        if letters:
+            return letters[0], metadata
+        metadata["invalid_model_answer"] = True
+        return ("A" if option_labels.get("A", False) else "B"), metadata
+
+    cleaned = "".join(ch for ch in sorted(set(answer.upper())) if ch in allowed)
+    if answer and not cleaned:
+        metadata["invalid_model_answer"] = True
+    supported = sorted(option for option, label in option_labels.items() if label and option.upper() in allowed)
+
+    if answer_format == "mcq":
+        if len(supported) == 1:
+            return supported[0], metadata
+        if cleaned[:1] in allowed:
+            chosen = cleaned[:1]
+        else:
+            ranked = _rank_option_payloads(option_payloads or [], allowed)
+            chosen = ranked[0] if ranked else (allowed[0] if allowed else "")
+            metadata["invalid_model_answer"] = True
+        if chosen and not option_labels.get(chosen, False):
+            metadata["no_supported_fallback"] = not supported
+            metadata["format_forced"] = True
+            metadata["forced_options"] = [chosen]
+        return chosen, metadata
+
+    if answer_format != "multi":
+        return cleaned, metadata
+
+    selected = set(cleaned)
+    selected.update(supported)
+    if len(selected) < 2:
+        for option in _rank_option_payloads(option_payloads or [], allowed):
+            if option in selected:
+                continue
+            selected.add(option)
+            if not option_labels.get(option, False):
+                metadata["format_forced"] = True
+                metadata["forced_options"].append(option)
+            if len(selected) >= 2:
+                break
+    if len(selected) < 2:
+        for option in allowed:
+            if option in selected:
+                continue
+            selected.add(option)
+            metadata["format_forced"] = True
+            metadata["forced_options"].append(option)
+            if len(selected) >= 2:
+                break
+    if not supported and selected:
+        metadata["no_supported_fallback"] = True
+    return "".join(sorted(selected)), metadata
+
+
+def collect_evidence_items(
+    option_payloads: list[dict[str, Any]],
+    *,
+    doc_ids: list[str],
+    max_per_supported_option: int = 3,
+    max_total: int = 16,
+) -> list[dict[str, Any]]:
+    """Build final evidence with selected-option support plus per-document coverage."""
+    evidence_items: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    def item_key(item: dict[str, Any]) -> str:
+        unit_id = str(item.get("unit_id", ""))
+        if unit_id:
+            return unit_id.replace("__dup2", "").replace("__dup", "")
+        return f"{item.get('doc_id', '')}:{str(item.get('text', ''))[:80]}"
+
+    def add(items: list[dict[str, Any]], limit: int | None = None) -> None:
+        added = 0
+        for item in items:
+            if len(evidence_items) >= max_total:
+                return
+            key = item_key(item)
+            if key in seen:
+                continue
+            seen.add(key)
+            evidence_items.append(item)
+            added += 1
+            if limit is not None and added >= limit:
+                return
+
+    for payload in option_payloads:
+        if payload.get("label"):
+            add(list(payload.get("evidence_items", []))[:max_per_supported_option])
+
+    covered_docs = {str(item.get("doc_id", "")) for item in evidence_items if item.get("doc_id")}
+    for doc_id in doc_ids:
+        if doc_id in covered_docs:
+            continue
+        found = None
+        for payload in option_payloads:
+            for item in payload.get("evidence_items", []):
+                if str(item.get("doc_id", "")) == str(doc_id):
+                    found = item
+                    break
+            if found:
+                break
+        if found:
+            add([found], limit=1)
+            covered_docs.add(str(doc_id))
+
+    if not evidence_items and option_payloads:
+        add(list(option_payloads[0].get("evidence_items", []))[:max_per_supported_option])
+
+    return evidence_items
+
+
+def _rank_option_payloads(option_payloads: list[dict[str, Any]], allowed_options: list[str]) -> list[str]:
+    order = {option: idx for idx, option in enumerate(allowed_options)}
+
+    def score(payload: dict[str, Any]) -> tuple[float, ...]:
+        option = str(payload.get("option", "")).upper()
+        label_score = 1.0 if bool(payload.get("label", False)) else 0.0
+        verdict = str(payload.get("verdict", "")).lower()
+        refuted = bool(payload.get("is_clearly_refuted", False)) or verdict == "refute"
+        gate_status = str(payload.get("gate_status", "")).lower()
+        gate_score = {"pass": 1.0, "partial": 0.5, "": 0.25, "fail": 0.0}.get(gate_status, 0.25)
+        try:
+            support_score = float(payload.get("support_score", 0.0))
+        except (TypeError, ValueError):
+            support_score = 0.0
+        evidence_score = 1.0 if payload.get("evidence_items") else 0.0
+        return (
+            0.0 if refuted else 1.0,
+            label_score,
+            support_score,
+            gate_score,
+            evidence_score,
+            -float(order.get(option, len(order))),
+        )
+
+    ranked = sorted(
+        [payload for payload in option_payloads if str(payload.get("option", "")).upper() in order],
+        key=score,
+        reverse=True,
+    )
+    seen = set()
+    options = []
+    for payload in ranked:
+        option = str(payload.get("option", "")).upper()
+        if option not in seen:
+            seen.add(option)
+            options.append(option)
+    options.extend(option for option in allowed_options if option not in seen)
+    return options
+
+
 NUMBER_RE = re.compile(r"(?<![\d.])(\d[\d,]*(?:\.\d+)?)(?![\d.])")
 
 

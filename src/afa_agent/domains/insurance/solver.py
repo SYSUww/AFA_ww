@@ -5,7 +5,14 @@ import re
 from typing import Any
 
 from afa_agent.client import extract_json_object
-from afa_agent.domains.llm_utils import ask_answer_fallback, ask_option_judgment, format_hits, truncate_text
+from afa_agent.domains.llm_utils import (
+    ask_answer_fallback,
+    ask_option_judgment,
+    collect_evidence_items,
+    finalize_answer,
+    format_hits,
+    truncate_text,
+)
 from afa_agent.evidence_gate import answer_consistency_issues, evaluate_evidence, gate_enabled, rescue_evidence
 from afa_agent.models import AnswerResult, Question, TokenUsage
 from afa_agent.strategy import build_query_variants, get_stage_settings, serialize_hits
@@ -65,8 +72,13 @@ class InsuranceSolver:
         pred_answer = "".join(ch for ch in pred_answer if ch in question.options)
         if question.answer_format == "mcq":
             pred_answer = pred_answer[:1] if pred_answer[:1] in question.options else "A"
-        elif question.answer_format == "multi":
-            pred_answer = self._ensure_multi_minimum(pred_answer, question)
+        pred_answer, answer_finalization = finalize_answer(
+            pred_answer,
+            answer_format=question.answer_format,
+            allowed_options=list(question.options.keys()),
+            option_labels={option: option in pred_answer for option in question.options},
+            option_payloads=[],
+        )
         reasoning_summary = str(parsed.get("reasoning_summary", "")).strip()
         option_labels = {option: option in pred_answer for option in question.options}
         evidence_items = [hit.to_dict() for hit in hits[:4]]
@@ -89,6 +101,7 @@ class InsuranceSolver:
                 "selected_evidence_ids": [item.get("unit_id", "") for item in evidence_items if item.get("unit_id")],
                 "rule_outputs": [],
                 "consistency_answers": [pred_answer],
+                "answer_finalization": answer_finalization,
             },
         )
 
@@ -103,7 +116,8 @@ class InsuranceSolver:
         option_debug: list[dict[str, Any]] = []
         query_variants_all: list[str] = []
 
-        for option_key, option_text in question.options.items():
+        option_items = [("A", question.question)] if question.answer_format == "tf" else list(question.options.items())
+        for option_key, option_text in option_items:
             query_variants = build_query_variants(question, option_key, option_text, self.retrieval_settings)
             query_variants_all.extend(query_variants)
             hits = self.retriever.search(
@@ -177,7 +191,7 @@ class InsuranceSolver:
             )
             total_usage.add(usage)
             pred_answer = answer[:1]
-        elif question.answer_format == "multi" and not pred_answer:
+        elif question.answer_format == "multi" and len(pred_answer) < 2:
             answer, usage = ask_answer_fallback(
                 self.client,
                 "你是保险多选题复核器。根据各选项证据摘要选出所有正确选项；答案必须至少包含两个选项字母，只输出 JSON。",
@@ -188,10 +202,15 @@ class InsuranceSolver:
             )
             total_usage.add(usage)
             pred_answer = answer
-        if question.answer_format == "multi":
-            pred_answer = self._ensure_multi_minimum(pred_answer, question)
-        elif question.answer_format == "tf":
-            pred_answer = "A" if option_labels.get("A", False) else "B"
+        pred_answer, answer_finalization = finalize_answer(
+            pred_answer,
+            answer_format=question.answer_format,
+            allowed_options=list(question.options.keys()),
+            option_labels=option_labels,
+            option_payloads=option_payloads,
+        )
+        if question.answer_format == "tf":
+            option_labels["B"] = pred_answer == "B"
 
         consistency_issues = answer_consistency_issues(pred_answer, option_payloads, question.answer_format)
         if consistency_issues and self.gate_settings.get("final_consistency_retry", True):
@@ -205,16 +224,22 @@ class InsuranceSolver:
             )
             total_usage.add(usage)
             pred_answer = answer[:1] if question.answer_format == "mcq" else answer
-            if question.answer_format == "multi":
-                pred_answer = self._ensure_multi_minimum(pred_answer, question)
+            retry_answer, retry_finalization = finalize_answer(
+                pred_answer,
+                answer_format=question.answer_format,
+                allowed_options=list(question.options.keys()),
+                option_labels=option_labels,
+                option_payloads=option_payloads,
+            )
+            pred_answer = retry_answer
+            answer_finalization = {
+                **retry_finalization,
+                "consistency_retry": True,
+                "pre_retry": answer_finalization,
+            }
         consistency_issues = answer_consistency_issues(pred_answer, option_payloads, question.answer_format)
 
-        evidence_items = []
-        for payload in option_payloads:
-            if payload["label"]:
-                evidence_items.extend(payload["evidence_items"][:3])
-        if not evidence_items and option_payloads:
-            evidence_items.extend(option_payloads[0]["evidence_items"][:3])
+        evidence_items = collect_evidence_items(option_payloads, doc_ids=question.doc_ids)
 
         return AnswerResult(
             qid=question.qid,
@@ -236,6 +261,7 @@ class InsuranceSolver:
                 "option_debug": option_debug,
                 "consistency_answers": [pred_answer],
                 "final_consistency_check": {"issues": consistency_issues},
+                "answer_finalization": answer_finalization,
             },
         )
 
@@ -329,6 +355,14 @@ class InsuranceSolver:
                 "option_debug": option_debug,
                 "consistency_answers": [pred_answer],
                 "final_consistency_check": {"issues": []},
+                "answer_finalization": {
+                    "raw_answer": pred_answer,
+                    "answer_format": question.answer_format,
+                    "format_forced": False,
+                    "forced_options": [],
+                    "no_supported_fallback": False,
+                    "invalid_model_answer": False,
+                },
                 "single_call_mcq": True,
             },
         )
