@@ -61,7 +61,7 @@ class InsuranceSolver:
         if question.answer_format == "mcq":
             pred_answer = pred_answer[:1] if pred_answer[:1] in question.options else "A"
         elif question.answer_format == "multi":
-            pred_answer = "".join(sorted(set(pred_answer))) or "A"
+            pred_answer = self._ensure_multi_minimum(pred_answer, question)
         reasoning_summary = str(parsed.get("reasoning_summary", "")).strip()
         option_labels = {option: option in pred_answer for option in question.options}
         evidence_items = [hit.to_dict() for hit in hits[:4]]
@@ -94,3 +94,12 @@ class InsuranceSolver:
         if prompt_id == "compact":
             return "你是保险条款问答助手。请用最关键的证据快速判断最终答案，输出必须是 JSON。"
         return "你是保险条款问答助手。请根据给定证据直接判断最终答案，只能依据证据，输出必须是 JSON。"
+
+    @staticmethod
+    def _ensure_multi_minimum(answer: str, question: Question) -> str:
+        selected = {ch for ch in answer.upper() if ch in question.options}
+        for option in sorted(question.options):
+            selected.add(option)
+            if len(selected) >= 2:
+                break
+        return "".join(sorted(selected))

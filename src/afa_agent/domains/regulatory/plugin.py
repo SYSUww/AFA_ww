@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from afa_agent.client import OpenAICompatibleClient
@@ -18,6 +19,16 @@ from afa_agent.domains.regulatory.solver import RegulatorySolver
 from afa_agent.io_utils import read_json, write_json
 from afa_agent.models import Document, Question
 from afa_agent.strategy import get_stage_settings
+
+
+def _load_extra_terms_from_env() -> list[str]:
+    terms_path = os.getenv("AFA_REGULATORY_TERMS_PATH", "").strip()
+    if not terms_path:
+        return []
+    path = Path(terms_path).expanduser()
+    if not path.exists():
+        raise FileNotFoundError(f"AFA_REGULATORY_TERMS_PATH does not exist: {path}")
+    return [line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip() and not line.startswith("#")]
 
 
 class RegulatoryPlugin(DomainPlugin):
@@ -96,7 +107,7 @@ class RegulatoryPlugin(DomainPlugin):
     ):
         parsed = read_json(parsed_path)
         index_payload = read_json(index_path)
-        retriever = RegulatoryRetriever(index_payload["units"])
+        retriever = RegulatoryRetriever(index_payload["units"], extra_terms=_load_extra_terms_from_env())
         config = build_run_config()
         if not config.model:
             raise RuntimeError("Missing model config in .env")

@@ -113,7 +113,7 @@ class FinancialReportsSolver:
         elif question.answer_format == "multi" and not pred_answer:
             answer, usage = ask_answer_fallback(
                 self.client,
-                "你是财报多选题复核器。根据各选项判断摘要，挑出所有正确选项，只输出 JSON。",
+                "你是财报多选题复核器。根据各选项判断摘要，挑出所有正确选项；答案必须至少包含两个选项字母，只输出 JSON。",
                 question.question,
                 option_payloads,
                 question.answer_format,
@@ -121,6 +121,8 @@ class FinancialReportsSolver:
             )
             total_usage.add(usage)
             pred_answer = answer
+        if question.answer_format == "multi":
+            pred_answer = self._ensure_multi_minimum(pred_answer, question, option_labels)
         elif question.answer_format == "tf":
             pred_answer = "A" if option_labels.get("A", False) else "B"
 
@@ -262,3 +264,17 @@ class FinancialReportsSolver:
         if answer_format == "mcq":
             return selected[0] if selected else "A"
         return "".join(selected)
+
+    @staticmethod
+    def _ensure_multi_minimum(answer: str, question: Question, option_labels: dict[str, bool]) -> str:
+        selected = {ch for ch in answer.upper() if ch in question.options}
+        for option, label in sorted(option_labels.items()):
+            if label:
+                selected.add(option)
+            if len(selected) >= 2:
+                break
+        for option in sorted(question.options):
+            selected.add(option)
+            if len(selected) >= 2:
+                break
+        return "".join(sorted(selected))

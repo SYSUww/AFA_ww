@@ -81,6 +81,7 @@ STOPWORD_SINGLE_CHARS = {
 }
 KEEP_SINGLE_CHARS = {"年", "条", "章", "节", "款", "股", "元", "亿", "万", "期", "日", "月", "a"}
 _JIEBA_READY = False
+_EXTRA_JIEBA_TERMS: set[str] = set()
 
 
 def normalize_whitespace(text: str) -> str:
@@ -118,6 +119,17 @@ def _ensure_jieba_terms() -> object:
     return jieba
 
 
+def _ensure_extra_jieba_terms(extra_terms: Iterable[str]) -> object:
+    jieba = _ensure_jieba_terms()
+    for term in extra_terms:
+        cleaned = term.strip()
+        if not cleaned or cleaned in _EXTRA_JIEBA_TERMS:
+            continue
+        jieba.add_word(cleaned, freq=300000)
+        _EXTRA_JIEBA_TERMS.add(cleaned)
+    return jieba
+
+
 def _append_unique(tokens: list[str], seen: set[str], token: str) -> None:
     cleaned = token.strip().lower()
     if not cleaned or cleaned in seen:
@@ -136,9 +148,9 @@ def _keep_jieba_token(token: str) -> bool:
     return True
 
 
-def tokenize_zh(text: str) -> list[str]:
+def _tokenize_zh_with_jieba(text: str, jieba, extra_terms: Iterable[str] = ()) -> list[str]:
     normalized = normalize_whitespace(text).lower()
-    jieba = _ensure_jieba_terms()
+    extra_terms = [term.strip() for term in extra_terms if term and term.strip()]
     tokens: list[str] = []
     seen: set[str] = set()
 
@@ -152,6 +164,9 @@ def tokenize_zh(text: str) -> list[str]:
     for match in re.finditer(r"第[一二三四五六七八九十百零〇两\d]+[章节条]", normalized):
         _append_unique(tokens, seen, match.group(0))
     for term in DOMAIN_TERMS:
+        if term.lower() in normalized:
+            _append_unique(tokens, seen, term)
+    for term in extra_terms:
         if term.lower() in normalized:
             _append_unique(tokens, seen, term)
 
@@ -168,3 +183,27 @@ def tokenize_zh(text: str) -> list[str]:
         for item in (segment[i : i + 2] for i in range(len(segment) - 1)):
             _append_unique(tokens, seen, item)
     return tokens
+
+
+def tokenize_zh(text: str) -> list[str]:
+    return _tokenize_zh_with_jieba(text, _ensure_jieba_terms())
+
+
+def tokenize_zh_with_terms(text: str, extra_terms: Iterable[str]) -> list[str]:
+    terms = [term.strip() for term in extra_terms if term and term.strip()]
+    return _tokenize_zh_with_jieba(text, _ensure_extra_jieba_terms(terms), terms)
+
+
+def build_zh_tokenizer(extra_terms: Iterable[str] = ()):
+    jieba = _require_jieba()
+    tokenizer = jieba.Tokenizer()
+    terms = [term.strip() for term in extra_terms if term and term.strip()]
+    for term in DOMAIN_TERMS:
+        tokenizer.add_word(term, freq=200000)
+    for term in terms:
+        tokenizer.add_word(term, freq=300000)
+
+    def tokenize(text: str) -> list[str]:
+        return _tokenize_zh_with_jieba(text, tokenizer, terms)
+
+    return tokenize

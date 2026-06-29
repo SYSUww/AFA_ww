@@ -74,6 +74,7 @@ class GenericBM25Retriever:
         )
 
     def _expand_neighbors(self, hits: list[RetrievalHit], doc_ids: list[str], top_k: int = 6) -> list[RetrievalHit]:
+        original_ids = [hit.unit_id for hit in hits]
         expanded: dict[str, RetrievalHit] = {hit.unit_id: hit for hit in hits}
         for hit in hits:
             idx = self.unit_positions[hit.unit_id]
@@ -91,7 +92,14 @@ class GenericBM25Retriever:
                             text=neighbor["text"],
                             metadata=neighbor.get("metadata", {}),
                         )
-        return sorted(expanded.values(), key=lambda item: item.score, reverse=True)[:top_k]
+        sorted_hits = sorted(expanded.values(), key=lambda item: item.score, reverse=True)
+        preserved = [expanded[unit_id] for unit_id in original_ids if unit_id in expanded]
+        selected: dict[str, RetrievalHit] = {hit.unit_id: hit for hit in preserved[:top_k]}
+        for hit in sorted_hits:
+            if len(selected) >= top_k:
+                break
+            selected.setdefault(hit.unit_id, hit)
+        return sorted(selected.values(), key=lambda item: item.score, reverse=True)[:top_k]
 
     @staticmethod
     def _unit_text(unit: dict[str, Any]) -> str:
