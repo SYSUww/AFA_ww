@@ -64,13 +64,15 @@ class GenericBM25Retriever:
 
     def _make_hit(self, idx: int, score: float) -> RetrievalHit:
         unit = self.units[idx]
+        metadata = dict(unit.get("metadata", {}))
+        metadata.setdefault("unit_type", unit.get("unit_type", ""))
         return RetrievalHit(
             unit_id=unit["unit_id"],
             doc_id=unit["doc_id"],
             score=score,
             title_path=unit["title_path"],
             text=unit["text"],
-            metadata=unit.get("metadata", {}),
+            metadata=metadata,
         )
 
     def _expand_neighbors(self, hits: list[RetrievalHit], doc_ids: list[str], top_k: int = 6) -> list[RetrievalHit]:
@@ -84,13 +86,15 @@ class GenericBM25Retriever:
                     if neighbor["doc_id"] not in doc_ids:
                         continue
                     if neighbor["unit_id"] not in expanded:
+                        metadata = dict(neighbor.get("metadata", {}))
+                        metadata.setdefault("unit_type", neighbor.get("unit_type", ""))
                         expanded[neighbor["unit_id"]] = RetrievalHit(
                             unit_id=neighbor["unit_id"],
                             doc_id=neighbor["doc_id"],
                             score=max(hit.score - 0.1, 0.01),
                             title_path=neighbor["title_path"],
                             text=neighbor["text"],
-                            metadata=neighbor.get("metadata", {}),
+                            metadata=metadata,
                         )
         sorted_hits = sorted(expanded.values(), key=lambda item: item.score, reverse=True)
         preserved = [expanded[unit_id] for unit_id in original_ids if unit_id in expanded]

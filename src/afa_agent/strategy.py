@@ -48,13 +48,24 @@ DEFAULT_STAGE_SETTINGS: dict[str, dict[str, Any]] = {
     },
     "evidence_gate": {
         "enabled": False,
-        "max_rescue_rounds": 2,
+        "max_rescue_rounds": 7,
         "rescue_top_k": 12,
         "per_doc_quota": 2,
         "min_hit_chars": 24,
         "max_hits_after_rescue": 12,
         "use_llm_coverage_check": False,
         "final_consistency_retry": True,
+        "high_certainty_threshold": 0.7,
+        "low_certainty_threshold": 0.45,
+        "rescue_channels": [
+            "query_rewrite_search",
+            "title_search",
+            "unit_type_search",
+            "table_metric_search",
+            "clause_formula_search",
+            "per_doc_search",
+            "neighbor_expansion",
+        ],
     },
 }
 
