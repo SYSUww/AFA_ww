@@ -100,6 +100,352 @@ artifacts/submissions/group_a_20260628_preprocessed_loop_full/answer.csv
 
 这个文件只用于确定 qid 顺序，不代表最终答案一定沿用它。
 
+## 文档解析、清洗、分块和建索引流程
+
+当前答题脚本依赖 `parsed/index`，而 `parsed/index` 来自上游文档处理流程。为了让其他队员能复现结果，这里把上游流程单独拆开说明。
+
+### 上游处理总览
+
+```mermaid
+flowchart TD
+  A["public_dataset_upload/raw 原始文档"] --> B["PDF/HTML/TXT 抽取层"]
+  B --> C["artifacts/extracted 或 artifacts/extracted_cleaned"]
+  C --> D["preprocess_extracted_cleaned.py"]
+  D --> E["artifacts/preprocessed_loop/<domain>/documents.json"]
+  D --> F["artifacts/preprocessed_loop/<domain>/cleaned_text/*.txt"]
+  E --> G["parse_preprocessed_loop.py"]
+  F --> G
+  G --> H["artifacts/preprocessed_loop_candidates/parsed/<domain>/parsed.json"]
+  H --> I["build_index.py"]
+  I --> J["artifacts/preprocessed_loop_candidates/index/<domain>/index.json"]
+  J --> K["reproduce_group_a_dynamic_confidence.py"]
+```
+
+最短复现路径是从已有的 `artifacts/extracted_cleaned` 开始：
+
+```bash
+# 1. 从 extracted_cleaned 生成 cleaned_text 和 documents.json
+PYTHONPATH=src /opt/miniconda3/envs/afa-autoresearch/bin/python \
+  scripts/preprocess_extracted_cleaned.py \
+  --domains all \
+  --extracted-root artifacts/extracted_cleaned \
+  --output-root artifacts/preprocessed_loop
+
+# 2. 从 cleaned_text 生成 parsed.json，也就是 domain-aware chunks/units
+PYTHONPATH=src /opt/miniconda3/envs/afa-autoresearch/bin/python \
+  scripts/parse_preprocessed_loop.py \
+  --domains all \
+  --preprocessed-root artifacts/preprocessed_loop \
+  --output-root artifacts/preprocessed_loop_candidates/parsed
+
+# 3. 为每个 domain 生成 index.json
+for d in regulatory financial_reports insurance research financial_contracts; do
+  PYTHONPATH=src /opt/miniconda3/envs/afa-autoresearch/bin/python \
+    scripts/build_index.py \
+    --domain "$d" \
+    --parsed-path "artifacts/preprocessed_loop_candidates/parsed/$d/parsed.json" \
+    --output-path "artifacts/preprocessed_loop_candidates/index/$d/index.json"
+done
+```
+
+跑完后，答题流程会读取：
+
+```text
+artifacts/preprocessed_loop_candidates/parsed/<domain>/parsed.json
+artifacts/preprocessed_loop_candidates/index/<domain>/index.json
+```
+
+### Step 0: PDF/HTML/TXT 抽取层
+
+本项目里存在两种上游来源：
+
+1. 已经抽取并清洗好的文本层：`artifacts/extracted_cleaned`
+2. 原始数据层：`public_dataset_upload/raw`
+
+当前成功复现使用的是第 1 种，即把 `artifacts/extracted_cleaned` 当作“PDF/HTML 已经解析完的源文本层”。如果队员本地已经有这层数据，可以直接从 Step 1 开始。
+
+如果本地已有 `artifacts/extracted`，可以用 `scripts/clean_extracted.py` 生成 `artifacts/extracted_cleaned`。这个脚本主要处理页眉页脚、目录、图片链接、低价值 OCR 行、重复短行，以及 regulatory 原始 `txt/html` 文件的初步清洗。
+
+如果需要从原始 PDF 重建，可以先运行 MinerU 解析脚本：
+
+```bash
+PYTHONPATH=src /opt/miniconda3/envs/afa-autoresearch/bin/python \
+  scripts/parse_pdfs_with_mineru.py \
+  --domain financial_reports \
+  --backend pipeline \
+  --method auto \
+  --lang ch \
+  --enable-table \
+  --no-enable-formula \
+  --no-enable-image-analysis
+```
+
+该脚本会扫描 `public_dataset_upload/raw/**/*.pdf`，输出到：
+
+```text
+artifacts/mineru/docs/<domain>/<doc_id>/
+artifacts/mineru/manifest.json
+```
+
+每个 PDF 会有：
+
+| 文件/目录 | 含义 |
+|---|---|
+| `raw_output/` | MinerU 原始输出。 |
+| `normalized/content.md` | 规范化后的 markdown 主文本。 |
+| `normalized/content.txt` | 同内容 txt 版本。 |
+| `logs/stdout.log`、`logs/stderr.log` | 解析日志。 |
+| `meta.json` | 单文档解析状态、命令、耗时、输出文件等元信息。 |
+
+然后运行：
+
+```bash
+PYTHONPATH=src /opt/miniconda3/envs/afa-autoresearch/bin/python \
+  scripts/build_manifest.py
+```
+
+`build_manifest.py` 会生成：
+
+```text
+artifacts/manifest/dataset_manifest.json
+```
+
+manifest 的作用是告诉后续 parser：每个 doc_id 对应哪个源文件、源文件类型是什么、题目文件在哪里。
+
+注意：当前复现流程主要从 `artifacts/extracted_cleaned` 继续。如果完全从原始 PDF 重建，解析结果可能和本次成功复现使用的 source layer 不完全一致，因此最终答案也可能有差异。
+
+### Step 1: extracted_cleaned 到 preprocessed_loop
+
+脚本：
+
+```text
+scripts/preprocess_extracted_cleaned.py
+```
+
+职责：
+
+1. 扫描 `artifacts/extracted_cleaned/<domain>/` 下的 `.md`、`.txt`、`.html`、`.htm`。
+2. 把每个文件清洗成纯文本。
+3. 为每个文档写一个 cleaned text 文件。
+4. 生成该 domain 的 `documents.json` 和 `summary.json`。
+
+输出：
+
+```text
+artifacts/preprocessed_loop/<domain>/documents.json
+artifacts/preprocessed_loop/<domain>/summary.json
+artifacts/preprocessed_loop/<domain>/cleaned_text/*.txt
+```
+
+`documents.json` 中每条记录大致包含：
+
+| 字段 | 含义 |
+|---|---|
+| `doc_id` | 文档 id。 |
+| `domain` | 所属题型。 |
+| `source_path` | 清洗前源文件路径。 |
+| `cleaned_path` | 清洗后纯文本路径。 |
+| `source_suffix` | 源文件后缀，如 `.md`、`.txt`、`.html`。 |
+| `source_relpath` | 相对于 domain 目录的路径。 |
+| `before_chars` / `after_chars` | 清洗前后字符数。 |
+| `before_html_tag_count` / `after_html_tag_count` | 清洗前后残留 HTML 标签数量。 |
+| `before_broken_number_count` / `after_broken_number_count` | 清洗前后数字断裂数量。 |
+
+清洗规则重点：
+
+- HTML 输入优先抽正文容器：`.detail-news`、`.TRS_Editor`、`#zoom`、`.content`、`article`。
+- 删除 `script/style/noscript/form/header/footer/nav/img` 等非正文节点。
+- Markdown/TXT 输入会删除 mermaid、残留 HTML 标签、图片说明、空 details、导航噪声。
+- 修复数字断裂，例如 `〔\n2024\n〕\n112\n号` 会恢复成 `〔2024〕112号`。
+- 合并数字和单位之间的换行，例如 `100\n万元`、`2025\n年`。
+- 删除 `首页`、`当前位置`、`English`、`微博`、`微信` 等导航行。
+
+这一步的目标是：**保留正文和表格文本，尽量去掉导航、图片、页眉页脚、HTML 标签和数字断裂噪声。**
+
+### Step 2: preprocessed_loop 到 parsed chunks
+
+脚本：
+
+```text
+scripts/parse_preprocessed_loop.py
+```
+
+职责：
+
+1. 读取 `artifacts/preprocessed_loop/<domain>/documents.json`。
+2. 打开每个 `cleaned_path`。
+3. 为每个文档创建 `Document` 对象。
+4. 按 domain 规则切成 units/chunks。
+5. 输出统一结构的 `parsed.json`。
+
+输出：
+
+```text
+artifacts/preprocessed_loop_candidates/parsed/<domain>/parsed.json
+```
+
+`parsed.json` 的核心结构：
+
+```json
+{
+  "documents": [
+    {
+      "doc_id": "...",
+      "domain": "...",
+      "title": "...",
+      "source_type": "preprocessed_text",
+      "source_path": "...",
+      "metadata": {}
+    }
+  ],
+  "units": [
+    {
+      "unit_id": "...",
+      "doc_id": "...",
+      "domain": "...",
+      "unit_type": "...",
+      "title_path": ["..."],
+      "text": "...",
+      "page_refs": [],
+      "parent_unit_id": "...",
+      "metadata": {}
+    }
+  ]
+}
+```
+
+### Step 2.1: 通用分块逻辑
+
+`parse_preprocessed_loop.py` 会先按标题、章节、条款或段落边界切分。之后会运行 `finalize_units()` 做兜底切分：
+
+- 如果 unit 过长，优先按句号、分号、问号、感叹号或换行切开。
+- 如果单个片段仍然超过上限，则硬切。
+- 保留 `parent_unit_id`，方便知道它来自哪个原始 unit。
+- 对重复 `unit_id` 自动加 `__dupN` 后缀。
+
+不同 unit 的长度上限：
+
+| unit_type | 上限 |
+|---|---:|
+| `metric_row`、`element_block` | 700 chars |
+| `penalty_decision`、`formula_block`、`clause_block` | 900 chars |
+| `article`、`article_chunk`、`preamble` | 1200 chars |
+| 默认 paragraph | 1000 chars |
+
+### Step 2.2: 各 domain 分块策略
+
+| Domain | 分块策略 | 额外高亮 unit |
+|---|---|---|
+| `regulatory` | 优先按法规条文切成 `article` / `article_chunk`；如果不是法条型文本，则按处罚决定正文切成 `penalty_decision`。 | 对处罚决定保留事实、依据、决定附近文本。 |
+| `financial_reports` | 按标题/段落切成 `paragraph`，同时抽取包含财务指标和数字的窗口。 | `metric_row`，如营业收入、归母净利润、经营现金流、研发投入、分红比例等。 |
+| `insurance` | 按标题/条款切成 `clause_block`。 | 包含账户价值、已交保费、基本保额、现金价值等关键词时复制为 `formula_block`。 |
+| `research` | 按段落切成 `paragraph`。 | 包含预计、同比、市场规模、渗透率、增速、结论、投资建议等关键词时复制为 `conclusion_block`。 |
+| `financial_contracts` | 按段落切成 `paragraph`，并抽取发行要素、评级、期限、利率、回售、赎回、违约等窗口。 | `element_block`；表格中的 key-value 行也会抽成 `element_block`。 |
+
+这里的“复制为高亮 unit”不是删除原段落，而是额外生成一份更容易被检索 boost 命中的结构化 unit。这样既保留原文上下文，也能让 BM25 更容易命中关键证据。
+
+### Step 3: parsed 到 index
+
+脚本：
+
+```text
+scripts/build_index.py
+```
+
+职责：
+
+1. 读取某个 domain 的 `parsed.json`。
+2. 调用对应 domain plugin 的 `build_index()`。
+3. 生成 `index.json`。
+
+输出：
+
+```text
+artifacts/preprocessed_loop_candidates/index/<domain>/index.json
+```
+
+当前 `index.json` 主要保存：
+
+| 字段 | 含义 |
+|---|---|
+| `domain` | domain 名。 |
+| `documents` | 文档元信息。 |
+| `units` | 检索单元。 |
+| `unit_count` | 部分 domain 会记录 unit 数量。 |
+
+BM25 索引不是以二进制形式持久化的；运行答题时，retriever 会从 `index.json["units"]` 现场构造 BM25：
+
+- 通用 domain 使用 `GenericBM25Retriever`。
+- regulatory 使用 `RegulatoryRetriever`，可以额外加载监管领域词典。
+- 中文分词通过 `jieba` 完成。
+- 检索文本通常由 `title_path + text + metadata` 组合而来。
+
+### Step 4: 预处理质量检查
+
+建议每次改动清洗、分块或 index 后，先跑预处理审计：
+
+```bash
+PYTHONPATH=src /opt/miniconda3/envs/afa-autoresearch/bin/python \
+  scripts/audit_preprocessing_loop.py \
+  --domains all \
+  --extracted-root artifacts/extracted_cleaned \
+  --manifest-path artifacts/manifest/dataset_manifest.json \
+  --parsed-root artifacts/preprocessed_loop_candidates/parsed \
+  --index-root artifacts/preprocessed_loop_candidates/index \
+  --retrieval-mode sample \
+  --retrieval-sample-size 5 \
+  --output-dir artifacts/preprocessing_loop_audit/latest
+```
+
+输出：
+
+```text
+artifacts/preprocessing_loop_audit/latest/audit.json
+artifacts/preprocessing_loop_audit/latest/report.md
+```
+
+重点看：
+
+| 指标 | 作用 |
+|---|---|
+| source file count / suffixes | 检查源文件是否缺失。 |
+| source char length p50/p90/max | 判断是否有异常短文档或超长噪声文档。 |
+| parsed docs/units | 检查分块是否产出。 |
+| unit type counts | 检查高亮 unit 是否生成，如 `metric_row`、`formula_block`。 |
+| unit length p50/p90/max | 判断 chunk 是否过长或过短。 |
+| retrieval doc hit rate | 检索是否能命中题目指定文档。 |
+| multi-doc coverage avg | 多文档题是否覆盖足够文档。 |
+| weak questions | 预处理/检索明显弱的题。 |
+
+### 推荐复现顺序
+
+如果队员只想复现当前结果，推荐顺序是：
+
+```mermaid
+flowchart TD
+  A["确认 artifacts/extracted_cleaned 存在"] --> B["preprocess_extracted_cleaned.py"]
+  B --> C["parse_preprocessed_loop.py"]
+  C --> D["build_index.py x 5 domains"]
+  D --> E["audit_preprocessing_loop.py 可选"]
+  E --> F["reproduce_group_a_dynamic_confidence.py"]
+```
+
+如果队员要从原始 PDF 重建，推荐顺序是：
+
+```mermaid
+flowchart TD
+  A["public_dataset_upload/raw"] --> B["parse_pdfs_with_mineru.py"]
+  B --> C["build_manifest.py"]
+  C --> D["生成或整理 extracted_cleaned"]
+  D --> E["preprocess_extracted_cleaned.py"]
+  E --> F["parse_preprocessed_loop.py"]
+  F --> G["build_index.py"]
+  G --> H["audit_preprocessing_loop.py"]
+  H --> I["reproduce_group_a_dynamic_confidence.py"]
+```
+
+注意：从原始 PDF 重新解析会引入解析器版本、OCR、表格识别和换行差异，不保证和当前成功复现目录完全一致。要复现本文档记录的结果，应优先使用同一份 `artifacts/extracted_cleaned` 和 `artifacts/preprocessed_loop_candidates`。
+
 ## 端到端流程
 
 ```mermaid
@@ -550,6 +896,13 @@ api_preflight_failed.json
 
 | 类型 | 路径 |
 |---|---|
+| PDF 解析脚本 | `scripts/parse_pdfs_with_mineru.py` |
+| manifest 构建脚本 | `scripts/build_manifest.py` |
+| extracted 清洗脚本 | `scripts/clean_extracted.py` |
+| extracted_cleaned 预处理脚本 | `scripts/preprocess_extracted_cleaned.py` |
+| domain-aware 分块脚本 | `scripts/parse_preprocessed_loop.py` |
+| index 构建脚本 | `scripts/build_index.py` |
+| 预处理审计脚本 | `scripts/audit_preprocessing_loop.py` |
 | 一键复现脚本 | `scripts/reproduce_group_a_dynamic_confidence.py` |
 | 单 domain 答题脚本 | `scripts/run_answering.py` |
 | baseline 配置 | `configs/autoresearch/default_strategy.json` |
