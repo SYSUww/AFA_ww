@@ -43,7 +43,7 @@ class GenericBM25Retriever:
         hits = [self._make_hit(idx, score) for idx, score in selected]
         if expand_neighbors:
             return self._expand_neighbors(hits, doc_ids, top_k=top_k)
-        return hits
+        return self._dedupe_hits(hits, top_k=top_k)
 
     def _ensure_per_doc(self, scored: list[tuple[int, float]], doc_ids: list[str], top_k: int) -> list[tuple[int, float]]:
         selected: list[tuple[int, float]] = []
@@ -96,14 +96,24 @@ class GenericBM25Retriever:
                             text=neighbor["text"],
                             metadata=metadata,
                         )
-        sorted_hits = sorted(expanded.values(), key=lambda item: item.score, reverse=True)
-        preserved = [expanded[unit_id] for unit_id in original_ids if unit_id in expanded]
+        sorted_hits = sorted(self._dedupe_hits(list(expanded.values()), top_k=len(expanded)), key=lambda item: item.score, reverse=True)
+        preserved = self._dedupe_hits([expanded[unit_id] for unit_id in original_ids if unit_id in expanded], top_k=top_k)
         selected: dict[str, RetrievalHit] = {hit.unit_id: hit for hit in preserved[:top_k]}
         for hit in sorted_hits:
             if len(selected) >= top_k:
                 break
             selected.setdefault(hit.unit_id, hit)
         return sorted(selected.values(), key=lambda item: item.score, reverse=True)[:top_k]
+
+    @staticmethod
+    def _dedupe_hits(hits: list[RetrievalHit], *, top_k: int) -> list[RetrievalHit]:
+        deduped: dict[str, RetrievalHit] = {}
+        for hit in hits:
+            key = hit.unit_id.replace("__dup2", "").replace("__dup", "")
+            current = deduped.get(key)
+            if current is None or hit.score > current.score:
+                deduped[key] = hit
+        return sorted(deduped.values(), key=lambda item: item.score, reverse=True)[:top_k]
 
     @staticmethod
     def _unit_text(unit: dict[str, Any]) -> str:

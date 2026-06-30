@@ -32,7 +32,12 @@ class OpenAICompatibleClient:
             "response_format": {"type": "json_object"},
         }
         last_error: Exception | None = None
-        for attempt in range(3):
+        max_attempts = max(1, self.config.max_retries + 1)
+        timeout = (
+            max(1, self.config.connect_timeout_seconds),
+            max(1, self.config.read_timeout_seconds or self.config.timeout_seconds),
+        )
+        for attempt in range(max_attempts):
             try:
                 response = requests.post(
                     url,
@@ -41,16 +46,16 @@ class OpenAICompatibleClient:
                         "Content-Type": "application/json",
                     },
                     data=json.dumps(payload),
-                    timeout=self.config.timeout_seconds,
+                    timeout=timeout,
                 )
                 response.raise_for_status()
                 parsed = response.json()
                 break
-            except (requests.Timeout, requests.ConnectionError, requests.HTTPError) as exc:
+            except (requests.RequestException, ValueError) as exc:
                 last_error = exc
-                if attempt >= 2:
+                if attempt >= max_attempts - 1:
                     raise
-                time.sleep(2 * (attempt + 1))
+                time.sleep(max(0.0, self.config.retry_backoff_seconds) * (attempt + 1))
         else:
             assert last_error is not None
             raise last_error

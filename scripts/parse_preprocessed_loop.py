@@ -11,7 +11,14 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from afa_agent.domains.common import detect_title, make_units_from_sections, split_text_into_sections
+from afa_agent.domains.common import (
+    clean_lines,
+    detect_title,
+    extract_page_refs,
+    looks_like_heading,
+    make_units_from_sections,
+    split_text_into_sections,
+)
 from afa_agent.domains.financial_contracts.plugin import CONTRACT_KEYWORDS, FinancialContractsPlugin
 from afa_agent.domains.financial_reports.plugin import FINANCIAL_METRICS, FinancialReportsPlugin
 from afa_agent.domains.insurance.plugin import INSURANCE_KEYWORDS
@@ -96,7 +103,7 @@ def parse_financial_reports(doc: Document, text: str) -> list[dict[str, Any]]:
 
 
 def parse_insurance(doc: Document, text: str) -> list[dict[str, Any]]:
-    sections = split_text_into_sections(text, doc.title, "sec", unit_type="clause_block", max_chars=900)
+    sections = split_insurance_clause_sections(text, doc.title)
     special_sections = []
     for section in sections:
         if any(keyword in section["text"] for keyword in INSURANCE_KEYWORDS):
@@ -108,6 +115,48 @@ def parse_insurance(doc: Document, text: str) -> list[dict[str, Any]]:
             )
             special_sections.append(section_copy)
     return [unit.to_dict() for unit in make_units_from_sections(doc, sections + special_sections)]
+
+
+def split_insurance_clause_sections(text: str, title: str) -> list[dict[str, Any]]:
+    lines = clean_lines(text.splitlines())
+    sections: list[dict[str, Any]] = []
+    current_title = title
+    buffer: list[str] = []
+    section_index = 1
+    page_refs: list[int] = []
+
+    def flush() -> None:
+        nonlocal buffer, section_index, page_refs
+        if not buffer:
+            return
+        body = "\n".join(buffer).strip()
+        if body:
+            sections.append(
+                {
+                    "section_id": f"sec_{section_index}",
+                    "title_path": [title, current_title] if current_title != title else [title],
+                    "text": body,
+                    "unit_type": "clause_block",
+                    "page_refs": sorted(set(page_refs)),
+                    "max_chars": 900,
+                }
+            )
+            section_index += 1
+        buffer = []
+        page_refs = []
+
+    for line in lines:
+        if line.startswith("[PAGE "):
+            page_refs.extend(extract_page_refs(line))
+            continue
+        if looks_like_heading(line):
+            flush()
+            current_title = line[:120]
+            buffer.append(line)
+            continue
+        buffer.append(line)
+    flush()
+    return sections
 
 
 def parse_research(doc: Document, text: str) -> list[dict[str, Any]]:

@@ -1,6 +1,6 @@
 {
   "version": "autoresearch_v1",
-  "strategy_id": "evidence_gate_rescue",
+  "strategy_id": "evidence_gate_rescue_accuracy_first",
   "proxy_objective_version": "proxy_v1",
   "domains": {
     "__all__": {
@@ -48,10 +48,11 @@
       },
       "answer_policy": {
         "enabled": true,
-        "mode": "observe",
+        "mode": "supported_only",
         "forced_multi_fallback_order": "allowed",
-        "allow_supported_only_output": false,
-        "allow_empty_no_supported": false
+        "allow_supported_only_output": true,
+        "allow_empty_no_supported": false,
+        "supported_only_formats": ["multi"]
       }
     },
     "financial_reports": {
@@ -91,6 +92,7 @@
         "top_k": 8,
         "max_hits_for_prompt": 8,
         "supplemental_units_path": "artifacts/preprocessed/regulatory/chunks_no_manifest/bm25_compare/details.json",
+        "supplemental_parsed_path": "artifacts/preprocessed/regulatory/chunks/compact/parsed.json",
         "supplemental_articles_dir": "artifacts/extracted_cleaned/regulatory/txt"
       }
     },

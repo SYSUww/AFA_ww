@@ -1,6 +1,6 @@
 {
   "version": "autoresearch_v1",
-  "strategy_id": "evidence_gate_rescue",
+  "strategy_id": "evidence_gate_rescue_supported_only",
   "proxy_objective_version": "proxy_v1",
   "domains": {
     "__all__": {
@@ -14,7 +14,7 @@
       "answering": {
         "prompt_template_id": "evidence_strict",
         "max_hits": 8,
-        "extra_context": "请先核对 evidence gate 给出的证据覆盖情况。若证据不足，只能标记为证据不足，不要用常识或题目措辞补全缺失证据。"
+        "extra_context": "请先核对 evidence gate 给出的证据覆盖情况。若证据不足，只能标记为证据不足，不要用常识或题目措辞补全缺失证据。若多选题只有一个选项有证据支持，也必须如实只标记该选项为支持，不要为了满足题型而补选无证据选项。"
       },
       "evidence_gate": {
         "enabled": true,
@@ -48,9 +48,9 @@
       },
       "answer_policy": {
         "enabled": true,
-        "mode": "observe",
+        "mode": "supported_only",
         "forced_multi_fallback_order": "allowed",
-        "allow_supported_only_output": false,
+        "allow_supported_only_output": true,
         "allow_empty_no_supported": false
       }
     },

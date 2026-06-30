@@ -57,7 +57,10 @@ DEFAULT_STAGE_SETTINGS: dict[str, dict[str, Any]] = {
         "final_consistency_retry": True,
         "high_certainty_threshold": 0.7,
         "low_certainty_threshold": 0.45,
+        "require_statement_terms": False,
         "rescue_channels": [
+            "option_assertion_search",
+            "contradiction_search",
             "query_rewrite_search",
             "title_search",
             "unit_type_search",
@@ -66,6 +69,13 @@ DEFAULT_STAGE_SETTINGS: dict[str, dict[str, Any]] = {
             "per_doc_search",
             "neighbor_expansion",
         ],
+    },
+    "answer_policy": {
+        "enabled": False,
+        "mode": "observe",
+        "allow_supported_only_output": False,
+        "allow_empty_no_supported": False,
+        "supported_only_formats": [],
     },
 }
 

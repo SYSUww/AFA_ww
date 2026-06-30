@@ -32,6 +32,10 @@ class ModelConfig:
     model_name: str
     temperature: float = 0.0
     timeout_seconds: int = 120
+    connect_timeout_seconds: int = 20
+    read_timeout_seconds: int = 120
+    max_retries: int = 2
+    retry_backoff_seconds: float = 2.0
 
 
 @dataclass(slots=True)
@@ -64,11 +68,32 @@ def build_run_config(project_root: Path | None = None) -> RunConfig:
     env = load_env(root / ".env")
     model = None
     if env.get("LLM_API_KEY") and env.get("LLM_API_BASE") and env.get("LLM_MODEL"):
+        timeout_seconds = _env_int(env, "LLM_TIMEOUT_SECONDS", 120)
         model = ModelConfig(
             api_key=env["LLM_API_KEY"],
             api_base=env["LLM_API_BASE"],
             model_name=env["LLM_MODEL"],
+            temperature=_env_float(env, "LLM_TEMPERATURE", 0.0),
+            timeout_seconds=timeout_seconds,
+            connect_timeout_seconds=_env_int(env, "LLM_CONNECT_TIMEOUT_SECONDS", 20),
+            read_timeout_seconds=_env_int(env, "LLM_READ_TIMEOUT_SECONDS", timeout_seconds),
+            max_retries=_env_int(env, "LLM_MAX_RETRIES", 2),
+            retry_backoff_seconds=_env_float(env, "LLM_RETRY_BACKOFF_SECONDS", 2.0),
         )
     config = RunConfig(project_root=root, artifacts_dir=root / "artifacts", model=model)
     config.ensure_directories()
     return config
+
+
+def _env_int(env: dict[str, str], key: str, default: int) -> int:
+    try:
+        return int(env.get(key, default))
+    except (TypeError, ValueError):
+        return default
+
+
+def _env_float(env: dict[str, str], key: str, default: float) -> float:
+    try:
+        return float(env.get(key, default))
+    except (TypeError, ValueError):
+        return default

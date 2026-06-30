@@ -252,7 +252,19 @@ def rule_audit_answer(
     ]
     all_scores = [float(gate.get("certainty_score", 0.0)) for gate in gates.values() if gate]
     certainty_score = min(selected_scores) if selected_scores else (max(all_scores) if all_scores else 0.0)
-    expected_docs = set(question.get("doc_ids", []))
+    rule_outputs = answer_row.get("debug_meta", {}).get("rule_outputs", []) or []
+    rule_confidences = [
+        float(item.get("confidence", 0.0))
+        for item in rule_outputs
+        if item.get("confidence") is not None
+    ]
+    if certainty_score <= 0 and rule_confidences and answer_row.get("evidence_items"):
+        certainty_score = max(rule_confidences)
+    expected_docs, expected_doc_scope = expected_docs_for_audit(
+        answer_row=answer_row,
+        question=question,
+        selected=selected,
+    )
     evidence_docs = {item.get("doc_id") for item in answer_row.get("evidence_items", []) if item.get("doc_id")}
     missing_docs = sorted(expected_docs - evidence_docs)
     error = format_error(pred_answer, question.get("answer_format", ""), question.get("options", {}))
@@ -275,6 +287,10 @@ def rule_audit_answer(
         low_reasons.append("low_certainty_score")
     changed = bool(baseline_answer and pred_answer != baseline_answer)
     high_certainty = not low_reasons
+    blocker_type, retrieval_rescue_needed = classify_blocker(
+        low_reasons=low_reasons,
+        answer_finalization=answer_finalization,
+    )
     return {
         "qid": answer_row["qid"],
         "domain": answer_row["domain"],
@@ -284,9 +300,12 @@ def rule_audit_answer(
         "certainty_score": round(certainty_score, 4),
         "high_certainty": high_certainty,
         "low_reasons": sorted(set(low_reasons)),
+        "blocker_type": blocker_type,
+        "retrieval_rescue_needed": retrieval_rescue_needed,
         "format_error": error,
         "empty_evidence": not bool(answer_row.get("evidence_items")),
         "missing_doc_ids": missing_docs,
+        "expected_doc_scope": expected_doc_scope,
         "final_consistency_issues": final_issues,
         "answer_finalization": answer_finalization,
         "rescue_rounds": rescue_rounds,
@@ -294,6 +313,58 @@ def rule_audit_answer(
         "gate_reasons": {option: gate.get("reasons", []) for option, gate in gates.items()},
         "token_usage": answer_row.get("token_usage", {}),
     }
+
+
+def classify_blocker(*, low_reasons: list[str], answer_finalization: dict[str, Any]) -> tuple[str, bool]:
+    issue_set = set(low_reasons)
+    if not issue_set:
+        return "none", False
+
+    retrieval_markers = {"empty_evidence", "missing_doc", "low_certainty_score"}
+    has_retrieval_gap = bool(issue_set & retrieval_markers) or any(
+        reason.startswith("selected_gate_fail") for reason in issue_set
+    )
+    has_selected_false = any(reason.startswith("selected_false_option") for reason in issue_set)
+
+    if "mcq_ambiguous_supported" in issue_set and not has_retrieval_gap:
+        return "question_ambiguity", False
+
+    if "single_supported_multi" in issue_set and not has_retrieval_gap:
+        if has_selected_false:
+            return "format_forced_false_option", False
+        return "question_format_conflict", False
+
+    if has_selected_false and not has_retrieval_gap:
+        return "answer_evidence_contradiction", False
+
+    if has_retrieval_gap:
+        return "retrieval_or_evidence_gap", True
+
+    if answer_finalization.get("invalid_model_answer") or answer_finalization.get("format_forced"):
+        return "answer_format_or_generation", False
+
+    return "answer_or_format_issue", False
+
+
+def expected_docs_for_audit(
+    *,
+    answer_row: dict[str, Any],
+    question: dict[str, Any],
+    selected: set[str],
+) -> tuple[set[str], str]:
+    question_docs = {str(doc_id) for doc_id in question.get("doc_ids", []) if str(doc_id)}
+    option_debug = answer_row.get("debug_meta", {}).get("option_debug", []) or []
+    option_docs: set[str] = set()
+    for item in option_debug:
+        option = str(item.get("option", "")).upper()
+        if option not in selected:
+            continue
+        for doc_id in item.get("search_doc_ids", []) or []:
+            if str(doc_id):
+                option_docs.add(str(doc_id))
+    if selected and option_docs:
+        return option_docs, "selected_option_docs"
+    return question_docs, "question_docs"
 
 
 def flatten_rescue_logs(answer_rows: list[dict[str, Any]], audit_by_qid: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
@@ -408,6 +479,8 @@ def comparison_fields() -> list[str]:
         "certainty_score",
         "high_certainty",
         "low_reasons",
+        "blocker_type",
+        "retrieval_rescue_needed",
         "format_error",
         "empty_evidence",
         "missing_doc_ids",
