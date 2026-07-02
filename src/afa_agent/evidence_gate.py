@@ -152,6 +152,8 @@ def evaluate_evidence(
     settings = settings or {}
     hit_rows = list(hits)
     required_doc_ids = _required_docs_for_option(question, option_text)
+    if settings.get("ignore_locator_doc_requirements") and question.metadata.get("doc_ids_are_locator_candidates"):
+        required_doc_ids = []
     if not hit_rows:
         reasons = [REASON_WRONG_CHUNK]
         if required_doc_ids:

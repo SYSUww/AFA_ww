@@ -34,6 +34,7 @@
         "high_certainty_threshold": 0.7,
         "low_certainty_threshold": 0.45,
         "require_statement_terms": false,
+        "ignore_locator_doc_requirements": true,
         "rescue_channels": [
           "option_assertion_search",
           "contradiction_search",
