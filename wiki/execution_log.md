@@ -56,3 +56,29 @@
 - 修复：`alias_pruned` 只在 financial_reports/insurance 保留 alias shortlist；regulatory/research 直接沿用 locator 排名的 topK。
 - 测试：新增 `tests/test_b_board_doc_selection.py`，覆盖 research、regulatory、insurance 及 expanded_topk；4 项测试通过。
 - 下一动作：提交修复与对比工具，备份首轮 attempt_43，再只重跑上述 21 道受影响题。
+
+## 2026-07-15 16:16 +08:00｜修复提交
+
+- 提交：`9c961f2 fix: preserve locator ranking for blind answers`
+- 提交内容：alias shortlist 修复、三路对比工具、4 项单元测试、阶段日志。
+- 验证：`unittest` 4/4 通过；相关 Python 文件 `py_compile` 通过；staged secret scan 通过。
+
+## 2026-07-15 16:27 +08:00｜21 题定向恢复完成
+
+- 首轮快照：`artifacts/b_board_migration/no_docids_clean_subset_run_attempt43_raw_20260715/`。
+- 恢复方式：从首轮 checkpoint 中移除 19 道 regulatory 和 2 道 research 受影响题，保留其余 57 题，再执行同一 `--answer-only --answer-workers 5` 命令。
+- 完成状态：78/78，`failed_count=0`。
+- 最终代理一致率：相对 v20 为 `65/78 = 0.833333`；不是官方 B 榜准确率。
+- 最终 Token：`266364`；本次定向重跑的 21 题实际消耗 `65705` Token。
+- 本轮全部模型调用消耗：预检 `164` + 首轮 `375025` + 定向重跑 `65705` = `440894` Token。
+- 最终 evidence audit：supported `60`、weak `1`、unsupported `11`、contradicted `1`、format conflict `5`。
+- 按领域：财报 supported `14/20`，保险 `12/20`，法规 `18/20`，研报 `16/18`。
+
+## 2026-07-15 16:29 +08:00｜最终对比与停止条件
+
+- 相对 attempt_31：代理匹配 `61 -> 65`，supported `52 -> 60`，Token `281810 -> 266364`。
+- 相对首轮 attempt_43：代理匹配 `62 -> 65`，supported `56 -> 60`，Token `375025 -> 266364`。
+- 最终对比：`artifacts/b_board_migration/comparisons/attempt43_rank_preserved_vs_attempt31_v20_20260715/`。
+- 修复前后对比：`artifacts/b_board_migration/comparisons/attempt43_rank_preserved_vs_attempt43_raw_20260715/`。
+- 剩余代理回归：`fin_a_003`、`ins_a_016`。其中 `ins_a_016` 已定位到完整的四个真实文档，但模型仍输出单项答案；继续按 v20 答案打补丁会形成 A 榜过拟合，本轮不做硬编码。
+- 下一优先级：基于 evidence audit 处理 5 个格式冲突和 11 个 unsupported case，先做保险多选一致性与财报 selected gate，不再围绕参考答案做逐题规则堆叠。

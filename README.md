@@ -1,32 +1,46 @@
 # AFAC2026 赛道四：金融长文本 Agent
 
-本仓库用于实现 AFAC2026 赛道四的金融长文本问答系统。当前已经搭好首版工程骨架，并完成 `regulatory` 领域 A 榜的可运行基线：支持文档清单构建、法规解析、BM25 检索、逐选项判别、`answer.csv` 导出、`evidence.json` 留痕，以及按题 checkpoint 的可恢复运行。
+本仓库用于实现 AFAC2026 赛道四的金融长文本问答系统。当前已打通五个领域的 Group A 100 题链路，并完成首版无 `doc_ids` 文档定位与答题迁移实验：支持文档清单构建、领域化解析与分块、BM25 检索、evidence gate、低置信 rescue、`answer.csv`/`evidence.json`/Token 留痕，以及按题 checkpoint 的可恢复运行。
 
 ## 当前进度
 
-- 已完成共享骨架与法规域插件
-- 已打通 `regulatory` A 榜全链路
+- 已完成共享骨架与五领域插件：`regulatory`、`financial_reports`、`insurance`、`research`、`financial_contracts`
+- 已打通 Group A 100 题 baseline + 动态低置信 rescue 全链路
 - 已支持 `.env` 读取模型配置
 - 已支持运行结果、token 统计、证据链导出
-- 已预留多领域扩展接口，下一优先域为 `financial_reports`
+- 已实现 B 榜迁移所需的无 `doc_ids` locator，并在 Group A 的 78 道严格盲测候选题上完成闭环
+- 当前主要待处理项是保险/财报的证据支持与答案格式冲突，以及实际 Group B 数据接入
 
 ## 当前最佳版本快照
 
-截至 `2026-06-29`，当前效果最好的 Group A 100 题合并产物为：
+### Group A 当前参考版本
 
-- 本地产物目录：`artifacts/submissions/group_a_current_best_merged_20260629/`
-- 提交文件：`answer.csv`
-- 合并方式：
-  - 以 `artifacts/submissions/group_a_20260628_preprocessed_loop_full/answer.csv` 的 100 题顺序为准
-  - 用 `artifacts/submissions/risk53_current_best_20260629/answer.csv` 覆盖其中 53 个风险题
-  - 其余 47 题保留原答案
-- 当前人工/外部评测反馈准确率：`71%`
-- token 消耗：
-  - prompt tokens: `1,053,990`
-  - completion tokens: `251,889`
-  - total tokens: `1,305,879`
+截至 `2026-06-30`，当前已记录的 Group A 最优参考版本为：
 
-这版通过 evidence gate / rescue / answer finalization / regulatory supplemental rescue 提升了准确率，但 token 消耗明显增加，导致综合得分下降。后续优化重点应放在降低高置信 case 的重复 LLM 调用、压缩 insurance 和 financial_contracts 的多选复核 prompt，以及只对低确定性 case 触发二次检索和二次回答。
+- 本地产物目录：`artifacts/submissions/group_a_candidate_accuracy_first_v20_20260630/`
+- 用户外测记录准确率：`88%`
+- total tokens：`211,749`
+- 说明：v20 在保持答案不变的前提下，将部分高 Token 合同题改为字段级本地规则；仓库本地没有官方标签，不能自行重算真实准确率
+
+### 无 doc_ids 迁移快照
+
+截至 `2026-07-15`，`attempt_43 / canonical_score_inherit` 在 78 道严格盲测候选题上的最新结果为：
+
+- v20 参考向量匹配：`65/78 = 83.33%`
+- evidence supported：`60/78 = 76.92%`
+- supported or weak：`61/78 = 78.21%`
+- total tokens：`266,364`
+- 相对历史 `attempt_31`：参考向量匹配 `+4`、supported `+8`、Token `-15,446`
+- 运行产物：`artifacts/b_board_migration/no_docids_clean_subset_run/`
+- 对比产物：`artifacts/b_board_migration/comparisons/attempt43_rank_preserved_vs_attempt31_v20_20260715/`
+
+以上匹配率只是相对 v20 的回归代理，不是官方 B 榜准确率。当前工作区尚无官方 Group B 题目或标签。
+
+### 历史快照
+
+`artifacts/submissions/group_a_current_best_merged_20260629/` 是 2026-06-29 记录的 `71%` 历史版本，总 Token `1,305,879`，保留用于回溯，不再作为当前最佳版本。
+
+后续优化重点是：修复 insurance 多选格式冲突和缺失证据，继续提升 financial_reports 的 selected evidence 完整性，并在真实 Group B 数据到位后验证 locator 泛化能力。
 
 ## 目录结构
 
@@ -271,7 +285,7 @@ MinerU 产物目录约定：
 ## 当前实现要点
 
 - 不使用向量检索
-- A 榜直接使用题目给定 `doc_ids`
+- A 榜标准链路使用题目给定 `doc_ids`；无 `doc_ids` 迁移链路先由 locator 生成候选文档
 - 法规域采用 `规则限定 + BM25 + 相邻条款回溯`
 - 按选项独立判别，再按题型约束生成最终答案
 - 强制记录所有模型调用的 token
@@ -279,7 +293,7 @@ MinerU 产物目录约定：
 
 ## 下一步计划
 
-- 提升法规标题与条款结构抽取质量
-- 增强法规域规则召回，降低高 token 题成本
-- 接入 `financial_reports` 领域插件
-- 为后续 B 榜预留候选文档召回模块
+- 优先审计 insurance 的多选格式冲突和缺失 selected evidence
+- 继续提升 financial_reports 表格/指标 evidence 完整性
+- 对高 Token case 收紧无收益的 rescue 和一致性复核
+- 接入真实 Group B 题目后，验证 locator 泛化并单独处理文档顺序依赖题

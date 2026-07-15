@@ -89,3 +89,14 @@ PYTHONPATH=src /opt/miniconda3/envs/afa-autoresearch/bin/python \
 - 有逐题和领域级对比结果。
 - 所有动作、命令、结果和异常均记录在 `wiki/execution_log.md`。
 - 最终工作区没有意外文件或敏感信息进入提交。
+
+## 执行结果（2026-07-15）
+
+- 计划提交：`2b276e4 docs: record B-board execution plan`
+- 对比与修复提交：`9c961f2 fix: preserve locator ranking for blind answers`
+- attempt_43 首轮：78/78，0 失败，v20 代理匹配 `62/78`，Token `375025`
+- 定向修复：避免 regulatory/research 的通用 alias shortlist 覆盖 locator 原始排名
+- 定向重跑：仅重跑受影响的 21 题，其余 57 题从 checkpoint 复用
+- 最终结果：78/78，0 失败，v20 代理匹配 `65/78`，supported `60/78`，Token `266364`
+- 相对 attempt_31：代理匹配 `+4`、supported `+8`、Token `-15446`
+- 结论：本轮目标已完成；结果仍是 Group A mask 实验，不是官方 B 榜成绩
