@@ -975,6 +975,14 @@ def select_answer_doc_ids(candidate_row: dict[str, Any], question: dict[str, Any
         return _unique_doc_ids([*alias_matched, *candidate_doc_ids], attempt.answer_top_k, dedupe_canonical=True)
     if policy == "regulatory_per_doc_fill" and domain == "regulatory":
         return _unique_doc_ids([*alias_matched, *candidate_doc_ids], attempt.answer_top_k, dedupe_canonical=True)
+    if policy == "alias_pruned":
+        # Product/report aliases are strong document identifiers for these two
+        # domains. In regulatory and research they are often generic phrases
+        # such as "定期报告" or "深度报告"; pruning to those aliases can discard
+        # the locator's higher-ranked documents even when the locator is right.
+        if domain in {"financial_reports", "insurance"} and alias_matched:
+            return _unique_doc_ids(alias_matched, attempt.answer_top_k)
+        return _unique_doc_ids(candidate_doc_ids, attempt.answer_top_k)
 
     if alias_matched:
         if domain in {"financial_reports", "insurance"}:
