@@ -6,7 +6,7 @@ from afa_agent.client import OpenAICompatibleClient
 from afa_agent.config import build_run_config
 from afa_agent.domains.base import DomainPlugin
 from afa_agent.domains.common import detect_title, load_text_by_source, make_units_from_sections, split_text_into_sections
-from afa_agent.domains.generic_retriever import GenericBM25Retriever
+from afa_agent.domains.generic_retriever import GenericBM25Retriever, ensure_unique_unit_ids
 from afa_agent.domains.insurance.solver import InsuranceSolver
 from afa_agent.io_utils import read_json, write_json
 from afa_agent.models import Document, Question
@@ -65,17 +65,17 @@ class InsurancePlugin(DomainPlugin):
                 unit_type="clause_block",
                 max_chars=segmentation_settings.get("clause_max_chars", 900),
             )
-            special_sections = []
             for section in sections:
                 if any(keyword in section["text"] for keyword in INSURANCE_KEYWORDS):
                     section["unit_type"] = "formula_block" if any(keyword in section["text"] for keyword in ["账户价值", "已交保费", "基本保额"]) else "clause_block"
-                    special_sections.append(section)
-            units = make_units_from_sections(document, sections[:]) + make_units_from_sections(document, special_sections)
+            units = make_units_from_sections(document, sections)
             units_payload.extend([unit.to_dict() for unit in units])
+        ensure_unique_unit_ids(units_payload, context="insurance parsed units")
         write_json(output_path, {"documents": docs_payload, "units": units_payload})
 
     def build_index(self, parsed_path: Path, output_path: Path) -> None:
         parsed = read_json(parsed_path)
+        ensure_unique_unit_ids(parsed["units"], context="insurance index units")
         write_json(output_path, {"domain": self.name, "documents": parsed["documents"], "units": parsed["units"]})
 
     def answer_questions(self, questions: list[Question], parsed_path: Path, index_path: Path):

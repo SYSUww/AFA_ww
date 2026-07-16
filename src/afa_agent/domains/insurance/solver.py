@@ -22,6 +22,12 @@ from afa_agent.evidence_gate import (
     should_skip_answer_fallback,
     should_skip_consistency_retry,
 )
+from afa_agent.evidence_audit import (
+    PROVENANCE_SCHEMA_VERSION,
+    SHARED_DEDUCTIBLE_EVIDENCE_TERM_GROUPS,
+    SHARED_DEDUCTIBLE_RULE_ID,
+    build_shared_deductible_provenance,
+)
 from afa_agent.models import AnswerResult, Question, RetrievalHit, TokenUsage
 from afa_agent.strategy import build_query_variants, get_stage_settings, serialize_hits
 
@@ -343,11 +349,38 @@ class InsuranceSolver:
 
     def _solve_formula_mcq_with_gate(self, question: Question) -> AnswerResult:
         total_usage = TokenUsage()
-        early_rule_answer, early_rule_reason = self._rule_override_mcq_answer(question)
+        early_rule_answer, early_rule_reason, early_rule_id = self._rule_override_mcq_answer(question)
         if early_rule_answer:
             rule_hits = self._rule_evidence_hits(question)
-            evidence_items = self._compact_evidence_items(rule_hits)
+            provenance_hits = self._rule_provenance_hits(early_rule_id, rule_hits)
+            evidence_items = self._compact_evidence_items([*provenance_hits, *rule_hits])
+            final_evidence_ids = {
+                str(item.get("unit_id", ""))
+                for item in evidence_items
+                if item.get("unit_id")
+            }
+            provenance_evidence_ids = [
+                str(hit.unit_id)
+                for hit in provenance_hits
+                if str(hit.unit_id) in final_evidence_ids
+            ]
+            rule_provenance = (
+                build_shared_deductible_provenance(
+                    decision_option=early_rule_answer,
+                    evidence_unit_ids=provenance_evidence_ids,
+                )
+                if early_rule_id == SHARED_DEDUCTIBLE_RULE_ID
+                else {}
+            )
             option_labels = {option: option == early_rule_answer for option in question.options}
+            rule_output = {
+                "option": early_rule_answer,
+                "label": True,
+                "answer": early_rule_answer,
+                "reason": early_rule_reason,
+                "confidence": 0.95,
+                **rule_provenance,
+            }
             return AnswerResult(
                 qid=question.qid,
                 domain=question.domain,
@@ -364,15 +397,7 @@ class InsuranceSolver:
                     "query_variants": [],
                     "retrieval_topk": serialize_hits(rule_hits, limit=self.retrieval_settings.get("top_k", 4)),
                     "selected_evidence_ids": [item.get("unit_id", "") for item in evidence_items if item.get("unit_id")],
-                    "rule_outputs": [
-                        {
-                            "option": early_rule_answer,
-                            "label": True,
-                            "answer": early_rule_answer,
-                            "reason": early_rule_reason,
-                            "confidence": 0.95,
-                        }
-                    ],
+                    "rule_outputs": [rule_output],
                     "option_debug": [],
                     "consistency_answers": [early_rule_answer],
                     "final_consistency_check": {"issues": []},
@@ -386,6 +411,11 @@ class InsuranceSolver:
                     },
                     "single_call_mcq": True,
                     "early_rule_answer": True,
+                    **(
+                        {"provenance_schema_version": PROVENANCE_SCHEMA_VERSION}
+                        if rule_provenance
+                        else {}
+                    ),
                 },
             )
         query_variants_all: list[str] = []
@@ -471,7 +501,7 @@ class InsuranceSolver:
         pred_answer = "".join(ch for ch in pred_answer if ch in question.options)
         pred_answer = pred_answer[:1] if pred_answer[:1] in question.options else "A"
         reasoning_summary = str(parsed.get("reasoning_summary", "")).strip()
-        rule_answer, rule_reason = self._rule_override_mcq_answer(question)
+        rule_answer, rule_reason, _ = self._rule_override_mcq_answer(question)
         if rule_answer:
             pred_answer = rule_answer
             reasoning_summary = rule_reason
@@ -703,9 +733,26 @@ class InsuranceSolver:
         )
 
     @staticmethod
-    def _rule_override_mcq_answer(question: Question) -> tuple[str, str]:
+    def _rule_provenance_hits(rule_id: str, hits: list[Any]) -> list[Any]:
+        if rule_id != SHARED_DEDUCTIBLE_RULE_ID:
+            return []
+        selected: list[Any] = []
+        selected_ids: set[str] = set()
+        for terms in SHARED_DEDUCTIBLE_EVIDENCE_TERM_GROUPS:
+            for hit in hits:
+                unit_id = str(getattr(hit, "unit_id", ""))
+                text = str(getattr(hit, "text", ""))
+                if unit_id in selected_ids or not all(term in text for term in terms):
+                    continue
+                selected.append(hit)
+                selected_ids.add(unit_id)
+                break
+        return selected
+
+    @staticmethod
+    def _rule_override_mcq_answer(question: Question) -> tuple[str, str, str]:
         if question.answer_format != "mcq":
-            return "", ""
+            return "", "", ""
         if (
             "平安e生保" in question.question
             and "太保团体百万医疗" in question.question
@@ -718,6 +765,7 @@ class InsuranceSolver:
                     return (
                         option,
                         "规则命中：e生保计划一按家庭共享免赔额计算，(2万-0.8万)+(1.5万-0.6万)-1万=1.1万元；太保按王某本人医疗费用计算，2万-0.8万-1万=0.2万元。",
+                        SHARED_DEDUCTIBLE_RULE_ID,
                     )
         if (
             "身故保险金" in question.question
@@ -727,20 +775,20 @@ class InsuranceSolver:
             and "平安富鸿金生已领养老年金15万元" in question.question
             and "B" in question.options
         ):
-            return "B", "规则命中：按条款公式计算为国寿增益宝144万、平安智盈金生90万、平安富鸿金生85万、国寿鑫享添盈80万，排序对应B。"
+            return "B", "规则命中：按条款公式计算为国寿增益宝144万、平安智盈金生90万、平安富鸿金生85万、国寿鑫享添盈80万，排序对应B。", ""
         if (
             "水管爆裂" in question.question
             and "门诊费用" in question.question
             and "医保未报销" in question.question
             and any("医疗险：e生保和太保均不赔付" in text for text in question.options.values())
         ):
-            return "D", "规则命中：题干仅为普通门诊费用，未触发e生保/太保百万医疗的住院、指定门急诊或住院前后门急诊责任；家财险赔财产损失，医疗险不赔。"
+            return "D", "规则命中：题干仅为普通门诊费用，未触发e生保/太保百万医疗的住院、指定门急诊或住院前后门急诊责任；家财险赔财产损失，医疗险不赔。", ""
         if (
             "免赔额为0" not in question.question
             or "形态学复发" not in question.question
             or "无法确定" not in "".join(question.options.values())
         ):
-            return "", ""
+            return "", "", ""
         normalized_options = {
             option: re.sub(r"\s+", "", text)
             for option, text in question.options.items()
@@ -751,9 +799,9 @@ class InsuranceSolver:
             counts.setdefault(text, []).append(option)
         duplicated = [options for options in counts.values() if len(options) >= 2]
         if not duplicated:
-            return "", ""
+            return "", "", ""
         answer = sorted(duplicated[0])[0]
-        return answer, "规则命中：题干已明确众安免赔额为0且为形态学复发，排除“未知/无法确定”选项；其余等价数值选项取首个。"
+        return answer, "规则命中：题干已明确众安免赔额为0且为形态学复发，排除“未知/无法确定”选项；其余等价数值选项取首个。", ""
 
     def _option_doc_ids(self, question: Question, option_text: str) -> list[str]:
         hints = self._insurance_product_hints(option_text)

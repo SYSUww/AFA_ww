@@ -1,0 +1,412 @@
+{
+  "algorithm": "deterministic_multilabel_greedy_v1",
+  "created_from_manifest": "artifacts/manifest/dataset_manifest.json",
+  "dataset_slices_sha256": "46478aebfed1a126d6bac02eaaef215122f623a4d04fe0d7bc2b9a047d91227e",
+  "distribution": {
+    "financial_contracts": {
+      "dev_v2": {
+        "answer_format": {
+          "mcq": 1,
+          "multi": 6,
+          "tf": 3
+        },
+        "category": {
+          "clause": 3,
+          "comparison": 4,
+          "fact": 2,
+          "judgment": 1
+        },
+        "doc_count": {
+          "2": 10
+        },
+        "question_type": {
+          "clause_verification": 1,
+          "data_consistency_check": 1,
+          "time_comparison": 1,
+          "一致性校验": 1,
+          "事实核对与属性比对": 1,
+          "判断题": 1,
+          "发行要素识别": 1,
+          "多选题": 1,
+          "数据趋势与条款细节比对": 1,
+          "违约责任与条款细节比对": 1
+        }
+      },
+      "gate_v2": {
+        "answer_format": {
+          "multi": 4,
+          "tf": 1
+        },
+        "category": {
+          "clause": 2,
+          "comparison": 1,
+          "judgment": 2
+        },
+        "doc_count": {
+          "2": 5
+        },
+        "question_type": {
+          "clause_verification": 1,
+          "判断题": 1,
+          "多选题": 3
+        }
+      },
+      "holdout_v2": {
+        "answer_format": {
+          "mcq": 1,
+          "multi": 3,
+          "tf": 1
+        },
+        "category": {
+          "clause": 2,
+          "comparison": 1,
+          "judgment": 2
+        },
+        "doc_count": {
+          "2": 5
+        },
+        "question_type": {
+          "clause_verification": 1,
+          "判断题": 1,
+          "单选题": 1,
+          "多选题": 2
+        }
+      }
+    },
+    "financial_reports": {
+      "dev_v2": {
+        "answer_format": {
+          "mcq": 2,
+          "multi": 5,
+          "tf": 3
+        },
+        "category": {
+          "calculation": 3,
+          "comparison": 1,
+          "judgment": 6
+        },
+        "doc_count": {
+          "2": 10
+        },
+        "question_type": {
+          "业绩增长趋势判断": 1,
+          "企业规模与研发投入分析": 1,
+          "判断题": 1,
+          "单选题": 2,
+          "多选题": 3,
+          "财务数据一致性校验": 1,
+          "财务现金流与分红比例核对": 1
+        }
+      },
+      "gate_v2": {
+        "answer_format": {
+          "multi": 4,
+          "tf": 1
+        },
+        "category": {
+          "calculation": 1,
+          "comparison": 4
+        },
+        "doc_count": {
+          "2": 5
+        },
+        "question_type": {
+          "判断题": 1,
+          "多选题": 1,
+          "股东回报措施对比": 1,
+          "财务指标对比分析": 1,
+          "跨公司财务指标对比": 1
+        }
+      },
+      "holdout_v2": {
+        "answer_format": {
+          "multi": 4,
+          "tf": 1
+        },
+        "category": {
+          "comparison": 5
+        },
+        "doc_count": {
+          "2": 5
+        },
+        "question_type": {
+          "判断题": 1,
+          "多选题": 1,
+          "财务分配政策比较": 1,
+          "财务指标对比分析": 2
+        }
+      }
+    },
+    "insurance": {
+      "dev_v2": {
+        "answer_format": {
+          "mcq": 4,
+          "multi": 6
+        },
+        "category": {
+          "calculation": 5,
+          "clause": 2,
+          "comparison": 1,
+          "judgment": 2
+        },
+        "doc_count": {
+          "2": 1,
+          "3": 3,
+          "4": 6
+        },
+        "question_type": {
+          "事实查询": 3,
+          "推理判断": 2,
+          "比较分析": 1,
+          "计算题": 2,
+          "逻辑推理": 2
+        }
+      },
+      "gate_v2": {
+        "answer_format": {
+          "mcq": 1,
+          "multi": 4
+        },
+        "category": {
+          "calculation": 1,
+          "clause": 1,
+          "comparison": 1,
+          "judgment": 2
+        },
+        "doc_count": {
+          "3": 2,
+          "4": 3
+        },
+        "question_type": {
+          "事实查询": 1,
+          "推理判断": 1,
+          "比较分析": 1,
+          "计算题": 1,
+          "逻辑推理": 1
+        }
+      },
+      "holdout_v2": {
+        "answer_format": {
+          "mcq": 2,
+          "multi": 3
+        },
+        "category": {
+          "clause": 1,
+          "comparison": 2,
+          "judgment": 2
+        },
+        "doc_count": {
+          "3": 2,
+          "4": 3
+        },
+        "question_type": {
+          "推理判断": 1,
+          "比较分析": 2,
+          "逻辑推理": 2
+        }
+      }
+    },
+    "regulatory": {
+      "dev_v2": {
+        "answer_format": {
+          "mcq": 1,
+          "multi": 6,
+          "tf": 3
+        },
+        "category": {
+          "calculation": 1,
+          "clause": 6,
+          "judgment": 3
+        },
+        "doc_count": {
+          "2": 10
+        },
+        "question_type": {
+          "multi": 2,
+          "tf": 1,
+          "判断": 1,
+          "判断题": 1,
+          "单选": 1,
+          "多选": 1,
+          "多选题": 3
+        }
+      },
+      "gate_v2": {
+        "answer_format": {
+          "mcq": 1,
+          "multi": 3,
+          "tf": 1
+        },
+        "category": {
+          "clause": 5
+        },
+        "doc_count": {
+          "2": 5
+        },
+        "question_type": {
+          "mcq": 1,
+          "multi": 1,
+          "判断": 1,
+          "多选题": 2
+        }
+      },
+      "holdout_v2": {
+        "answer_format": {
+          "multi": 4,
+          "tf": 1
+        },
+        "category": {
+          "clause": 4,
+          "judgment": 1
+        },
+        "doc_count": {
+          "2": 5
+        },
+        "question_type": {
+          "判断题": 1,
+          "多选": 1,
+          "多选题": 3
+        }
+      }
+    },
+    "research": {
+      "dev_v2": {
+        "answer_format": {
+          "mcq": 1,
+          "multi": 6,
+          "tf": 3
+        },
+        "category": {
+          "calculation": 1,
+          "comparison": 3,
+          "fact": 1,
+          "judgment": 5
+        },
+        "doc_count": {
+          "2": 10
+        },
+        "question_type": {
+          "brokerage_security": 1,
+          "chip_security": 1,
+          "consumption_chip": 1,
+          "data_accuracy": 1,
+          "financial_ratio": 1,
+          "industry_comparison": 1,
+          "pet_market": 1,
+          "tech_standard": 1,
+          "判断题": 1,
+          "多选题": 1
+        }
+      },
+      "gate_v2": {
+        "answer_format": {
+          "mcq": 1,
+          "multi": 3,
+          "tf": 1
+        },
+        "category": {
+          "judgment": 5
+        },
+        "doc_count": {
+          "2": 5
+        },
+        "question_type": {
+          "bank_insurance": 1,
+          "business_model": 1,
+          "cross_industry": 1,
+          "fund_flow": 1,
+          "多选题": 1
+        }
+      },
+      "holdout_v2": {
+        "answer_format": {
+          "multi": 4,
+          "tf": 1
+        },
+        "category": {
+          "comparison": 1,
+          "judgment": 4
+        },
+        "doc_count": {
+          "2": 5
+        },
+        "question_type": {
+          "data_verification": 1,
+          "economic_indicator": 1,
+          "market_forecast": 1,
+          "多选题": 2
+        }
+      }
+    }
+  },
+  "known_dev_qids": {
+    "financial_reports": [
+      "fin_a_003",
+      "fin_a_008",
+      "fin_a_011",
+      "fin_a_013",
+      "fin_a_015",
+      "fin_a_018"
+    ],
+    "insurance": [
+      "ins_a_001",
+      "ins_a_003",
+      "ins_a_006",
+      "ins_a_009",
+      "ins_a_012",
+      "ins_a_014",
+      "ins_a_016",
+      "ins_a_020"
+    ],
+    "regulatory": [
+      "reg_a_010"
+    ],
+    "research": [
+      "res_a_006",
+      "res_a_013"
+    ]
+  },
+  "manifest_sha256": "2d1772c5105f105e0022d468a862635b18acfc21deaa4e920dfc17b13f8831ea",
+  "rules": {
+    "dev_v2": "10 questions per domain; tuning and per-question analysis allowed",
+    "gate_v2": "5 questions per domain; aggregate metrics only",
+    "holdout_v2": "5 questions per domain; run at most once per research batch",
+    "smoke_v2": "2 questions selected from dev_v2; pipeline check only"
+  },
+  "seed": "afa-no-embedding-accuracy-token-v2",
+  "slice_hashes": {
+    "dev_v2": "9cc2cd9a8ec215be3225195e2d730cc749272c786d4e78343ffe9297d6a9b0c6",
+    "full_group_a": "7b0e3cfb2e8c75e6bc2b4f097b430875f13844bc70f70f2412bf6b5d87d2027f",
+    "gate_v2": "6933f6eee16ffa9317dbe1af43c86b00b87ebaa3da0c9c2df9437027f8ad4528",
+    "holdout_v2": "6dd3a589d8eddc6511d9dadf5ae28d9635b2e88af3d995a8ee230c5826a83488",
+    "smoke_v2": "498705dc56472512e0c7e4c7fc1083be6acdc93910bfd140d5b1fc3f187da609"
+  },
+  "sources": {
+    "financial_contracts": {
+      "path": "public_dataset_upload/questions/group_a/financial_contracts_questions.json",
+      "question_count": 20,
+      "sha256": "b360116906244b916bee85730dec2dab5bb34c27cbcd31d186ece94c04248d52"
+    },
+    "financial_reports": {
+      "path": "public_dataset_upload/questions/group_a/financial_reports_questions.json",
+      "question_count": 20,
+      "sha256": "19aee3cc19116f507563d9345c4552a55e99ddf9176bb64b9adfc4c5ef6af4af"
+    },
+    "insurance": {
+      "path": "public_dataset_upload/questions/group_a/insurance_questions.json",
+      "question_count": 20,
+      "sha256": "68f0a1c439937f4e731973704d591f0cafa67f53566f007cf4bc080c5d09d17b"
+    },
+    "regulatory": {
+      "path": "public_dataset_upload/questions/group_a/regulatory_questions.json",
+      "question_count": 20,
+      "sha256": "7f2354a2d15df35ef3937dfa7f9086c69a97dc4958081a895820a5079f6ee85a"
+    },
+    "research": {
+      "path": "public_dataset_upload/questions/group_a/research_questions.json",
+      "question_count": 20,
+      "sha256": "f7410b5e66997c7c3daa75c4d2a18f4be5b97ab4411e07fb5cc8a12b01500f44"
+    }
+  },
+  "version": "no_embedding_slices_v2"
+}

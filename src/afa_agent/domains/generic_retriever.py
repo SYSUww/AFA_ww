@@ -8,8 +8,33 @@ from afa_agent.models import RetrievalHit
 from afa_agent.text_utils import tokenize_zh
 
 
+def ensure_unique_unit_ids(units: list[dict[str, Any]], *, context: str) -> None:
+    """Fail early when an index cannot provide an unambiguous unit lookup."""
+    seen: set[str] = set()
+    duplicate_ids: list[str] = []
+    missing_positions: list[int] = []
+    for position, unit in enumerate(units):
+        unit_id = str(unit.get("unit_id", "")).strip()
+        if not unit_id:
+            missing_positions.append(position)
+            continue
+        if unit_id in seen and unit_id not in duplicate_ids:
+            duplicate_ids.append(unit_id)
+        seen.add(unit_id)
+    if not missing_positions and not duplicate_ids:
+        return
+
+    details: list[str] = []
+    if missing_positions:
+        details.append(f"missing at positions {missing_positions[:10]}")
+    if duplicate_ids:
+        details.append(f"duplicate unit_id values {duplicate_ids[:10]}")
+    raise ValueError(f"{context} requires non-empty unique unit_id values: {'; '.join(details)}")
+
+
 class GenericBM25Retriever:
     def __init__(self, units: list[dict[str, Any]]):
+        ensure_unique_unit_ids(units, context=self.__class__.__name__)
         self.units = units
         self.tokens = [tokenize_zh(self._unit_text(unit)) for unit in units]
         self.bm25 = BM25Index(self.tokens)
@@ -83,7 +108,7 @@ class GenericBM25Retriever:
             for neighbor_idx in [idx - 1, idx + 1]:
                 if 0 <= neighbor_idx < len(self.units):
                     neighbor = self.units[neighbor_idx]
-                    if neighbor["doc_id"] not in doc_ids:
+                    if neighbor["doc_id"] != hit.doc_id:
                         continue
                     if neighbor["unit_id"] not in expanded:
                         metadata = dict(neighbor.get("metadata", {}))

@@ -6,7 +6,7 @@ from afa_agent.client import OpenAICompatibleClient
 from afa_agent.config import build_run_config
 from afa_agent.domains.base import DomainPlugin
 from afa_agent.domains.common import detect_title, load_text_by_source, make_units_from_sections, split_text_into_sections
-from afa_agent.domains.generic_retriever import GenericBM25Retriever
+from afa_agent.domains.generic_retriever import GenericBM25Retriever, ensure_unique_unit_ids
 from afa_agent.domains.research.solver import ResearchSolver
 from afa_agent.io_utils import read_json, write_json
 from afa_agent.models import Document, Question
@@ -55,18 +55,17 @@ class ResearchPlugin(DomainPlugin):
                 unit_type="paragraph",
                 max_chars=segmentation_settings.get("paragraph_max_chars", 1000),
             )
-            highlight_sections = []
             for section in sections:
                 if any(keyword in section["text"] for keyword in RESEARCH_KEYWORDS):
-                    section_copy = dict(section)
-                    section_copy["unit_type"] = "conclusion_block"
-                    highlight_sections.append(section_copy)
-            units = make_units_from_sections(document, sections) + make_units_from_sections(document, highlight_sections)
+                    section["unit_type"] = "conclusion_block"
+            units = make_units_from_sections(document, sections)
             units_payload.extend([unit.to_dict() for unit in units])
+        ensure_unique_unit_ids(units_payload, context="research parsed units")
         write_json(output_path, {"documents": docs_payload, "units": units_payload})
 
     def build_index(self, parsed_path: Path, output_path: Path) -> None:
         parsed = read_json(parsed_path)
+        ensure_unique_unit_ids(parsed["units"], context="research index units")
         write_json(output_path, {"domain": self.name, "documents": parsed["documents"], "units": parsed["units"]})
 
     def answer_questions(self, questions: list[Question], parsed_path: Path, index_path: Path):

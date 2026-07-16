@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 import os
@@ -20,10 +21,19 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from afa_agent.bm25 import BM25Index
+from afa_agent.config import build_run_config
 from afa_agent.domains.generic_retriever import GenericBM25Retriever
+from afa_agent.evidence_audit import resolve_answer_decisions, validate_rule_provenance
 from afa_agent.exporters import export_answer_csv, export_answers_json, export_evidence_json
 from afa_agent.io_utils import ensure_dir, read_json, write_json, write_jsonl
 from afa_agent.models import AnswerResult, Question
+from afa_agent.run_metadata import (
+    RunFingerprintError,
+    build_run_fingerprint,
+    describe_input_path,
+    validate_resume_fingerprint,
+)
+from afa_agent.strategy import load_strategy_config
 from afa_agent.text_utils import tokenize_zh
 
 
@@ -35,6 +45,20 @@ DEFAULT_REFERENCE_ANSWER_CSV = ROOT / "artifacts" / "submissions" / "group_a_can
 DEFAULT_ANSWER_STRATEGY_CONFIG = ROOT / "configs" / "autoresearch" / "evidence_gate_rescue_accuracy_first.json"
 PROFILE_INDEX_CACHE: dict[str, dict[str, tuple[list[dict[str, Any]], BM25Index]]] = {}
 RETRIEVER_CACHE: dict[str, GenericBM25Retriever] = {}
+BLIND_QUESTION_FIELDS = ("qid", "domain", "split", "question", "options", "answer_format", "type")
+BLIND_FORBIDDEN_KEYS = {
+    "answer",
+    "correct_answer",
+    "doc_ids",
+    "gold",
+    "gold_answer",
+    "ground_truth",
+    "label",
+    "labels",
+    "reference_answer",
+    "true_doc_ids",
+    "true_doc_ids_for_eval_only",
+}
 
 DOC_ORDER_RE = re.compile(
     r"第一(?:份|个|篇|本|则)?(?:文档|报告|合同|募集说明书|文件)|"
@@ -192,6 +216,34 @@ def load_questions() -> dict[str, dict[str, Any]]:
 
 def question_text(row: dict[str, Any]) -> str:
     return "\n".join([row.get("question", ""), row.get("type", ""), *list((row.get("options") or {}).values())])
+
+
+def build_blind_question_rows(
+    questions: dict[str, dict[str, Any]],
+    qids: list[str],
+) -> dict[str, dict[str, Any]]:
+    """Copy only inference-safe fields; truth-bearing fields never enter blind stages."""
+
+    blind_rows: dict[str, dict[str, Any]] = {}
+    for qid in qids:
+        source = questions[qid]
+        row = {field: source[field] for field in BLIND_QUESTION_FIELDS}
+        row["options"] = dict(source.get("options") or {})
+        _assert_blind_payload(row, context=f"question {qid}")
+        blind_rows[qid] = row
+    return blind_rows
+
+
+def _assert_blind_payload(payload: Any, *, context: str) -> None:
+    if isinstance(payload, dict):
+        leaked = sorted(str(key) for key in payload if str(key).lower() in BLIND_FORBIDDEN_KEYS)
+        if leaked:
+            raise ValueError(f"Truth metadata leaked into blind {context}: {', '.join(leaked)}")
+        for key, value in payload.items():
+            _assert_blind_payload(value, context=f"{context}.{key}")
+    elif isinstance(payload, list):
+        for index, value in enumerate(payload):
+            _assert_blind_payload(value, context=f"{context}[{index}]")
 
 
 def classify_question(row: dict[str, Any]) -> dict[str, Any]:
@@ -473,18 +525,18 @@ def locate_docs(
         candidates.sort(key=lambda item: item["score"], reverse=True)
         candidates = _apply_locator_rerank(candidates, query, row, effective_attempt)
         selected = [_public_candidate(item) for item in candidates[: effective_attempt.top_k]]
-        rows.append(
-            {
-                "qid": qid,
-                "domain": domain,
-                "query_terms": query[:2000],
-                "candidate_doc_ids": [item["doc_id"] for item in selected],
-                "scores": [item["score"] for item in selected],
-                "locator_reason": [item["locator_reason"] for item in selected],
-                "true_doc_ids_for_eval_only": row.get("doc_ids", []),
-                "candidates": selected,
-            }
-        )
+        output_row = {
+            "qid": qid,
+            "domain": domain,
+            "query_terms": query[:2000],
+            "candidate_doc_ids": [item["doc_id"] for item in selected],
+            "scores": [item["score"] for item in selected],
+            "locator_reason": [item["locator_reason"] for item in selected],
+            "candidates": selected,
+        }
+        if "doc_ids" in row:
+            output_row["true_doc_ids_for_eval_only"] = list(row.get("doc_ids") or [])
+        rows.append(output_row)
     return rows
 
 
@@ -1768,7 +1820,7 @@ def run_answering_for_best(
     payloads: dict[str, dict[str, Any]],
     parsed_root: Path,
     index_root: Path,
-    reference_answers: dict[str, str],
+    reference_answer_path: Path,
     answer_limit: int,
     answer_workers: int,
     answer_strategy_config: Path,
@@ -1776,36 +1828,67 @@ def run_answering_for_best(
 ) -> dict[str, Any]:
     from afa_agent.domains.registry import get_plugin
 
-    os.environ["AFA_STRATEGY_CONFIG"] = str(answer_strategy_config.resolve())
+    parsed_root = parsed_root.resolve()
+    index_root = index_root.resolve()
+    answer_strategy_config = answer_strategy_config.resolve()
+    reference_answer_path = reference_answer_path.resolve()
+    os.environ["AFA_STRATEGY_CONFIG"] = str(answer_strategy_config)
     attempt = AttemptConfig(**{key: best[key] for key in AttemptConfig.__dataclass_fields__ if key in best})
-    candidate_rows = locate_docs(questions, clean_qids, payloads, attempt)
-    candidates_by_qid = {row["qid"]: row for row in candidate_rows}
-    run_dir = ensure_dir(output_dir / "no_docids_clean_subset_run")
     qids = clean_qids[:answer_limit] if answer_limit > 0 else clean_qids
+    blind_questions = build_blind_question_rows(questions, qids)
+    run_dir = (output_dir / "no_docids_clean_subset_run").resolve()
+    effective_args = {
+        "run_dir": str(run_dir),
+        "parsed_root": str(parsed_root),
+        "index_root": str(index_root),
+        "answer_strategy_config": str(answer_strategy_config),
+        "answer_limit": answer_limit,
+        "answer_workers": answer_workers,
+        "attempt": attempt.to_dict(),
+    }
+    config = build_run_config()
+    public_model = dict((config.to_public_dict().get("model") or {}))
+    public_model.pop("api_key", None)
+    api_base = str(public_model.pop("api_base", "") or "")
+    public_model["api_base_sha256"] = hashlib.sha256(api_base.encode("utf-8")).hexdigest() if api_base else None
+    public_model.setdefault("model_name", config.model.model_name if config.model else "unknown")
+    public_model.setdefault("temperature", config.model.temperature if config.model else None)
+    fingerprint = build_run_fingerprint(
+        project_root=ROOT,
+        arguments=effective_args,
+        questions=[blind_questions[qid] for qid in qids],
+        parsed_path=parsed_root,
+        index_path=index_root,
+        strategy_payload=load_strategy_config(answer_strategy_config),
+        strategy_path=answer_strategy_config,
+        model_settings=public_model,
+    )
+    run_manifest = _prepare_b_answer_run(
+        run_dir=run_dir,
+        fingerprint=fingerprint,
+        attempt=attempt,
+        qids=qids,
+        effective_args=effective_args,
+        force_answer=force_answer,
+    )
+
+    candidate_rows = locate_docs(blind_questions, qids, payloads, attempt)
+    _assert_blind_payload(candidate_rows, context="locator output")
+    candidates_by_qid = {row["qid"]: row for row in candidate_rows}
     existing_results = [] if force_answer else load_existing_answer_results(run_dir / "final_answers.json", qids)
     existing_qids = {result.qid for result in existing_results}
     results: list[AnswerResult] = existing_results[:]
     remaining_qids = [qid for qid in qids if qid not in existing_qids]
 
     def answer_one_qid(qid: str) -> AnswerResult:
-        row = questions[qid]
+        row = blind_questions[qid]
         domain = row["domain"]
         effective_attempt = _effective_attempt_for_domain(attempt, domain)
         candidate_doc_ids = select_answer_doc_ids(candidates_by_qid[qid], row, effective_attempt)
-        question = Question(
-            qid=row["qid"],
-            domain=row["domain"],
-            split=row["split"],
-            question=row["question"],
-            options=row["options"],
-            answer_format=row["answer_format"],
-            type=row["type"],
-            doc_ids=candidate_doc_ids,
-            metadata={
-                "true_doc_ids_for_eval_only": row.get("doc_ids", []),
-                "no_docids_locator_attempt": attempt.attempt_id,
-                "doc_ids_are_locator_candidates": True,
-            },
+        question = _build_blind_answer_question(
+            row=row,
+            candidate_doc_ids=candidate_doc_ids,
+            attempt_id=attempt.attempt_id,
         )
         last_exc: Exception | None = None
         for _ in range(2):
@@ -1815,7 +1898,6 @@ def run_answering_for_best(
                 index_path = index_root / domain / "index.json"
                 result = plugin.answer_one(question, parsed_path, index_path)
                 result.debug_meta.setdefault("no_docids_locator", candidates_by_qid[qid])
-                result.debug_meta.setdefault("true_doc_ids_for_eval_only", row.get("doc_ids", []))
                 return result
             except Exception as exc:
                 last_exc = exc
@@ -1851,40 +1933,229 @@ def run_answering_for_best(
     export_answers_json(run_dir / "final_answers.json", results)
     export_evidence_json(run_dir / "evidence.json", results)
     export_answer_csv(run_dir / "answer.csv", results)
-    answer_with_domain = []
-    comparison = []
-    for result in results:
-        row = questions[result.qid]
-        reference = reference_answers.get(result.qid, "")
-        answer_with_domain.append(
-            {
-                "qid": result.qid,
-                "answer": result.pred_answer,
-                "domain": result.domain,
-                "answer_format": row.get("answer_format", ""),
-                "prompt_tokens": result.token_usage.prompt_tokens,
-                "completion_tokens": result.token_usage.completion_tokens,
-                "total_tokens": result.token_usage.total_tokens,
-            }
+    result_qids = {result.qid for result in results}
+    missing_qids = [qid for qid in qids if qid not in result_qids]
+    failures_by_qid = {row["qid"]: row for row in failures}
+    for qid in missing_qids:
+        failures_by_qid.setdefault(
+            qid,
+            {"qid": qid, "error_type": "MissingPrediction", "error": "No sealed prediction was produced"},
         )
+    failures = [failures_by_qid[qid] for qid in qids if qid in failures_by_qid]
+    write_jsonl(run_dir / "failed_answers.jsonl", failures)
+
+    # Evaluation starts only after the prediction artifact is atomically sealed and read back.
+    sealed_predictions = describe_input_path(run_dir / "final_answers.json")
+    sealed_results = load_existing_answer_results(run_dir / "final_answers.json", qids)
+    reference_answers = read_reference_answers(reference_answer_path)
+    evaluation = _evaluate_sealed_b_board_predictions(
+        run_dir=run_dir,
+        questions=questions,
+        blind_questions=blind_questions,
+        qids=qids,
+        results=sealed_results,
+        candidates_by_qid=candidates_by_qid,
+        attempt=attempt,
+        reference_answers=reference_answers,
+        failures=failures,
+    )
+    accuracy = evaluation["proxy_accuracy_vs_reference_88"]
+    token_total = evaluation["total_tokens"]
+    complete = not evaluation["missing_qids"]
+    reference_complete = evaluation["reference_answer_count"] == len(qids)
+    eligible_for_promotion = bool(qids) and complete and reference_complete
+    lines = [
+        "# No-Docids Clean Subset Run",
+        "",
+        f"- attempt_id: `{attempt.attempt_id}`",
+        f"- variant: `{attempt.variant_name}`",
+        f"- expected_question_count: `{len(qids)}`",
+        f"- answered_question_count: `{len(sealed_results)}`",
+        f"- failed_count: `{len(evaluation['missing_qids'])}`",
+        f"- complete: `{complete}`",
+        f"- eligible_for_promotion: `{eligible_for_promotion}`",
+        f"- proxy_accuracy_vs_reference_88: `{accuracy}`",
+        f"- accuracy_denominator: `{len(qids)}`",
+        f"- total_tokens: `{token_total}`",
+        "",
+        "Accuracy is a proxy against the current 88% answer vector, not official labels.",
+    ]
+    (run_dir / "comparison_vs_oracle_docids.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    run_manifest.update(
+        {
+            "finalized_at": datetime.now().isoformat(timespec="seconds"),
+            "status": "complete" if complete else "failed",
+            "complete": complete,
+            "incomplete": not complete,
+            "eligible_for_promotion": eligible_for_promotion,
+            "promotion_score": accuracy if eligible_for_promotion else None,
+            "question_count": len(qids),
+            "expected_question_count": len(qids),
+            "answered_question_count": len(sealed_results),
+            "accuracy_denominator": len(qids),
+            "failed_count": len(evaluation["missing_qids"]),
+            "failed_qids": evaluation["missing_qids"],
+            "reference_answer_count": evaluation["reference_answer_count"],
+            "proxy_accuracy_vs_reference_88": accuracy,
+            "evidence_answer_audit": evaluation["evidence_answer_audit"],
+            "total_tokens": token_total,
+            "sealed_predictions": sealed_predictions,
+            "evaluation_reference": (
+                describe_input_path(reference_answer_path) if reference_answer_path.exists() else None
+            ),
+            "evaluation_started_after_prediction_seal": True,
+        }
+    )
+    write_json(run_dir / "run_manifest.json", run_manifest)
+    return {
+        "question_count": len(qids),
+        "expected_question_count": len(qids),
+        "answered_question_count": len(sealed_results),
+        "failed_count": len(evaluation["missing_qids"]),
+        "failed_qids": evaluation["missing_qids"],
+        "complete": complete,
+        "incomplete": not complete,
+        "eligible_for_promotion": eligible_for_promotion,
+        "promotion_score": accuracy if eligible_for_promotion else None,
+        "accuracy_denominator": len(qids),
+        "proxy_accuracy_vs_reference_88": accuracy,
+        "evidence_answer_audit": evaluation["evidence_answer_audit"],
+        "total_tokens": token_total,
+    }
+
+
+def _prepare_b_answer_run(
+    *,
+    run_dir: Path,
+    fingerprint: dict[str, Any],
+    attempt: AttemptConfig,
+    qids: list[str],
+    effective_args: dict[str, Any],
+    force_answer: bool,
+) -> dict[str, Any]:
+    manifest_path = run_dir / "run_manifest.json"
+    existing_manifest: dict[str, Any] | None = None
+    has_existing_files = run_dir.exists() and any(run_dir.iterdir())
+    if force_answer and run_dir.exists():
+        shutil.rmtree(run_dir)
+        has_existing_files = False
+    elif has_existing_files:
+        if not manifest_path.exists():
+            raise RunFingerprintError(f"Existing B-board run has no manifest: {manifest_path}")
+        existing_manifest = read_json(manifest_path)
+        validate_resume_fingerprint(existing_manifest, fingerprint)
+
+    ensure_dir(run_dir)
+    now = datetime.now().isoformat(timespec="seconds")
+    if existing_manifest is None:
+        manifest = {
+            "created_at": now,
+            "resume_count": 0,
+            "attempt": attempt.to_dict(),
+            "effective_args": effective_args,
+            "expected_qids": qids,
+            "fingerprint": fingerprint,
+        }
+    else:
+        manifest = dict(existing_manifest)
+        manifest["resume_count"] = int(manifest.get("resume_count", 0)) + 1
+        manifest["last_resumed_at"] = now
+    manifest.update(
+        {
+            "status": "running",
+            "complete": False,
+            "incomplete": True,
+            "eligible_for_promotion": False,
+            "promotion_score": None,
+            "expected_question_count": len(qids),
+            "last_started_at": now,
+        }
+    )
+    write_json(manifest_path, manifest)
+    return manifest
+
+
+def _build_blind_answer_question(
+    *,
+    row: dict[str, Any],
+    candidate_doc_ids: list[str],
+    attempt_id: str,
+) -> Question:
+    _assert_blind_payload(row, context=f"question {row.get('qid', '')}")
+    return Question(
+        qid=row["qid"],
+        domain=row["domain"],
+        split=row["split"],
+        question=row["question"],
+        options=dict(row["options"]),
+        answer_format=row["answer_format"],
+        type=row["type"],
+        doc_ids=list(candidate_doc_ids),
+        metadata={
+            "no_docids_locator_attempt": attempt_id,
+            "doc_ids_are_locator_candidates": True,
+        },
+    )
+
+
+def _evaluate_sealed_b_board_predictions(
+    *,
+    run_dir: Path,
+    questions: dict[str, dict[str, Any]],
+    blind_questions: dict[str, dict[str, Any]],
+    qids: list[str],
+    results: list[AnswerResult],
+    candidates_by_qid: dict[str, dict[str, Any]],
+    attempt: AttemptConfig,
+    reference_answers: dict[str, str],
+    failures: list[dict[str, Any]],
+) -> dict[str, Any]:
+    results_by_qid = {result.qid: result for result in results}
+    failures_by_qid = {row["qid"]: row for row in failures}
+    answer_with_domain: list[dict[str, Any]] = []
+    comparison: list[dict[str, Any]] = []
+    for qid in qids:
+        result = results_by_qid.get(qid)
+        truth_row = questions[qid]
+        blind_row = blind_questions[qid]
+        reference = reference_answers.get(qid, "")
+        token_usage = result.token_usage if result else None
+        candidate_doc_ids = select_answer_doc_ids(
+            candidates_by_qid[qid],
+            blind_row,
+            _effective_attempt_for_domain(attempt, blind_row["domain"]),
+        )
+        if result:
+            answer_with_domain.append(
+                {
+                    "qid": qid,
+                    "answer": result.pred_answer,
+                    "domain": result.domain,
+                    "answer_format": blind_row.get("answer_format", ""),
+                    "prompt_tokens": result.token_usage.prompt_tokens,
+                    "completion_tokens": result.token_usage.completion_tokens,
+                    "total_tokens": result.token_usage.total_tokens,
+                }
+            )
+        failure = failures_by_qid.get(qid, {})
         comparison.append(
             {
-                "qid": result.qid,
-                "domain": result.domain,
+                "qid": qid,
+                "domain": blind_row["domain"],
+                "prediction_status": "answered" if result else "failed",
+                "failure_type": failure.get("error_type", ""),
+                "failure_error": failure.get("error", ""),
                 "reference_answer": reference,
-                "no_docids_answer": result.pred_answer,
-                "matches_reference": bool(reference and reference == result.pred_answer),
-                "prompt_tokens": result.token_usage.prompt_tokens,
-                "completion_tokens": result.token_usage.completion_tokens,
-                "total_tokens": result.token_usage.total_tokens,
-                "candidate_doc_ids": select_answer_doc_ids(
-                    candidates_by_qid[result.qid],
-                    row,
-                    _effective_attempt_for_domain(attempt, result.domain),
-                ),
-                "true_doc_ids_for_eval_only": row.get("doc_ids", []),
+                "no_docids_answer": result.pred_answer if result else "",
+                "matches_reference": bool(result and reference and reference == result.pred_answer),
+                "prompt_tokens": token_usage.prompt_tokens if token_usage else 0,
+                "completion_tokens": token_usage.completion_tokens if token_usage else 0,
+                "total_tokens": token_usage.total_tokens if token_usage else 0,
+                "candidate_doc_ids": candidate_doc_ids,
+                "true_doc_ids_for_eval_only": list(truth_row.get("doc_ids") or []),
             }
         )
+
     CsvWriter.write(
         run_dir / "answer_with_domain.csv",
         answer_with_domain,
@@ -1901,6 +2172,9 @@ def run_answering_for_best(
         [
             "qid",
             "domain",
+            "prediction_status",
+            "failure_type",
+            "failure_error",
             "reference_answer",
             "no_docids_answer",
             "matches_reference",
@@ -1911,40 +2185,26 @@ def run_answering_for_best(
             "true_doc_ids_for_eval_only",
         ],
     )
+    missing_qids = [qid for qid in qids if qid not in results_by_qid]
     accuracy = _avg(1.0 if row["matches_reference"] else 0.0 for row in comparison)
     token_total = sum(int(row["total_tokens"]) for row in comparison)
-    lines = [
-        "# No-Docids Clean Subset Run",
-        "",
-        f"- attempt_id: `{attempt.attempt_id}`",
-        f"- variant: `{attempt.variant_name}`",
-        f"- question_count: `{len(results)}`",
-        f"- proxy_accuracy_vs_reference_88: `{accuracy}`",
-        f"- total_tokens: `{token_total}`",
-        "",
-        "Accuracy is a proxy against the current 88% answer vector, not official labels.",
-    ]
-    (run_dir / "comparison_vs_oracle_docids.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     evidence_audit = write_evidence_answer_audit(run_dir, questions, qids, results)
-    write_json(
-        run_dir / "run_manifest.json",
+    evidence_audit.update(
         {
-            "created_at": datetime.now().isoformat(timespec="seconds"),
-            "attempt": attempt.to_dict(),
-            "answer_strategy_config": str(answer_strategy_config.resolve()),
-            "question_count": len(results),
-            "failed_count": len(failures),
-            "failed_qids": [row["qid"] for row in failures],
-            "proxy_accuracy_vs_reference_88": accuracy,
-            "evidence_answer_audit": evidence_audit,
-            "total_tokens": token_total,
-        },
+            "expected_question_count": len(qids),
+            "answered_question_count": len(results),
+            "missing_qids": missing_qids,
+            "complete": not missing_qids,
+        }
     )
+    write_json(run_dir / "evidence_answer_audit_summary.json", evidence_audit)
     return {
-        "question_count": len(results),
         "proxy_accuracy_vs_reference_88": accuracy,
-        "evidence_answer_audit": evidence_audit,
+        "accuracy_denominator": len(comparison),
+        "reference_answer_count": sum(bool(reference_answers.get(qid, "")) for qid in qids),
         "total_tokens": token_total,
+        "missing_qids": missing_qids,
+        "evidence_answer_audit": evidence_audit,
     }
 
 
@@ -1974,6 +2234,7 @@ def write_evidence_answer_audit(
             "support_score",
             "selected_options",
             "selected_gate_statuses",
+            "selected_gate_sources",
             "selected_gate_reasons",
             "all_option_gate_statuses",
             "evidence_count",
@@ -2067,6 +2328,7 @@ def audit_answer_from_evidence(answer_row: dict[str, Any], question: dict[str, A
     option_labels = answer_row.get("option_labels", {}) or {}
     option_debug = {str(item.get("option", "")).upper(): item for item in (debug.get("option_debug") or [])}
     selected_gate_statuses: dict[str, str] = {}
+    selected_gate_sources: dict[str, str] = {}
     selected_gate_reasons: dict[str, list[str]] = {}
     all_gate_statuses: dict[str, str] = {}
     selected_scores: list[float] = []
@@ -2076,13 +2338,61 @@ def audit_answer_from_evidence(answer_row: dict[str, Any], question: dict[str, A
         gate = ((option_debug.get(option) or {}).get("evidence_gate") or {}).get("final_gate") or {}
         status = str(gate.get("status") or "missing")
         all_gate_statuses[option] = status
-        if option in selected:
-            selected_gate_statuses[option] = status
-            selected_gate_reasons[option] = list(gate.get("reasons") or [])
+
+    rule_validations: list[dict[str, Any]] = []
+    for decision in resolve_answer_decisions(pred_answer, answer_format):
+        answer_option = decision["answer_option"]
+        evaluated_option = decision["evaluated_option"]
+        expected_label = decision["expected_label"]
+        debug_payload = option_debug.get(evaluated_option) or {}
+        gate = ((debug_payload.get("evidence_gate") or {}).get("final_gate") or {})
+        decision_label = debug_payload.get("label")
+        if type(decision_label) is not bool:
+            decision_label = option_labels.get(evaluated_option)
+        label_matches = type(decision_label) is bool and decision_label is expected_label
+
+        if gate and label_matches:
+            status = str(gate.get("status") or "missing")
+            selected_gate_statuses[answer_option] = status
+            selected_gate_sources[answer_option] = (
+                "option_gate"
+                if answer_option == evaluated_option
+                else f"tf_statement_refutation:{evaluated_option}"
+            )
+            selected_gate_reasons[answer_option] = list(gate.get("reasons") or [])
             try:
                 selected_scores.append(float(gate.get("certainty_score", 0.0) or 0.0))
             except (TypeError, ValueError):
                 selected_scores.append(0.0)
+            continue
+
+        valid_rule: dict[str, Any] | None = None
+        for rule_output in debug.get("rule_outputs") or []:
+            validation = validate_rule_provenance(
+                rule_output,
+                question=question,
+                pred_answer=pred_answer,
+                evidence_items=answer_row.get("evidence_items") or [],
+            )
+            rule_validations.append(validation)
+            if validation["valid"]:
+                valid_rule = validation
+                break
+        if valid_rule is not None:
+            selected_gate_statuses[answer_option] = "pass"
+            selected_gate_sources[answer_option] = f"rule_output:{valid_rule['rule_id']}"
+            selected_gate_reasons[answer_option] = []
+            selected_scores.append(float(valid_rule["support_score"]))
+            all_gate_statuses[answer_option] = "pass"
+        else:
+            selected_gate_statuses[answer_option] = "missing"
+            selected_gate_sources[answer_option] = "missing"
+            selected_gate_reasons[answer_option] = []
+            if gate and not label_matches:
+                reasons.append(
+                    f"decision_label_mismatch:{answer_option}->{evaluated_option}:"
+                    f"expected_{str(expected_label).lower()}"
+                )
 
     fmt_error = answer_format_error(pred_answer, answer_format, options)
     if fmt_error:
@@ -2106,6 +2416,10 @@ def audit_answer_from_evidence(answer_row: dict[str, Any], question: dict[str, A
         reasons.append("failed_selected_gate:" + ",".join(failed_selected_gate))
     if partial_selected_gate:
         reasons.append("partial_selected_gate:" + ",".join(partial_selected_gate))
+    for validation in rule_validations:
+        if validation["valid"]:
+            continue
+        reasons.extend(f"rule_provenance:{reason}" for reason in validation["reasons"])
 
     if fmt_error:
         support_status = "format_conflict"
@@ -2127,6 +2441,7 @@ def audit_answer_from_evidence(answer_row: dict[str, Any], question: dict[str, A
         "support_score": round(min(selected_scores), 4) if selected_scores else "",
         "selected_options": selected,
         "selected_gate_statuses": selected_gate_statuses,
+        "selected_gate_sources": selected_gate_sources,
         "selected_gate_reasons": selected_gate_reasons,
         "all_option_gate_statuses": all_gate_statuses,
         "evidence_count": len(answer_row.get("evidence_items") or []),
@@ -2247,7 +2562,13 @@ def write_global_summary(
         lines.extend(
             [
                 "",
-                f"- answered_questions: `{answer_metrics['question_count']}`",
+                f"- expected_questions: `{answer_metrics.get('expected_question_count', answer_metrics['question_count'])}`",
+                f"- answered_questions: `{answer_metrics.get('answered_question_count', answer_metrics['question_count'])}`",
+                f"- failed_questions: `{answer_metrics.get('failed_count', 0)}`",
+                f"- complete: `{answer_metrics.get('complete', True)}`",
+                f"- eligible_for_promotion: `{answer_metrics.get('eligible_for_promotion', True)}`",
+                f"- promotion_score: `{answer_metrics.get('promotion_score', answer_metrics['proxy_accuracy_vs_reference_88'])}`",
+                f"- accuracy_denominator: `{answer_metrics.get('accuracy_denominator', answer_metrics['question_count'])}`",
                 f"- evidence_supported_rate: `{evidence_audit.get('supported_rate', '')}`",
                 f"- evidence_supported_or_weak_rate: `{evidence_audit.get('supported_or_weak_rate', '')}`",
                 f"- evidence_supported: `{evidence_audit.get('supported', '')}`",
@@ -2498,7 +2819,7 @@ def main() -> None:
             payloads=payloads,
             parsed_root=Path(args.parsed_root),
             index_root=Path(args.index_root),
-            reference_answers=read_reference_answers(Path(args.reference_answer_csv)),
+            reference_answer_path=Path(args.reference_answer_csv),
             answer_limit=args.answer_limit,
             answer_workers=max(1, args.answer_workers),
             answer_strategy_config=Path(args.answer_strategy_config),
@@ -2545,7 +2866,7 @@ def main() -> None:
             payloads=payloads,
             parsed_root=Path(args.parsed_root),
             index_root=Path(args.index_root),
-            reference_answers=read_reference_answers(Path(args.reference_answer_csv)),
+            reference_answer_path=Path(args.reference_answer_csv),
             answer_limit=args.answer_limit,
             answer_workers=max(1, args.answer_workers),
             answer_strategy_config=Path(args.answer_strategy_config),

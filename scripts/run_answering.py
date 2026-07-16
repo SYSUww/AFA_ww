@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
+from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,7 +19,13 @@ from afa_agent.exporters import export_answer_csv, export_answers_json, export_e
 from afa_agent.exporters import export_grouped_results
 from afa_agent.io_utils import ensure_run_subdirs, read_json, timestamp_id, write_json, write_jsonl
 from afa_agent.models import Question
-from afa_agent.run_metadata import build_run_manifest, initialize_run_layout
+from afa_agent.run_metadata import (
+    build_run_fingerprint,
+    build_run_manifest,
+    initialize_run_layout,
+    validate_resume_fingerprint,
+)
+from afa_agent.strategy import load_strategy_config, resolve_strategy_path
 
 
 def load_questions(domain: str, split: str, qid_filter: set[str] | None = None) -> list[Question]:
@@ -87,9 +95,47 @@ def main() -> None:
     run_id = args.run_id or timestamp_id(f"{args.domain.lower()}_{args.split.lower()}")
     run_root_dir = Path(args.run_root_dir) if args.run_root_dir else (ROOT / "artifacts" / "runs")
     run_dir = Path(args.resume_run_dir) if args.resume_run_dir else (run_root_dir / run_id)
-    run_dir.mkdir(parents=True, exist_ok=True)
+    run_dir = run_dir.resolve()
+    parsed_path = parsed_path.resolve()
+    index_path = index_path.resolve()
+    resolved_strategy_path = resolve_strategy_path(args.strategy_config or None)
+    strategy_path = resolved_strategy_path.resolve() if resolved_strategy_path else None
     plugin = get_plugin(args.domain)
     config = build_run_config()
+    model_name = config.model.model_name if config.model else "unknown"
+    model_temperature = config.model.temperature if config.model else None
+    public_config = config.to_public_dict()
+    invocation_args = dict(vars(args))
+    effective_args = {
+        "domain": args.domain,
+        "split": args.split,
+        "limit": args.limit,
+        "resume_run_dir": str(run_dir),
+        "qid": args.qid,
+        "qid_file": str(Path(args.qid_file).resolve()) if args.qid_file else None,
+        "strategy_config": str(strategy_path) if strategy_path else None,
+        "parsed_path": str(parsed_path),
+        "index_path": str(index_path),
+        "run_root_dir": str(run_dir.parent),
+        "run_id": run_dir.name,
+    }
+    model_settings = dict(public_config.get("model") or {})
+    model_settings.pop("api_key", None)
+    api_base = model_settings.pop("api_base", None)
+    if api_base:
+        model_settings["api_base_sha256"] = hashlib.sha256(str(api_base).encode("utf-8")).hexdigest()
+    model_settings.setdefault("model_name", model_name)
+    model_settings.setdefault("temperature", model_temperature)
+    fingerprint = build_run_fingerprint(
+        project_root=ROOT,
+        arguments=effective_args,
+        questions=questions,
+        parsed_path=parsed_path,
+        index_path=index_path,
+        strategy_payload=load_strategy_config(strategy_path),
+        strategy_path=strategy_path,
+        model_settings=model_settings,
+    )
     run_manifest = build_run_manifest(
         run_id=run_dir.name,
         run_dir=run_dir,
@@ -101,14 +147,34 @@ def main() -> None:
         plugin_name=plugin.__class__.__name__,
         strategy_label=plugin.strategy_label,
         strategy_details=plugin.strategy_details,
-        model_name=config.model.model_name if config.model else "unknown",
+        model_name=model_name,
         resumed=bool(args.resume_run_dir),
+        model_temperature=model_temperature,
+        fingerprint=fingerprint,
+        invocation_args=invocation_args,
     )
     if args.strategy_config:
         run_manifest["generation_method"]["strategy_config_path"] = str(Path(args.strategy_config).resolve())
     if args.qid_file:
         run_manifest["question_scope"]["qid_file"] = str(Path(args.qid_file).resolve())
-    layout = initialize_run_layout(run_dir, run_manifest, config.to_public_dict())
+    manifest_path = run_dir / "meta" / "run_manifest.json"
+    if args.resume_run_dir:
+        if not manifest_path.exists():
+            raise FileNotFoundError(f"Cannot resume run without manifest: {manifest_path}")
+        existing_manifest = read_json(manifest_path)
+        validate_resume_fingerprint(existing_manifest, fingerprint)
+        resumed_at = datetime.now().isoformat(timespec="seconds")
+        run_manifest = dict(existing_manifest)
+        run_manifest["resumed"] = True
+        run_manifest["last_resumed_at"] = resumed_at
+        run_manifest["resume_count"] = int(run_manifest.get("resume_count", 0)) + 1
+        run_manifest.setdefault("resume_history", []).append(
+            {"resumed_at": resumed_at, "invocation_args": invocation_args}
+        )
+    elif run_dir.exists() and any(run_dir.iterdir()):
+        raise FileExistsError(f"Run directory is not empty; use --resume-run-dir to resume safely: {run_dir}")
+
+    layout = initialize_run_layout(run_dir, run_manifest, public_config)
     existing_results = []
     answers_path = layout["debug"] / "answers.json"
     if answers_path.exists():

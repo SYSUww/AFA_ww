@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from afa_agent.bm25 import BM25Index
+from afa_agent.domains.generic_retriever import ensure_unique_unit_ids
 from afa_agent.models import RetrievalHit
 from afa_agent.text_utils import build_zh_tokenizer, tokenize_zh
 
@@ -27,6 +28,7 @@ DOC_HINT_TERMS = [
 
 class RegulatoryRetriever:
     def __init__(self, units: list[dict[str, Any]], extra_terms: list[str] | None = None):
+        ensure_unique_unit_ids(units, context=self.__class__.__name__)
         self.units = units
         self.extra_terms = extra_terms or []
         self._tokenize_fn = build_zh_tokenizer(self.extra_terms) if self.extra_terms else tokenize_zh
@@ -128,7 +130,7 @@ class RegulatoryRetriever:
             for neighbor_idx in [idx - 1, idx + 1]:
                 if 0 <= neighbor_idx < len(self.units):
                     neighbor = self.units[neighbor_idx]
-                    if neighbor["doc_id"] not in doc_ids:
+                    if neighbor["doc_id"] != hit.doc_id:
                         continue
                     neighbor_id = neighbor["unit_id"]
                     if neighbor_id not in expanded:

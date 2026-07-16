@@ -77,7 +77,8 @@ def ask_option_judgment(
         total_usage.add(response.token_usage)
         try:
             parsed = extract_json_object(response.content)
-            if bool(parsed.get("label", False)) and _reasoning_says_insufficient(str(parsed.get("reasoning_summary", ""))):
+            parsed["label"] = _parse_option_label(parsed.get("label"))
+            if parsed["label"] and _reasoning_says_insufficient(str(parsed.get("reasoning_summary", ""))):
                 parsed["label"] = False
                 parsed["label_coerced_reason"] = "insufficient_evidence_reasoning"
             return parsed, total_usage
@@ -88,7 +89,8 @@ def ask_option_judgment(
                 {
                     "role": "user",
                     "content": "\n\n".join(user_parts)
-                    + '\n\n上一次输出不是合法 JSON。请只输出一个 JSON 对象，例如 {"label": true, "reasoning_summary": "...", "used_evidence_ids": [1]}。',
+                    + '\n\n上一次输出不符合约定。请只输出一个 JSON 对象；label 必须是 JSON 布尔值 true 或 false，'
+                    '例如 {"label": true, "reasoning_summary": "...", "used_evidence_ids": [1]}。',
                 },
             ]
     assert last_error is not None
@@ -115,16 +117,22 @@ def ask_answer_fallback(
         },
     ]
     total_usage = TokenUsage()
+    last_error: Exception | None = None
     for _ in range(2):
         response = client.chat_json(messages)
         total_usage.add(response.token_usage)
         try:
             parsed = extract_json_object(response.content)
-            raw_answer = str(parsed.get("answer", "")).strip().upper()
+            raw_value = parsed.get("answer")
+            if not isinstance(raw_value, str):
+                raise ValueError("Fallback answer must be a string")
+            raw_answer = raw_value.strip().upper()
             cleaned = "".join(ch for ch in sorted(set(raw_answer)) if ch in allowed_options)
             if cleaned:
                 return cleaned, total_usage
-        except Exception:
+            raise ValueError("Fallback answer does not contain an allowed option")
+        except Exception as exc:
+            last_error = exc
             messages = [
                 {"role": "system", "content": system_prompt},
                 {
@@ -133,8 +141,17 @@ def ask_answer_fallback(
                     + '\n\n上一次输出不是合法 JSON。请只输出一个 JSON 对象，例如 {"answer": "A"}。',
                 },
             ]
-    fallback = allowed_options[0] if answer_format in {"mcq", "multi"} else "B"
-    return fallback, total_usage
+    assert last_error is not None
+    raise ValueError("Fallback model returned no valid answer after 2 attempts") from last_error
+
+
+def _parse_option_label(value: Any) -> bool:
+    """Accept only JSON booleans, plus numeric JSON 0/1 for provider compatibility."""
+    if isinstance(value, bool):
+        return value
+    if type(value) is int and value in {0, 1}:
+        return value == 1
+    raise ValueError(f"Option judgment label must be boolean or integer 0/1, got {type(value).__name__}")
 
 
 def parse_confidence(payload: dict[str, Any], default: float = 0.5) -> float:
@@ -215,7 +232,7 @@ def finalize_answer(
                 and (not supported_only_formats or answer_format in supported_only_formats)
             ):
                 candidate = observation.get("supported_only_answer", "")
-                if candidate or answer_policy_settings.get("allow_empty_no_supported", False):
+                if observation.get("is_supported_only_format_compliant", False):
                     metadata["answer_policy"]["applied_mode"] = mode
                     metadata["answer_policy"]["pre_policy_answer"] = final_answer
                     return candidate, metadata

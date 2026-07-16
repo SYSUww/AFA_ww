@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable, TextIO
 
 
 def ensure_dir(path: Path) -> Path:
@@ -16,17 +18,39 @@ def read_json(path: Path) -> Any:
 
 
 def write_json(path: Path, payload: Any) -> None:
-    ensure_dir(path.parent)
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     safe_text = text.encode("utf-8", errors="replace").decode("utf-8")
-    path.write_text(safe_text, encoding="utf-8")
+    _atomic_write_text(path, lambda handle: handle.write(safe_text))
 
 
 def write_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> None:
-    ensure_dir(path.parent)
-    with path.open("w", encoding="utf-8") as handle:
+    def write_rows(handle: TextIO) -> None:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+    _atomic_write_text(path, write_rows)
+
+
+def _atomic_write_text(path: Path, writer: Callable[[TextIO], object]) -> None:
+    """Write a UTF-8 text file atomically without leaving partial checkpoints."""
+
+    ensure_dir(path.parent)
+    fd, temporary_name = tempfile.mkstemp(
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        text=True,
+    )
+    temporary_path = Path(temporary_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            writer(handle)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_path, path)
+    except BaseException:
+        temporary_path.unlink(missing_ok=True)
+        raise
 
 
 def timestamp_id(prefix: str) -> str:

@@ -1,0 +1,41 @@
+{
+  "version": "accuracy_token_no_embedding_v2",
+  "execution": {
+    "runner": "manual_p0_then_gated_research",
+    "compatible_with_run_loop_engine": false,
+    "zero_token_setup_only": true,
+    "requires_explicit_paid_run": true
+  },
+  "baseline_id": "B0-run",
+  "baseline_config": "configs/autoresearch/default_strategy.json",
+  "candidate_set": "configs/autoresearch/candidate_sets.json",
+  "dataset_slices": "configs/autoresearch/dataset_slices_v2.json",
+  "dataset_slices_manifest": "configs/autoresearch/dataset_slices_v2_manifest.json",
+  "output_root": "artifacts/autoresearch_v2",
+  "domains": [
+    "all"
+  ],
+  "stages": [
+    "run_integrity",
+    "answer_contract",
+    "retrieval_integrity",
+    "audit_calibration",
+    "accuracy_insurance",
+    "accuracy_financial_reports",
+    "token_optimization"
+  ],
+  "smoke_slice": "smoke_v2",
+  "default_stage_slice": "dev_v2",
+  "validation_slice": "gate_v2",
+  "holdout_slice": "holdout_v2",
+  "promotion_rules": {
+    "format_conflict_max": 0,
+    "failed_questions_max": 0,
+    "contradicted_must_not_increase": true,
+    "supported_or_weak_must_not_decrease": true,
+    "token_only_global_reduction_min": 0.05,
+    "token_only_domain_reduction_min": 0.1,
+    "one_primary_variable_per_experiment": true,
+    "embedding_forbidden": true
+  }
+}
