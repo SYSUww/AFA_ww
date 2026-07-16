@@ -2,6 +2,8 @@
 
 更新时间：2026-07-15 15:18（Asia/Shanghai）
 
+状态：已于 2026-07-15 完成。新的当前计划见 `wiki/accuracy_token_research_plan.md`。
+
 ## 目标
 
 在不使用真实 `doc_ids` 参与检索和作答的前提下，用当前最佳 locator `attempt_43 / canonical_score_inherit` 完成 78 道严格盲测候选题的答题闭环，并与历史 `attempt_31` 和 A 榜 v20 参考答案向量进行可复现对比。

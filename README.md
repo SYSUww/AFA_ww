@@ -40,7 +40,7 @@
 
 `artifacts/submissions/group_a_current_best_merged_20260629/` 是 2026-06-29 记录的 `71%` 历史版本，总 Token `1,305,879`，保留用于回溯，不再作为当前最佳版本。
 
-后续优化重点是：修复 insurance 多选格式冲突和缺失证据，继续提升 financial_reports 的 selected evidence 完整性，并在真实 Group B 数据到位后验证 locator 泛化能力。
+后续优化重点是：修复 insurance 多选格式冲突和缺失证据，继续提升 financial_reports 的 selected evidence 完整性，并在真实 Group B 数据到位后验证 locator 泛化能力。当前研究路线与晋级规则见 `wiki/accuracy_token_research_plan.md`；实验结果追加记录在 `wiki/accuracy_token_experiment_log.md`。
 
 ## 目录结构
 
