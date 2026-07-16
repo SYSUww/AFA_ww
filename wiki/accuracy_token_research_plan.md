@@ -2,7 +2,7 @@
 
 更新时间：2026-07-16（Asia/Shanghai）
 
-状态：准备执行
+状态：P0 零 Token 工程批次已完成；等待明确授权后生成全新付费 `B0-run`
 
 ## 1. 研究目标
 
@@ -370,3 +370,17 @@ Token 阶段首轮目标：全局不低于 `65/78` 代理匹配、校准后支�
 - 跨文档邻居、重复 unit ID、错误 checkpoint 复用均有回归测试；
 - 审计口径经过人工逐题核对；
 - 形成第一份 promoted/rejected 实验记录。
+
+## 8. P0 执行结果（2026-07-16）
+
+- 代码提交：`89c79d4`；研究分支：`codex/accuracy-token-optimization`；
+- v2 切片已固定为 5 个领域各 dev/gate/holdout=`10/5/5`，smoke 为 dev 子集；生成器和来源 hash 已提交；
+- 普通 run 与 B-board run 已加入 Git/参数/题目/parsed/index/策略/模型指纹、原子 JSON/JSONL checkpoint 和恢复前校验；
+- blind locator/answer 仅接收白名单字段，参考答案在 `final_answers.json` 原子封存后才读取；失败题保留在准确率分母并禁止晋级；
+- 5 个历史多选格式冲突完成零模型本地回放，均恢复为合法多选；
+- neighbor expansion 已限制在同一 doc_id；insurance/research 标准索引重建后分别为 610/940 个唯一单元，缺失与重复 ID 均为 0；
+- 旧 78 题产物按新审计口径离线重算：supported `60 -> 66`、unsupported `11 -> 5`，其余 weak `1`、contradicted `1`、format conflict `5` 不变；该变化只修正 TF=B 的审计语义，不改变答案或 Token；
+- 本地规则 provenance 采用 schema v1 和 allowlist validator。当前只放行可复算且证据 ID 完整的共享免赔额规则；其余旧规则继续标为 unsupported；
+- 全量单元测试 `42/42`、compileall、JSON 校验、切片 stale check 和 `git diff --check` 通过；模型调用与新增模型 Token 均为 0。
+
+P0 工程门槛已通过，但尚未生成新的正式性能基线。下一步必须使用全新 run dir 执行 `B0-run`；旧 B-board checkpoint 因没有 fingerprint 会按设计拒绝恢复。未获得付费运行授权前，不启动 A1/A2 或全量模型实验。
