@@ -8,9 +8,97 @@ from afa_agent.b_board.calculation import (
     CalculationExecutor,
     CalculationPlanError,
 )
+from afa_agent.b_board.io import BQuestion
+from afa_agent.b_board.runner import (
+    _calculation_retry_query,
+    _diagnostic_phrase_evidence,
+    _merge_calculation_evidence,
+)
 
 
 class BBoardCalculationTests(unittest.TestCase):
+    def test_diagnostic_retry_query_and_evidence_merge(self):
+        question = BQuestion(
+            qid="q1",
+            domain="financial_reports",
+            split="B",
+            question="计算境外收入同比增幅",
+            options={},
+            answer_format="calculation",
+            type="计算题",
+            answer_slots=1,
+            answer_slot_templates=("999999.99",),
+        )
+        query = _calculation_retry_query(
+            question,
+            {"decision_summary": "缺少2025年境外收入原始金额"},
+            CalculationPlanError("Unknown reference: overseas_2025"),
+        )
+        self.assertIn("缺少2025年境外收入原始金额", query)
+        self.assertIn("Unknown reference", query)
+
+        merged, added = _merge_calculation_evidence(
+            [{"unit_id": "q", "text": "question"}, {"unit_id": "u1"}],
+            [{"unit_id": "u1"}, {"unit_id": "u2"}, {"unit_id": "u3"}],
+            max_items=3,
+        )
+        self.assertEqual([item["unit_id"] for item in merged], ["q", "u1", "u2"])
+        self.assertEqual(added, ["u2"])
+
+    def test_phrase_overlay_prioritizes_rare_missing_variable_unit(self):
+        class FakeRetriever:
+            units = [
+                {
+                    "unit_id": "generic",
+                    "doc_id": "annual_byd_2025_report",
+                    "title_path": [],
+                    "text": "营业收入合计 803,964,958,000.00",
+                    "unit_type": "metric_row",
+                },
+                {
+                    "unit_id": "overseas",
+                    "doc_id": "annual_byd_2025_report",
+                    "title_path": ["分地区"],
+                    "text": "2025年 分地区 境外 310,740,988,000.00",
+                    "unit_type": "paragraph",
+                },
+            ]
+
+        hits = _diagnostic_phrase_evidence(
+            FakeRetriever(),  # type: ignore[arg-type]
+            ["annual_byd_2025_report"],
+            "比亚迪2025年缺少分地区境外营业收入",
+            top_k=2,
+        )
+        self.assertEqual(hits[0]["unit_id"], "overseas")
+        self.assertEqual(
+            hits[0]["metadata"]["retrieval_source"], "phrase_constrained_v2"
+        )
+
+        class DateRetriever:
+            units = [
+                {
+                    "unit_id": "june",
+                    "doc_id": "text08",
+                    "title_path": [],
+                    "text": "2023年6月30日评估增值率1468.47%",
+                },
+                {
+                    "unit_id": "december",
+                    "doc_id": "text08",
+                    "title_path": [],
+                    "text": "2023年12月31日评估增值率740.58%",
+                },
+            ]
+
+        dated = _diagnostic_phrase_evidence(
+            DateRetriever(),  # type: ignore[arg-type]
+            ["text08"],
+            "缺少2023年12月31日评估增值率",
+            top_k=1,
+        )
+        self.assertEqual(dated[0]["unit_id"], "december")
+
     def test_decimal_mean_rounds_only_at_output(self):
         result = CalculationExecutor().execute(
             {

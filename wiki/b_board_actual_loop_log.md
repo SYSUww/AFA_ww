@@ -1110,3 +1110,518 @@
   "token_accounting_complete": true
 }
 ```
+
+## b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1
+
+- recorded_at: `2026-07-21T19:04:16+00:00`
+
+```json
+{
+  "attempt_index": 1,
+  "change_vector": {
+    "iterative_retrieval": true,
+    "merge_new_evidence": true,
+    "strategy": "diagnostic_query_v1"
+  },
+  "comparable_attempt_count_before": 0,
+  "direction_id": "calculation_variable_retrieval",
+  "domains": [
+    "financial_contracts",
+    "financial_reports"
+  ],
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "event": "attempt_planned",
+  "experiment_id": "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_similarity": null,
+  "hypothesis": "Use failed plan diagnostics and decision summaries to retrieve missing variables between calculation retries.",
+  "material_delta": {
+    "requery_between_plan_attempts": true
+  },
+  "pipeline_stage": "retrieval",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-21T19:04:16+00:00",
+  "related_experiment_ids": [],
+  "root_cause_cluster": "calculation_missing_variables",
+  "status": "running",
+  "target_qids": [
+    "fc_b_005",
+    "fin_b_013",
+    "fin_b_015",
+    "fin_b_019"
+  ]
+}
+```
+
+## b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1
+
+- recorded_at: `2026-07-21T19:09:27+00:00`
+
+```json
+{
+  "answered_qids": [],
+  "attempt_index": 1,
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "iterative_retrieval": true,
+          "merge_new_evidence": true,
+          "strategy": "diagnostic_query_v1"
+        },
+        "domains": [
+          "financial_contracts",
+          "financial_reports"
+        ],
+        "hypothesis": "use failed plan diagnostics and decision summaries to retrieve missing variables between calculation retries.",
+        "pipeline_stage": "retrieval",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "calculation_missing_variables",
+        "target_qids": [
+          "fc_b_005",
+          "fin_b_013",
+          "fin_b_015",
+          "fin_b_019"
+        ]
+      }
+    },
+    "context_sha256": "fb8ccbeedeb2b9d54db9a8a389961275c1cf689059baaf6a3b8445af28fb8748",
+    "direction_sha256": "cec24c860f890a16afdbae9467346dc9cd0ebfc34546da70a6b2480ceafa590f",
+    "schema_version": 1,
+    "semantic_sha256": "14171492e301cc5db3053328d1f10c8a746691f9ffbc6ac93febc4c5f0828777",
+    "sha256": "d24d4e7254e8c038d838aa9ce655a41fc78b0a6893a2dfb7464c2697f3000852"
+  },
+  "change_vector": {
+    "iterative_retrieval": true,
+    "merge_new_evidence": true,
+    "strategy": "diagnostic_query_v1"
+  },
+  "direction_id": "calculation_variable_retrieval",
+  "domains": [
+    "financial_contracts",
+    "financial_reports"
+  ],
+  "evaluation_status": "not_runnable_no_answers",
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "event": "attempt_rejected",
+  "experiment_id": "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+  "failed_qids": [
+    "fc_b_005",
+    "fin_b_013",
+    "fin_b_015",
+    "fin_b_019"
+  ],
+  "generation_token_usage": {
+    "completion_tokens": 10027,
+    "prompt_tokens": 98063,
+    "total_tokens": 108090
+  },
+  "generator_model": "gpt-5.5",
+  "hypothesis": "Use failed plan diagnostics and decision summaries to retrieve missing variables between calculation retries.",
+  "material_delta": {
+    "requery_between_plan_attempts": true
+  },
+  "next_root_causes": [
+    "phrase_constrained_retrieval",
+    "document_scoped_exact_match",
+    "diagnostic_query_compaction"
+  ],
+  "pipeline_stage": "retrieval",
+  "promotion_result": "rejected",
+  "question_types": [
+    "calculation"
+  ],
+  "reason": "0/4 answers generated: full diagnostic queries were diluted by original question and generic terms; three financial-report retries added no new evidence and the contract retry added off-target documents.",
+  "recorded_at": "2026-07-21T19:09:27+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "calculation_missing_variables",
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/calculation_variable_retrieval/diagnostic_query_v1_invalid4",
+  "status": "rejected",
+  "target_qids": [
+    "fc_b_005",
+    "fin_b_013",
+    "fin_b_015",
+    "fin_b_019"
+  ],
+  "token_accounting_complete": true
+}
+```
+
+## b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2
+
+- recorded_at: `2026-07-21T19:09:52+00:00`
+
+```json
+{
+  "attempt_index": 2,
+  "change_vector": {
+    "merge_with_bm25": true,
+    "rare_phrase_filter": true,
+    "strategy": "phrase_constrained_v2",
+    "year_doc_boost": true
+  },
+  "comparable_attempt_count_before": 1,
+  "direction_id": "calculation_variable_retrieval",
+  "domains": [
+    "financial_contracts",
+    "financial_reports"
+  ],
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "event": "attempt_planned",
+  "experiment_id": "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+  "generator_model": "gpt-5.5",
+  "history_decision": "refine_existing",
+  "history_similarity": 0.720238,
+  "hypothesis": "Phrase-constrained exact matching over candidate documents retrieves missing financial variables that BM25 diagnostic queries miss.",
+  "material_delta": {
+    "deterministic_phrase_overlay": true
+  },
+  "pipeline_stage": "retrieval",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-21T19:09:52+00:00",
+  "related_experiment_ids": [
+    "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1"
+  ],
+  "root_cause_cluster": "calculation_missing_variables",
+  "status": "running",
+  "target_qids": [
+    "fc_b_005",
+    "fin_b_013",
+    "fin_b_015",
+    "fin_b_019"
+  ]
+}
+```
+
+## b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2
+
+- recorded_at: `2026-07-21T19:25:54+00:00`
+
+```json
+{
+  "answered_qids": [
+    "fc_b_005",
+    "fin_b_015",
+    "fin_b_019"
+  ],
+  "attempt_index": 2,
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 1202,
+    "prompt_tokens": 15698,
+    "total_tokens": 16900
+  },
+  "blind_pairs": {
+    "fc_b_005": {
+      "candidate_label": "B",
+      "evaluation": {
+        "confidence": 99,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "B的两个数值均有封存证据直接支持：2023年6月30日证据明确列示增值率1,468.47%，2023年12月31日加期评估证据明确列示增值率740.58%。A将2023年6月30日增值率计算为-93.62%，公式方向和分母错误，且与证据原文明确披露的1,468.47%相冲突；同时A称未提供2023年12月31日增值率，但B所引证据已直接提供740.58%。因此B更受证据支持且可验证。",
+        "winner": "B"
+      },
+      "incumbent_label": "A",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "token_usage": {
+        "completion_tokens": 259,
+        "prompt_tokens": 4677,
+        "total_tokens": 4936
+      }
+    },
+    "fin_b_015": {
+      "candidate_label": "B",
+      "evaluation": {
+        "confidence": 92,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "B提供了营业收入与经营活动现金流量净额的证据，并按经营现金流率=经营活动现金流量净额/营业收入计算：宁德时代约31.44%，美的集团约11.69%，排序为宁德时代>美的集团，差值约19.75个百分点，答案格式也符合要求。A在已有现金流证据且可补充收入证据的情况下输出无法计算，未完成题目要求。B的中间步骤中百分比差值计算写法略绕，但最终差值与按两家公司经营现金流率相减一致，可重放验证。",
+        "winner": "B"
+      },
+      "incumbent_label": "A",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "token_usage": {
+        "completion_tokens": 557,
+        "prompt_tokens": 5033,
+        "total_tokens": 5590
+      }
+    },
+    "fin_b_019": {
+      "candidate_label": "A",
+      "evaluation": {
+        "confidence": 98,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "A提供了比亚迪、宁德时代、美的集团三家公司2025年资产负债率的对应证据，数值分别为70.74%、61.94%、61.17%，并按题目公式等价计算为100÷(100-资产负债率百分数)，得到权益乘数约3.4176、2.6274、2.5753，排序为比亚迪>宁德时代>美的集团，最高与最低差值0.8423，保留两位为0.84，计算轨迹可重放且与证据一致。B仅使用美的集团证据，未计算三家公司排序和差值，输出无法确定，不符合题目要求。",
+        "winner": "A"
+      },
+      "incumbent_label": "B",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "token_usage": {
+        "completion_tokens": 386,
+        "prompt_tokens": 5988,
+        "total_tokens": 6374
+      }
+    }
+  },
+  "candidate_evaluation_token_usage": {
+    "completion_tokens": 4057,
+    "prompt_tokens": 14997,
+    "total_tokens": 19054
+  },
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "merge_with_bm25": true,
+          "rare_phrase_filter": true,
+          "strategy": "phrase_constrained_v2",
+          "year_doc_boost": true
+        },
+        "domains": [
+          "financial_contracts",
+          "financial_reports"
+        ],
+        "hypothesis": "phrase-constrained exact matching over candidate documents retrieves missing financial variables that bm25 diagnostic queries miss.",
+        "pipeline_stage": "retrieval",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "calculation_missing_variables",
+        "target_qids": [
+          "fc_b_005",
+          "fin_b_013",
+          "fin_b_015",
+          "fin_b_019"
+        ]
+      }
+    },
+    "context_sha256": "fb8ccbeedeb2b9d54db9a8a389961275c1cf689059baaf6a3b8445af28fb8748",
+    "direction_sha256": "3d20c6156e6f5933cf2e8ad610816764a274de9c76a40c0fc1a0d9f912628735",
+    "schema_version": 1,
+    "semantic_sha256": "c1eb54f962c7c643978f348937c68d3368738eccb1fec7920d7b7df8646cbdb6",
+    "sha256": "c6593a996f3d79d8128005cfd648e963f55f0d8c7c34abc6ec5b9e3357dee0ac"
+  },
+  "change_vector": {
+    "merge_with_bm25": true,
+    "rare_phrase_filter": true,
+    "strategy": "phrase_constrained_v2",
+    "year_doc_boost": true
+  },
+  "changed_answer_qids": [
+    "fc_b_005",
+    "fin_b_015",
+    "fin_b_019"
+  ],
+  "comparable_attempt_count_after": 2,
+  "confidence_after": {
+    "fc_b_005": 100,
+    "fin_b_015": 80,
+    "fin_b_019": 85
+  },
+  "confidence_before": {
+    "fc_b_005": 0,
+    "fin_b_015": 0,
+    "fin_b_019": 0
+  },
+  "direction_id": "calculation_variable_retrieval",
+  "direction_status": "awaiting_refinement",
+  "domains": [
+    "financial_contracts",
+    "financial_reports"
+  ],
+  "effective_branch": "codex/b榜-loop-i003-phrase-constrained-retrieval",
+  "evaluator_failed_attempts_not_in_usage": 6,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+  "failed_qids": [
+    "fin_b_013"
+  ],
+  "full_evaluation_token_usage": {
+    "completion_tokens": 87220,
+    "prompt_tokens": 472244,
+    "total_tokens": 559464
+  },
+  "generation_token_usage": {
+    "completion_tokens": 8586,
+    "prompt_tokens": 102885,
+    "total_tokens": 111471
+  },
+  "generator_model": "gpt-5.5",
+  "history_decision": "refine_existing",
+  "history_related_experiment_ids": [
+    "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1"
+  ],
+  "history_similarity": 0.720238,
+  "hypothesis": "Phrase-constrained exact matching over candidate documents retrieves missing financial variables that BM25 diagnostic queries miss.",
+  "integrity": {
+    "artifact_complete": true,
+    "invalid_submission_after": 1,
+    "invalid_submission_before": 4,
+    "passed": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/iterations/iteration_003_phrase_constrained_v2",
+  "material_delta": {
+    "deterministic_phrase_overlay": true,
+    "diagnostic_query_compaction": true,
+    "document_year_entity_boosts": true
+  },
+  "next_root_causes": [
+    "table_unit_context_grounding",
+    "choice_evidence_contract",
+    "no_supported_fallback"
+  ],
+  "pipeline_stage": "retrieval",
+  "promotion_result": "promoted",
+  "question_types": [
+    "calculation"
+  ],
+  "reason": "Phrase-constrained retrieval generated three grounded replayable answers; all three rose from blocked 0 to high (100/80/85), won blind A/B, and reduced invalid submission qids from 4 to 1 with no new hard failure.",
+  "recorded_at": "2026-07-21T19:25:54+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "calculation_missing_variables",
+  "round_gate": {
+    "metrics": {
+      "causal_changed_qids": [
+        "fc_b_005",
+        "fin_b_015",
+        "fin_b_019"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 17,
+          "blocked_low_before": 18,
+          "low_tier_improved_qids": [
+            "fc_b_005"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 14,
+          "blocked_low_before": 16,
+          "low_tier_improved_qids": [
+            "fin_b_015",
+            "fin_b_019"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 12,
+          "blocked_low_before": 12,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 11,
+          "blocked_low_before": 11,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 16,
+          "blocked_low_before": 16,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_006": 10,
+        "fc_b_016": -2,
+        "fc_b_018": -5,
+        "fc_b_019": 3,
+        "fin_b_006": 3,
+        "fin_b_007": 2,
+        "fin_b_009": -5,
+        "fin_b_017": 2,
+        "ins_b_002": 5,
+        "ins_b_004": 32,
+        "ins_b_005": 4,
+        "ins_b_006": 17,
+        "ins_b_007": 5,
+        "ins_b_008": 5,
+        "ins_b_009": 4,
+        "ins_b_010": -7,
+        "ins_b_012": -16,
+        "ins_b_014": 6,
+        "ins_b_016": 18,
+        "ins_b_017": 10,
+        "ins_b_020": 4,
+        "reg_b_005": -6,
+        "reg_b_008": -6,
+        "reg_b_013": -10,
+        "reg_b_015": 2,
+        "reg_b_017": 15,
+        "reg_b_023": -10,
+        "res_b_001": -6,
+        "res_b_013": -8,
+        "res_b_015": -3
+      },
+      "unchanged_raw_tier_drift": [
+        "fin_b_009",
+        "ins_b_004",
+        "ins_b_005",
+        "ins_b_006",
+        "ins_b_009",
+        "ins_b_010",
+        "ins_b_016",
+        "ins_b_017",
+        "reg_b_013",
+        "reg_b_017",
+        "reg_b_023"
+      ]
+    },
+    "reasons": [],
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/calculation_variable_retrieval/phrase_constrained_v2_invalid4",
+  "single_candidate_confidence": {
+    "fc_b_005": 100,
+    "fin_b_015": 78,
+    "fin_b_019": 85
+  },
+  "status": "accepted",
+  "target_qids": [
+    "fc_b_005",
+    "fin_b_013",
+    "fin_b_015",
+    "fin_b_019"
+  ],
+  "tests": {
+    "count": 107,
+    "passed": true
+  },
+  "token_accounting_complete": false
+}
+```

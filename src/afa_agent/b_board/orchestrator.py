@@ -274,6 +274,8 @@ class BBoardLoopOrchestrator:
             "b_actual_v1",
             "b_actual_v2",
             "b_actual_v3",
+            "b_actual_v4",
+            "b_actual_v5",
             "b_actual_composite_v1",
         }:
             raise BBoardLoopStateError("Existing B0 manifest runner identity mismatch")

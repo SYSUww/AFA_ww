@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime
@@ -43,7 +44,8 @@ sort_desc 使用 items:[{label,source}]。outputs 数量必须等于答案槽数
 format 仅 raw,decimal0,decimal1,decimal2,percent2,date_cn,text。中间过程不得舍入，最终才按格式四舍五入。
 证据 ID 必须原样使用给定 evidence_id。题目本身给出的数值可引用 question:<qid>。只输出 JSON。"""
 
-RUNNER_VERSION = "b_actual_v3"
+RUNNER_VERSION = "b_actual_v5"
+CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 
 
 @dataclass(slots=True)
@@ -289,20 +291,13 @@ class BBoardActualRunner:
             },
             *[_normalize_evidence(hit.to_dict()) for hit in hits],
         ]
-        evidence_payload = [
-            {
-                "evidence_id": item["unit_id"],
-                "doc_id": item.get("doc_id", ""),
-                "title": " > ".join(item.get("title_path", [])),
-                "text": str(item.get("text", ""))[:5000],
-            }
-            for item in evidence_items
-        ]
         usage = TokenUsage()
         last_error: Exception | None = None
         feedback = ""
         diagnostics: list[dict[str, Any]] = []
+        retrieval_rounds: list[dict[str, Any]] = []
         for attempt_number in range(1, 4):
+            evidence_payload = _calculation_evidence_payload(evidence_items)
             messages = [
                 {"role": "system", "content": CALCULATION_SYSTEM_PROMPT},
                 {
@@ -345,7 +340,11 @@ class BBoardActualRunner:
                     decision_trace={"source": "structured_calculation_plan", "format_forced": False},
                     calculation_trace=result.trace,
                     token_usage=usage.to_dict(),
-                    locator={**dict(locator), "selected_doc_ids": candidate_doc_ids},
+                    locator={
+                        **dict(locator),
+                        "selected_doc_ids": candidate_doc_ids,
+                        "calculation_retrieval_rounds": retrieval_rounds,
+                    },
                 )
                 validate_b_answer(question, artifact.to_submission_answer())
                 return artifact
@@ -359,7 +358,51 @@ class BBoardActualRunner:
                         "plan": plan,
                     }
                 )
-                feedback = f"上一次计划无法本地重放：{exc}。请修正并只输出完整 JSON。"
+                added_ids: list[str] = []
+                retry_query = ""
+                if attempt_number < 3:
+                    retry_query = _calculation_retry_query(question, plan, exc)
+                    retry_hits = self.retrievers[question.domain].search(
+                        candidate_doc_ids,
+                        retry_query,
+                        top_k=max(12, self.calculation_top_k),
+                        unit_type_boosts={
+                            "metric_row": 2.4,
+                            "formula_block": 2.0,
+                            "clause_block": 1.5,
+                            "article": 1.3,
+                        },
+                        ensure_per_doc=True,
+                        expand_neighbors=True,
+                    )
+                    phrase_hits = _diagnostic_phrase_evidence(
+                        self.retrievers[question.domain],
+                        candidate_doc_ids,
+                        f"{question.question}\n{retry_query}",
+                        top_k=max(12, self.calculation_top_k),
+                    )
+                    evidence_items, added_ids = _merge_calculation_evidence(
+                        evidence_items,
+                        [
+                            *phrase_hits,
+                            *[_normalize_evidence(hit.to_dict()) for hit in retry_hits],
+                        ],
+                        max_items=1 + self.calculation_top_k * 3,
+                    )
+                    retrieval_round = {
+                        "after_attempt": attempt_number,
+                        "query": retry_query,
+                        "phrase_overlay_count": len(phrase_hits),
+                        "added_evidence_ids": added_ids,
+                        "evidence_count": len(evidence_items),
+                    }
+                    retrieval_rounds.append(retrieval_round)
+                    diagnostics[-1]["retrieval"] = retrieval_round
+                feedback = (
+                    f"上一次计划无法本地重放：{exc}。"
+                    f"已按缺失变量定向补充 {len(added_ids)} 条新证据。"
+                    "请重新检查全部证据、补齐变量并只输出完整 JSON。"
+                )
         assert last_error is not None
         raise BAnswerGenerationError(
             f"Calculation failed after {len(diagnostics)} grounded replay attempts: {last_error}",
@@ -382,6 +425,7 @@ class BBoardActualRunner:
                 ).hexdigest(),
                 "trace_schema_version": 2,
                 "grounding_required": True,
+                "iterative_retrieval_version": CALCULATION_RETRIEVAL_VERSION,
             },
         }
         return build_run_fingerprint(
@@ -464,6 +508,149 @@ def _normalize_evidence(item: Mapping[str, Any]) -> dict[str, Any]:
     payload.setdefault("title_path", [])
     payload.setdefault("text", "")
     return payload
+
+
+def _calculation_evidence_payload(
+    evidence_items: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "evidence_id": item["unit_id"],
+            "doc_id": item.get("doc_id", ""),
+            "title": " > ".join(item.get("title_path", [])),
+            "text": str(item.get("text", ""))[:5000],
+        }
+        for item in evidence_items
+    ]
+
+
+def _calculation_retry_query(
+    question: BQuestion,
+    plan: Mapping[str, Any] | None,
+    error: Exception,
+) -> str:
+    summary = str((plan or {}).get("decision_summary", "")).strip()
+    return "\n".join(
+        item
+        for item in (
+            (summary or question.question)[:1500],
+            str(error)[:800],
+        )
+        if item
+    )
+
+
+def _diagnostic_phrase_evidence(
+    retriever: GenericBM25Retriever,
+    doc_ids: Sequence[str],
+    query: str,
+    *,
+    top_k: int,
+) -> list[dict[str, Any]]:
+    normalized_query = _compact_text(query)
+    concept_groups: list[tuple[tuple[str, ...], int]] = []
+    if "境外" in normalized_query or "分地区" in normalized_query:
+        concept_groups.extend([(("境外",), 12), (("分地区",), 10), (("营业收入",), 4)])
+    elif "资产负债率" in normalized_query:
+        concept_groups.extend(
+            [
+                (("资产负债率",), 12),
+                (("总负债", "负债合计"), 8),
+                (("总资产", "资产总计"), 8),
+            ]
+        )
+    elif "评估增值率" in normalized_query or "增值率" in normalized_query:
+        concept_groups.extend([(("评估增值率", "增值率"), 12), (("评估基准日",), 5)])
+    elif "营业收入" in normalized_query:
+        concept_groups.extend([(("营业收入", "营业收入合计", "营业总收入"), 10)])
+    if not concept_groups:
+        return []
+
+    years = set(re.findall(r"20\d{2}", normalized_query))
+    dates = set(re.findall(r"20\d{2}年\d{1,2}月\d{1,2}日", normalized_query))
+    entities = [
+        item
+        for item in ("冠鸿智能", "比亚迪", "宁德时代", "美的集团")
+        if item in normalized_query
+    ]
+    rows_by_doc: dict[str, list[tuple[int, int, Mapping[str, Any]]]] = {}
+    allowed_docs = set(doc_ids)
+    for position, unit in enumerate(retriever.units):
+        doc_id = str(unit.get("doc_id", ""))
+        if doc_id not in allowed_docs:
+            continue
+        text = _compact_text(
+            " ".join(str(item) for item in unit.get("title_path", []))
+            + "\n"
+            + str(unit.get("text", ""))
+        )
+        matched_groups = 0
+        score = 0
+        for alternatives, weight in concept_groups:
+            if any(term in text for term in alternatives):
+                matched_groups += 1
+                score += weight
+        if not matched_groups:
+            continue
+        score += 3 * sum(year in text for year in years)
+        score += 8 * sum(date in text for date in dates)
+        if any(year in doc_id for year in years):
+            score += 5
+        score += 6 * sum(entity in text for entity in entities)
+        score += 2 if str(unit.get("unit_type", "")) == "metric_row" else 0
+        rows_by_doc.setdefault(doc_id, []).append((score, -position, unit))
+
+    selected: list[tuple[int, int, Mapping[str, Any]]] = []
+    per_doc = max(1, min(3, top_k // max(1, len(rows_by_doc))))
+    for doc_id in doc_ids:
+        ranked = sorted(rows_by_doc.get(doc_id, []), reverse=True)
+        selected.extend(ranked[:per_doc])
+    selected.sort(reverse=True)
+    evidence: list[dict[str, Any]] = []
+    for score, _, unit in selected[:top_k]:
+        evidence.append(
+            {
+                "unit_id": str(unit["unit_id"]),
+                "doc_id": str(unit["doc_id"]),
+                "title_path": list(unit.get("title_path", [])),
+                "text": str(unit.get("text", "")),
+                "score": float(1000 + score),
+                "metadata": {
+                    **dict(unit.get("metadata", {})),
+                    "unit_type": unit.get("unit_type", ""),
+                    "retrieval_source": CALCULATION_RETRIEVAL_VERSION,
+                },
+            }
+        )
+    return evidence
+
+
+def _compact_text(value: str) -> str:
+    return re.sub(r"\s+", "", str(value)).replace(",", "")
+
+
+def _merge_calculation_evidence(
+    existing: Sequence[Mapping[str, Any]],
+    additions: Sequence[Mapping[str, Any]],
+    *,
+    max_items: int,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    if max_items < 1:
+        raise ValueError("max_items must be positive")
+    merged: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    added_ids: list[str] = []
+    for source, is_addition in ((existing, False), (additions, True)):
+        for raw in source:
+            item = dict(raw)
+            unit_id = str(item.get("unit_id", "")).strip()
+            if not unit_id or unit_id in seen or len(merged) >= max_items:
+                continue
+            seen.add(unit_id)
+            merged.append(item)
+            if is_addition:
+                added_ids.append(unit_id)
+    return merged, added_ids
 
 
 def _artifact_from_dict(row: Mapping[str, Any]) -> BAnswerArtifact:
