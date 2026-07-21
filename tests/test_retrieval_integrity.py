@@ -214,6 +214,65 @@ class RegulatoryCompositeClauseTests(unittest.TestCase):
         self.assertEqual({hit.unit_id for hit in hits}, {"disclosure::8", "disclosure::63"})
         self.assertTrue(payload["label"])
 
+    def test_bankcard_statistics_reporting_clause_is_supported(self) -> None:
+        solver = self.make_solver(
+            [
+                make_unit(
+                    "bankcard::48",
+                    "bankcard",
+                    "银行卡清算机构应当按规定向中国人民银行报送业务统计数据、业务发展情况、业务管理情况等必要信息。",
+                )
+            ]
+        )
+        option = "业务统计应按办法报人民银行"
+        question = Question(
+            qid="reg_b_025",
+            domain="regulatory",
+            split="B",
+            question="银行卡清算机构的业务统计。",
+            options={"A": option},
+            answer_format="multi",
+            type="多选题",
+            doc_ids=["bankcard"],
+        )
+        hits = solver._targeted_literal_hits(question, option)
+        payload = solver._targeted_rule_payload(option, hits)
+        self.assertEqual([hit.unit_id for hit in hits], ["bankcard::48"])
+        self.assertTrue(payload["label"])
+
+    def test_payment_fee_clause_supports_user_confirmation_and_continuous_notice(self) -> None:
+        solver = self.make_solver(
+            [
+                make_unit(
+                    "payment::62",
+                    "payment",
+                    "非银行支付机构调整支付业务的收费项目或者收费标准的，原则上应当至少于调整施行前30个自然日，在经营场所、官方网站、公众号等醒目位置，业务办理途径的关键节点持续公示，在办理相关业务前确认用户知悉、接受调整后的收费项目或者收费标准。",
+                )
+            ]
+        )
+        options = {
+            "A": "官网公示30个自然日就足够",
+            "B": "应在办理前确认用户知悉、接受",
+            "C": "只需通知监管",
+            "D": "调整施行前应持续公示",
+        }
+        question = Question(
+            qid="reg_b_027",
+            domain="regulatory",
+            split="B",
+            question="支付收费调整。",
+            options=options,
+            answer_format="multi",
+            type="多选题",
+            doc_ids=["payment"],
+        )
+        labels = {}
+        for key, option in options.items():
+            hits = solver._targeted_literal_hits(question, option)
+            self.assertEqual([hit.unit_id for hit in hits], ["payment::62"])
+            labels[key] = solver._targeted_rule_payload(option, hits)["label"]
+        self.assertEqual(labels, {"A": False, "B": True, "C": False, "D": True})
+
 
 class PluginParseUnitTests(unittest.TestCase):
     def _parse_with_sections(self, plugin, sections: list[dict[str, object]]) -> list[dict[str, object]]:

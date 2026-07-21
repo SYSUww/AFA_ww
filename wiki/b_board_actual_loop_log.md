@@ -3753,3 +3753,428 @@
   "token_accounting_complete": false
 }
 ```
+
+## b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee
+
+- recorded_at: `2026-07-21T21:50:24+00:00`
+
+```json
+{
+  "answered_qids": [
+    "reg_b_001",
+    "reg_b_024",
+    "reg_b_025",
+    "reg_b_027"
+  ],
+  "attempt_index": 2,
+  "blind_evaluation": {
+    "reason": "All promoted answer_parts are unchanged. reg_b_001 changed AD to CD but remained blocked (0 to 38), so it failed the pre-blind tier gate and was rejected without spending blind-evaluation tokens.",
+    "required_for_promoted_qids": false
+  },
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "code_hash": "e5834ac3396c32b9592ef17b3640d0f88ad53da78356cfaf265d162216095158",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "exact_clause_specs": [
+            "bankcard_statistics_reporting",
+            "payment_fee_user_confirmation",
+            "payment_fee_continuous_notice"
+          ],
+          "negative_option_refutation": [
+            "website_only",
+            "regulator_only"
+          ],
+          "replay_existing_dedup_for": [
+            "classification_penalty"
+          ]
+        },
+        "domains": [
+          "regulatory"
+        ],
+        "hypothesis": "exact reporting and payment-fee clause coverage plus replay under deduplicated compound retrieval resolves remaining regulatory forced and unsupported choice fallbacks.",
+        "pipeline_stage": "retrieval",
+        "question_types": [
+          "mcq"
+        ],
+        "root_cause_cluster": "choice_no_supported_fallback",
+        "target_qids": [
+          "reg_b_001",
+          "reg_b_024",
+          "reg_b_025",
+          "reg_b_027"
+        ]
+      }
+    },
+    "context_sha256": "5450ec69e4d310155f1e1dc7d5ec1da1a23cea55bf988a521be833d4e952ffeb",
+    "direction_sha256": "c29ecdd9ac6af2746b383813ef02faeeccbc09e7b030719e65c80c352e0d5187",
+    "schema_version": 1,
+    "semantic_sha256": "0876374b453c161b4d3624374dab227a9263a1f262f53d7a72cc7e67c0f5de89",
+    "sha256": "ececa77fc574a046ebdb57e924567990e3945f5c87acc4514566a854e8922756"
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 46,
+    "high": 30,
+    "low": 2,
+    "medium": 22
+  },
+  "causal_promoted_tiers": {
+    "blocked": 44,
+    "high": 30,
+    "low": 1,
+    "medium": 25
+  },
+  "change_vector": {
+    "exact_clause_specs": [
+      "bankcard_statistics_reporting",
+      "payment_fee_user_confirmation",
+      "payment_fee_continuous_notice"
+    ],
+    "negative_option_refutation": [
+      "website_only",
+      "regulator_only"
+    ],
+    "replay_existing_dedup_for": [
+      "classification_penalty"
+    ]
+  },
+  "changed_answer_qids": [
+    "reg_b_001"
+  ],
+  "code_hash": "e5834ac3396c32b9592ef17b3640d0f88ad53da78356cfaf265d162216095158",
+  "comparable_attempt_count_after": 2,
+  "comparable_attempt_count_before": 1,
+  "confidence_after": {
+    "reg_b_024": 78,
+    "reg_b_025": 75,
+    "reg_b_027": 78
+  },
+  "confidence_before": {
+    "reg_b_001": 0,
+    "reg_b_024": 58,
+    "reg_b_025": 0,
+    "reg_b_027": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "regulatory_composite_clause_dedup_coverage",
+  "domains": [
+    "regulatory"
+  ],
+  "effective_branch": "codex/b榜-loop-i009-regulatory-remaining-clauses",
+  "evaluator_failed_attempts_not_in_usage": 0,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+  "final_full_evaluation_token_usage": {
+    "completion_tokens": 85589,
+    "prompt_tokens": 479380,
+    "total_tokens": 564969
+  },
+  "generation_token_usage": {
+    "completion_tokens": 3795,
+    "prompt_tokens": 24412,
+    "total_tokens": 28207
+  },
+  "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+  "generator_model": "gpt-5.5",
+  "history_decision": "refine_existing",
+  "history_reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+  "history_related_experiment_ids": [
+    "b-loop-regulatory-composite-clause-dedup-coverage-a1"
+  ],
+  "history_similarity": 0.7,
+  "hypothesis": "Exact reporting and payment-fee clause coverage plus replay under deduplicated compound retrieval resolves remaining regulatory forced and unsupported choice fallbacks.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 116,
+    "tests_passed": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/regulatory_remaining_clauses/effective_reporting_fee_a1_promoted3_composite",
+  "material_delta": {
+    "bankcard_reporting_rule": true,
+    "payment_fee_option_exclusion": true,
+    "pruned_rejected_effective_date_rules": true
+  },
+  "next_root_causes": [
+    "financial_reports_company_year_metric_bundle",
+    "financial_contracts_subject_clause_binding",
+    "research_multi_clause_choice_coverage",
+    "remaining_reg_b_001_ambiguous_transition"
+  ],
+  "pipeline_stage": "retrieval",
+  "post_evaluation_pruning": {
+    "full_test_count_after_pruning": 116,
+    "promoted_rule_tests_passed": true,
+    "removed_rejected_qid_rules": [
+      "reg_b_001_effective_dates",
+      "reg_b_001_half_year_transition"
+    ]
+  },
+  "promoted_answer_changed_qids": [],
+  "promoted_qids": [
+    "reg_b_024",
+    "reg_b_025",
+    "reg_b_027"
+  ],
+  "promotion_decisions": {
+    "reg_b_001": {
+      "promote": false,
+      "reasons": [
+        "changed_answer_without_tier_gain",
+        "pre_blind_gate_failed"
+      ],
+      "score_delta": 38,
+      "tier_after": "blocked",
+      "tier_before": "blocked"
+    },
+    "reg_b_024": {
+      "promote": true,
+      "reasons": [],
+      "score_delta": 20,
+      "tier_after": "medium",
+      "tier_before": "low"
+    },
+    "reg_b_025": {
+      "promote": true,
+      "reasons": [],
+      "score_delta": 75,
+      "tier_after": "medium",
+      "tier_before": "blocked"
+    },
+    "reg_b_027": {
+      "promote": true,
+      "reasons": [],
+      "score_delta": 78,
+      "tier_after": "medium",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "mcq"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 44,
+    "high": 29,
+    "low": 4,
+    "medium": 23
+  },
+  "reason": "Exact Article 48 reporting evidence and Article 62 fee-adjustment evidence removed format-forced/no-supported fallbacks for reg_b_025 and reg_b_027. Replaying reg_b_024 under the i008 deduplicated compound retriever raised it from low 58 to medium 78. The changed reg_b_001 candidate was rejected before blind evaluation because it remained blocked.",
+  "recorded_at": "2026-07-21T21:50:24+00:00",
+  "registry_schema_version": 1,
+  "rejected_candidate_confidence": {
+    "reg_b_001": 38
+  },
+  "rejected_qids": [
+    "reg_b_001"
+  ],
+  "root_cause_cluster": "choice_no_supported_fallback",
+  "round_gate": {
+    "evaluation": {
+      "final_evaluated_answers": 100,
+      "final_evaluated_sentinels": 6,
+      "final_failures": 0,
+      "final_sentinels_passed": true,
+      "token_accounting_complete": true,
+      "trial_evaluated_answers": 100,
+      "trial_evaluated_sentinels": 6,
+      "trial_failures": 0,
+      "trial_sentinels_passed": true
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "reg_b_024",
+        "reg_b_025",
+        "reg_b_027"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 13,
+          "blocked_low_before": 13,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 9,
+          "blocked_low_before": 9,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 7,
+          "blocked_low_before": 7,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 4,
+          "low_tier_improved_qids": [
+            "reg_b_024",
+            "reg_b_025",
+            "reg_b_027"
+          ],
+          "p10_after": 65,
+          "p10_before": 0,
+          "p10_delta": 65
+        },
+        "research": {
+          "blocked_low_after": 15,
+          "blocked_low_before": 15,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": true,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_013": 7,
+        "fc_b_014": 5,
+        "fc_b_018": 10,
+        "fc_b_019": -8,
+        "fin_b_009": 5,
+        "fin_b_010": -10,
+        "fin_b_011": 7,
+        "fin_b_015": -3,
+        "fin_b_016": 5,
+        "fin_b_017": -1,
+        "fin_b_018": -5,
+        "fin_b_019": 5,
+        "ins_b_002": -2,
+        "ins_b_004": -2,
+        "ins_b_005": 8,
+        "ins_b_006": 17,
+        "ins_b_007": 2,
+        "ins_b_009": -8,
+        "ins_b_010": 10,
+        "ins_b_012": 17,
+        "ins_b_014": -4,
+        "ins_b_016": -6,
+        "ins_b_017": -17,
+        "ins_b_018": 10,
+        "ins_b_020": 3,
+        "reg_b_003": 20,
+        "reg_b_004": -5,
+        "reg_b_005": 6,
+        "reg_b_007": 5,
+        "reg_b_009": -4,
+        "reg_b_013": -5,
+        "reg_b_015": -2,
+        "reg_b_016": -9,
+        "reg_b_017": -3,
+        "reg_b_018": -10,
+        "reg_b_020": -5,
+        "reg_b_021": 11,
+        "reg_b_023": 2,
+        "res_b_001": 2,
+        "res_b_013": 13,
+        "res_b_015": -23
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_013",
+        "ins_b_004",
+        "ins_b_005",
+        "ins_b_006",
+        "ins_b_007",
+        "ins_b_009",
+        "ins_b_010",
+        "ins_b_012",
+        "ins_b_016",
+        "ins_b_017",
+        "reg_b_003",
+        "reg_b_018",
+        "res_b_015"
+      ]
+    },
+    "promoted_qids": [
+      "reg_b_024",
+      "reg_b_025",
+      "reg_b_027"
+    ],
+    "reasons": [],
+    "tests": {
+      "count": 116,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/regulatory_remaining_clauses/effective_reporting_fee_a1",
+  "status": "accepted",
+  "target_qids": [
+    "reg_b_001",
+    "reg_b_024",
+    "reg_b_025",
+    "reg_b_027"
+  ],
+  "technical_attempts": [
+    {
+      "generation_token_usage": {
+        "completion_tokens": 3795,
+        "prompt_tokens": 24412,
+        "total_tokens": 28207
+      },
+      "outcome": "partial",
+      "promotable_qids": [
+        "reg_b_024",
+        "reg_b_025",
+        "reg_b_027"
+      ],
+      "qids": [
+        "reg_b_001",
+        "reg_b_024",
+        "reg_b_025",
+        "reg_b_027"
+      ],
+      "rejected_qids": [
+        "reg_b_001"
+      ],
+      "root_cause": "reg_b_001 changed answer remained blocked because the half-year transition statement was still ambiguous and alternative exclusion was insufficient.",
+      "variant": "effective_reporting_fee_a1"
+    }
+  ],
+  "token_accounting_complete": true,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 171771,
+    "prompt_tokens": 959672,
+    "total_tokens": 1131443
+  },
+  "trial_confidence": {
+    "reg_b_001": 38,
+    "reg_b_024": 60,
+    "reg_b_025": 78,
+    "reg_b_027": 78
+  },
+  "trial_full_evaluation_token_usage": {
+    "completion_tokens": 86182,
+    "prompt_tokens": 480292,
+    "total_tokens": 566474
+  },
+  "trial_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/regulatory_remaining_clauses/effective_reporting_fee_a1_composite"
+}
+```

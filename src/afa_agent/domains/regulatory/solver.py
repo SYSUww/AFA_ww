@@ -834,6 +834,13 @@ class RegulatorySolver:
                     "optional": ["2年内完成全部存量客户", "本办法施行之日起"],
                 }
             )
+        if "业务统计" in compact and ("人民银行" in compact or "按办法报" in compact):
+            specs.append(
+                {
+                    "required": ["按规定向中国人民银行报送业务统计数据"],
+                    "optional": ["业务发展情况", "业务管理情况", "每年3月底前", "银行卡清算业务专项报告"],
+                }
+            )
         if "差异报告" in compact or ("重大差异" in compact and "30个工作日" in compact):
             specs.append(
                 {
@@ -841,7 +848,13 @@ class RegulatorySolver:
                     "optional": ["查询核对", "受益所有人信息", "重大差异", "备案信息不准确"],
                 }
             )
-        if ("收费标准" in compact or "收费项目" in compact) and ("30个自然日" in compact or "公示" in compact):
+        if (
+            (("收费标准" in compact or "收费项目" in compact) and ("30个自然日" in compact or "公示" in compact))
+            or "确认用户知悉" in compact
+            or ("调整施行前" in compact and "持续公示" in compact)
+            or ("官网公示" in compact and "30个自然日" in compact)
+            or "只需通知监管" in compact
+        ):
             specs.append(
                 {
                     "required": ["收费项目", "收费标准", "30个自然日", "公示"],
@@ -1133,6 +1146,11 @@ class RegulatorySolver:
             and "至少保存十年" in compact_evidence
         ):
             override_reason = "规则复核：《反洗钱法》第三十四条明确客户身份资料在业务关系结束后至少保存十年。"
+        elif (
+            "业务统计应按办法报人民银行" in compact_option
+            and "按规定向中国人民银行报送业务统计数据" in compact_evidence
+        ):
+            override_reason = "规则复核：银行卡清算机构管理办法第四十八条要求按规定向中国人民银行报送业务统计数据等必要信息。"
         elif (
             "客户身份资料" in compact_option
             and "不得向任何单位和个人提供" in compact_option
@@ -1572,6 +1590,46 @@ class RegulatorySolver:
             and "持续公示" in compact_evidence
         ):
             override_reason = "规则复核：第六十二条明确调整支付业务收费项目或者收费标准原则上至少于调整施行前30个自然日持续公示。"
+        elif (
+            "官网公示30个自然日就足够" in compact_option
+            and "经营场所" in compact_evidence
+            and "业务办理途径的关键节点" in compact_evidence
+            and "确认用户知悉、接受" in compact_evidence
+        ):
+            return {
+                **payload,
+                "label": False,
+                "support_score": min(float(payload.get("support_score", 0.0) or 0.0), 0.05),
+                "verdict": "refute",
+                "is_clearly_refuted": True,
+                "reasoning_summary": "规则复核：第六十二条除官网持续公示外，还要求在经营场所、公众号和业务办理关键节点公示并确认用户知悉、接受；仅官网公示并不足够。",
+                "rule_override": "regulatory_payment_fee_website_only_refute",
+            }
+        elif (
+            "应在办理前确认用户知悉、接受" in compact_option
+            and "在办理相关业务前确认用户知悉、接受" in compact_evidence
+        ):
+            override_reason = "规则复核：第六十二条明确在办理相关业务前确认用户知悉、接受调整后的收费项目或者收费标准。"
+        elif (
+            "只需通知监管" in compact_option
+            and "持续公示" in compact_evidence
+            and "确认用户知悉、接受" in compact_evidence
+        ):
+            return {
+                **payload,
+                "label": False,
+                "support_score": min(float(payload.get("support_score", 0.0) or 0.0), 0.05),
+                "verdict": "refute",
+                "is_clearly_refuted": True,
+                "reasoning_summary": "规则复核：收费调整须持续公示并在办理前确认用户知悉、接受，不是只通知监管即可。",
+                "rule_override": "regulatory_payment_fee_regulator_only_refute",
+            }
+        elif (
+            "调整施行前应持续公示" in compact_option
+            and "至少于调整施行前30个自然日" in compact_evidence
+            and "持续公示" in compact_evidence
+        ):
+            override_reason = "规则复核：第六十二条要求新的收费项目或者标准原则上至少于调整施行前30个自然日持续公示。"
         elif (
             "非重大差异" in compact_option
             and "差异报告" in compact_option
