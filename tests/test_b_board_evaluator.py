@@ -1,0 +1,236 @@
+from __future__ import annotations
+
+import json
+import unittest
+
+from afa_agent.b_board.evaluator import (
+    PROMPT_VERSION,
+    SCHEMA_VERSION,
+    ConfidenceEvaluation,
+    FixedBlindPairEvaluator,
+    FixedConfidenceEvaluator,
+    build_blind_pair,
+    build_calibration_subjects,
+    build_evaluation_messages,
+    decide_candidate_promotion,
+    detect_hard_failures,
+    parse_evaluation_payload,
+    validate_calibration_sentinels,
+)
+from afa_agent.models import TokenUsage
+
+
+def evaluation_payload(**overrides):
+    payload = {
+        "schema_version": SCHEMA_VERSION,
+        "prompt_version": PROMPT_VERSION,
+        "document_relevance": 90,
+        "evidence_sufficiency": 88,
+        "citation_alignment": 91,
+        "answer_entailment": 86,
+        "alternative_exclusion": 84,
+        "calculation_reproducibility": None,
+        "format_compliance": 99,
+        "internal_consistency": 92,
+        "overall_confidence": 87,
+        "verdict": "supported",
+        "blocking_reasons": [],
+        "low_confidence_reasons": [],
+        "suggested_improvements": [],
+    }
+    payload.update(overrides)
+    return payload
+
+
+def subject(**overrides):
+    payload = {
+        "qid": "q1",
+        "domain": "regulatory",
+        "type": "单选题",
+        "answer_format": "mcq",
+        "question": "问题",
+        "options": {"A": "是", "B": "否"},
+        "answer_slot_count": 1,
+        "answer_parts": ["A"],
+        "used_evidence_ids": ["u1"],
+        "evidence_items": [{"unit_id": "u1", "text": "证据"}],
+        "decision_trace": {},
+        "calculation_trace": {},
+        "token_usage": {"prompt_tokens": 10, "completion_tokens": 2, "total_tokens": 12},
+    }
+    payload.update(overrides)
+    return payload
+
+
+class FakeResponse:
+    def __init__(self, payload):
+        self.content = json.dumps(payload, ensure_ascii=False)
+        self.token_usage = TokenUsage(10, 2, 12)
+
+
+class FakeClient:
+    def __init__(self, payload):
+        self.payload = payload
+        self.messages = None
+
+    def chat_json(self, messages):
+        self.messages = messages
+        return FakeResponse(self.payload)
+
+
+class BBoardEvaluatorTests(unittest.TestCase):
+    def test_subject_rejects_optimizer_metadata(self):
+        with self.assertRaisesRegex(ValueError, "optimizer metadata"):
+            build_evaluation_messages(subject(candidate_id="candidate"))
+
+    def test_conservative_score_uses_weakest_dimension(self):
+        result = parse_evaluation_payload(
+            qid="q1",
+            question_type="mcq",
+            payload=evaluation_payload(alternative_exclusion=61),
+        )
+        self.assertEqual(result.confidence_score, 61)
+        self.assertEqual(result.tier, "medium")
+
+    def test_hard_failure_forces_blocked(self):
+        result = parse_evaluation_payload(
+            qid="q1",
+            question_type="mcq",
+            payload=evaluation_payload(),
+            hard_failures=["missing_used_evidence_ids"],
+        )
+        self.assertEqual(result.confidence_score, 0)
+        self.assertEqual(result.tier, "blocked")
+
+    def test_missing_applicable_dimension_is_zero_only_for_hard_failed_answer(self):
+        result = parse_evaluation_payload(
+            qid="q1",
+            question_type="calculation",
+            payload=evaluation_payload(
+                alternative_exclusion=None,
+                calculation_reproducibility=None,
+            ),
+            hard_failures=["invalid_answer_slot:1"],
+        )
+        self.assertEqual(result.dimensions["calculation_reproducibility"], 0)
+        self.assertEqual(result.confidence_score, 0)
+
+        with self.assertRaisesRegex(ValueError, "applicable decision dimension"):
+            parse_evaluation_payload(
+                qid="q1",
+                question_type="calculation",
+                payload=evaluation_payload(
+                    alternative_exclusion=None,
+                    calculation_reproducibility=None,
+                ),
+            )
+
+    def test_detects_evidence_and_calculation_integrity(self):
+        failures = detect_hard_failures(
+            subject(
+                type="计算题",
+                answer_format="calculation",
+                answer_slot_templates=["999999.99"],
+                used_evidence_ids=["missing"],
+                calculation_trace={"replay_verified": False},
+            )
+        )
+        self.assertIn("used_evidence_not_in_final:missing", failures)
+        self.assertIn("calculation_not_replay_verified", failures)
+        self.assertIn("calculation_not_grounding_verified", failures)
+
+    def test_detects_explanatory_text_in_numeric_slot(self):
+        failures = detect_hard_failures(
+            subject(
+                type="计算题",
+                answer_format="calculation",
+                answer_slot_templates=["999999.99"],
+                answer_parts=["证据不足，无法计算"],
+                calculation_trace={
+                    "replay_verified": True,
+                    "grounding_verified": True,
+                },
+            )
+        )
+        self.assertIn("invalid_answer_slot:1", failures)
+
+    def test_fixed_evaluator_uses_clean_subject_and_usage(self):
+        client = FakeClient(evaluation_payload())
+        evaluator = FixedConfidenceEvaluator(client)
+        result, usage = evaluator.evaluate(subject())
+        self.assertEqual(result.tier, "high")
+        self.assertEqual(usage["total_tokens"], 12)
+        serialized = client.messages[1]["content"]
+        self.assertNotIn("candidate_id", serialized)
+
+    def test_blind_pair_hides_candidate_identity(self):
+        pair = build_blind_pair(qid="q1", incumbent=subject(answer_parts=["A"]), candidate=subject(answer_parts=["B"]), salt="x")
+        self.assertEqual(set(pair.public_payload["answers"]), {"A", "B"})
+        self.assertNotIn("candidate", json.dumps(pair.public_payload))
+        self.assertNotEqual(pair.candidate_label, pair.incumbent_label)
+
+    def test_fixed_blind_pair_evaluator_validates_winner(self):
+        pair = build_blind_pair(
+            qid="q1",
+            incumbent=subject(answer_parts=["A"]),
+            candidate=subject(answer_parts=["B"]),
+            salt="fixed",
+        )
+        client = FakeClient(
+            {
+                "prompt_version": "b_blind_pair_v1",
+                "winner": pair.candidate_label,
+                "confidence": 91,
+                "reason": "candidate is better supported",
+            }
+        )
+        result, usage = FixedBlindPairEvaluator(client).evaluate(pair)
+        self.assertEqual(result.winner, pair.candidate_label)
+        self.assertEqual(result.confidence, 91)
+        self.assertEqual(usage["total_tokens"], 12)
+
+    def test_changed_answer_requires_tier_gain_and_blind_win(self):
+        incumbent = parse_evaluation_payload(qid="q1", question_type="mcq", payload=evaluation_payload(overall_confidence=70, alternative_exclusion=70))
+        candidate = parse_evaluation_payload(qid="q1", question_type="mcq", payload=evaluation_payload())
+        rejected = decide_candidate_promotion(
+            incumbent=incumbent,
+            candidate=candidate,
+            answer_changed=True,
+            blind_winner="A",
+            candidate_blind_label="B",
+        )
+        self.assertFalse(rejected["promote"])
+        accepted = decide_candidate_promotion(
+            incumbent=incumbent,
+            candidate=candidate,
+            answer_changed=True,
+            blind_winner="B",
+            candidate_blind_label="B",
+        )
+        self.assertTrue(accepted["promote"])
+
+    def test_sentinel_validation_rejects_high_score(self):
+        low = ConfidenceEvaluation(
+            qid="s",
+            dimensions={},
+            confidence_score=20,
+            tier="blocked",
+            verdict="unsupported",
+            blocking_reasons=(),
+            low_confidence_reasons=(),
+            suggested_improvements=(),
+            hard_failures=(),
+        )
+        evaluations = {name: low for name in ["wrong_year", "wrong_unit", "wrong_arithmetic", "irrelevant_evidence", "missing_citation", "format_only"]}
+        self.assertTrue(validate_calibration_sentinels(evaluations)["passed"])
+
+    def test_calibration_subjects_are_structurally_valid(self):
+        subjects = build_calibration_subjects()
+        self.assertEqual(len(subjects), 6)
+        self.assertEqual({item["qid"] for item in subjects}, {"wrong_year", "wrong_unit", "wrong_arithmetic", "irrelevant_evidence", "missing_citation", "format_only"})
+        for item in subjects:
+            self.assertEqual(detect_hard_failures(item), [], item["qid"])
+
+
+if __name__ == "__main__":
+    unittest.main()

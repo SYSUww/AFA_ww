@@ -1,0 +1,45 @@
+{
+  "version": "b_actual_open_loop_v1",
+  "execution": {
+    "runner": "b_actual_open_loop",
+    "compatible_with_run_loop_engine": true
+  },
+  "dataset": {
+    "question_root": "upload_b/question_b",
+    "submission_template": "upload_b/submit.csv",
+    "expected_question_count": 100
+  },
+  "output_root": "artifacts/b_board_actual",
+  "loop_state_path": "artifacts/b_board_actual/loop_state.json",
+  "experiment_registry_path": "experiments/b_board_actual/experiment_registry.jsonl",
+  "markdown_log_path": "wiki/b_board_actual_loop_log.md",
+  "history_import": {
+    "markdown_paths": [
+      "wiki/execution_log.md",
+      "wiki/accuracy_token_experiment_log.md",
+      "wiki/group_a_dynamic_confidence_reproduction.md"
+    ],
+    "manifest_paths": [
+      "artifacts/b_board_migration/no_docids_clean_subset_run/run_manifest.json"
+    ]
+  },
+  "baseline": {
+    "run_id": "b0_actual_gpt55_attempt43_composite_v1",
+    "parsed_root": "artifacts/preprocessed_loop_candidates/parsed",
+    "index_root": "artifacts/preprocessed_loop_candidates/index",
+    "strategy_path": "configs/autoresearch/evidence_gate_rescue_accuracy_first.json",
+    "locator_attempt_id": "attempt_43",
+    "calculation_top_k": 18,
+    "workers": 4
+  },
+  "evaluation": {
+    "prompt_version": "b_confidence_judge_v1",
+    "schema_version": 1,
+    "workers": 4
+  },
+  "scheduler": {
+    "mode": "history_aware_open_ended",
+    "max_comparable_attempts": 3,
+    "online_research_when_exhausted": true
+  }
+}

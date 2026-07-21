@@ -596,6 +596,10 @@ def run_experiment(
 def run_loop_plan(plan_config_path: Path) -> dict[str, Any]:
     plan = load_plan_config(plan_config_path)
     execution = plan.get("execution", {}) or {}
+    if execution.get("runner") == "b_actual_open_loop":
+        from afa_agent.b_board.orchestrator import run_b_actual_loop_plan
+
+        return run_b_actual_loop_plan(plan, plan_config_path)
     if execution.get("compatible_with_run_loop_engine") is False:
         runner = execution.get("runner", "a dedicated runner")
         raise ValueError(
