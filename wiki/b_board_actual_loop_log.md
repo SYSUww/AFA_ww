@@ -1625,3 +1625,319 @@
   "token_accounting_complete": false
 }
 ```
+
+## b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3
+
+- recorded_at: `2026-07-21T19:28:58+00:00`
+
+```json
+{
+  "attempt_index": 3,
+  "change_vector": {
+    "blank_unit_when_absent": true,
+    "grounding_failure_reason": true,
+    "strategy": "explicit_blank_unit_v3"
+  },
+  "comparable_attempt_count_before": 2,
+  "direction_id": "calculation_variable_retrieval",
+  "domains": [
+    "financial_reports"
+  ],
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "event": "attempt_planned",
+  "experiment_id": "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+  "generator_model": "gpt-5.5",
+  "history_decision": "refine_existing",
+  "history_reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+  "history_similarity": 0.7,
+  "hypothesis": "Explicitly distinguishing literal value grounding from absent table unit labels lets ratio calculations use raw amounts without inventing unsupported units.",
+  "material_delta": {
+    "prompt_no_unit_invention": true,
+    "unit_grounding_diagnostics": true
+  },
+  "pipeline_stage": "prompt_and_grounding",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-21T19:28:58+00:00",
+  "related_experiment_ids": [
+    "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+    "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2"
+  ],
+  "root_cause_cluster": "calculation_missing_variables",
+  "status": "running",
+  "target_qids": [
+    "fin_b_013"
+  ]
+}
+```
+
+## b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3
+
+- recorded_at: `2026-07-21T19:42:52+00:00`
+
+```json
+{
+  "answered_qids": [
+    "fin_b_013"
+  ],
+  "attempt_index": 3,
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 494,
+    "prompt_tokens": 4490,
+    "total_tokens": 4984
+  },
+  "blind_pairs": {
+    "fin_b_013": {
+      "candidate_label": "B",
+      "evaluation": {
+        "confidence": 96,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "B提供了2024和2025年营业收入总额及分地区境外收入的原始金额证据，并给出可重放计算轨迹：2025年境外收入310,740,988,000.00、2024年境外收入221,884,773,000.00，同比增幅=(310740988000-221884773000)/221884773000*100=40.0461%，保留两位为40.05；境外收入占比差=310740988000/803964958000*100-221884773000/777102455000*100=10.0982个百分点，保留两位为10.10。方向、年份、主体、公式和答案格式均符合题目。A仅因检索证据不足回答无法计算，但B已提供相应分地区收入证据，因此B更受证据支持且可验证。",
+        "winner": "B"
+      },
+      "incumbent_label": "A",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "token_usage": {
+        "completion_tokens": 494,
+        "prompt_tokens": 4490,
+        "total_tokens": 4984
+      }
+    }
+  },
+  "candidate_evaluation_token_usage": {
+    "completion_tokens": 3017,
+    "prompt_tokens": 7718,
+    "total_tokens": 10735
+  },
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "blank_unit_when_absent": true,
+          "grounding_failure_reason": true,
+          "strategy": "explicit_blank_unit_v3"
+        },
+        "domains": [
+          "financial_reports"
+        ],
+        "hypothesis": "explicitly distinguishing literal value grounding from absent table unit labels lets ratio calculations use raw amounts without inventing unsupported units.",
+        "pipeline_stage": "prompt_and_grounding",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "calculation_missing_variables",
+        "target_qids": [
+          "fin_b_013"
+        ]
+      }
+    },
+    "context_sha256": "fb8ccbeedeb2b9d54db9a8a389961275c1cf689059baaf6a3b8445af28fb8748",
+    "direction_sha256": "c20860ce27a163e9533eb637db8e8935ee19ebe25377976401d47a5727a71490",
+    "schema_version": 1,
+    "semantic_sha256": "04c7adb04804d2a879c523de54391498c06b74b5b12403c7c348c34c596ec902",
+    "sha256": "0ebe8ff2ed02023551a251a0e90d9d0323a5cde4a61560fc1a2358545997468a"
+  },
+  "change_vector": {
+    "blank_unit_when_absent": true,
+    "grounding_failure_reason": true,
+    "strategy": "explicit_blank_unit_v3"
+  },
+  "changed_answer_qids": [
+    "fin_b_013"
+  ],
+  "comparable_attempt_count_after": 3,
+  "confidence_after": {
+    "fin_b_013": 95
+  },
+  "confidence_before": {
+    "fin_b_013": 0
+  },
+  "direction_id": "calculation_variable_retrieval",
+  "direction_status": "exhausted",
+  "domains": [
+    "financial_reports"
+  ],
+  "effective_branch": "codex/b榜-loop-i004-table-unit-grounding",
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+  "failed_qids": [],
+  "full_evaluation_token_usage": {
+    "completion_tokens": 87113,
+    "prompt_tokens": 474167,
+    "total_tokens": 561280
+  },
+  "generation_token_usage": {
+    "completion_tokens": 2841,
+    "prompt_tokens": 12083,
+    "total_tokens": 14924
+  },
+  "generator_model": "gpt-5.5",
+  "history_decision": "refine_existing",
+  "history_related_experiment_ids": [
+    "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+    "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2"
+  ],
+  "history_similarity": 0.7,
+  "hypothesis": "Explicitly distinguishing literal value grounding from absent table unit labels lets ratio calculations use raw amounts without inventing unsupported units.",
+  "integrity": {
+    "artifact_complete": true,
+    "invalid_submission_after": 0,
+    "invalid_submission_before": 1,
+    "passed": true,
+    "submission_valid_after": true,
+    "submission_valid_before": false
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/iterations/iteration_004_explicit_blank_unit_v3",
+  "material_delta": {
+    "prompt_no_unit_invention": true,
+    "runner_version": "b_actual_v6",
+    "unit_grounding_diagnostics": true
+  },
+  "next_root_causes": [
+    "choice_evidence_precision",
+    "choice_no_supported_fallback",
+    "remaining_calculation_retrieval"
+  ],
+  "pipeline_stage": "prompt_and_grounding",
+  "promotion_result": "promoted",
+  "question_types": [
+    "calculation"
+  ],
+  "reason": "fin_b_013 generated a literal-grounded replayable 40.05/10.10 answer, improved from blocked 0 to high 95, won blind A/B at confidence 96, and made the cumulative 100-question submission fully valid for the first time.",
+  "recorded_at": "2026-07-21T19:42:52+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "calculation_missing_variables",
+  "round_gate": {
+    "metrics": {
+      "causal_changed_qids": [
+        "fin_b_013"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 17,
+          "blocked_low_before": 17,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 13,
+          "blocked_low_before": 14,
+          "low_tier_improved_qids": [
+            "fin_b_013"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 11,
+          "blocked_low_before": 11,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 11,
+          "blocked_low_before": 11,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 16,
+          "blocked_low_before": 16,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_004": 3,
+        "fc_b_013": 5,
+        "fc_b_016": -13,
+        "fc_b_018": 8,
+        "fc_b_019": 12,
+        "fin_b_002": -2,
+        "fin_b_006": -3,
+        "fin_b_007": -5,
+        "fin_b_009": 10,
+        "fin_b_010": -5,
+        "fin_b_011": -7,
+        "fin_b_015": -8,
+        "fin_b_017": -3,
+        "fin_b_019": 7,
+        "ins_b_004": -4,
+        "ins_b_005": -4,
+        "ins_b_006": 10,
+        "ins_b_008": 10,
+        "ins_b_009": 3,
+        "ins_b_010": 12,
+        "ins_b_012": 16,
+        "ins_b_014": 2,
+        "ins_b_016": -12,
+        "ins_b_017": 33,
+        "ins_b_020": 1,
+        "reg_b_008": 2,
+        "reg_b_013": 22,
+        "reg_b_015": -3,
+        "reg_b_016": 7,
+        "reg_b_017": -7,
+        "reg_b_023": 10,
+        "res_b_001": 6,
+        "res_b_005": -5,
+        "res_b_013": -2,
+        "res_b_015": 3
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_013",
+        "fc_b_016",
+        "fc_b_019",
+        "fin_b_009",
+        "fin_b_015",
+        "ins_b_004",
+        "ins_b_005",
+        "ins_b_010",
+        "ins_b_014",
+        "ins_b_016",
+        "ins_b_017",
+        "reg_b_013",
+        "reg_b_017",
+        "reg_b_023"
+      ]
+    },
+    "reasons": [],
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/calculation_variable_retrieval/explicit_blank_unit_v3_fin_b_013",
+  "single_candidate_confidence": {
+    "fin_b_013": 95
+  },
+  "status": "accepted",
+  "target_qids": [
+    "fin_b_013"
+  ],
+  "tests": {
+    "count": 108,
+    "passed": true
+  },
+  "token_accounting_complete": true
+}
+```

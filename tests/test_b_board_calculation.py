@@ -10,6 +10,7 @@ from afa_agent.b_board.calculation import (
 )
 from afa_agent.b_board.io import BQuestion
 from afa_agent.b_board.runner import (
+    CALCULATION_SYSTEM_PROMPT,
     _calculation_retry_query,
     _diagnostic_phrase_evidence,
     _merge_calculation_evidence,
@@ -17,6 +18,37 @@ from afa_agent.b_board.runner import (
 
 
 class BBoardCalculationTests(unittest.TestCase):
+    def test_bare_table_amount_requires_blank_declared_unit(self):
+        plan = {
+            "variables": [
+                {
+                    "name": "overseas_revenue",
+                    "value": "310,740,988,000.00",
+                    "value_type": "decimal",
+                    "unit": "元",
+                    "evidence_ids": ["table"],
+                }
+            ],
+            "steps": [],
+            "outputs": [{"source": {"ref": "overseas_revenue"}, "format": "decimal2"}],
+        }
+        with self.assertRaisesRegex(CalculationPlanError, r"overseas_revenue\[unit_not_found\]"):
+            CalculationExecutor().execute(
+                plan,
+                expected_slots=1,
+                evidence_text_by_id={"table": "境外 | 310,740,988,000.00 | 38.65%"},
+            )
+
+        plan["variables"][0]["unit"] = ""
+        result = CalculationExecutor().execute(
+            plan,
+            expected_slots=1,
+            evidence_text_by_id={"table": "境外 | 310,740,988,000.00 | 38.65%"},
+        )
+        self.assertEqual(result.answer_parts, ("310740988000.00",))
+        self.assertTrue(result.trace["grounding_verified"])
+        self.assertIn("表格只有裸金额", CALCULATION_SYSTEM_PROMPT)
+
     def test_diagnostic_retry_query_and_evidence_merge(self):
         question = BQuestion(
             qid="q1",

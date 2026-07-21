@@ -35,6 +35,7 @@ CALCULATION_SYSTEM_PROMPT = """你是金融长文计算题的结构化求解器�
 输出一个 JSON 对象，字段为 variables、steps、outputs、decision_summary。
 variables: [{name,value,value_type,unit,evidence_ids}]，value_type 仅 decimal/date/text，所有变量必须给 evidence_ids。
 每个变量的 value 必须以同一数值或日期直接出现在所引证据中，unit 也必须与证据一致；不得把 5.55% 擅自写成 0.0555。
+只有证据同一片段明确写出单位时才填 unit；表格只有裸金额但未标单位时必须填空字符串，不得推断或补写“元”。比率或百分比计算可直接使用同口径原始金额。
 证据缺变量时不要用“无法计算”等文本冒充数值输出；该题应让计划校验失败并等待重新检索。
 steps: [{id,op,args,...}]，引用写成 {"ref":"变量或步骤id"}。
 方向性运算禁止使用位置参数：pct_change 必须写 new 和 old 字段，严格按
@@ -44,7 +45,7 @@ sort_desc 使用 items:[{label,source}]。outputs 数量必须等于答案槽数
 format 仅 raw,decimal0,decimal1,decimal2,percent2,date_cn,text。中间过程不得舍入，最终才按格式四舍五入。
 证据 ID 必须原样使用给定 evidence_id。题目本身给出的数值可引用 question:<qid>。只输出 JSON。"""
 
-RUNNER_VERSION = "b_actual_v5"
+RUNNER_VERSION = "b_actual_v6"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 
 

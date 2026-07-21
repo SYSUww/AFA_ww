@@ -94,7 +94,11 @@ class CalculationExecutor:
             item["verified"] for item in grounding_checks
         )
         if evidence_text_by_id is not None and not grounding_verified:
-            failed = [item["name"] for item in grounding_checks if not item["verified"]]
+            failed = [
+                f'{item["name"]}[{item["reason"]}]'
+                for item in grounding_checks
+                if not item["verified"]
+            ]
             raise CalculationPlanError(
                 "Variables are not grounded in cited evidence: " + ",".join(failed)
             )
@@ -456,15 +460,32 @@ def _grounding_check(
         if evidence_id in evidence_text_by_id
     }
     matched: list[str] = []
+    value_matched: list[str] = []
+    unit_matched: list[str] = []
     for evidence_id, text in available.items():
-        if _value_appears(value, value_type, text) and _unit_appears(unit, text):
+        value_appears = _value_appears(value, value_type, text)
+        unit_appears = _unit_appears(unit, text)
+        if value_appears:
+            value_matched.append(evidence_id)
+        if unit_appears:
+            unit_matched.append(evidence_id)
+        if value_appears and unit_appears:
             matched.append(evidence_id)
-    reason = "matched_literal_value_and_unit" if matched else "value_or_unit_not_found"
+    if matched:
+        reason = "matched_literal_value_and_unit"
+    elif value_matched and not unit_matched:
+        reason = "unit_not_found"
+    elif unit_matched and not value_matched:
+        reason = "value_not_found"
+    else:
+        reason = "value_and_unit_not_found"
     return {
         "name": name,
         "verified": bool(matched),
         "reason": reason,
         "matched_evidence_ids": matched,
+        "value_matched_evidence_ids": value_matched,
+        "unit_matched_evidence_ids": unit_matched,
     }
 
 
