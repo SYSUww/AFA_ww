@@ -40,7 +40,12 @@ class BBoardCalculationTests(unittest.TestCase):
                     {"name": "y", "value": "3.2", "evidence_ids": ["u4"]},
                 ],
                 "steps": [
-                    {"id": "growth", "op": "pct_change", "args": [{"ref": "new"}, {"ref": "old"}]},
+                    {
+                        "id": "growth",
+                        "op": "pct_change",
+                        "new": {"ref": "new"},
+                        "old": {"ref": "old"},
+                    },
                     {"id": "ranking", "op": "sort_desc", "items": [{"label": "甲", "source": {"ref": "x"}}, {"label": "乙", "source": {"ref": "y"}}]},
                 ],
                 "outputs": [
@@ -58,6 +63,30 @@ class BBoardCalculationTests(unittest.TestCase):
             expected_slot_templates=("公司名称>公司名称", "999999.99%"),
         )
         self.assertEqual(result.answer_parts, ("乙>甲", "25.00%"))
+        self.assertEqual(
+            result.trace["steps"][0]["operand_roles"],
+            {"new": {"ref": "new"}, "old": {"ref": "old"}},
+        )
+
+    def test_directional_operation_rejects_ambiguous_positional_args(self):
+        with self.assertRaisesRegex(CalculationPlanError, "named 'new' and 'old'"):
+            CalculationExecutor().execute(
+                {
+                    "variables": [
+                        {"name": "new", "value": "56", "evidence_ids": ["q"]},
+                        {"name": "old", "value": "45.8", "evidence_ids": ["q"]},
+                    ],
+                    "steps": [
+                        {
+                            "id": "growth",
+                            "op": "pct_change",
+                            "args": [{"ref": "old"}, {"ref": "new"}],
+                        }
+                    ],
+                    "outputs": [{"source": {"ref": "growth"}, "format": "percent2"}],
+                },
+                expected_slots=1,
+            )
 
     def test_versioned_business_calendar(self):
         calendar = BusinessCalendar(

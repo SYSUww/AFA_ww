@@ -804,3 +804,309 @@
   "token_accounting_complete": false
 }
 ```
+
+## b-loop-calculation_executor-a3-directional-operands-v3
+
+- recorded_at: `2026-07-21T18:49:48+00:00`
+
+```json
+{
+  "attempt_index": 3,
+  "change_vector": {
+    "formula": "(new/old-1)*100",
+    "pct_change_named_operands": true,
+    "strategy": "directional_named_operands_v3"
+  },
+  "comparable_attempt_count_before": 2,
+  "direction_id": "calculation_executor",
+  "domains": [
+    "research"
+  ],
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "event": "attempt_planned",
+  "experiment_id": "b-loop-calculation_executor-a3-directional-operands-v3",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_similarity": null,
+  "hypothesis": "Named new/old operands plus explicit percent-change formula eliminate directional inversion in scenario calculations.",
+  "material_delta": {
+    "directional_operand_roles": true
+  },
+  "pipeline_stage": "calculation",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-21T18:49:48+00:00",
+  "root_cause_cluster": "calculation",
+  "status": "running",
+  "target_qids": [
+    "res_b_005"
+  ]
+}
+```
+
+## b-loop-calculation_executor-a3-directional-operands-v3-history-correction
+
+- recorded_at: `2026-07-21T19:03:05+00:00`
+
+```json
+{
+  "corrected_history_decision": "refine_existing",
+  "event": "history_decision_correction",
+  "experiment_id": "b-loop-calculation_executor-a3-directional-operands-v3-history-correction",
+  "original_history_decision": "execute",
+  "reason": "same direction_id must be treated as comparable even when lexical similarity is low",
+  "recorded_at": "2026-07-21T19:03:05+00:00",
+  "related_experiment_ids": [
+    "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+    "b-loop-calculation_executor-a2-typed-units-v2"
+  ],
+  "status": "corrected_append_only"
+}
+```
+
+## b-loop-calculation_executor-a3-directional-operands-v3
+
+- recorded_at: `2026-07-21T19:03:05+00:00`
+
+```json
+{
+  "attempt_index": 3,
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 523,
+    "prompt_tokens": 2222,
+    "total_tokens": 2745
+  },
+  "blind_pair": {
+    "candidate_label": "A",
+    "evaluation": {
+      "confidence": 78,
+      "prompt_version": "b_blind_pair_v1",
+      "reason": "两者使用的证据和公式相同，均以题目给出的2026年56kWh与证据中2025年乘用车单车带电量45.8kWh计算同比增速：(56-45.8)/45.8=22.2707%，数值正确。A的答案槽为“22.27”，与给定slot模板“999999.99”和decimal2输出一致，并在轨迹中标明value_kind为percent_points；B虽数值相同，但answer_parts写为“22.27%”、输出format为percent2，与其封存的slot模板“999999.99”不一致，存在格式不匹配。因此选择A。",
+      "winner": "A"
+    },
+    "incumbent_label": "B",
+    "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+    "token_usage": {
+      "completion_tokens": 523,
+      "prompt_tokens": 2222,
+      "total_tokens": 2745
+    }
+  },
+  "candidate_evaluation_token_usage": {
+    "completion_tokens": 2745,
+    "prompt_tokens": 5691,
+    "total_tokens": 8436
+  },
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "formula": "(new/old-1)*100",
+          "pct_change_named_operands": true,
+          "strategy": "directional_named_operands_v3"
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "named new/old operands plus explicit percent-change formula eliminate directional inversion in scenario calculations.",
+        "pipeline_stage": "calculation",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "calculation",
+        "target_qids": [
+          "res_b_005"
+        ]
+      }
+    },
+    "context_sha256": "fb8ccbeedeb2b9d54db9a8a389961275c1cf689059baaf6a3b8445af28fb8748",
+    "direction_sha256": "7c2c0a23d6195b12cf6a79c65440075d2c758062620dfbc9a4c9c2a13520a51f",
+    "schema_version": 1,
+    "semantic_sha256": "9f158c7315f8d2010525ed7f5df80a3d8ef1c237552c8ea6678727dfecb09e3b",
+    "sha256": "c6da4015ba4c1cd01a85194a8d739c0e6aa0af3a709da1dd58fd08b60c66b649"
+  },
+  "change_vector": {
+    "formula": "(new/old-1)*100",
+    "pct_change_named_operands": true,
+    "strategy": "directional_named_operands_v3"
+  },
+  "changed_answer_qids": [
+    "res_b_005"
+  ],
+  "comparable_attempt_count_after": 3,
+  "confidence_after": {
+    "res_b_005": 95
+  },
+  "confidence_before": {
+    "res_b_005": 0
+  },
+  "direction_id": "calculation_executor",
+  "direction_status": "exhausted",
+  "domains": [
+    "research"
+  ],
+  "effective_branch": "codex/b榜-loop-i002-calculation-directionality",
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "event": "iteration_promoted",
+  "experiment_id": "b-loop-calculation_executor-a3-directional-operands-v3",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 91172,
+    "prompt_tokens": 468413,
+    "total_tokens": 559585
+  },
+  "generation_token_usage": {
+    "completion_tokens": 794,
+    "prompt_tokens": 12253,
+    "total_tokens": 13047
+  },
+  "generator_model": "gpt-5.5",
+  "history_decision": "refine_existing",
+  "history_related_experiment_ids": [
+    "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+    "b-loop-calculation_executor-a2-typed-units-v2"
+  ],
+  "hypothesis": "Named new/old operands plus explicit percent-change formula eliminate directional inversion in scenario calculations.",
+  "integrity": {
+    "artifact_complete": true,
+    "invalid_submission_after": 4,
+    "invalid_submission_before": 5,
+    "passed": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/iterations/iteration_002_directional_operands_v3",
+  "material_delta": {
+    "ambiguous_positional_args_rejected": true,
+    "directional_operand_roles": true
+  },
+  "next_root_causes": [
+    "iterative_variable_retrieval",
+    "choice_evidence_contract",
+    "no_supported_fallback"
+  ],
+  "pipeline_stage": "calculation",
+  "promotion_result": "promoted",
+  "question_types": [
+    "calculation"
+  ],
+  "raw_fixed_evaluator_drift": {
+    "policy": "all 100 raw evaluations retained; causal gate normalizes unchanged answer subjects to incumbent scores",
+    "unchanged_score_drift_count": 23,
+    "unchanged_tier_drift_count": 6
+  },
+  "reason": "res_b_005 improved from blocked 0 to high 95; blind judge preferred candidate; invalid submission qids fell from 5 to 4 with no new hard failure.",
+  "recorded_at": "2026-07-21T19:03:05+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "calculation",
+  "round_gate": {
+    "metrics": {
+      "causal_changed_qids": [
+        "res_b_005"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 18,
+          "blocked_low_before": 18,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 16,
+          "blocked_low_before": 16,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 11,
+          "blocked_low_before": 11,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 11,
+          "blocked_low_before": 11,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 16,
+          "blocked_low_before": 17,
+          "low_tier_improved_qids": [
+            "res_b_005"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_004": -5,
+        "fc_b_013": -7,
+        "fc_b_016": 5,
+        "fin_b_007": 3,
+        "fin_b_009": -5,
+        "fin_b_017": -2,
+        "ins_b_002": 5,
+        "ins_b_004": -16,
+        "ins_b_005": -10,
+        "ins_b_007": -5,
+        "ins_b_009": -4,
+        "ins_b_012": -6,
+        "ins_b_014": -6,
+        "ins_b_016": -6,
+        "reg_b_005": 2,
+        "reg_b_008": 6,
+        "reg_b_009": -3,
+        "reg_b_015": -2,
+        "reg_b_017": -5,
+        "reg_b_020": -5,
+        "reg_b_023": 10,
+        "res_b_013": 13,
+        "res_b_015": 6
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_013",
+        "ins_b_004",
+        "ins_b_005",
+        "ins_b_009",
+        "ins_b_012",
+        "reg_b_023"
+      ]
+    },
+    "reasons": [],
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/calculation_executor/directional_operands_v3_res_b_005",
+  "single_candidate_confidence": {
+    "res_b_005": 95
+  },
+  "status": "accepted",
+  "target_qids": [
+    "res_b_005"
+  ],
+  "tests": {
+    "count": 104,
+    "passed": true
+  },
+  "token_accounting_complete": true
+}
+```

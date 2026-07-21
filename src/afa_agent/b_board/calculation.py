@@ -118,6 +118,9 @@ class CalculationExecutor:
                     "id": step_id,
                     "op": op,
                     "args": step.get("args", []),
+                    "operand_roles": {
+                        key: step[key] for key in ("new", "old") if key in step
+                    },
                     "result": _serialize_value(result),
                     "value_kind": result_kind,
                     "unit_conversions": conversions,
@@ -236,18 +239,24 @@ class CalculationExecutor:
         if op == "min":
             return min(_decimal(item) for item in args), _first_kind(arg_kinds), conversions
         if op == "pct_change":
-            _require_arg_count(op, args, 2)
-            old = _decimal(args[1])
+            new_spec, old_spec = _require_named_directional_operands(op, step)
+            new = _decimal(_resolve(new_spec, values))
+            old = _decimal(_resolve(old_spec, values))
             if old == 0:
                 raise CalculationPlanError("pct_change old value is zero")
             return (
-                (_decimal(args[0]) / old - Decimal("1")) * Decimal("100"),
+                (new / old - Decimal("1")) * Decimal("100"),
                 "percent_points",
                 conversions,
             )
         if op == "pct_point_delta":
-            _require_arg_count(op, args, 2)
-            return _decimal(args[0]) - _decimal(args[1]), "percent_points", conversions
+            new_spec, old_spec = _require_named_directional_operands(op, step)
+            return (
+                _decimal(_resolve(new_spec, values))
+                - _decimal(_resolve(old_spec, values)),
+                "percent_points",
+                conversions,
+            )
         if op == "count_gte":
             threshold = _decimal(_resolve(step.get("threshold"), values))
             return Decimal(sum(1 for item in args if _decimal(item) >= threshold)), "decimal", conversions
@@ -285,6 +294,16 @@ def _require_list(plan: Mapping[str, Any], key: str, *, allow_missing: bool = Fa
     if not isinstance(value, list):
         raise CalculationPlanError(f"{key} must be a list")
     return value
+
+
+def _require_named_directional_operands(
+    op: str, step: Mapping[str, Any]
+) -> tuple[Any, Any]:
+    if "new" not in step or "old" not in step:
+        raise CalculationPlanError(
+            f"{op} requires named 'new' and 'old' operands"
+        )
+    return step["new"], step["old"]
 
 
 def _parse_value(value: Any, value_type: str) -> Any:

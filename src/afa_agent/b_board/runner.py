@@ -36,12 +36,14 @@ variables: [{name,value,value_type,unit,evidence_ids}]，value_type 仅 decimal/
 每个变量的 value 必须以同一数值或日期直接出现在所引证据中，unit 也必须与证据一致；不得把 5.55% 擅自写成 0.0555。
 证据缺变量时不要用“无法计算”等文本冒充数值输出；该题应让计划校验失败并等待重新检索。
 steps: [{id,op,args,...}]，引用写成 {"ref":"变量或步骤id"}。
+方向性运算禁止使用位置参数：pct_change 必须写 new 和 old 字段，严格按
+(new / old - 1) * 100 计算；pct_point_delta 也必须写 new 和 old，严格按 new - old 计算。
 允许 op: add,sub,mul,div,mean,abs,max,min,pct_change,pct_point_delta,count_gte,count_gt,sort_desc,date_add_days,next_workday,days_between。
 sort_desc 使用 items:[{label,source}]。outputs 数量必须等于答案槽数；每项为 {source,format}。
 format 仅 raw,decimal0,decimal1,decimal2,percent2,date_cn,text。中间过程不得舍入，最终才按格式四舍五入。
 证据 ID 必须原样使用给定 evidence_id。题目本身给出的数值可引用 question:<qid>。只输出 JSON。"""
 
-RUNNER_VERSION = "b_actual_v2"
+RUNNER_VERSION = "b_actual_v3"
 
 
 @dataclass(slots=True)

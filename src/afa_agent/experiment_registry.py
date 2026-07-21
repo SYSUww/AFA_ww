@@ -414,9 +414,19 @@ class ExperimentRegistry:
                 1.0,
             )
 
+        direction_id = _normalize_text(candidate.get("direction_id", ""))
         scored = sorted(
             (
-                (candidate_similarity(fingerprint, row["candidate_fingerprint"]), row)
+                (
+                    max(
+                        candidate_similarity(fingerprint, row["candidate_fingerprint"]),
+                        similarity_threshold,
+                    )
+                    if direction_id
+                    and direction_id == _normalize_text(row.get("direction_id", ""))
+                    else candidate_similarity(fingerprint, row["candidate_fingerprint"]),
+                    row,
+                )
                 for row in records
             ),
             key=lambda item: item[0],

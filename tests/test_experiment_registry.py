@@ -172,6 +172,22 @@ class ExperimentRegistryTests(unittest.TestCase):
 
         self.assertEqual(self.registry.decide(novel).decision, DECISION_EXECUTE)
 
+    def test_same_direction_id_is_history_aware_even_when_word_similarity_is_low(self) -> None:
+        self.append_candidate("prior", "rejected")
+        candidate = make_candidate(
+            hypothesis="完全不同的实现措辞",
+            change_vector={"strategy": "named_directional_operands"},
+            domains=["research"],
+            target_qids=["q99"],
+            material_delta={"operand_roles": True},
+        )
+
+        decision = self.registry.decide(candidate)
+
+        self.assertEqual(decision.decision, DECISION_REFINE_EXISTING)
+        self.assertEqual(decision.related_experiment_ids, ("prior",))
+        self.assertEqual(decision.comparable_attempt_count, 1)
+
     def test_comparable_attempt_count_excludes_technical_failures_and_deduplicates_ids(self) -> None:
         self.append_candidate("attempt-1", "rejected")
         self.append_candidate("attempt-1", "rejected")
