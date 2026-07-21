@@ -3056,3 +3056,292 @@
   "token_accounting_complete": true
 }
 ```
+
+## b-loop-calculation_failure_recovery-a2-named-date-args
+
+- recorded_at: `2026-07-21T20:42:31+00:00`
+
+```json
+{
+  "answered_qids": [
+    "reg_b_003",
+    "reg_b_004",
+    "reg_b_018"
+  ],
+  "attempt_index": 2,
+  "blind_evaluation": {
+    "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+    "reason": "answer_parts unchanged for all promoted qids",
+    "required": false
+  },
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "date_add_days_roles": [
+            "date",
+            "days"
+          ],
+          "days_between_roles": [
+            "end",
+            "start"
+          ],
+          "next_workday_roles": [
+            "date"
+          ],
+          "strategy": "named_date_arguments_a2"
+        },
+        "domains": [
+          "regulatory"
+        ],
+        "hypothesis": "supporting semantically named date-operation arguments and explicitly prompting their roles converts the three date placeholder failures into grounded replayable answers.",
+        "pipeline_stage": "calculation",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "legacy_calculation_fallback",
+        "target_qids": [
+          "reg_b_003",
+          "reg_b_004",
+          "reg_b_018"
+        ]
+      }
+    },
+    "context_sha256": "fb8ccbeedeb2b9d54db9a8a389961275c1cf689059baaf6a3b8445af28fb8748",
+    "direction_sha256": "61e685b9a87c5ddcf6b849881920e77a8674ea4e5009d93f4f459e2ef996c0b2",
+    "schema_version": 1,
+    "semantic_sha256": "ce11bd8b38b3585fe7c20fa73b039f1add352db254d5720e4a39fc3ef30a734a",
+    "sha256": "70a661669cdfcfe56ae45c0007afbf089768640f98dd18ada37aece3f053812a"
+  },
+  "change_vector": {
+    "date_add_days_roles": [
+      "date",
+      "days"
+    ],
+    "days_between_roles": [
+      "end",
+      "start"
+    ],
+    "next_workday_roles": [
+      "date"
+    ],
+    "strategy": "named_date_arguments_a2"
+  },
+  "changed_answer_qids": [],
+  "comparable_attempt_count_before": 1,
+  "confidence_after": {
+    "reg_b_003": 70,
+    "reg_b_004": 85,
+    "reg_b_018": 80
+  },
+  "confidence_before": {
+    "reg_b_003": 0,
+    "reg_b_004": 0,
+    "reg_b_018": 0
+  },
+  "direction_id": "calculation_failure_recovery",
+  "domains": [
+    "regulatory"
+  ],
+  "effective_branch": "codex/b榜-loop-i007-named-date-arguments",
+  "evaluation_resume": {
+    "final_status": "complete",
+    "initial_error": "Evaluator schema_version mismatch",
+    "initial_evaluated_answer_count": 99,
+    "initial_failure_qid": "fc_b_003",
+    "resumed_evaluation_count": 105
+  },
+  "evaluator_failed_attempts_not_in_usage": 1,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-calculation_failure_recovery-a2-named-date-args",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 85993,
+    "prompt_tokens": 474866,
+    "total_tokens": 560859
+  },
+  "generation_token_usage": {
+    "completion_tokens": 2325,
+    "prompt_tokens": 23266,
+    "total_tokens": 25591
+  },
+  "generator_model": "gpt-5.5",
+  "history_decision": "refine_existing",
+  "history_reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+  "history_related_experiment_ids": [
+    "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19"
+  ],
+  "history_similarity": 0.7,
+  "hypothesis": "Supporting semantically named date-operation arguments and explicitly prompting their roles converts the three date placeholder failures into grounded replayable answers.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 111,
+    "tests_passed": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/calculation_failure_recovery/named_date_args_a2_composite",
+  "material_delta": {
+    "date_prompt_schema": true,
+    "named_date_arg_normalization": true,
+    "reject_mapping_args_for_non_date_ops": true
+  },
+  "next_root_causes": [
+    "choice_no_supported_fallback",
+    "remaining_format_forced_choice_evidence",
+    "research_choice_evidence"
+  ],
+  "pipeline_stage": "calculation",
+  "promoted_qids": [
+    "reg_b_003",
+    "reg_b_004",
+    "reg_b_018"
+  ],
+  "promotion_result": "promoted",
+  "question_types": [
+    "calculation"
+  ],
+  "reason": "Named date arguments fixed all three deterministic execution failures. Answers stayed unchanged but gained grounded evidence and replay traces; fixed confidence improved reg_b_003 0->70, reg_b_004 0->85, reg_b_018 0->80 with no new hard failure.",
+  "recorded_at": "2026-07-21T20:42:31+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "legacy_calculation_fallback",
+  "round_gate": {
+    "metrics": {
+      "causal_changed_qids": [
+        "reg_b_003",
+        "reg_b_004",
+        "reg_b_018"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 13,
+          "blocked_low_before": 13,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 9,
+          "blocked_low_before": 9,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 10,
+          "blocked_low_before": 10,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 6,
+          "blocked_low_before": 9,
+          "low_tier_improved_qids": [
+            "reg_b_003",
+            "reg_b_004",
+            "reg_b_018"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 15,
+          "blocked_low_before": 15,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_003": -5,
+        "fc_b_004": 5,
+        "fc_b_006": -25,
+        "fc_b_013": -15,
+        "fc_b_016": -17,
+        "fc_b_018": -5,
+        "fc_b_019": -6,
+        "fin_b_002": -2,
+        "fin_b_007": -7,
+        "fin_b_009": 5,
+        "fin_b_010": -10,
+        "fin_b_011": 1,
+        "fin_b_015": 3,
+        "fin_b_016": 5,
+        "fin_b_019": -5,
+        "fin_b_020": 3,
+        "ins_b_004": -4,
+        "ins_b_005": 6,
+        "ins_b_006": 45,
+        "ins_b_007": 17,
+        "ins_b_008": 5,
+        "ins_b_009": 4,
+        "ins_b_010": 5,
+        "ins_b_012": 8,
+        "ins_b_014": 2,
+        "ins_b_016": 10,
+        "ins_b_017": -2,
+        "ins_b_018": -7,
+        "ins_b_020": -5,
+        "reg_b_005": -4,
+        "reg_b_008": 4,
+        "reg_b_009": -8,
+        "reg_b_013": 8,
+        "reg_b_015": -6,
+        "reg_b_016": -2,
+        "reg_b_017": -5,
+        "reg_b_020": -5,
+        "reg_b_023": 10,
+        "res_b_001": 2,
+        "res_b_013": 6,
+        "res_b_015": -6
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_006",
+        "fc_b_013",
+        "fc_b_016",
+        "ins_b_006",
+        "ins_b_007",
+        "ins_b_009",
+        "ins_b_010",
+        "ins_b_016",
+        "reg_b_005",
+        "reg_b_023"
+      ]
+    },
+    "reasons": [],
+    "tests": {
+      "count": 111,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/calculation_failure_recovery/named_date_args_a2",
+  "status": "accepted",
+  "target_qids": [
+    "reg_b_003",
+    "reg_b_004",
+    "reg_b_018"
+  ],
+  "token_accounting_complete": false
+}
+```

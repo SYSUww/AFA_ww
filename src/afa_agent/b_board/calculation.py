@@ -197,8 +197,8 @@ class CalculationExecutor:
         values: Mapping[str, Any],
         value_kinds: Mapping[str, str],
     ) -> tuple[Any, str, list[dict[str, str]]]:
-        args = [_resolve(item, values) for item in step.get("args", [])]
-        arg_specs = list(step.get("args", []))
+        arg_specs = _operation_arg_specs(op, step)
+        args = [_resolve(item, values) for item in arg_specs]
         arg_kinds = [_resolve_kind(item, value_kinds) for item in arg_specs]
         conversions: list[dict[str, str]] = []
         if op == "add":
@@ -308,6 +308,32 @@ def _require_named_directional_operands(
             f"{op} requires named 'new' and 'old' operands"
         )
     return step["new"], step["old"]
+
+
+def _operation_arg_specs(op: str, step: Mapping[str, Any]) -> list[Any]:
+    raw_args = step.get("args", [])
+    if isinstance(raw_args, list):
+        return list(raw_args)
+    if not isinstance(raw_args, Mapping):
+        raise CalculationPlanError(f"{op} args must be a list or supported named object")
+
+    named_roles = {
+        "date_add_days": ("date", "days"),
+        "next_workday": ("date",),
+        "days_between": ("end", "start"),
+    }.get(op)
+    if named_roles is None:
+        raise CalculationPlanError(f"{op} args must be a list")
+    missing = [role for role in named_roles if role not in raw_args]
+    extra = sorted(str(key) for key in raw_args if key not in named_roles)
+    if missing or extra:
+        details = []
+        if missing:
+            details.append("missing=" + ",".join(missing))
+        if extra:
+            details.append("extra=" + ",".join(extra))
+        raise CalculationPlanError(f"{op} named args mismatch: {'; '.join(details)}")
+    return [raw_args[role] for role in named_roles]
 
 
 def _parse_value(value: Any, value_type: str) -> Any:

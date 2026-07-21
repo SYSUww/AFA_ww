@@ -225,6 +225,78 @@ class BBoardCalculationTests(unittest.TestCase):
         )
         self.assertEqual(result.answer_parts, ("2026年4月7日",))
 
+    def test_named_date_arguments_preserve_semantic_roles(self):
+        executor = CalculationExecutor()
+        plan = {
+            "variables": [
+                {
+                    "name": "accepted",
+                    "value": "2026年4月1日",
+                    "value_type": "date",
+                    "unit": "",
+                    "evidence_ids": ["q"],
+                },
+                {
+                    "name": "period",
+                    "value": "90",
+                    "value_type": "decimal",
+                    "unit": "日",
+                    "evidence_ids": ["q"],
+                },
+            ],
+            "steps": [
+                {
+                    "id": "deadline",
+                    "op": "date_add_days",
+                    "args": {
+                        "date": {"ref": "accepted"},
+                        "days": {"ref": "period"},
+                    },
+                },
+                {
+                    "id": "elapsed",
+                    "op": "days_between",
+                    "args": {
+                        "end": {"ref": "deadline"},
+                        "start": {"ref": "accepted"},
+                    },
+                },
+            ],
+            "outputs": [
+                {"source": {"ref": "deadline"}, "format": "date_cn"},
+                {"source": {"ref": "elapsed"}, "format": "decimal0"},
+            ],
+        }
+        result = executor.execute(
+            plan,
+            expected_slots=2,
+            evidence_text_by_id={"q": "2026年4月1日，期限90日"},
+        )
+        self.assertEqual(result.answer_parts, ("2026年6月30日", "90"))
+
+    def test_non_date_operation_rejects_mapping_args(self):
+        plan = {
+            "variables": [
+                {
+                    "name": "a",
+                    "value": "1",
+                    "value_type": "decimal",
+                    "unit": "",
+                    "evidence_ids": ["q"],
+                }
+            ],
+            "steps": [
+                {"id": "x", "op": "add", "args": {"left": {"ref": "a"}}}
+            ],
+            "outputs": [{"source": {"ref": "x"}, "format": "decimal0"}],
+        }
+        with self.assertRaisesRegex(CalculationPlanError, "add args must be a list"):
+            CalculationExecutor().execute(
+                plan,
+                expected_slots=1,
+                evidence_text_by_id={"q": "1"},
+            )
+
     def test_missing_evidence_and_unknown_operation_fail(self):
         with self.assertRaisesRegex(CalculationPlanError, "no evidence"):
             CalculationExecutor().execute(

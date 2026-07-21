@@ -40,6 +40,9 @@ variables: [{name,value,value_type,unit,evidence_ids}]，value_type 仅 decimal/
 steps: [{id,op,args,...}]，引用写成 {"ref":"变量或步骤id"}。
 方向性运算禁止使用位置参数：pct_change 必须写 new 和 old 字段，严格按
 (new / old - 1) * 100 计算；pct_point_delta 也必须写 new 和 old，严格按 new - old 计算。
+日期运算使用具名参数：date_add_days 的 args 写 {"date":{"ref":"日期变量"},"days":{"ref":"天数变量"}}；
+next_workday 的 args 写 {"date":{"ref":"日期变量"}}；days_between 的 args 写
+{"end":{"ref":"结束日期"},"start":{"ref":"开始日期"}}，严格按 end - start 计算。
 允许 op: add,sub,mul,div,mean,abs,max,min,pct_change,pct_point_delta,count_gte,count_gt,sort_desc,date_add_days,next_workday,days_between。
 sort_desc 使用 items:[{label,source}]。outputs 数量必须等于答案槽数；每项为 {source,format}。
 format 仅 raw,decimal0,decimal1,decimal2,percent2,date_cn,text。中间过程不得舍入，最终才按格式四舍五入。
