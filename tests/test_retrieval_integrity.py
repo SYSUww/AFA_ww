@@ -7,9 +7,11 @@ from unittest.mock import patch
 
 from afa_agent.domains.generic_retriever import GenericBM25Retriever
 from afa_agent.domains.insurance.plugin import InsurancePlugin
+from afa_agent.domains.insurance.solver import InsuranceSolver
 from afa_agent.domains.regulatory.retriever import RegulatoryRetriever
 from afa_agent.domains.research.plugin import ResearchPlugin
 from afa_agent.io_utils import read_json, write_json
+from afa_agent.models import Question
 
 
 def make_unit(unit_id: str, doc_id: str, text: str, unit_type: str = "paragraph") -> dict[str, object]:
@@ -76,6 +78,37 @@ class UnitIdGuardTests(unittest.TestCase):
                 with self.subTest(plugin=plugin.name):
                     with self.assertRaisesRegex(ValueError, "duplicate unit_id"):
                         plugin.build_index(parsed_path, root / f"{plugin.name}.json")
+
+
+class InsuranceTargetedClauseTests(unittest.TestCase):
+    def test_escape_wording_maps_to_traffic_hit_and_run_clause(self) -> None:
+        units = [
+            make_unit(
+                "za::escape",
+                "za",
+                "责任免除：驾驶人或操作人员交通肇事逃逸，保险人不负责赔偿。",
+                unit_type="clause_block",
+            ),
+            make_unit("za::other", "za", "特种车保险的其他条款。", unit_type="clause_block"),
+        ]
+        solver = InsuranceSolver.__new__(InsuranceSolver)
+        solver.retriever = GenericBM25Retriever(units)
+        question = Question(
+            qid="ins_b_007",
+            domain="insurance",
+            split="B",
+            question="同等交通事故逃逸情形是否属于责任免除？",
+            options={"A": "众安特种车商业保险明确列为责任免除"},
+            answer_format="mcq",
+            type="单选题",
+            doc_ids=["za"],
+        )
+
+        hits = solver._targeted_clause_hits(question, question.question)
+
+        self.assertEqual([hit.unit_id for hit in hits], ["za::escape"])
+        self.assertTrue(hits[0].metadata["targeted_clause"])
+        self.assertIn("交通肇事逃逸", solver._focus_terms(question.question))
 
 
 class PluginParseUnitTests(unittest.TestCase):

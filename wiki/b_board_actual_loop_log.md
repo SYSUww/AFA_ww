@@ -1941,3 +1941,461 @@
   "token_accounting_complete": true
 }
 ```
+
+## b-loop-insurance_clause_synonym_retrieval-a1-traffic-escape-v1
+
+- recorded_at: `2026-07-21T19:46:26+00:00`
+
+```json
+{
+  "attempt_index": 1,
+  "change_vector": {
+    "concept": "traffic_escape",
+    "exact_term": "交通肇事逃逸",
+    "strategy": "targeted_clause_synonym_v1"
+  },
+  "comparable_attempt_count_before": 0,
+  "direction_id": "insurance_clause_synonym_retrieval",
+  "domains": [
+    "insurance"
+  ],
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "event": "attempt_planned",
+  "experiment_id": "b-loop-insurance_clause_synonym_retrieval-a1-traffic-escape-v1",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_similarity": null,
+  "hypothesis": "Mapping natural-language traffic escape wording to the exact clause term 交通肇事逃逸 retrieves direct exclusion evidence for both special-vehicle policies.",
+  "material_delta": {
+    "target_clause_spec": true
+  },
+  "pipeline_stage": "retrieval",
+  "question_types": [
+    "multi"
+  ],
+  "recorded_at": "2026-07-21T19:46:26+00:00",
+  "related_experiment_ids": [],
+  "root_cause_cluster": "insurance_clause_terminology",
+  "status": "running",
+  "target_qids": [
+    "ins_b_007"
+  ]
+}
+```
+
+## b-loop-insurance_clause_synonym_retrieval-a1-traffic-escape-v1
+
+- recorded_at: `2026-07-21T19:51:23+00:00`
+
+```json
+{
+  "answered_qids": [
+    "ins_b_007"
+  ],
+  "attempt_index": 1,
+  "blind_evaluation": {
+    "ins_b_007": {
+      "candidate_label": "B",
+      "evaluation": {
+        "confidence": 90,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "A作答为BC。其证据中doc9::sec_9明确在平安特种车商业保险责任免除项下列明“交通肇事逃逸”，支持B；同时另一方封存证据doc10::sec_9、doc10::sec_22明确在众安特种车商业保险责任免除项下列明“交通肇事逃逸”，与A选择C一致。B作答为AC，其中A对应的众安营运交通工具团体意外伤害保险证据doc8仅显示意外身故/伤残保险责任，未显示将交通肇事逃逸列为责任免除，且B的自身决策轨迹也标注selected_false_option:A、supported_only_answer:C；同时B遗漏了有明确证据支持的B。因此A更受证据支持且更可验证。",
+        "winner": "A"
+      },
+      "incumbent_label": "A",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "token_usage": {
+        "completion_tokens": 726,
+        "prompt_tokens": 7014,
+        "total_tokens": 7740
+      }
+    }
+  },
+  "candidate_evaluation_token_usage": {
+    "completion_tokens": 3434,
+    "prompt_tokens": 8008,
+    "total_tokens": 11442
+  },
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "concept": "traffic_escape",
+          "exact_term": "交通肇事逃逸",
+          "strategy": "targeted_clause_synonym_v1"
+        },
+        "domains": [
+          "insurance"
+        ],
+        "hypothesis": "mapping natural-language traffic escape wording to the exact clause term 交通肇事逃逸 retrieves direct exclusion evidence for both special-vehicle policies.",
+        "pipeline_stage": "retrieval",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "insurance_clause_terminology",
+        "target_qids": [
+          "ins_b_007"
+        ]
+      }
+    },
+    "context_sha256": "fb8ccbeedeb2b9d54db9a8a389961275c1cf689059baaf6a3b8445af28fb8748",
+    "direction_sha256": "771579e477d831e40f6a629912c09b93968175d362b169287dc31cbc975b9843",
+    "schema_version": 1,
+    "semantic_sha256": "7e70dbac99a5fe41370d6272f789a9075aae757650153b05f50776bc5ef44435",
+    "sha256": "ef5e3845322eb5981e8eaaa63efb5e7e3145848b2a86f34abefab4d01323105f"
+  },
+  "change_vector": {
+    "concept": "traffic_escape",
+    "exact_term": "交通肇事逃逸",
+    "strategy": "targeted_clause_synonym_v1"
+  },
+  "changed_answer_qids": [
+    "ins_b_007"
+  ],
+  "comparable_attempt_count_after": 1,
+  "confidence_after": {
+    "ins_b_007": 0
+  },
+  "confidence_before": {
+    "ins_b_007": 50
+  },
+  "direction_id": "insurance_clause_synonym_retrieval",
+  "domains": [
+    "insurance"
+  ],
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-insurance_clause_synonym_retrieval-a1-traffic-escape-v1",
+  "generation_token_usage": {
+    "completion_tokens": 1201,
+    "prompt_tokens": 9882,
+    "total_tokens": 11083
+  },
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "hypothesis": "Mapping natural-language traffic escape wording to the exact clause term 交通肇事逃逸 retrieves direct exclusion evidence for both special-vehicle policies.",
+  "integrity": {
+    "artifact_complete": true,
+    "candidate_hard_failures": [
+      "format_forced"
+    ],
+    "passed": false
+  },
+  "material_delta": {
+    "target_clause_spec": true
+  },
+  "next_root_causes": [
+    "rare_clause_prompt_ranking",
+    "selected_option_evidence_precision"
+  ],
+  "pipeline_stage": "retrieval",
+  "promotion_result": "rejected",
+  "question_types": [
+    "multi"
+  ],
+  "reason": "The exact term retrieved direct ZhongAn evidence and supported C, but prompt evidence ranking still dropped the equivalent Ping An clause, changing BC to forced AC. Fixed judge scored 0 and blind judge preferred the incumbent at confidence 90.",
+  "recorded_at": "2026-07-21T19:51:23+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "insurance_clause_terminology",
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/insurance_clause_synonym_retrieval/traffic_escape_v1_ins_b_007",
+  "status": "rejected",
+  "target_qids": [
+    "ins_b_007"
+  ],
+  "token_accounting_complete": true
+}
+```
+
+## b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2
+
+- recorded_at: `2026-07-21T19:51:35+00:00`
+
+```json
+{
+  "attempt_index": 2,
+  "change_vector": {
+    "exact_term": "交通肇事逃逸",
+    "strategy": "rare_clause_prompt_ranking_v2",
+    "targeted_clause_spec": true
+  },
+  "comparable_attempt_count_before": 1,
+  "direction_id": "insurance_clause_synonym_retrieval",
+  "domains": [
+    "insurance"
+  ],
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "event": "attempt_planned",
+  "experiment_id": "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+  "generator_model": "gpt-5.5",
+  "history_decision": "refine_existing",
+  "history_reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+  "history_similarity": 0.7,
+  "hypothesis": "Adding the exact escape clause term to prompt-hit focus ranking retains direct Ping An and ZhongAn exclusion evidence simultaneously.",
+  "material_delta": {
+    "prompt_focus_terms": [
+      "交通肇事逃逸",
+      "逃逸"
+    ]
+  },
+  "pipeline_stage": "retrieval_and_prompt_selection",
+  "question_types": [
+    "multi"
+  ],
+  "recorded_at": "2026-07-21T19:51:35+00:00",
+  "related_experiment_ids": [
+    "b-loop-insurance_clause_synonym_retrieval-a1-traffic-escape-v1"
+  ],
+  "root_cause_cluster": "insurance_clause_terminology",
+  "status": "running",
+  "target_qids": [
+    "ins_b_007"
+  ]
+}
+```
+
+## b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2
+
+- recorded_at: `2026-07-21T20:03:43+00:00`
+
+```json
+{
+  "answered_qids": [
+    "ins_b_007"
+  ],
+  "attempt_index": 2,
+  "candidate_evaluation_token_usage": {
+    "completion_tokens": 2966,
+    "prompt_tokens": 9499,
+    "total_tokens": 12465
+  },
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "exact_term": "交通肇事逃逸",
+          "strategy": "rare_clause_prompt_ranking_v2",
+          "targeted_clause_spec": true
+        },
+        "domains": [
+          "insurance"
+        ],
+        "hypothesis": "adding the exact escape clause term to prompt-hit focus ranking retains direct ping an and zhongan exclusion evidence simultaneously.",
+        "pipeline_stage": "retrieval_and_prompt_selection",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "insurance_clause_terminology",
+        "target_qids": [
+          "ins_b_007"
+        ]
+      }
+    },
+    "context_sha256": "fb8ccbeedeb2b9d54db9a8a389961275c1cf689059baaf6a3b8445af28fb8748",
+    "direction_sha256": "a8d0e93869faa585f038d83629bb16fcb8c650d1282df7aebddb5f2287db8312",
+    "schema_version": 1,
+    "semantic_sha256": "321d4f5ea319bbd037285d7c2b37c3210bea2ac4401f8ec35cc66e3eead5b4e3",
+    "sha256": "72b2d31e94f219e19dd1d957fbffb27e435e7a926f8cfe0f3b666f0244a134d8"
+  },
+  "change_vector": {
+    "exact_term": "交通肇事逃逸",
+    "strategy": "rare_clause_prompt_ranking_v2",
+    "targeted_clause_spec": true
+  },
+  "changed_answer_qids": [],
+  "changed_artifact_qids": [
+    "ins_b_007"
+  ],
+  "comparable_attempt_count_after": 2,
+  "confidence_after": {
+    "ins_b_007": 72
+  },
+  "confidence_before": {
+    "ins_b_007": 50
+  },
+  "direction_id": "insurance_clause_synonym_retrieval",
+  "direction_status": "resolved",
+  "domains": [
+    "insurance"
+  ],
+  "effective_branch": "codex/b榜-loop-i005-insurance-clause-retrieval",
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 89628,
+    "prompt_tokens": 475637,
+    "total_tokens": 565265
+  },
+  "generation_token_usage": {
+    "completion_tokens": 1384,
+    "prompt_tokens": 10420,
+    "total_tokens": 11804
+  },
+  "generator_model": "gpt-5.5",
+  "history_decision": "refine_existing",
+  "history_related_experiment_ids": [
+    "b-loop-insurance_clause_synonym_retrieval-a1-traffic-escape-v1"
+  ],
+  "history_similarity": 0.7,
+  "hypothesis": "Adding the exact escape clause term to prompt-hit focus ranking retains direct Ping An and ZhongAn exclusion evidence simultaneously.",
+  "integrity": {
+    "artifact_complete": true,
+    "invalid_submission_after": 0,
+    "invalid_submission_before": 0,
+    "passed": true,
+    "submission_valid_after": true,
+    "submission_valid_before": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/iterations/iteration_005_insurance_traffic_escape_v2",
+  "material_delta": {
+    "prompt_focus_terms": [
+      "交通肇事逃逸",
+      "逃逸"
+    ]
+  },
+  "next_root_causes": [
+    "calculation_failure_recovery",
+    "choice_no_supported_fallback",
+    "document_entity_context"
+  ],
+  "pipeline_stage": "retrieval_and_prompt_selection",
+  "promotion_result": "promoted",
+  "question_types": [
+    "multi"
+  ],
+  "reason": "The answer remained BC while both Ping An and ZhongAn direct traffic-escape exclusion clauses were retained. Full fixed evaluation improved ins_b_007 from low 50 to medium 72 with no hard failure; targeted evaluation scored high 82.",
+  "recorded_at": "2026-07-21T20:03:43+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "insurance_clause_terminology",
+  "round_gate": {
+    "metrics": {
+      "causal_changed_qids": [
+        "ins_b_007"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 16,
+          "blocked_low_before": 16,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 13,
+          "blocked_low_before": 13,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 8,
+          "blocked_low_before": 9,
+          "low_tier_improved_qids": [
+            "ins_b_007"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 11,
+          "blocked_low_before": 11,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 16,
+          "blocked_low_before": 16,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_006": -15,
+        "fc_b_013": -2,
+        "fc_b_016": 15,
+        "fc_b_018": -8,
+        "fc_b_019": -15,
+        "fin_b_009": -10,
+        "fin_b_010": 5,
+        "fin_b_011": 2,
+        "fin_b_015": 10,
+        "fin_b_017": 3,
+        "fin_b_019": -7,
+        "ins_b_002": -10,
+        "ins_b_004": -10,
+        "ins_b_006": 10,
+        "ins_b_008": -5,
+        "ins_b_009": -7,
+        "ins_b_010": -8,
+        "ins_b_014": -10,
+        "ins_b_016": -6,
+        "ins_b_017": -10,
+        "ins_b_020": -4,
+        "reg_b_005": 10,
+        "reg_b_008": -4,
+        "reg_b_009": -4,
+        "reg_b_013": -12,
+        "reg_b_015": -10,
+        "reg_b_016": -2,
+        "reg_b_017": -3,
+        "reg_b_023": -6,
+        "res_b_005": 5,
+        "res_b_013": 10,
+        "res_b_015": 4
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_013",
+        "fc_b_016",
+        "fc_b_019",
+        "fin_b_009",
+        "fin_b_015",
+        "ins_b_006",
+        "ins_b_009",
+        "ins_b_014",
+        "reg_b_023",
+        "res_b_015"
+      ]
+    },
+    "reasons": [],
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/insurance_clause_synonym_retrieval/rare_clause_ranking_v2_ins_b_007",
+  "single_candidate_confidence": {
+    "ins_b_007": 82
+  },
+  "status": "accepted",
+  "target_qids": [
+    "ins_b_007"
+  ],
+  "tests": {
+    "count": 109,
+    "passed": true
+  },
+  "token_accounting_complete": true
+}
+```
