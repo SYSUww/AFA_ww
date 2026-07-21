@@ -2399,3 +2399,660 @@
   "token_accounting_complete": true
 }
 ```
+
+## b-loop-calculation_failure_recovery-a1-v6-replay-legacy19
+
+- recorded_at: `2026-07-21T20:29:18+00:00`
+
+```json
+{
+  "answered_qids": [
+    "fc_b_001",
+    "fc_b_014",
+    "fc_b_020",
+    "fin_b_014",
+    "fin_b_016",
+    "fin_b_018",
+    "fin_b_020",
+    "ins_b_001",
+    "ins_b_003",
+    "ins_b_011",
+    "ins_b_018",
+    "ins_b_019",
+    "reg_b_007",
+    "reg_b_014",
+    "res_b_007",
+    "res_b_012"
+  ],
+  "attempt_index": 1,
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 2026,
+    "prompt_tokens": 39916,
+    "total_tokens": 41942
+  },
+  "blind_pairs": {
+    "fc_b_001": {
+      "candidate_label": "A",
+      "evaluation": {
+        "confidence": 100,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "证据表明确列示矿业板块在2025年1-6月、2024年度、2023年度、2022年度的主营业务毛利率分别为7.35%、7.68%、5.36%、5.55%。题目要求按2022-2024年及2025年1-6月顺序回答，因此应为5.55%、5.36%、7.68%、7.35%。A按正确年份顺序和百分比单位输出，且与证据逐项一致；B将百分数误按比例再次格式化为0.06%、0.05%、0.08%、0.07%，单位/数值方向错误，不受证据支持。",
+        "winner": "A"
+      },
+      "incumbent_label": "B",
+      "token_usage": {
+        "completion_tokens": 297,
+        "prompt_tokens": 2409,
+        "total_tokens": 2706
+      }
+    },
+    "fin_b_016": {
+      "candidate_label": "A",
+      "evaluation": {
+        "confidence": 98,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "A使用的中国建筑证据为annual_cscec_2025_report::metric_39，明确载明“每10股派发现金红利2.718元”，并据此计算宁德时代全年每10股79.64元与最低者2.718元的差额为76.922，保留两位为76.92。B将中国建筑变量设为2.7145，引用的annual_cscec_2025_report::metric_44文本仅包含现金分红金额和净利润等总额信息，并未直接支持每10股2.7145，且与更直接证据中的2.718不一致，导致差额76.93错误。排序两者相同，但差额和中国建筑分红数据A更受证据支持且可重放验证。",
+        "winner": "A"
+      },
+      "incumbent_label": "B",
+      "token_usage": {
+        "completion_tokens": 360,
+        "prompt_tokens": 12210,
+        "total_tokens": 12570
+      }
+    },
+    "ins_b_001": {
+      "candidate_label": "B",
+      "evaluation": {
+        "confidence": 100,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "A的计算与题目和证据规则一致且可重放：平安智盈金生第8年适用第6-10年规则，退还80+12×75%=89万元；国寿增益宝第3年现金价值为90×(1-2%)=88.20万元；国寿鑫享添盈与平安富鸿金生分别按现金价值退还70万元、86万元；合计89+88.20+70+86=333.20万元。B将75%和2%换算方向/公式处理错误，计算为75和2而非0.75和0.02，导致智盈金生980万元、增益宝-90万元等明显单位和方向错误，且未使用/引用后两份合同解除规则证据；答案1046.00不受证据支持。",
+        "winner": "A"
+      },
+      "incumbent_label": "A",
+      "token_usage": {
+        "completion_tokens": 265,
+        "prompt_tokens": 8525,
+        "total_tokens": 8790
+      }
+    },
+    "ins_b_003": {
+      "candidate_label": "A",
+      "evaluation": {
+        "confidence": 78,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "A存在明确的单位/百分比换算错误：将160%与100%相除后得到160，并据此计算90万元×160=14400万元，导致总额14622.00，方向和单位均不成立。B按90万元×1.6=144万元，与个人账户价值100万元取较大值，再加75、72、75，合计366.00，计算轨迹可重放且单位保持为万元。虽B对1.6倍比例的直接证据引用不如A展示充分，但A的公式换算错误是决定性错误，因此B更受证据和计算支持。",
+        "winner": "B"
+      },
+      "incumbent_label": "B",
+      "token_usage": {
+        "completion_tokens": 490,
+        "prompt_tokens": 6158,
+        "total_tokens": 6648
+      }
+    },
+    "ins_b_011": {
+      "candidate_label": "A",
+      "evaluation": {
+        "confidence": 98,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "B的计算与证据公式一致：第3个保单年度现金价值=100×99%=99万元；第8个保单年度属于第6至第10个保单年度，现金价值=累计所交保险费100+保单账户累计收益20×75%=115万元；差额=115-99=16万元。A虽然引用了相同证据，但百分比换算和乘法轨迹错误，将99%和75%错误作为99、75参与计算，导致第3年现金价值算成9900万元、第8年收益部分算成1500万元，最终结果-8300.00不受证据和公式支持。",
+        "winner": "B"
+      },
+      "incumbent_label": "B",
+      "token_usage": {
+        "completion_tokens": 249,
+        "prompt_tokens": 4090,
+        "total_tokens": 4339
+      }
+    },
+    "ins_b_019": {
+      "candidate_label": "A",
+      "evaluation": {
+        "confidence": 100,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "B的计算与证据和题目单位一致：平安智盈金生第12个保单年度适用累计所交保费60万元+账户累计收益10万元的90%=69万元；国寿增益宝第5年现金价值为个人账户价值50万元扣除1%退保费用=49.50万元；再加国寿鑫享添盈45万元、平安富鸿金生48万元，合计211.50万元。A虽然引用相同证据，但将90%和1%按90、1参与乘法后未正确除以100，导致平安智盈金生算成960万元、国寿增益宝算成0万元，百分比公式和金额方向均错误，结果1053.00不受可重放计算支持。",
+        "winner": "B"
+      },
+      "incumbent_label": "B",
+      "token_usage": {
+        "completion_tokens": 365,
+        "prompt_tokens": 6524,
+        "total_tokens": 6889
+      }
+    }
+  },
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/calculation_failure_recovery/v6_replay_legacy19_a1_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "grounded_replay": true,
+          "phrase_constrained_retrieval": true,
+          "runner_version": "b_actual_v6",
+          "strategy": "v6_replay_legacy_fallbacks_a1"
+        },
+        "domains": [
+          "financial_contracts",
+          "financial_reports",
+          "insurance",
+          "regulatory",
+          "research"
+        ],
+        "hypothesis": "replaying remaining legacy calculation fallbacks with the current v6 phrase-constrained grounded executor can recover verifiable answers without new implementation changes.",
+        "pipeline_stage": "calculation",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "legacy_calculation_fallback",
+        "target_qids": [
+          "fc_b_001",
+          "fc_b_014",
+          "fc_b_020",
+          "fin_b_014",
+          "fin_b_016",
+          "fin_b_018",
+          "fin_b_020",
+          "ins_b_001",
+          "ins_b_003",
+          "ins_b_011",
+          "ins_b_018",
+          "ins_b_019",
+          "reg_b_003",
+          "reg_b_004",
+          "reg_b_007",
+          "reg_b_014",
+          "reg_b_018",
+          "res_b_007",
+          "res_b_012"
+        ]
+      }
+    },
+    "context_sha256": "fb8ccbeedeb2b9d54db9a8a389961275c1cf689059baaf6a3b8445af28fb8748",
+    "direction_sha256": "c73f45e0e544acf070606775de13cc8f714d17e218c65c6eb8f3e3f9403734aa",
+    "schema_version": 1,
+    "semantic_sha256": "a5a24fcaf73bc414193c1520c236e81a615682711804f8d27f7b17b5097de2d9",
+    "sha256": "95161ee94977bd73f5e28a03c9fa9de0b3288bfeaefa606cca3cd08dbd8f73e1"
+  },
+  "candidate_full_evaluation_token_usage": {
+    "completion_tokens": 87933,
+    "prompt_tokens": 476754,
+    "total_tokens": 564687
+  },
+  "change_vector": {
+    "grounded_replay": true,
+    "phrase_constrained_retrieval": true,
+    "runner_version": "b_actual_v6",
+    "strategy": "v6_replay_legacy_fallbacks_a1"
+  },
+  "changed_answer_qids": [
+    "fc_b_001",
+    "fin_b_016",
+    "ins_b_001",
+    "ins_b_003",
+    "ins_b_011",
+    "ins_b_019"
+  ],
+  "comparable_attempt_count_before": 0,
+  "confidence_after": {
+    "fc_b_001": 100,
+    "fc_b_014": 85,
+    "fc_b_020": 100,
+    "fin_b_014": 95,
+    "fin_b_016": 85,
+    "fin_b_018": 95,
+    "fin_b_020": 95,
+    "ins_b_018": 95,
+    "reg_b_007": 100,
+    "reg_b_014": 95,
+    "res_b_007": 95
+  },
+  "confidence_before": {
+    "fc_b_001": 0,
+    "fc_b_014": 0,
+    "fc_b_020": 0,
+    "fin_b_014": 0,
+    "fin_b_016": 0,
+    "fin_b_018": 0,
+    "fin_b_020": 0,
+    "ins_b_018": 0,
+    "reg_b_007": 0,
+    "reg_b_014": 0,
+    "res_b_007": 0
+  },
+  "direction_id": "calculation_failure_recovery",
+  "domains": [
+    "financial_contracts",
+    "financial_reports",
+    "insurance",
+    "regulatory",
+    "research"
+  ],
+  "effective_branch": "codex/b榜-loop-i006-calculation-recovery",
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+  "failed_qids": [
+    "reg_b_003",
+    "reg_b_004",
+    "reg_b_018"
+  ],
+  "failure_analysis": {
+    "date_placeholder_error": "Invalid date: date after three grounded replay attempts",
+    "date_placeholder_qids": [
+      "reg_b_003",
+      "reg_b_004",
+      "reg_b_018"
+    ],
+    "dimension_regression_qids": [
+      "res_b_012"
+    ],
+    "insurance_contradicted_qids": [
+      "ins_b_001",
+      "ins_b_003",
+      "ins_b_011",
+      "ins_b_019"
+    ]
+  },
+  "final_full_evaluation_token_usage": {
+    "completion_tokens": 86875,
+    "prompt_tokens": 474316,
+    "total_tokens": 561191
+  },
+  "generation_token_usage": {
+    "completion_tokens": 40986,
+    "prompt_tokens": 292667,
+    "total_tokens": 333653
+  },
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_related_experiment_ids": [],
+  "history_similarity": null,
+  "hypothesis": "Replaying remaining legacy calculation fallbacks with the current v6 phrase-constrained grounded executor can recover verifiable answers without new implementation changes.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 109,
+    "tests_passed": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/iterations/iteration_006_v6_calculation_recovery_a1",
+  "material_delta": {
+    "replay_current_hardened_runner": true,
+    "target_legacy_fallback_set": 19
+  },
+  "next_root_causes": [
+    "regulatory_date_placeholder_recovery",
+    "choice_no_supported_fallback",
+    "remaining_format_forced_choice_evidence"
+  ],
+  "pipeline_stage": "calculation",
+  "promoted_qids": [
+    "fc_b_001",
+    "fc_b_014",
+    "fc_b_020",
+    "fin_b_014",
+    "fin_b_016",
+    "fin_b_018",
+    "fin_b_020",
+    "ins_b_018",
+    "reg_b_007",
+    "reg_b_014",
+    "res_b_007"
+  ],
+  "promotion_decisions": {
+    "fc_b_001": {
+      "promote": true,
+      "reasons": [],
+      "score_delta": 100,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fc_b_014": {
+      "promote": true,
+      "reasons": [],
+      "score_delta": 90,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fc_b_020": {
+      "promote": true,
+      "reasons": [],
+      "score_delta": 100,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fin_b_014": {
+      "promote": true,
+      "reasons": [],
+      "score_delta": 95,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fin_b_016": {
+      "promote": true,
+      "reasons": [],
+      "score_delta": 90,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fin_b_018": {
+      "promote": true,
+      "reasons": [],
+      "score_delta": 92,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fin_b_020": {
+      "promote": true,
+      "reasons": [],
+      "score_delta": 95,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "ins_b_001": {
+      "promote": false,
+      "reasons": [
+        "blind_pair_did_not_prefer_candidate",
+        "candidate_contradicted",
+        "changed_answer_without_tier_gain",
+        "dimension_regressed:answer_entailment",
+        "dimension_regressed:calculation_reproducibility",
+        "dimension_regressed:citation_alignment",
+        "dimension_regressed:evidence_sufficiency",
+        "dimension_regressed:internal_consistency",
+        "dimension_regressed:overall_confidence",
+        "insufficient_confidence_gain"
+      ],
+      "score_delta": 0,
+      "tier_after": "blocked",
+      "tier_before": "blocked"
+    },
+    "ins_b_003": {
+      "promote": false,
+      "reasons": [
+        "blind_pair_did_not_prefer_candidate",
+        "candidate_contradicted",
+        "changed_answer_without_tier_gain",
+        "dimension_regressed:answer_entailment",
+        "dimension_regressed:calculation_reproducibility",
+        "dimension_regressed:internal_consistency",
+        "dimension_regressed:overall_confidence",
+        "insufficient_confidence_gain"
+      ],
+      "score_delta": 0,
+      "tier_after": "blocked",
+      "tier_before": "blocked"
+    },
+    "ins_b_011": {
+      "promote": false,
+      "reasons": [
+        "blind_pair_did_not_prefer_candidate",
+        "candidate_contradicted",
+        "changed_answer_without_tier_gain",
+        "dimension_regressed:answer_entailment",
+        "dimension_regressed:calculation_reproducibility",
+        "dimension_regressed:citation_alignment",
+        "dimension_regressed:format_compliance",
+        "dimension_regressed:internal_consistency",
+        "dimension_regressed:overall_confidence",
+        "insufficient_confidence_gain"
+      ],
+      "score_delta": 0,
+      "tier_after": "blocked",
+      "tier_before": "blocked"
+    },
+    "ins_b_018": {
+      "promote": true,
+      "reasons": [],
+      "score_delta": 95,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "ins_b_019": {
+      "promote": false,
+      "reasons": [
+        "blind_pair_did_not_prefer_candidate",
+        "candidate_contradicted",
+        "changed_answer_without_tier_gain",
+        "dimension_regressed:answer_entailment",
+        "dimension_regressed:calculation_reproducibility",
+        "dimension_regressed:format_compliance",
+        "dimension_regressed:internal_consistency",
+        "dimension_regressed:overall_confidence",
+        "insufficient_confidence_gain"
+      ],
+      "score_delta": 0,
+      "tier_after": "blocked",
+      "tier_before": "blocked"
+    },
+    "reg_b_007": {
+      "promote": true,
+      "reasons": [],
+      "score_delta": 100,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "reg_b_014": {
+      "promote": true,
+      "reasons": [],
+      "score_delta": 95,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "res_b_007": {
+      "promote": true,
+      "reasons": [],
+      "score_delta": 95,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "res_b_012": {
+      "promote": false,
+      "reasons": [
+        "dimension_regressed:format_compliance",
+        "dimension_regressed:internal_consistency"
+      ],
+      "score_delta": 45,
+      "tier_after": "low",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_result": "promoted",
+  "question_types": [
+    "calculation"
+  ],
+  "reason": "Current v6 grounded replay recovered 11 legacy calculation artifacts. Each promoted qid moved from blocked to high; both changed promoted answers won blind A/B. Four contradicted insurance candidates, one dimension-regressed research candidate, and three failed date candidates were excluded.",
+  "recorded_at": "2026-07-21T20:29:18+00:00",
+  "registry_schema_version": 1,
+  "rejected_candidate_confidence": {
+    "ins_b_001": 0,
+    "ins_b_003": 0,
+    "ins_b_011": 0,
+    "ins_b_019": 0,
+    "res_b_012": 45
+  },
+  "rejected_qids": [
+    "ins_b_001",
+    "ins_b_003",
+    "ins_b_011",
+    "ins_b_019",
+    "res_b_012"
+  ],
+  "root_cause_cluster": "legacy_calculation_fallback",
+  "round_gate": {
+    "metrics": {
+      "causal_changed_qids": [
+        "fc_b_001",
+        "fc_b_014",
+        "fc_b_020",
+        "fin_b_014",
+        "fin_b_016",
+        "fin_b_018",
+        "fin_b_020",
+        "ins_b_018",
+        "reg_b_007",
+        "reg_b_014",
+        "res_b_007"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 14,
+          "blocked_low_before": 17,
+          "low_tier_improved_qids": [
+            "fc_b_001",
+            "fc_b_014",
+            "fc_b_020"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 9,
+          "blocked_low_before": 13,
+          "low_tier_improved_qids": [
+            "fin_b_014",
+            "fin_b_016",
+            "fin_b_018",
+            "fin_b_020"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 7,
+          "blocked_low_before": 8,
+          "low_tier_improved_qids": [
+            "ins_b_018"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 9,
+          "blocked_low_before": 11,
+          "low_tier_improved_qids": [
+            "reg_b_007",
+            "reg_b_014"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 15,
+          "blocked_low_before": 16,
+          "low_tier_improved_qids": [
+            "res_b_007"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_003": 5,
+        "fc_b_004": -3,
+        "fc_b_006": 25,
+        "fc_b_013": 12,
+        "fc_b_016": 2,
+        "fc_b_018": 5,
+        "fc_b_019": 21,
+        "fin_b_002": 2,
+        "fin_b_007": 5,
+        "fin_b_009": 10,
+        "fin_b_011": 3,
+        "fin_b_015": 3,
+        "fin_b_017": -3,
+        "fin_b_019": 5,
+        "ins_b_002": 5,
+        "ins_b_004": 4,
+        "ins_b_005": 4,
+        "ins_b_006": -47,
+        "ins_b_007": -27,
+        "ins_b_008": -10,
+        "ins_b_010": -7,
+        "ins_b_012": -8,
+        "ins_b_016": 8,
+        "ins_b_017": 4,
+        "ins_b_020": 4,
+        "reg_b_005": -10,
+        "reg_b_008": 4,
+        "reg_b_009": 10,
+        "reg_b_013": 2,
+        "reg_b_015": 13,
+        "reg_b_020": 5,
+        "reg_b_023": -4,
+        "res_b_001": -2,
+        "res_b_013": -8,
+        "res_b_015": -4
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_006",
+        "fc_b_013",
+        "fc_b_019",
+        "fin_b_009",
+        "ins_b_005",
+        "ins_b_006",
+        "ins_b_007",
+        "ins_b_010",
+        "res_b_015"
+      ]
+    },
+    "reasons": [],
+    "tests_pending_verification": false,
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/calculation_failure_recovery/v6_replay_legacy19_a1",
+  "status": "accepted",
+  "target_qids": [
+    "fc_b_001",
+    "fc_b_014",
+    "fc_b_020",
+    "fin_b_014",
+    "fin_b_016",
+    "fin_b_018",
+    "fin_b_020",
+    "ins_b_001",
+    "ins_b_003",
+    "ins_b_011",
+    "ins_b_018",
+    "ins_b_019",
+    "reg_b_003",
+    "reg_b_004",
+    "reg_b_007",
+    "reg_b_014",
+    "reg_b_018",
+    "res_b_007",
+    "res_b_012"
+  ],
+  "technical_blockers": [
+    {
+      "comparable_attempt_consumed": false,
+      "dependency": "pypdf",
+      "error_type": "ModuleNotFoundError",
+      "resolution": "used documented afa-autoresearch interpreter",
+      "stage": "startup"
+    }
+  ],
+  "token_accounting_complete": true
+}
+```
