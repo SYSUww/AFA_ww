@@ -4560,3 +4560,396 @@
   "token_accounting_complete": true
 }
 ```
+
+## b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts
+
+- recorded_at: `2026-07-21T22:36:23+00:00`
+
+```json
+{
+  "answered_qids": [
+    "fin_b_001",
+    "fin_b_002",
+    "fin_b_008"
+  ],
+  "attempt_index": 2,
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 1152,
+    "prompt_tokens": 8816,
+    "total_tokens": 9968
+  },
+  "blind_pairs": {
+    "fin_b_001": {
+      "candidate_label": "A",
+      "evaluation": {
+        "confidence": 98,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "A 选择 ACD，与封存证据可重放计算一致：2025 境外收入 310,740,988、2024 境外收入 221,884,773；总收入分别为 803,964,958 和 777,102,455。境外占比由约 28.55% 升至约 38.65%，提高约 10.10 个百分点，故 A 正确；相对增幅约 35.39%，不是 10.10%，故 B 错误；境外收入增加 88,856,215，大于中国收入减少 61,993,712，故 C 正确；两者差额 26,862,503，与总收入增加额 26,862,503 一致，故 D 正确。B 仅选 AD，漏选正确项 C，且其证据未完整列示境外收入，决策轨迹还显示 forced/selected_false_option 等问题，因此 A 更受证据支持且更可验证。",
+        "winner": "A"
+      },
+      "incumbent_label": "B",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "token_usage": {
+        "completion_tokens": 528,
+        "prompt_tokens": 3911,
+        "total_tokens": 4439
+      }
+    },
+    "fin_b_008": {
+      "candidate_label": "A",
+      "evaluation": {
+        "confidence": 95,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "A选择AC，且其证据覆盖了判断所需的分红比例、营业收入、经营现金流、EPS、归母净利润等数据。按题目要求采用2024年年报原始披露值/2025年年报调整前口径：A项28.75%-24.29%=4.46个百分点，正确；B项2025经营活动现金流量净额20,537,132/营业收入2,082,141,811≈0.986%，未超过1%，错误；C项EPS降幅(1.11-0.94)/1.11≈15.32%，归母净利润降幅(46,187,099-39,069,002)/46,187,099≈15.41%，接近，正确；D项归母净利润减少额7,118,097大于经营现金流增加额20,537,132-15,773,535=4,763,597，故错误。B选择AD，其中D方向错误，且其证据缺少经营现金流等必要数据，决策轨迹也显示存在强制选项和错误选择问题。",
+        "winner": "A"
+      },
+      "incumbent_label": "B",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "token_usage": {
+        "completion_tokens": 624,
+        "prompt_tokens": 4905,
+        "total_tokens": 5529
+      }
+    }
+  },
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_reports_metric_bundle/cross_year_raw_amount_roles_a2_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "code_hash": "3b4761031bd80c01fabbe7260db7d6ce9385bc31cf37a90740861109bf571f9f",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "adjustment_basis_guard": true,
+          "cash_flow_ratio_bundle": true,
+          "group_by": [
+            "company",
+            "report_year",
+            "metric_role"
+          ],
+          "regional_reconciliation": true,
+          "selection": "raw_amount_role_bundle"
+        },
+        "domains": [
+          "financial_reports"
+        ],
+        "hypothesis": "binding current and prior raw amounts from the latest report into ratio and change-amount roles resolves single-company cross-year choice questions without mixing adjusted or unrelated rows.",
+        "pipeline_stage": "retrieval",
+        "question_types": [
+          "mcq"
+        ],
+        "root_cause_cluster": "choice_evidence_coverage",
+        "target_qids": [
+          "fin_b_001",
+          "fin_b_002",
+          "fin_b_008"
+        ]
+      }
+    },
+    "context_sha256": "ae54bdbd42e79b81caf0b2d2d9e18bbe6faff6f716dce1af8a6f477a4bb01a66",
+    "direction_sha256": "db6ab2cd285ce09ca8d39145c40648401470b3273deee2d2323b7f071850a463",
+    "schema_version": 1,
+    "semantic_sha256": "d2abbd8389d262f8b768720f98199ce208fb61a5f9b5a45681e3bb551773cc3b",
+    "sha256": "1d5a450544043a112e3d5c43c26d23629f4229d3099598a50eb7b537d5488a4a"
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 41,
+    "high": 33,
+    "low": 1,
+    "medium": 25
+  },
+  "causal_promoted_tiers": {
+    "blocked": 38,
+    "high": 36,
+    "low": 1,
+    "medium": 25
+  },
+  "change_vector": {
+    "adjustment_basis_guard": true,
+    "cash_flow_ratio_bundle": true,
+    "group_by": [
+      "company",
+      "report_year",
+      "metric_role"
+    ],
+    "regional_reconciliation": true,
+    "selection": "raw_amount_role_bundle"
+  },
+  "changed_answer_qids": [
+    "fin_b_001",
+    "fin_b_008"
+  ],
+  "code_hash": "3b4761031bd80c01fabbe7260db7d6ce9385bc31cf37a90740861109bf571f9f",
+  "comparable_attempt_count_after": 2,
+  "comparable_attempt_count_before": 1,
+  "confidence_after": {
+    "fin_b_001": 82,
+    "fin_b_002": 95,
+    "fin_b_008": 99
+  },
+  "confidence_before": {
+    "fin_b_001": 0,
+    "fin_b_002": 35,
+    "fin_b_008": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "financial_reports_company_year_metric_bundle",
+  "direction_status": "awaiting_refinement",
+  "domains": [
+    "financial_reports"
+  ],
+  "effective_branch": "codex/b榜-loop-i011-financial-report-cross-year-bundles",
+  "evaluator_failed_attempts_not_in_usage": 1,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 83132,
+    "prompt_tokens": 483366,
+    "total_tokens": 566498
+  },
+  "generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+  "generator_model": "gpt-5.5",
+  "history_decision": "refine_existing",
+  "history_reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+  "history_related_experiment_ids": [
+    "b-loop-financial-reports-company-year-metric-bundle-a1"
+  ],
+  "history_similarity": 0.786526,
+  "hypothesis": "Binding current and prior raw amounts from the latest report into ratio and change-amount roles resolves single-company cross-year choice questions without mixing adjusted or unrelated rows.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 122,
+    "tests_passed": true,
+    "token_accounting_complete": false
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_reports_metric_bundle/cross_year_raw_amount_roles_a2_composite",
+  "material_delta": {
+    "original_disclosure_basis": true,
+    "regional_identity": true,
+    "single_company_cross_year_arithmetic": true
+  },
+  "next_root_causes": [
+    "financial_reports_remaining_solvency_bundles",
+    "financial_contracts_subject_clause_binding",
+    "research_multi_clause_choice_coverage",
+    "evidence_serialization_unique_backfill"
+  ],
+  "pipeline_stage": "retrieval",
+  "promoted_qids": [
+    "fin_b_001",
+    "fin_b_002",
+    "fin_b_008"
+  ],
+  "promotion_decisions": {
+    "fin_b_001": {
+      "blind_required": true,
+      "blind_winner": "A",
+      "candidate_blind_label": "A",
+      "promote": true,
+      "reasons": [],
+      "score_delta": 82,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fin_b_002": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 60,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fin_b_008": {
+      "blind_required": true,
+      "blind_winner": "A",
+      "candidate_blind_label": "A",
+      "promote": true,
+      "reasons": [],
+      "score_delta": 99,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "mcq"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 38,
+    "high": 39,
+    "low": 3,
+    "medium": 20
+  },
+  "reason": "Single-company cross-year raw-amount bundles produced fully grounded zero-generation-token answers. fin_b_001 and fin_b_008 changed to ACD and AC, rose from blocked to high, and won blind A/B at confidence 98 and 95; fin_b_002 kept BCD and rose from 35 blocked to 95 high.",
+  "recorded_at": "2026-07-21T22:36:23+00:00",
+  "rejected_qids": [],
+  "root_cause_cluster": "choice_evidence_coverage",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failures": 0,
+      "sentinels_passed": true,
+      "token_accounting_complete": false
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "fin_b_001",
+        "fin_b_002",
+        "fin_b_008"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 14,
+          "blocked_low_before": 14,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 3,
+          "blocked_low_before": 6,
+          "low_tier_improved_qids": [
+            "fin_b_001",
+            "fin_b_002",
+            "fin_b_008"
+          ],
+          "p10_after": 25,
+          "p10_before": 0,
+          "p10_delta": 25
+        },
+        "insurance": {
+          "blocked_low_after": 9,
+          "blocked_low_before": 9,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 70,
+          "p10_before": 70,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 15,
+          "blocked_low_before": 15,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": true,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_003": 5,
+        "fc_b_005": 1,
+        "fc_b_006": 20,
+        "fc_b_013": 20,
+        "fc_b_014": 10,
+        "fc_b_016": 5,
+        "fc_b_018": 10,
+        "fc_b_019": 3,
+        "fin_b_003": 1,
+        "fin_b_005": -3,
+        "fin_b_006": -5,
+        "fin_b_007": -3,
+        "fin_b_009": -10,
+        "fin_b_010": 5,
+        "fin_b_011": 3,
+        "fin_b_012": -5,
+        "fin_b_015": 4,
+        "fin_b_017": 4,
+        "fin_b_019": -2,
+        "fin_b_020": -3,
+        "ins_b_002": -5,
+        "ins_b_004": 8,
+        "ins_b_006": 17,
+        "ins_b_007": 4,
+        "ins_b_008": -5,
+        "ins_b_009": 4,
+        "ins_b_010": 10,
+        "ins_b_012": 10,
+        "ins_b_014": 14,
+        "ins_b_016": -10,
+        "ins_b_017": -23,
+        "ins_b_018": 7,
+        "reg_b_003": -5,
+        "reg_b_007": -1,
+        "reg_b_008": 3,
+        "reg_b_009": 5,
+        "reg_b_013": -7,
+        "reg_b_014": -5,
+        "reg_b_015": -4,
+        "reg_b_016": 2,
+        "reg_b_017": 8,
+        "reg_b_020": 10,
+        "reg_b_021": 6,
+        "reg_b_024": -7,
+        "reg_b_025": 18,
+        "reg_b_026": 6,
+        "reg_b_027": 4,
+        "res_b_001": -6,
+        "res_b_005": -5,
+        "res_b_013": -4,
+        "res_b_015": -8
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_006",
+        "fc_b_013",
+        "fc_b_014",
+        "fin_b_009",
+        "ins_b_006",
+        "ins_b_007",
+        "ins_b_009",
+        "ins_b_012",
+        "ins_b_017",
+        "reg_b_024",
+        "reg_b_025",
+        "reg_b_027"
+      ]
+    },
+    "reasons": [],
+    "tests": {
+      "count": 122,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_reports_metric_bundle/cross_year_raw_amount_roles_a2",
+  "status": "accepted",
+  "target_qids": [
+    "fin_b_001",
+    "fin_b_002",
+    "fin_b_008"
+  ],
+  "token_accounting_complete": false
+}
+```

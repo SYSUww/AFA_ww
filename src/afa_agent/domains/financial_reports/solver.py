@@ -405,6 +405,8 @@ class FinancialReportsSolver:
             self._operating_metric_bundle_rule,
             self._dividend_per_ten_bundle_rule,
             self._midea_statement_scope_rule,
+            self._byd_cross_year_amount_rule,
+            self._cscec_original_basis_rule,
         ):
             result = rule(question, option_text)
             if result is not None:
@@ -557,6 +559,175 @@ class FinancialReportsSolver:
             reason = f"报表口径束：53,345,930千元为合并口径，母公司2025年经营现金流净额为{cash[2]:g}千元。"
             return label, reason, [self._unit_to_evidence(cash_unit, 999.0)]
         return None
+
+    def _byd_cross_year_amount_rule(self, question: Question, option_text: str):
+        if not ("比亚迪" in question.question and "2024" in question.question and "2025" in question.question):
+            return None
+        doc_id = self._company_year_doc(question.doc_ids, "byd", "2025")
+        if not doc_id:
+            return None
+
+        if "分地区营业收入" in question.question:
+            region_unit = self._find_unit(
+                doc_id,
+                required=("地区信息", "中国(包括港澳台地区)", "境外", "合计"),
+            )
+            if region_unit is None:
+                return None
+            china = self._extract_row_numbers(region_unit.get("text", ""), "中国(包括港澳台地区)")
+            foreign = self._extract_row_numbers(region_unit.get("text", ""), "境外")
+            total = self._extract_row_numbers(region_unit.get("text", ""), "合计")
+            if min(len(china), len(foreign), len(total)) < 2 or not total[0] or not total[1]:
+                return None
+            foreign_share_current = foreign[0] / total[0] * 100
+            foreign_share_prior = foreign[1] / total[1] * 100
+            share_change = foreign_share_current - foreign_share_prior
+            relative_share_change = share_change / foreign_share_prior * 100
+            foreign_increase = foreign[0] - foreign[1]
+            china_decrease = china[1] - china[0]
+            revenue_increase = total[0] - total[1]
+
+            if "提高约" in option_text and "个百分点" in option_text:
+                expected = self._extract_expected_points(option_text)
+                label = expected is not None and abs(share_change - expected) <= 0.02
+            elif "相对增幅" in option_text:
+                expected = self._extract_expected_points(option_text)
+                label = expected is not None and abs(relative_share_change - expected) <= 0.02
+            elif "境外收入增加额大于" in option_text and "收入减少额" in option_text:
+                label = foreign_increase > china_decrease
+            elif "境外收入增加额减去" in option_text and "营业收入增加额基本一致" in option_text:
+                label = abs((foreign_increase - china_decrease) - revenue_increase) <= 1.0
+            else:
+                return None
+            reason = (
+                "跨年地区金额束：境外收入占比2025/2024为"
+                f"{foreign_share_current:.2f}%/{foreign_share_prior:.2f}%，差{share_change:.2f}个百分点、"
+                f"相对增幅{relative_share_change:.2f}%；境外增加{foreign_increase:g}，"
+                f"中国地区减少{china_decrease:g}，营业收入增加{revenue_increase:g}。"
+            )
+            return label, reason, [self._unit_to_evidence(region_unit, 999.0)]
+
+        if not (
+            "归属于上市公司股东的净利润" in question.question
+            and "经营活动产生的现金流量净额" in question.question
+        ):
+            return None
+        revenue = self._metric_series(doc_id, "营业收入")
+        profit = self._metric_series(doc_id, "归母净利润")
+        cash = self._metric_series(doc_id, "经营现金流")
+        if not all((revenue, profit, cash)) or not revenue[0] or not revenue[1] or not profit[1] or not cash[1]:
+            return None
+        margin_current = profit[0] / revenue[0] * 100
+        margin_prior = profit[1] / revenue[1] * 100
+        margin_point_change = margin_prior - margin_current
+        margin_relative_decline = margin_point_change / margin_prior * 100
+        profit_decline = (profit[1] - profit[0]) / profit[1] * 100
+        cash_decline = (cash[1] - cash[0]) / cash[1] * 100
+        cash_ratio_current = cash[0] / revenue[0] * 100
+        cash_ratio_prior = cash[1] / revenue[1] * 100
+        cash_ratio_point_change = cash_ratio_prior - cash_ratio_current
+
+        if "归母净利率" in option_text and "相对降幅" in option_text:
+            expected = self._extract_expected_points(option_text)
+            label = expected is not None and abs(margin_relative_decline - expected) <= 0.02
+        elif "归母净利润同比下降" in option_text:
+            expected = self._extract_expected_points(option_text)
+            label = expected is not None and abs(profit_decline - expected) <= 0.02
+        elif "经营活动现金流量净额同比下降" in option_text:
+            expected = self._extract_expected_points(option_text)
+            label = expected is not None and abs(cash_decline - expected) <= 0.02
+        elif "经营活动现金流量净额占营业收入的比例由" in option_text:
+            expected = [float(value) for value in re.findall(r"(\d+(?:\.\d+)?)\s*%?", option_text)]
+            label = len(expected) >= 3 and all(
+                abs(actual - stated) <= 0.02
+                for actual, stated in zip(
+                    (cash_ratio_prior, cash_ratio_current, cash_ratio_point_change),
+                    expected[:3],
+                )
+            )
+        else:
+            return None
+        reason = (
+            f"跨年指标束：归母净利率2025/2024为{margin_current:.2f}%/{margin_prior:.2f}%，"
+            f"相对降幅{margin_relative_decline:.2f}%；归母净利润同比下降{profit_decline:.2f}%，"
+            f"经营现金流同比下降{cash_decline:.2f}%，其占营业收入比例由{cash_ratio_prior:.2f}%"
+            f"降至{cash_ratio_current:.2f}%，下降{cash_ratio_point_change:.2f}个百分点。"
+        )
+        evidence_units = {unit["unit_id"]: unit for unit in (revenue[3], profit[3], cash[3])}
+        return label, reason, [self._unit_to_evidence(unit, 999.0) for unit in evidence_units.values()]
+
+    def _cscec_original_basis_rule(self, question: Question, option_text: str):
+        compact_question = re.sub(r"\s+", "", question.question)
+        if not (
+            "中国建筑" in question.question
+            and "2024年数据采用2024年年报原始披露值" in compact_question
+        ):
+            return None
+        current_doc = self._company_year_doc(question.doc_ids, "cscec", "2025")
+        prior_doc = self._company_year_doc(question.doc_ids, "cscec", "2024")
+        if not current_doc or not prior_doc:
+            return None
+        main_unit = self._find_unit(
+            current_doc,
+            required=("调整后", "调整前", "营业收入", "经营活动产生的现金流量净额"),
+        )
+        eps_unit = self._find_unit(
+            current_doc,
+            required=("调整后", "调整前", "基本每股收益(元/股)"),
+        )
+        current_dividend_unit = self._find_unit(current_doc, required=("现金分红占", "28.75%"))
+        prior_dividend_unit = self._find_unit(prior_doc, required=("现金分红占", "24.29%"))
+        if not all((main_unit, eps_unit, current_dividend_unit, prior_dividend_unit)):
+            return None
+        revenue = self._extract_row_numbers(main_unit.get("text", ""), "营业收入")
+        profit = self._extract_row_numbers(main_unit.get("text", ""), "归属于上市公司股东的净利润")
+        cash = self._extract_row_numbers(main_unit.get("text", ""), "经营活动产生的现金流量净额")
+        eps = self._extract_row_numbers(eps_unit.get("text", ""), "基本每股收益(元/股)")
+        if len(revenue) < 3 or len(profit) < 3 or len(cash) < 3 or len(eps) < 3 or not revenue[0]:
+            return None
+
+        current_dividend = self._extract_disclosed_ratio(current_dividend_unit.get("text", ""))
+        prior_dividend = self._extract_disclosed_ratio(prior_dividend_unit.get("text", ""))
+        if current_dividend is None or prior_dividend is None or not eps[2] or not profit[2]:
+            return None
+        dividend_change = current_dividend - prior_dividend
+        cash_revenue_ratio = cash[0] / revenue[0] * 100
+        eps_decline = (eps[2] - eps[0]) / eps[2] * 100
+        profit_decline = (profit[2] - profit[0]) / profit[2] * 100
+        profit_decrease = profit[2] - profit[0]
+        cash_increase = cash[0] - cash[2]
+
+        if "现金分红占归母净利润比例" in option_text and "提高" in option_text:
+            expected = self._extract_expected_points(option_text)
+            label = expected is not None and abs(dividend_change - expected) <= 0.01
+        elif "经营活动现金流量净额占营业收入的比例超过" in option_text:
+            expected = self._extract_expected_points(option_text)
+            label = expected is not None and cash_revenue_ratio > expected
+        elif "基本每股收益降幅" in option_text and "归母净利润" in option_text:
+            expected = [float(value) for value in re.findall(r"(\d+(?:\.\d+)?)\s*%", option_text)]
+            label = (
+                len(expected) >= 2
+                and abs(eps_decline - expected[0]) <= 0.02
+                and abs(profit_decline - expected[1]) <= 0.02
+                and abs(eps_decline - profit_decline) <= 0.15
+            )
+        elif "归母净利润减少额小于经营活动现金流量净额增加额" in option_text:
+            label = profit_decrease < cash_increase
+        else:
+            return None
+        reason = (
+            f"原始披露口径束：现金分红比例提高{dividend_change:.2f}个百分点；"
+            f"2025经营现金流/营业收入={cash_revenue_ratio:.2f}%；基本每股收益降幅{eps_decline:.2f}%，"
+            f"归母净利润降幅{profit_decline:.2f}%；归母净利润减少{profit_decrease:g}，"
+            f"经营现金流增加{cash_increase:g}。2024年均取调整前/2024年报原始值。"
+        )
+        evidence = [main_unit, eps_unit, current_dividend_unit, prior_dividend_unit]
+        return label, reason, [self._unit_to_evidence(unit, 999.0) for unit in evidence]
+
+    @staticmethod
+    def _extract_disclosed_ratio(text: str) -> float | None:
+        match = re.search(r"比例为\s*(\d+(?:\.\d+)?)%", text)
+        return float(match.group(1)) if match else None
 
     def _metric_series(self, doc_id: str, metric_key: str) -> tuple[float, float, float | None, dict[str, Any]] | None:
         units = self.metric_index.get(doc_id, {}).get(metric_key, [])

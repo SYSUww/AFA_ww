@@ -234,6 +234,101 @@ class FinancialReportMetricBundleTests(unittest.TestCase):
         labels = {key: solver._choice_metric_bundle_rule(question, option)[0] for key, option in options.items()}
         self.assertEqual(labels, {"A": True, "B": True, "C": False, "D": False})
 
+    def test_byd_regional_bundle_reconciles_cross_year_amounts(self) -> None:
+        units = [
+            make_unit(
+                "byd::region", "annual_byd_2025_report",
+                "地区信息\n营业收入2025年 | 2024年\n"
+                "中国(包括港澳台地区) | 493,223,970 | 555,217,682\n"
+                "境外 | 310,740,988 | 221,884,773\n"
+                "合计 | 803,964,958 | 777,102,455",
+            )
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "2025 年境外收入占营业收入的比重较 2024 年提高约 10.10 个百分点",
+            "B": "2025 年境外收入占比相较 2024 年的相对增幅约为 10.10%",
+            "C": "2025 年境外收入增加额大于中国（包括港澳台地区）收入减少额",
+            "D": "境外收入增加额减去中国（包括港澳台地区）收入减少额，与公司营业收入增加额基本一致",
+        }
+        question = Question(
+            qid="fin_b_001", domain="financial_reports", split="B",
+            question="查阅比亚迪 2024 年和 2025 年年度报告中的分地区营业收入。",
+            options=options, answer_format="multi", type="多选题",
+            doc_ids=["annual_byd_2024_report", "annual_byd_2025_report"],
+        )
+        labels = {key: solver._choice_metric_bundle_rule(question, option)[0] for key, option in options.items()}
+        self.assertEqual(labels, {"A": True, "B": False, "C": True, "D": True})
+
+    def test_byd_cross_year_bundle_uses_raw_amounts_for_ratios(self) -> None:
+        units = [
+            make_metric(
+                "byd::main", "annual_byd_2025_report",
+                "营业收入(元) | 803,964,958,000.00 | 777,102,455,000.00 | 3.46%\n"
+                "归属于上市公司股东的净利润(元) | 32,619,022,000.00 | 40,254,346,000.00 | -18.97%",
+                "营业收入",
+            ),
+            make_metric(
+                "byd::cash", "annual_byd_2025_report",
+                "经营活动产生的现金流量净额(元) | 59,135,544,000.00 | 133,453,873,000.00 | -55.69%",
+                "经营活动产生的现金流量净额",
+            ),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "2025 年归母净利率较 2024 年的相对降幅约为 1.12%",
+            "B": "2025 年归母净利润同比下降约 18.97%",
+            "C": "2025 年经营活动现金流量净额同比下降约 55.69%",
+            "D": "经营活动现金流量净额占营业收入的比例由约 17.17% 降至约 7.36%，下降约 9.82 个百分点",
+        }
+        question = Question(
+            qid="fin_b_002", domain="financial_reports", split="B",
+            question="结合比亚迪 2024 年和 2025 年年度报告中的营业收入、归属于上市公司股东的净利润及经营活动产生的现金流量净额。",
+            options=options, answer_format="multi", type="多选题",
+            doc_ids=["annual_byd_2024_report", "annual_byd_2025_report"],
+        )
+        labels = {key: solver._choice_metric_bundle_rule(question, option)[0] for key, option in options.items()}
+        self.assertEqual(labels, {"A": False, "B": True, "C": True, "D": True})
+
+    def test_cscec_bundle_uses_original_2024_disclosure_basis(self) -> None:
+        units = [
+            make_unit(
+                "cscec::main", "annual_cscec_2025_report",
+                "主要会计数据 | 2025年 | 2024年 | 调整后 | 调整前\n"
+                "营业收入 | 2,082,141,811 | 2,187,334,286 | 2,187,147,839 | -4.8\n"
+                "归属于上市公司股东的净利润 | 39,069,002 | 46,193,694 | 46,187,099 | -15.4\n"
+                "经营活动产生的现金流量净额 | 20,537,132 | 15,825,793 | 15,773,535 | 29.8",
+            ),
+            make_unit(
+                "cscec::eps", "annual_cscec_2025_report",
+                "主要财务指标 | 2025年 | 2024年 | 调整后 | 调整前\n"
+                "基本每股收益(元/股) | 0.94 | 1.11 | 1.11 | -15.3",
+            ),
+            make_unit(
+                "cscec::dividend-2025", "annual_cscec_2025_report",
+                "本年度公司现金分红占合并报表归属于上市公司股东净利润的比例为28.75%。",
+            ),
+            make_unit(
+                "cscec::dividend-2024", "annual_cscec_2024_report",
+                "本年度公司现金分红占合并报表归属于上市公司股东净利润的比例为24.29%。",
+            ),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "2025 年现金分红占归母净利润比例较 2024 年提高 4.46 个百分点",
+            "B": "2025 年经营活动现金流量净额占营业收入的比例超过 1%",
+            "C": "2025 年基本每股收益降幅约为 15.32%，与归母净利润约 15.41% 的降幅接近",
+            "D": "2025 年归母净利润减少额小于经营活动现金流量净额增加额",
+        }
+        question = Question(
+            qid="fin_b_008", domain="financial_reports", split="B",
+            question="根据中国建筑 2024 年和 2025 年年度报告（2024年数据采用2024年年报原始披露值）。",
+            options=options, answer_format="multi", type="多选题",
+            doc_ids=["annual_cscec_2025_report", "annual_cscec_2024_report"],
+        )
+        labels = {key: solver._choice_metric_bundle_rule(question, option)[0] for key, option in options.items()}
+        self.assertEqual(labels, {"A": True, "B": False, "C": True, "D": False})
+
 
 class RegulatoryCompositeClauseTests(unittest.TestCase):
     @staticmethod
