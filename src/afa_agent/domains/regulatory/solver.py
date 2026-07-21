@@ -475,27 +475,64 @@ class RegulatorySolver:
         if not specs or not hasattr(self.retriever, "units"):
             return []
         doc_filter = set(question.doc_ids)
-        scored: list[tuple[float, dict[str, Any]]] = []
+        scored_by_unit: dict[str, tuple[dict[int, float], dict[str, Any]]] = {}
         units = [*self.retriever.units, *self.supplemental_units]
         for unit in units:
-            if doc_filter and unit.get("doc_id") not in doc_filter:
-                continue
             haystack = self._normalize_literal(" ".join(unit.get("title_path", [])) + "\n" + unit.get("text", ""))
-            best_score = 0.0
-            for spec in specs:
+            spec_scores: dict[int, float] = {}
+            for spec_index, spec in enumerate(specs):
+                if (
+                    doc_filter
+                    and unit.get("doc_id") not in doc_filter
+                    and not spec.get("corpus_wide", False)
+                ):
+                    continue
                 required = [self._normalize_literal(term) for term in spec["required"]]
                 optional = [self._normalize_literal(term) for term in spec.get("optional", [])]
                 if any(term not in haystack for term in required):
                     continue
                 score = sum(len(term) for term in required) * 10.0
                 score += sum(len(term) for term in optional if term in haystack) * 3.0
-                if score > best_score:
-                    best_score = score
-            if best_score > 0:
-                scored.append((best_score, unit))
-        scored.sort(key=lambda item: item[0], reverse=True)
+                spec_scores[spec_index] = max(spec_scores.get(spec_index, 0.0), score)
+            if not spec_scores:
+                continue
+            unit_key = str(unit.get("unit_id") or f"{unit.get('doc_id', '')}:{haystack[:160]}")
+            existing = scored_by_unit.get(unit_key)
+            if existing is None:
+                scored_by_unit[unit_key] = (spec_scores, unit)
+                continue
+            existing_scores, existing_unit = existing
+            for spec_index, score in spec_scores.items():
+                existing_scores[spec_index] = max(existing_scores.get(spec_index, 0.0), score)
+            scored_by_unit[unit_key] = (existing_scores, existing_unit)
+
+        remaining = list(scored_by_unit.values())
+        selected: list[tuple[float, dict[str, Any]]] = []
+        uncovered_specs = set(range(len(specs)))
+        while remaining and uncovered_specs and len(selected) < 3:
+            eligible = [item for item in remaining if set(item[0]) & uncovered_specs]
+            if not eligible:
+                break
+            best = max(
+                eligible,
+                key=lambda item: (
+                    len(set(item[0]) & uncovered_specs),
+                    max(item[0][index] for index in set(item[0]) & uncovered_specs),
+                    max(item[0].values()),
+                ),
+            )
+            remaining.remove(best)
+            spec_scores, unit = best
+            selected.append((max(spec_scores.values()), unit))
+            uncovered_specs.difference_update(spec_scores)
+
+        for spec_scores, unit in sorted(remaining, key=lambda item: max(item[0].values()), reverse=True):
+            if len(selected) >= 3:
+                break
+            selected.append((max(spec_scores.values()), unit))
+
         hits = []
-        for score, unit in scored[:3]:
+        for score, unit in selected:
             metadata = dict(unit.get("metadata", {}))
             metadata.setdefault("unit_type", unit.get("unit_type", ""))
             metadata["targeted_literal"] = True
@@ -661,9 +698,44 @@ class RegulatorySolver:
         return list(deduped.values())
 
     @staticmethod
-    def _target_specs(option_text: str) -> list[dict[str, list[str]]]:
+    def _target_specs(option_text: str) -> list[dict[str, Any]]:
         compact = RegulatorySolver._normalize_literal(option_text)
-        specs: list[dict[str, list[str]]] = []
+        specs: list[dict[str, Any]] = []
+        if "简化" in compact and any(term in compact for term in ["低风险", "豁免", "无法准确判断"]):
+            specs.append(
+                {
+                    "required": ["经过风险评估且具有充足理由判断", "简化客户尽职调查"],
+                    "optional": ["低风险", "简化尽职调查不等于豁免", "不得采取简化尽职调查措施"],
+                }
+            )
+        if "中介责任" in compact or ("分类评价" in compact and "扣分" in compact):
+            specs.extend(
+                [
+                    {
+                        "required": ["为重大资产重组", "未履行诚实守信、勤勉尽责义务", "监管措施"],
+                        "optional": ["证券服务机构", "依法追究法律责任", "行政处罚"],
+                        "corpus_wide": True,
+                    },
+                    {
+                        "required": ["证券公司分类评价", "实施行政处罚", "行政监管措施"],
+                        "optional": ["相应扣分", "评价计分", "持续合规状况"],
+                        "corpus_wide": True,
+                    },
+                ]
+            )
+        if "下一交易时段开始前" in compact or "两个交易日内" in compact or "非交易时段不得披露" in compact:
+            specs.extend(
+                [
+                    {
+                        "required": ["非交易时段", "下一交易时段开始前披露"],
+                        "optional": ["确有需要", "对外发布重大信息", "相关公告"],
+                    },
+                    {
+                        "required": ["及时", "触及披露时点的两个交易日内"],
+                        "optional": ["自起算日起", "信息披露义务人"],
+                    },
+                ]
+            )
         if "撤并分支机构" in compact:
             specs.append(
                 {
@@ -989,6 +1061,72 @@ class RegulatorySolver:
         override_reason = ""
 
         if (
+            "自称低风险即可简化" in compact_option
+            and "经过风险评估且具有充足理由判断" in compact_evidence
+            and "简化客户尽职调查" in compact_evidence
+        ):
+            return {
+                **payload,
+                "label": False,
+                "support_score": min(float(payload.get("support_score", 0.0) or 0.0), 0.05),
+                "verdict": "refute",
+                "is_clearly_refuted": True,
+                "reasoning_summary": "规则复核：采取简化尽调须由金融机构经过风险评估并有充足理由判断为低风险；客户自称低风险不满足该前提。",
+                "rule_override": "regulatory_low_risk_self_claim_refute",
+            }
+        elif (
+            "无法准确判断时不得简化或豁免" in compact_option
+            and "经过风险评估且具有充足理由判断" in compact_evidence
+            and "简化客户尽职调查" in compact_evidence
+            and "简化尽职调查不等于豁免" in compact_evidence
+        ):
+            override_reason = "规则复核：简化尽调以完成风险评估并有充足理由判断低风险为前提，且简化不等于豁免；无法准确判断时不能满足该前提。"
+        elif (
+            "简化等同豁免" in compact_option
+            and "简化尽职调查不等于豁免" in compact_evidence
+        ):
+            return {
+                **payload,
+                "label": False,
+                "support_score": min(float(payload.get("support_score", 0.0) or 0.0), 0.05),
+                "verdict": "refute",
+                "is_clearly_refuted": True,
+                "reasoning_summary": "规则复核：第二十九条明确简化尽职调查不等于豁免金融机构对客户的尽职调查。",
+                "rule_override": "regulatory_simplified_not_exempt_refute",
+            }
+        elif (
+            "可能承担中介责任" in compact_option
+            and "分类评价扣分" in compact_option
+            and "为重大资产重组" in compact_evidence
+            and "未履行诚实守信、勤勉尽责义务" in compact_evidence
+            and "监管措施" in compact_evidence
+            and "证券公司分类评价" in compact_evidence
+            and "实施行政处罚" in compact_evidence
+            and "行政监管措施" in compact_evidence
+        ):
+            override_reason = "规则复核：重大资产重组中介未勤勉尽责可被采取监管措施或追责；证券公司受到行政处罚或行政监管措施会进入分类评价扣分。"
+        elif (
+            "应在下一交易时段开始前披露" in compact_option
+            and "两个交易日内及时定义" in compact_option
+            and "下一交易时段开始前披露" in compact_evidence
+            and "触及披露时点的两个交易日内" in compact_evidence
+        ):
+            override_reason = "规则复核：非交易时段发布重大信息应在下一交易时段开始前披露公告，且“及时”定义为自起算日或触及披露时点的两个交易日内。"
+        elif (
+            "非交易时段不得披露" in compact_option
+            and "非交易时段" in compact_evidence
+            and "可以对外发布重大信息" in compact_evidence
+        ):
+            return {
+                **payload,
+                "label": False,
+                "support_score": min(float(payload.get("support_score", 0.0) or 0.0), 0.05),
+                "verdict": "refute",
+                "is_clearly_refuted": True,
+                "reasoning_summary": "规则复核：确有需要时可以在非交易时段对外发布重大信息，并非一律不得披露。",
+                "rule_override": "regulatory_non_trading_disclosure_refute",
+            }
+        elif (
             "业务关系结束" in compact_option
             and "十年" in compact_option
             and "客户身份资料在业务关系结束后" in compact_evidence

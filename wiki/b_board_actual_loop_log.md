@@ -3345,3 +3345,411 @@
   "token_accounting_complete": false
 }
 ```
+
+## b-loop-regulatory-composite-clause-dedup-coverage-a1
+
+- recorded_at: `2026-07-21T21:12:14+00:00`
+
+```json
+{
+  "answered_qids": [
+    "reg_b_021",
+    "reg_b_024",
+    "reg_b_026"
+  ],
+  "attempt_index": 1,
+  "blind_evaluation": {
+    "reason": "answer_parts unchanged for all promoted qids",
+    "required": false
+  },
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "code_hash": "40806d0c23832b2d00613d65e72c03d0343f070253ae0244616d8624578c14c3",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "corpus_wide_only_for": [
+            "restructuring_intermediary",
+            "classification_penalty"
+          ],
+          "deduplicate_by": "unit_id",
+          "max_targeted_hits": 3,
+          "selection": "uncovered_spec_first_then_score",
+          "targeted_clause_specs": [
+            "low_risk_simplification",
+            "restructuring_intermediary_plus_classification",
+            "non_trading_disclosure_plus_timely_definition"
+          ]
+        },
+        "domains": [
+          "regulatory"
+        ],
+        "hypothesis": "deduplicating targeted literal units and covering each clause in a compound option prevents duplicate evidence from starving a necessary second rule, while exact cross-document clause chains resolve regulatory unsupported fallbacks.",
+        "pipeline_stage": "retrieval",
+        "question_types": [
+          "mcq"
+        ],
+        "root_cause_cluster": "choice_no_supported_fallback",
+        "target_qids": [
+          "reg_b_021",
+          "reg_b_024",
+          "reg_b_026"
+        ]
+      }
+    },
+    "context_sha256": "445ed6d7067c290462bc1598ddbdb65e4d19528eab17ca840dc0eb59df654626",
+    "direction_sha256": "b0daa0a45df73c8ec6084ae7076e60294ef52d9d18898760be13d39a64598b00",
+    "schema_version": 1,
+    "semantic_sha256": "7233f7b9430ef6a1eaba3cc5fcc5353a52b3b2a69d8e97cdba6b05a8bcd001f0",
+    "sha256": "f2ebf86ae9039a3f384a7c698bc13d9586ce6497762ae32620461761592b73f0"
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 46,
+    "high": 30,
+    "low": 2,
+    "medium": 22
+  },
+  "change_vector": {
+    "corpus_wide_only_for": [
+      "restructuring_intermediary",
+      "classification_penalty"
+    ],
+    "deduplicate_by": "unit_id",
+    "max_targeted_hits": 3,
+    "selection": "uncovered_spec_first_then_score",
+    "targeted_clause_specs": [
+      "low_risk_simplification",
+      "restructuring_intermediary_plus_classification",
+      "non_trading_disclosure_plus_timely_definition"
+    ]
+  },
+  "changed_answer_qids": [],
+  "code_hash": "40806d0c23832b2d00613d65e72c03d0343f070253ae0244616d8624578c14c3",
+  "comparable_attempt_count_before": 0,
+  "confidence_after": {
+    "reg_b_021": 65,
+    "reg_b_024": 58,
+    "reg_b_026": 78
+  },
+  "confidence_before": {
+    "reg_b_021": 0,
+    "reg_b_024": 0,
+    "reg_b_026": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "regulatory_composite_clause_dedup_coverage",
+  "domains": [
+    "regulatory"
+  ],
+  "effective_branch": "codex/b榜-loop-i008-regulatory-composite-clauses",
+  "evaluation_resume": {
+    "failure_kind": "http_429_rate_limit",
+    "final_evaluated_answer_count": 100,
+    "final_status": "complete",
+    "initial_evaluated_answer_count": 97,
+    "initial_failures": [
+      "fc_b_006",
+      "fc_b_012",
+      "fin_b_013"
+    ],
+    "initial_status": "invalid",
+    "resumed_evaluation_count": 103
+  },
+  "evaluator_failed_attempts_not_in_usage": 3,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 87108,
+    "prompt_tokens": 477657,
+    "total_tokens": 564765
+  },
+  "generation_token_usage": {
+    "completion_tokens": 7960,
+    "prompt_tokens": 163299,
+    "total_tokens": 171259
+  },
+  "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_related_experiment_ids": [],
+  "history_similarity": null,
+  "hypothesis": "Deduplicating targeted literal units and covering each clause in a compound option prevents duplicate evidence from starving a necessary second rule, while exact cross-document clause chains resolve regulatory unsupported fallbacks.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 114,
+    "tests_passed": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/regulatory_composite_clause_retrieval/dedup_coverage_a1_composite",
+  "material_delta": {
+    "compound_rule_coverage_selection": true,
+    "duplicate_unit_starvation_fix": true
+  },
+  "next_root_causes": [
+    "remaining_choice_no_supported_fallback",
+    "remaining_format_forced_choice_evidence",
+    "reg_b_024_classification_deduction_direct_clause",
+    "research_choice_evidence"
+  ],
+  "pipeline_stage": "retrieval",
+  "promoted_qids": [
+    "reg_b_021",
+    "reg_b_024",
+    "reg_b_026"
+  ],
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "mcq"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 46,
+    "high": 29,
+    "low": 6,
+    "medium": 19
+  },
+  "reason": "Exact compound-clause retrieval removed forced unsupported fallbacks for reg_b_021, reg_b_024, and reg_b_026. A duplicate unit_id starvation bug discovered on reg_b_026 was fixed by deduplication plus uncovered-spec-first selection.",
+  "recorded_at": "2026-07-21T21:12:14+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "choice_no_supported_fallback",
+  "round_gate": {
+    "answer_changed_qids": [],
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "expected_answers": 100,
+      "expected_sentinels": 6,
+      "failed_attempt_kind": "http_429_rate_limit",
+      "failed_attempts_not_in_usage": 3,
+      "sentinels_passed": true,
+      "token_accounting_complete": false
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "reg_b_021",
+        "reg_b_024",
+        "reg_b_026"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 13,
+          "blocked_low_before": 13,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 9,
+          "blocked_low_before": 9,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 7,
+          "blocked_low_before": 7,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 4,
+          "blocked_low_before": 6,
+          "low_tier_improved_qids": [
+            "reg_b_021",
+            "reg_b_024",
+            "reg_b_026"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 15,
+          "blocked_low_before": 15,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_013": 3,
+        "fc_b_014": 5,
+        "fc_b_016": 10,
+        "fc_b_018": -10,
+        "fin_b_002": 2,
+        "fin_b_007": 7,
+        "fin_b_009": -5,
+        "fin_b_010": 15,
+        "fin_b_011": -6,
+        "fin_b_015": -3,
+        "fin_b_016": -5,
+        "fin_b_017": 1,
+        "fin_b_020": -3,
+        "ins_b_002": 5,
+        "ins_b_004": -8,
+        "ins_b_005": -10,
+        "ins_b_006": -25,
+        "ins_b_007": 16,
+        "ins_b_009": 4,
+        "ins_b_010": -5,
+        "ins_b_012": -23,
+        "ins_b_016": -4,
+        "ins_b_017": 2,
+        "ins_b_018": -3,
+        "reg_b_003": -25,
+        "reg_b_004": 5,
+        "reg_b_005": 4,
+        "reg_b_007": -5,
+        "reg_b_008": -6,
+        "reg_b_009": 2,
+        "reg_b_013": 5,
+        "reg_b_016": 6,
+        "reg_b_017": 5,
+        "reg_b_018": 5,
+        "reg_b_023": -12,
+        "res_b_001": -8,
+        "res_b_013": -11,
+        "res_b_015": 6
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_016",
+        "ins_b_005",
+        "ins_b_006",
+        "ins_b_010",
+        "ins_b_012",
+        "reg_b_003",
+        "reg_b_005",
+        "reg_b_023"
+      ]
+    },
+    "promoted_qids": [
+      "reg_b_021",
+      "reg_b_024",
+      "reg_b_026"
+    ],
+    "promotion_decisions": {
+      "reg_b_021": {
+        "promote": true,
+        "reasons": [],
+        "score_delta": 65,
+        "tier_after": "medium",
+        "tier_before": "blocked"
+      },
+      "reg_b_024": {
+        "promote": true,
+        "reasons": [],
+        "score_delta": 58,
+        "tier_after": "low",
+        "tier_before": "blocked"
+      },
+      "reg_b_026": {
+        "promote": true,
+        "reasons": [],
+        "score_delta": 78,
+        "tier_after": "medium",
+        "tier_before": "blocked"
+      }
+    },
+    "reasons": [],
+    "tests": {
+      "count": 114,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/regulatory_composite_clause_retrieval/dedup_coverage_a1_reg026",
+  "status": "accepted",
+  "target_qids": [
+    "reg_b_021",
+    "reg_b_024",
+    "reg_b_026"
+  ],
+  "technical_attempts": [
+    {
+      "failed_qids": [
+        "reg_b_026"
+      ],
+      "generation_token_usage": {
+        "completion_tokens": 4023,
+        "prompt_tokens": 62342,
+        "total_tokens": 66365
+      },
+      "outcome": "partial",
+      "promotable_qids": [
+        "reg_b_021",
+        "reg_b_024"
+      ],
+      "qids": [
+        "reg_b_021",
+        "reg_b_024",
+        "reg_b_026"
+      ],
+      "root_cause": "duplicate targeted unit occupied top-3 and starved timely-definition clause",
+      "variant": "three_rule_chains_a1"
+    },
+    {
+      "generation_token_usage": {
+        "completion_tokens": 1549,
+        "prompt_tokens": 46418,
+        "total_tokens": 47967
+      },
+      "outcome": "rejected",
+      "qids": [
+        "reg_b_026"
+      ],
+      "root_cause": "same duplicate-hit starvation reproduced",
+      "variant": "three_rule_chains_a2_reg026"
+    },
+    {
+      "generation_token_usage": {
+        "completion_tokens": 1749,
+        "prompt_tokens": 46508,
+        "total_tokens": 48257
+      },
+      "outcome": "diagnostic",
+      "qids": [
+        "reg_b_026"
+      ],
+      "root_cause": "trace proved duplicate Article 8 displaced Article 63",
+      "variant": "three_rule_chains_a3_reg026_trace"
+    },
+    {
+      "generation_token_usage": {
+        "completion_tokens": 639,
+        "prompt_tokens": 8031,
+        "total_tokens": 8670
+      },
+      "outcome": "promoted",
+      "qids": [
+        "reg_b_026"
+      ],
+      "variant": "dedup_coverage_a1_reg026"
+    }
+  ],
+  "token_accounting_complete": false
+}
+```

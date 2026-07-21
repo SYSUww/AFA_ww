@@ -9,6 +9,7 @@ from afa_agent.domains.generic_retriever import GenericBM25Retriever
 from afa_agent.domains.insurance.plugin import InsurancePlugin
 from afa_agent.domains.insurance.solver import InsuranceSolver
 from afa_agent.domains.regulatory.retriever import RegulatoryRetriever
+from afa_agent.domains.regulatory.solver import RegulatorySolver
 from afa_agent.domains.research.plugin import ResearchPlugin
 from afa_agent.io_utils import read_json, write_json
 from afa_agent.models import Question
@@ -109,6 +110,109 @@ class InsuranceTargetedClauseTests(unittest.TestCase):
         self.assertEqual([hit.unit_id for hit in hits], ["za::escape"])
         self.assertTrue(hits[0].metadata["targeted_clause"])
         self.assertIn("交通肇事逃逸", solver._focus_terms(question.question))
+
+
+class RegulatoryCompositeClauseTests(unittest.TestCase):
+    @staticmethod
+    def make_solver(units: list[dict[str, object]]) -> RegulatorySolver:
+        solver = RegulatorySolver.__new__(RegulatorySolver)
+        solver.retriever = type("Retriever", (), {"units": units})()
+        solver.supplemental_units = []
+        return solver
+
+    def test_low_risk_simplification_requires_institutional_assessment(self) -> None:
+        solver = self.make_solver(
+            [
+                make_unit(
+                    "cdd::29",
+                    "cdd",
+                    "金融机构经过风险评估且具有充足理由判断为低风险时，可以采取简化客户尽职调查措施。简化尽职调查不等于豁免。",
+                )
+            ]
+        )
+        question = Question(
+            qid="reg_b_021",
+            domain="regulatory",
+            split="B",
+            question="无法准确判断是否符合简化条件。",
+            options={"B": "无法准确判断时不得简化或豁免"},
+            answer_format="mcq",
+            type="单选题",
+            doc_ids=["cdd"],
+        )
+        hits = solver._targeted_literal_hits(question, question.options["B"])
+        payload = solver._targeted_rule_payload(question.options["B"], hits)
+        self.assertEqual([hit.unit_id for hit in hits], ["cdd::29"])
+        self.assertTrue(payload["label"])
+
+    def test_classification_chain_can_use_exact_corpus_wide_restructuring_rule(self) -> None:
+        solver = self.make_solver(
+            [
+                make_unit(
+                    "classification::score",
+                    "classification",
+                    "证券公司分类评价中，因违法违规被实施行政处罚、行政监管措施的，进行相应扣分。",
+                ),
+                make_unit(
+                    "restructuring::duty",
+                    "restructuring",
+                    "为重大资产重组出具专业文件的证券服务机构未履行诚实守信、勤勉尽责义务，可以采取监管措施并依法追究法律责任。",
+                ),
+            ]
+        )
+        option = "可能承担中介责任，也可能因处罚或监管措施产生分类评价扣分"
+        question = Question(
+            qid="reg_b_024",
+            domain="regulatory",
+            split="B",
+            question="重组中介未勤勉尽责。",
+            options={"B": option},
+            answer_format="mcq",
+            type="单选题",
+            doc_ids=["classification"],
+        )
+        hits = solver._targeted_literal_hits(question, option)
+        payload = solver._targeted_rule_payload(option, hits)
+        self.assertEqual({hit.unit_id for hit in hits}, {"classification::score", "restructuring::duty"})
+        self.assertTrue(payload["label"])
+
+    def test_non_trading_disclosure_combines_deadline_and_timely_definition(self) -> None:
+        solver = self.make_solver(
+            [
+                make_unit(
+                    "disclosure::8",
+                    "disclosure",
+                    "确有需要的，可以在非交易时段对外发布重大信息，但应当在下一交易时段开始前披露相关公告。",
+                ),
+                make_unit(
+                    "disclosure::63",
+                    "disclosure",
+                    "及时，是指自起算日起或者触及披露时点的两个交易日内。",
+                ),
+            ]
+        )
+        solver.supplemental_units = [
+            make_unit(
+                "disclosure::8",
+                "disclosure",
+                "确有需要的，可以在非交易时段对外发布重大信息，但应当在下一交易时段开始前披露相关公告。",
+            )
+        ]
+        option = "应在下一交易时段开始前披露，并遵守两个交易日内及时定义"
+        question = Question(
+            qid="reg_b_026",
+            domain="regulatory",
+            split="B",
+            question="非交易时段发布重大信息。",
+            options={"B": option},
+            answer_format="mcq",
+            type="单选题",
+            doc_ids=["disclosure"],
+        )
+        hits = solver._targeted_literal_hits(question, option)
+        payload = solver._targeted_rule_payload(option, hits)
+        self.assertEqual({hit.unit_id for hit in hits}, {"disclosure::8", "disclosure::63"})
+        self.assertTrue(payload["label"])
 
 
 class PluginParseUnitTests(unittest.TestCase):
