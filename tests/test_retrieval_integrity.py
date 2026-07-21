@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from afa_agent.domains.generic_retriever import GenericBM25Retriever
+from afa_agent.domains.financial_contracts.solver import FinancialContractsSolver
 from afa_agent.domains.financial_reports.solver import FinancialReportsSolver
 from afa_agent.domains.insurance.plugin import InsurancePlugin
 from afa_agent.domains.insurance.solver import InsuranceSolver
@@ -117,6 +118,116 @@ class InsuranceTargetedClauseTests(unittest.TestCase):
         self.assertEqual([hit.unit_id for hit in hits], ["za::escape"])
         self.assertTrue(hits[0].metadata["targeted_clause"])
         self.assertIn("交通肇事逃逸", solver._focus_terms(question.question))
+
+
+class FinancialContractSubjectClauseTests(unittest.TestCase):
+    @staticmethod
+    def make_solver(units: list[dict[str, object]]) -> FinancialContractsSolver:
+        solver = FinancialContractsSolver.__new__(FinancialContractsSolver)
+        solver.retriever = GenericBM25Retriever(units)
+        return solver
+
+    def assert_bundle_labels(
+        self,
+        solver: FinancialContractsSolver,
+        question: Question,
+        expected: dict[str, bool],
+        target_doc_id: str,
+    ) -> None:
+        labels: dict[str, bool] = {}
+        for option_key, option_text in question.options.items():
+            hits = solver._targeted_literal_hits(question, option_key, option_text)
+            self.assertTrue(hits, option_key)
+            self.assertTrue(all(hit.doc_id == target_doc_id for hit in hits), option_key)
+            result = solver._rule_override(question, option_key, option_text, hits)
+            self.assertIsNotNone(result, option_key)
+            labels[option_key] = bool(result["label"])
+        self.assertEqual(labels, expected)
+
+    def test_performance_reward_bundle_covers_limits_scope_payment_and_formula(self) -> None:
+        units = [
+            make_unit(
+                "text08::reward-terms",
+                "text08",
+                "苏州华亚智能科技股份有限公司。本次交易中，业绩奖励总额不超过标的公司超额业绩部分的100%，且不超过交易作价的20%。"
+                "上述超额业绩奖励的50%由标的公司以现金形式向奖励对象直接发放，50%通过设立专项资管计划，用于二级市场购买持有上市公司股票。"
+                "超额业绩奖励金额=（业绩承诺期内累积实现净利润数-业绩承诺期内累积承诺净利润数）*50%。",
+            ),
+            make_unit(
+                "text08::reward-subjects",
+                "text08",
+                "本次超额业绩奖励对象为届时仍在标的公司任职的管理团队及核心人员。",
+            ),
+            make_unit("text10::reward", "text10", "其他公司的业绩奖励对象为所有员工。"),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "超额业绩奖励总额不超过超额业绩部分的100%，且不超过交易作价的20%",
+            "B": "业绩奖励对象为标的公司所有员工",
+            "C": "超额业绩奖励的50%以现金形式直接发放，50%通过设立专项资管计划用于购买上市公司股票",
+            "D": "业绩奖励金额=(业绩承诺期内累积实现净利润数-业绩承诺期内累积承诺净利润数)*50%",
+        }
+        question = Question(
+            qid="unseen_reward_question", domain="financial_contracts", split="B",
+            question="根据《苏州华亚智能科技股份有限公司交易报告书》，关于本次交易设置的业绩奖励机制。",
+            options=options, answer_format="multi", type="多选题", doc_ids=["text08", "text10"],
+        )
+        self.assert_bundle_labels(solver, question, {"A": True, "B": False, "C": True, "D": True}, "text08")
+
+    def test_downward_revision_bundle_binds_issuer_before_clause_judgment(self) -> None:
+        units = [
+            make_unit(
+                "text09::revision",
+                "text09",
+                "金达威。在本次可转债存续期间，当公司股票在任意连续三十个交易日中至少有十五个交易日的收盘价低于当期转股价格的85%时触发。"
+                "股东大会进行表决时，持有本次可转债的股东应当回避。修正后的转股价格应不低于该次股东大会召开日前二十个交易日公司股票交易均价和前一个交易日公司股票交易均价。"
+                "同时，修正后的转股价格不得低于最近一期经审计的每股净资产值和股票面值。",
+            ),
+            make_unit("text11::revision", "text11", "其他发行人以80%为触发比例。"),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "触发条件为连续三十个交易日中至少十五个交易日收盘价低于当期转股价格的80%",
+            "B": "修正后的转股价格应不低于股东大会召开日前二十个交易日公司股票交易均价和前一个交易日交易均价",
+            "C": "修正后的转股价格不得低于最近一期经审计的每股净资产和股票面值",
+            "D": "股东大会表决时，持有本次可转债的股东应当回避",
+        }
+        question = Question(
+            qid="unseen_revision_question", domain="financial_contracts", split="B",
+            question="关于金达威可转债转股价格向下修正条款。",
+            options=options, answer_format="multi", type="多选题", doc_ids=["text11", "text09"],
+        )
+        self.assert_bundle_labels(solver, question, {"A": False, "B": True, "C": True, "D": True}, "text09")
+
+    def test_reorganization_bundle_uses_negative_clauses_and_price_comparison(self) -> None:
+        units = [
+            make_unit(
+                "text12::reorg-status",
+                "text12",
+                "陕国投。本次交易标的为海航旅游集团持有的长安银行股份，占长安银行股份的5.92%，以流拍价76,799.69万元抵偿债务。"
+                "公司及公司控股股东与海航旅游集团不存在关联关系，本次交易不构成关联交易。本次交易不构成重组上市。",
+            ),
+            make_unit(
+                "text12::reorg-valuation",
+                "text12",
+                "实际控制人仍为陕西省国资委，不会导致上市公司控制权发生变更。标的资产的定价依据为标的资产的流拍价格，"
+                "评估机构采用市场法对长安银行股权进行评估，该5.92%股权价值为76,799.69万元。",
+            ),
+            make_unit("text07::reorg", "text07", "其他重大资产重组构成关联交易。"),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "本次交易构成关联交易，因为交易对方海航旅游集团与陕国投存在关联关系",
+            "B": "本次交易不构成重组上市，因为实际控制人未变更",
+            "C": "交易标的为长安银行5.92%股权，评估采用市场法",
+            "D": "交易价格以流拍价确定，该价格低于评估值",
+        }
+        question = Question(
+            qid="unseen_reorg_question", domain="financial_contracts", split="B",
+            question="关于陕国投重大资产重组。",
+            options=options, answer_format="multi", type="多选题", doc_ids=["text12", "text07"],
+        )
+        self.assert_bundle_labels(solver, question, {"A": False, "B": True, "C": True, "D": False}, "text12")
 
 
 class FinancialReportMetricBundleTests(unittest.TestCase):

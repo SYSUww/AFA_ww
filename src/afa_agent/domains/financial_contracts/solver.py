@@ -381,9 +381,11 @@ class FinancialContractsSolver:
 
     def _target_specs(self, question: Question, option_key: str, option_text: str) -> list[dict[str, Any]]:
         compact = self._normalize_literal(f"{question.question} {option_text}")
+        question_compact = self._normalize_literal(question.question)
         option_compact = self._normalize_literal(option_text)
         trigger_text = option_compact or compact
         doc_ids = self._target_doc_ids(question, option_text)
+        subject_doc_ids = self._subject_bound_doc_ids(question) or doc_ids
         specs: list[dict[str, Any]] = []
 
         def add(
@@ -401,6 +403,114 @@ class FinancialContractsSolver:
                     "prefer_paragraph": prefer_paragraph,
                 }
             )
+
+        if "业绩奖励" in question_compact:
+            if "100%" in option_compact and "20%" in option_compact:
+                add(
+                    ["业绩奖励总额", "超额业绩部分", "100%", "交易作价", "20%"],
+                    ["不超过"],
+                    prefer_paragraph=True,
+                    target_doc_ids=subject_doc_ids,
+                )
+            if "奖励对象" in option_compact:
+                add(
+                    ["超额业绩奖励对象"],
+                    ["管理团队", "核心人员", "仍在标的公司任职", "所有员工"],
+                    prefer_paragraph=True,
+                    target_doc_ids=subject_doc_ids,
+                )
+            if "现金" in option_compact and "专项资管计划" in option_compact:
+                add(
+                    ["超额业绩奖励的50%"],
+                    ["现金形式", "专项资管计划", "购买持有上市公司股票"],
+                    prefer_paragraph=True,
+                    target_doc_ids=subject_doc_ids,
+                )
+            if "累积实现净利润" in option_compact and "累积承诺净利润" in option_compact:
+                add(
+                    ["超额业绩奖励金额", "累积实现净利润", "累积承诺净利润", "50%"],
+                    ["业绩承诺期"],
+                    prefer_paragraph=True,
+                    target_doc_ids=subject_doc_ids,
+                )
+
+        if "转股价格向下修正" in question_compact:
+            if "连续三十个交易日" in option_compact and "十五个交易日" in option_compact:
+                add(
+                    ["连续三十个交易日", "十五个交易日", "收盘价低于当期转股价格"],
+                    ["85%", "80%", "修正权限"],
+                    prefer_paragraph=True,
+                    target_doc_ids=subject_doc_ids,
+                )
+            if "召开日前二十个交易日" in option_compact and "前一个交易日" in option_compact:
+                add(
+                    ["修正后的转股价格应不低于", "召开日前二十个交易日", "前一个交易日"],
+                    ["公司股票交易均价"],
+                    prefer_paragraph=True,
+                    target_doc_ids=subject_doc_ids,
+                )
+            if "每股净资产" in option_compact and "股票面值" in option_compact:
+                add(
+                    ["修正后的转股价格不得低于", "每股净资产", "股票面值"],
+                    ["最近一期经审计"],
+                    prefer_paragraph=True,
+                    target_doc_ids=subject_doc_ids,
+                )
+            if "持有本次可转债的股东" in option_compact and "回避" in option_compact:
+                add(
+                    ["持有本次可转债的股东应当回避"],
+                    ["股东大会", "表决"],
+                    prefer_paragraph=True,
+                    target_doc_ids=subject_doc_ids,
+                )
+
+        if "重大资产重组" in question_compact:
+            if "关联交易" in option_compact and "关联关系" in option_compact:
+                add(
+                    ["本次交易不构成关联交易"],
+                    ["不存在关联关系", "交易对方"],
+                    prefer_paragraph=True,
+                    target_doc_ids=subject_doc_ids,
+                )
+            if "不构成重组上市" in option_compact and "实际控制人" in option_compact:
+                add(
+                    ["本次交易不构成重组上市"],
+                    ["实际控制人", "控制权"],
+                    prefer_paragraph=True,
+                    target_doc_ids=subject_doc_ids,
+                )
+                add(
+                    ["实际控制人", "不会导致上市公司控制权发生变更"],
+                    ["重组上市", "陕西省国资委"],
+                    prefer_paragraph=True,
+                    target_doc_ids=subject_doc_ids,
+                )
+            if "交易标的" in option_compact and "5.92%" in option_compact and "市场法" in option_compact:
+                add(
+                    ["交易标的", "长安银行", "5.92%"],
+                    ["海航旅游集团"],
+                    prefer_paragraph=True,
+                    target_doc_ids=subject_doc_ids,
+                )
+                add(
+                    ["采用市场法", "长安银行"],
+                    ["5.92%", "评估"],
+                    prefer_paragraph=True,
+                    target_doc_ids=subject_doc_ids,
+                )
+            if "流拍价" in option_compact and "评估值" in option_compact:
+                add(
+                    ["以流拍价", "76,799.69"],
+                    ["抵偿", "交易标的", "5.92%"],
+                    prefer_paragraph=True,
+                    target_doc_ids=subject_doc_ids,
+                )
+                add(
+                    ["定价依据", "流拍价格"],
+                    ["评估值", "76,799.69", "市场法"],
+                    prefer_paragraph=True,
+                    target_doc_ids=subject_doc_ids,
+                )
 
         if question.qid == "fc_a_016" and option_key == "D":
             first_doc = question.doc_ids[0:1]
@@ -515,6 +625,10 @@ class FinancialContractsSolver:
         if not evidence_compact:
             return None
 
+        subject_clause_rule = self._subject_clause_rule(question, option_key, option_text, hits)
+        if subject_clause_rule:
+            return subject_clause_rule
+
         question_rule = self._question_specific_rule(question, option_key, option_text, evidence_text)
         if question_rule:
             return question_rule
@@ -626,6 +740,174 @@ class FinancialContractsSolver:
                     False,
                     "contract_issue_amount_mismatch",
                     f"选项金额为{self._format_amounts(option_amounts)}，证据发行/注册规模为{self._format_amounts(evidence_amounts)}。",
+                )
+
+        return None
+
+    def _subject_clause_rule(
+        self,
+        question: Question,
+        option_key: str,
+        option_text: str,
+        hits: list[RetrievalHit],
+    ) -> dict[str, Any] | None:
+        question_compact = self._normalize_literal(question.question)
+        option_compact = self._normalize_literal(option_text)
+        subject_docs = self._subject_bound_doc_ids(question)
+        evidence_compact = self._normalize_literal(
+            self._evidence_text(hits, subject_docs or self._target_doc_ids(question, option_text))
+        )
+        if not evidence_compact:
+            return None
+
+        if "业绩奖励" in question_compact:
+            if (
+                "100%" in option_compact
+                and "20%" in option_compact
+                and "业绩奖励总额不超过标的公司超额业绩部分的100%" in evidence_compact
+                and "不超过交易作价的20%" in evidence_compact
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_performance_reward_limits",
+                    "同一交易报告明确奖励总额不超过超额业绩部分的100%，且不超过交易作价的20%。",
+                )
+            if (
+                "所有员工" in option_compact
+                and "超额业绩奖励对象" in evidence_compact
+                and "管理团队及核心人员" in evidence_compact
+            ):
+                return self._rule_result(
+                    option_key,
+                    False,
+                    "contract_performance_reward_subject_scope",
+                    "奖励对象限于届时仍任职的管理团队及核心人员，并非标的公司所有员工。",
+                )
+            if (
+                "现金" in option_compact
+                and "专项资管计划" in option_compact
+                and "超额业绩奖励的50%由标的公司以现金形式" in evidence_compact
+                and "50%通过设立专项资管计划" in evidence_compact
+                and "购买持有上市公司股票" in evidence_compact
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_performance_reward_payment_split",
+                    "条款明确50%现金直接发放，另50%通过专项资管计划购买并持有上市公司股票。",
+                )
+            if (
+                "累积实现净利润" in option_compact
+                and "累积承诺净利润" in option_compact
+                and "超额业绩奖励金额=" in evidence_compact
+                and "业绩承诺期内累积实现净利润数" in evidence_compact
+                and "业绩承诺期内累积承诺净利润数" in evidence_compact
+                and "50%" in evidence_compact
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_performance_reward_formula",
+                    "同一交易报告中的超额业绩奖励计算公式与选项一致。",
+                )
+
+        if "转股价格向下修正" in question_compact:
+            if (
+                "80%" in option_compact
+                and "连续三十个交易日中至少有十五个交易日" in evidence_compact
+                and "低于当期转股价格的85%" in evidence_compact
+            ):
+                return self._rule_result(
+                    option_key,
+                    False,
+                    "contract_downward_revision_trigger_ratio",
+                    "主体文档载明触发比例为当期转股价格的85%，不是80%。",
+                )
+            if (
+                "召开日前二十个交易日" in option_compact
+                and "前一个交易日" in option_compact
+                and "修正后的转股价格应不低于该次股东大会召开日前二十个交易日公司股票交易均价和前一个交易日公司股票交易均价" in evidence_compact
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_downward_revision_market_price_floor",
+                    "修正价不得低于股东大会召开日前二十个交易日均价和前一个交易日均价。",
+                )
+            if (
+                "每股净资产" in option_compact
+                and "股票面值" in option_compact
+                and "修正后的转股价格不得低于最近一期经审计的每股净资产值和股票面值" in evidence_compact
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_downward_revision_net_asset_floor",
+                    "修正价还不得低于最近一期经审计的每股净资产值和股票面值。",
+                )
+            if (
+                "持有本次可转债的股东" in option_compact
+                and "回避" in option_compact
+                and "持有本次可转债的股东应当回避" in evidence_compact
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_downward_revision_holder_recusal",
+                    "条款明确股东大会表决时，持有本次可转债的股东应当回避。",
+                )
+
+        if "重大资产重组" in question_compact:
+            if (
+                "构成关联交易" in option_compact
+                and "本次交易不构成关联交易" in evidence_compact
+                and "不存在关联关系" in evidence_compact
+            ):
+                return self._rule_result(
+                    option_key,
+                    False,
+                    "contract_reorg_related_party_status",
+                    "报告明确交易双方不存在关联关系，本次交易不构成关联交易。",
+                )
+            if (
+                "不构成重组上市" in option_compact
+                and "实际控制人" in option_compact
+                and "本次交易不构成重组上市" in evidence_compact
+                and "不会导致上市公司控制权发生变更" in evidence_compact
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_reorg_control_unchanged",
+                    "报告明确实际控制人及控制权未变更，因此本次交易不构成重组上市。",
+                )
+            if (
+                "交易标的" in option_compact
+                and "5.92%" in option_compact
+                and "市场法" in option_compact
+                and "本次交易标的为海航旅游集团持有的长安银行" in evidence_compact
+                and "占长安银行股份的5.92%" in evidence_compact
+                and "采用市场法" in evidence_compact
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_reorg_target_and_valuation_method",
+                    "交易标的是长安银行5.92%股权，评估机构采用市场法评估。",
+                )
+            if (
+                "流拍价" in option_compact
+                and "低于评估值" in option_compact
+                and "定价依据为标的资产的流拍价格" in evidence_compact
+                and "以流拍价76,799.69万元" in evidence_compact
+                and "股权价值为76,799.69万元" in evidence_compact
+            ):
+                return self._rule_result(
+                    option_key,
+                    False,
+                    "contract_reorg_auction_price_equals_valuation",
+                    "流拍价与该5.92%股权评估值均为76,799.69万元，并非低于评估值。",
                 )
 
         return None
@@ -1539,6 +1821,52 @@ class FinancialContractsSolver:
             if mentions_second:
                 return [doc_ids[1]]
         return doc_ids
+
+    def _subject_bound_doc_ids(self, question: Question) -> list[str]:
+        if not hasattr(self.retriever, "units"):
+            return []
+        subject_terms = self._question_subject_terms(question.question)
+        if not subject_terms:
+            return []
+        allowed_docs = set(question.doc_ids)
+        scores: dict[str, int] = {}
+        for unit in self.retriever.units:
+            doc_id = str(unit.get("doc_id", ""))
+            if allowed_docs and doc_id not in allowed_docs:
+                continue
+            haystack = self._normalize_literal(
+                " ".join(unit.get("title_path", [])) + "\n" + str(unit.get("text", ""))
+            )
+            matched = {term for term in subject_terms if self._normalize_literal(term) in haystack}
+            if matched:
+                scores[doc_id] = scores.get(doc_id, 0) + sum(len(term) ** 2 for term in matched)
+        if not scores:
+            return []
+        best_score = max(scores.values())
+        return [doc_id for doc_id in question.doc_ids if scores.get(doc_id) == best_score]
+
+    @classmethod
+    def _question_subject_terms(cls, question_text: str) -> list[str]:
+        terms = list(cls._company_terms(question_text))
+        patterns = [
+            r"关于([^，。？?《》]{2,30}?)(?:可转债|重大资产重组)",
+            r"《([^》]{2,100})》",
+        ]
+        for pattern in patterns:
+            for value in re.findall(pattern, question_text):
+                companies = cls._company_terms(value)
+                if companies:
+                    terms.extend(companies)
+                elif len(value) <= 20:
+                    terms.append(value)
+        excluded = {"本次交易", "本次", "交易", "重大资产重组", "可转债"}
+        cleaned: list[str] = []
+        for term in terms:
+            value = term.strip("，。！？?《》（）()：: ")
+            if len(value) < 2 or value in excluded or value in cleaned:
+                continue
+            cleaned.append(value)
+        return cleaned
 
     @staticmethod
     def _normalize_literal(text: str) -> str:

@@ -5361,3 +5361,430 @@
   "token_accounting_complete": true
 }
 ```
+
+## b-loop-financial-contracts-subject-clause-binding-a1
+
+- recorded_at: `2026-07-21T23:22:31+00:00`
+
+```json
+{
+  "answered_qids": [
+    "fc_b_002",
+    "fc_b_012",
+    "fc_b_017"
+  ],
+  "attempt_index": 1,
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 939,
+    "prompt_tokens": 28811,
+    "total_tokens": 29750
+  },
+  "blind_pairs": {
+    "fc_b_002": {
+      "candidate_label": "A",
+      "evaluation": {
+        "confidence": 98,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "A的答案为ACD，均可由其封存证据直接支持：证据明确载明奖励总额不超过超额业绩部分100%且不超过交易作价20%，支持A；明确载明超额业绩奖励金额=累积实现净利润数与累积承诺净利润数差额*50%，支持D；并明确载明50%现金直接发放、50%通过专项资管计划等购买上市公司股票，支持C。选项B“所有员工”与证据中的管理团队及核心人员/奖励对象另行制定不符。B方仅选择AD，遗漏了有直接证据支持的C，且其证据集中缺少关键超额业绩奖励条款，decision_trace也显示no_supported_option，因此A更受证据支持且可验证。",
+        "winner": "A"
+      },
+      "incumbent_label": "B",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "token_usage": {
+        "completion_tokens": 298,
+        "prompt_tokens": 9542,
+        "total_tokens": 9840
+      }
+    },
+    "fc_b_012": {
+      "candidate_label": "B",
+      "evaluation": {
+        "confidence": 98,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "B选择BCD，与封存证据text09::element_560及text09::sec_6::chunk_18一致：触发条件为连续三十个交易日中至少十五个交易日收盘价低于当期转股价格的85%，因此A项所称80%错误；证据同时明确修正后转股价格不低于股东大会召开日前20个交易日和前1个交易日公司股票交易均价，且不得低于最近一期经审计每股净资产值和股票面值，股东大会表决时持有本次可转债的股东应回避，故B、C、D正确。A答案选AD，包含错误选项A且遗漏B、C，其自身决策轨迹也标记selected_false_option:A，证据支持不足。",
+        "winner": "B"
+      },
+      "incumbent_label": "A",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "token_usage": {
+        "completion_tokens": 286,
+        "prompt_tokens": 10908,
+        "total_tokens": 11194
+      }
+    },
+    "fc_b_017": {
+      "candidate_label": "A",
+      "evaluation": {
+        "confidence": 98,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "A选择BC，与封存证据完全一致：证据明确写明本次交易不构成重组上市，因交易完成后实际控制人仍为陕西省国资委、控制权未变更，支持B；证据亦明确写明交易标的为海航旅游集团持有的长安银行5.92%股权，评估机构采用市场法评估，支持C。证据同时写明公司及控股股东与海航旅游集团不存在关联关系、本次交易不构成关联交易，故A项错误；评估价值为76,799.69万元，流拍价亦为76,799.69万元，不能支持“低于评估值”，故D项错误。B答案选BCD，错误纳入D，且其自身decision_trace显示无支持选项、存在selected_false_option，证据可验证性明显弱于A。",
+        "winner": "A"
+      },
+      "incumbent_label": "B",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "token_usage": {
+        "completion_tokens": 355,
+        "prompt_tokens": 8361,
+        "total_tokens": 8716
+      }
+    }
+  },
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contracts_subject_clause_binding/subject_clause_bundle_a1_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "code_hash": "0130c983a4eae71aa83805e159de21a5cbf2302aa2eddfd34f4114e0f9acbdba",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "group_by": [
+            "document_identity",
+            "contract_subject",
+            "clause_role"
+          ],
+          "issuer_binding": true,
+          "negative_clause_refutation": true,
+          "selection": "uncovered_clause_first"
+        },
+        "domains": [
+          "financial_contracts"
+        ],
+        "hypothesis": "binding issuer identity before retrieving complete positive and negative contract clauses resolves forced multi-choice answers caused by evidence from adjacent agreements or incomplete clause fragments.",
+        "pipeline_stage": "retrieval",
+        "question_types": [
+          "mcq"
+        ],
+        "root_cause_cluster": "choice_evidence_coverage",
+        "target_qids": [
+          "fc_b_002",
+          "fc_b_012",
+          "fc_b_017"
+        ]
+      }
+    },
+    "context_sha256": "54f9e1e1068602c85345bd9ec9f40108eb2f06b056d3d04ce3dec19f5c512d2c",
+    "direction_sha256": "9819a3ad1360fa6de968f2787760a3f6fed26962616f2f1e3b2bc382baf24883",
+    "schema_version": 1,
+    "semantic_sha256": "ac9a2f4e6fab5033fbd2020dccee703dcea64456401ed8916c54836d7e5543a1",
+    "sha256": "e4793587d4c651d7f1542e3f41d225b8ddcbd9920f3f119538866994cc475c96"
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 35,
+    "high": 38,
+    "low": 2,
+    "medium": 25
+  },
+  "causal_promoted_tiers": {
+    "blocked": 32,
+    "high": 41,
+    "low": 2,
+    "medium": 25
+  },
+  "change_vector": {
+    "group_by": [
+      "document_identity",
+      "contract_subject",
+      "clause_role"
+    ],
+    "issuer_binding": true,
+    "negative_clause_refutation": true,
+    "selection": "uncovered_clause_first"
+  },
+  "changed_answer_qids": [
+    "fc_b_002",
+    "fc_b_012",
+    "fc_b_017"
+  ],
+  "code_hash": "0130c983a4eae71aa83805e159de21a5cbf2302aa2eddfd34f4114e0f9acbdba",
+  "comparable_attempt_count_after": 1,
+  "comparable_attempt_count_before": 0,
+  "confidence_after": {
+    "fc_b_002": 82,
+    "fc_b_012": 82,
+    "fc_b_017": 86
+  },
+  "confidence_before": {
+    "fc_b_002": 0,
+    "fc_b_012": 0,
+    "fc_b_017": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "financial_contracts_subject_clause_binding",
+  "direction_status": "active",
+  "domains": [
+    "financial_contracts"
+  ],
+  "effective_branch": "codex/b榜-loop-i013-financial-contract-clause-binding",
+  "evaluator_failed_attempts_not_in_usage": 0,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-financial-contracts-subject-clause-binding-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 81361,
+    "prompt_tokens": 492703,
+    "total_tokens": 574064
+  },
+  "generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_related_experiment_ids": [],
+  "history_similarity": null,
+  "hypothesis": "Binding issuer identity before retrieving complete positive and negative contract clauses resolves forced multi-choice answers caused by evidence from adjacent agreements or incomplete clause fragments.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 128,
+    "tests_passed": true,
+    "token_accounting_complete": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contracts_subject_clause_binding/subject_clause_bundle_a1_composite",
+  "material_delta": {
+    "clause_role_coverage": true,
+    "new_domain": true,
+    "subject_identity_guard": true
+  },
+  "next_root_causes": [
+    "remaining_financial_contract_clause_coverage",
+    "research_multi_clause_choice_coverage",
+    "evidence_serialization_unique_backfill",
+    "remaining_fin_b_010_evidence_sufficiency"
+  ],
+  "pipeline_stage": "retrieval",
+  "preflight_attempts": [
+    {
+      "observed_answer": {
+        "fc_b_002": "ACD",
+        "fc_b_012": "BCD",
+        "fc_b_017": "BC"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contracts_subject_clause_binding/subject_clause_bundle_a1",
+      "status": "accepted_for_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      }
+    }
+  ],
+  "promoted_qids": [
+    "fc_b_002",
+    "fc_b_012",
+    "fc_b_017"
+  ],
+  "promotion_decisions": {
+    "fc_b_002": {
+      "blind_required": true,
+      "blind_winner": "A",
+      "candidate_blind_label": "A",
+      "promote": true,
+      "reasons": [],
+      "score_delta": 82,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fc_b_012": {
+      "blind_required": true,
+      "blind_winner": "B",
+      "candidate_blind_label": "B",
+      "promote": true,
+      "reasons": [],
+      "score_delta": 82,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fc_b_017": {
+      "blind_required": true,
+      "blind_winner": "A",
+      "candidate_blind_label": "A",
+      "promote": true,
+      "reasons": [],
+      "score_delta": 86,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "mcq"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 32,
+    "high": 45,
+    "low": 4,
+    "medium": 19
+  },
+  "reason": "Issuer-bound complete clause retrieval changed the three forced financial-contract answers to ACD, BCD, and BC. The fixed judge rated them 82, 82, and 86 high; every changed answer won blind A/B at confidence 98.",
+  "recorded_at": "2026-07-21T23:22:31+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [],
+  "root_cause_cluster": "choice_evidence_coverage",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failures": 0,
+      "sentinels_passed": true,
+      "token_accounting_complete": true
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "fc_b_002",
+        "fc_b_012",
+        "fc_b_017"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 10,
+          "blocked_low_before": 13,
+          "low_tier_improved_qids": [
+            "fc_b_002",
+            "fc_b_012",
+            "fc_b_017"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 82,
+          "p10_before": 82,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 7,
+          "blocked_low_before": 7,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 65,
+          "p10_before": 65,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 15,
+          "blocked_low_before": 15,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_001": 2,
+        "fc_b_005": 5,
+        "fc_b_006": 38,
+        "fc_b_013": 10,
+        "fc_b_014": -5,
+        "fc_b_019": 13,
+        "fin_b_002": 5,
+        "fin_b_004": 5,
+        "fin_b_005": 3,
+        "fin_b_006": 5,
+        "fin_b_007": -3,
+        "fin_b_009": 2,
+        "fin_b_010": 8,
+        "fin_b_011": -5,
+        "fin_b_014": -5,
+        "fin_b_015": 3,
+        "fin_b_016": -10,
+        "fin_b_017": -5,
+        "fin_b_019": 5,
+        "ins_b_004": 3,
+        "ins_b_005": 4,
+        "ins_b_006": -6,
+        "ins_b_007": -4,
+        "ins_b_010": 22,
+        "ins_b_012": 10,
+        "ins_b_014": -20,
+        "ins_b_016": 12,
+        "ins_b_017": -17,
+        "ins_b_018": 10,
+        "ins_b_020": -3,
+        "reg_b_003": -20,
+        "reg_b_007": -5,
+        "reg_b_008": -2,
+        "reg_b_009": 6,
+        "reg_b_013": -12,
+        "reg_b_014": 5,
+        "reg_b_015": -2,
+        "reg_b_016": 10,
+        "reg_b_017": 6,
+        "reg_b_020": -2,
+        "reg_b_021": -8,
+        "reg_b_024": 6,
+        "reg_b_025": 4,
+        "reg_b_027": 10,
+        "res_b_001": -5,
+        "res_b_005": -5,
+        "res_b_007": 5,
+        "res_b_013": 7
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_006",
+        "fc_b_013",
+        "fc_b_019",
+        "ins_b_005",
+        "ins_b_010",
+        "ins_b_014",
+        "ins_b_016",
+        "ins_b_017",
+        "reg_b_003",
+        "reg_b_025",
+        "reg_b_027",
+        "res_b_013"
+      ]
+    },
+    "reasons": [],
+    "tests": {
+      "count": 128,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contracts_subject_clause_binding/subject_clause_bundle_a1",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "fc_b_002",
+    "fc_b_012",
+    "fc_b_017"
+  ],
+  "token_accounting_complete": true
+}
+```
