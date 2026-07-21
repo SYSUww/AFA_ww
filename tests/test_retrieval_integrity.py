@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from afa_agent.domains.generic_retriever import GenericBM25Retriever
+from afa_agent.domains.financial_reports.solver import FinancialReportsSolver
 from afa_agent.domains.insurance.plugin import InsurancePlugin
 from afa_agent.domains.insurance.solver import InsuranceSolver
 from afa_agent.domains.regulatory.retriever import RegulatoryRetriever
@@ -27,6 +28,12 @@ def make_unit(unit_id: str, doc_id: str, text: str, unit_type: str = "paragraph"
         "parent_unit_id": None,
         "metadata": {},
     }
+
+
+def make_metric(unit_id: str, doc_id: str, text: str, metric_name: str) -> dict[str, object]:
+    unit = make_unit(unit_id, doc_id, text, unit_type="metric_row")
+    unit["metadata"] = {"metric_name": metric_name, "year": "2025"}
+    return unit
 
 
 class NeighborExpansionTests(unittest.TestCase):
@@ -110,6 +117,122 @@ class InsuranceTargetedClauseTests(unittest.TestCase):
         self.assertEqual([hit.unit_id for hit in hits], ["za::escape"])
         self.assertTrue(hits[0].metadata["targeted_clause"])
         self.assertIn("交通肇事逃逸", solver._focus_terms(question.question))
+
+
+class FinancialReportMetricBundleTests(unittest.TestCase):
+    @staticmethod
+    def make_solver(units: list[dict[str, object]]) -> FinancialReportsSolver:
+        solver = FinancialReportsSolver.__new__(FinancialReportsSolver)
+        solver.units = units
+        solver.metric_index = solver._build_metric_index(units)
+        return solver
+
+    def test_operating_metric_bundle_covers_revenue_cash_flow_and_eps_roles(self) -> None:
+        units = [
+            make_metric(
+                "catl::revenue", "annual_catl_2025_report",
+                "营业收入 | 423,701,834 | 362,012,554 | 17.04% | 400,917,045", "营业收入",
+            ),
+            make_metric(
+                "catl::cash_eps", "annual_catl_2025_report",
+                "经营活动产生的现金流量净额 | 133,219,982 | 96,990,345 | 37.35% | 92,826,124\n基本每股收益(元/股) | 16.14 | 11.58 | 39.38% | 10.06",
+                "经营活动产生的现金流量净额",
+            ),
+            make_metric(
+                "midea::revenue", "annual_midea_2025_report",
+                "营业收入 | 456,451,731 | 407,149,600 | 12.11% | 372,037,280", "营业收入",
+            ),
+            make_metric(
+                "midea::cash_eps", "annual_midea_2025_report",
+                "经营活动产生的现金流量净额 | 53,345,930 | 60,511,572 | -11.84% | 57,902,611\n基本每股收益(元/股) | 5.80 | 5.44 | 6.62% | 4.93",
+                "经营活动产生的现金流量净额",
+            ),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "两家公司 2025 年营业收入均同比增长",
+            "B": "宁德时代经营现金流率上升，而美的集团经营现金流率下降",
+            "C": "2025 年宁德时代经营现金流率比美的集团高约 19.75 个百分点",
+            "D": "宁德时代基本每股收益同比增幅比美的集团高约 32.76 个百分点",
+        }
+        question = Question(
+            qid="fin_b_003", domain="financial_reports", split="B",
+            question="根据宁德时代与美的集团年度报告中的营业收入、经营现金流和基本每股收益。",
+            options=options, answer_format="multi", type="多选题",
+            doc_ids=["annual_catl_2025_report", "annual_midea_2025_report"],
+        )
+        labels = {key: solver._choice_metric_bundle_rule(question, option)[0] for key, option in options.items()}
+        self.assertEqual(labels, {"A": True, "B": True, "C": True, "D": True})
+
+    def test_dividend_bundle_uses_full_year_and_normalizes_per_share(self) -> None:
+        units = [
+            make_metric(
+                "catl::dividend", "annual_catl_2025_report",
+                "2025年度利润分配预案：向全体股东每10股派发现金分红69.57元（含税）。", "现金分红",
+            ),
+            make_metric(
+                "midea::dividend", "annual_midea_2025_report",
+                "公司2025年度利润分配方案为：每10股派发现金43元；年末每10股派发现金分红38元。", "现金分红",
+            ),
+            make_metric(
+                "cmb::dividend", "annual_cmb_2025_report",
+                "2025年度现金股息，全年每股现金分红2.016元（含税）。", "现金分红",
+            ),
+            make_metric(
+                "cscec::dividend", "annual_cscec_2025_report",
+                "每10股派息数(元)(含税) | 2.718", "每10股派",
+            ),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "按每 10 股全年现金分红由高到低排序为：宁德时代、美的集团、招商银行、中国建筑",
+            "B": "美的集团 2025 年全年每 10 股现金分红为 38 元",
+            "C": "招商银行全年每股现金分红 2.016 元，等价于每 10 股 20.16 元",
+            "D": "宁德时代与美的集团的全年每 10 股现金分红相差 26.57 元",
+        }
+        question = Question(
+            qid="fin_b_005", domain="financial_reports", split="B",
+            question="根据四家公司2025年年度报告中的现金分红数据。",
+            options=options, answer_format="multi", type="多选题",
+            doc_ids=[
+                "annual_catl_2025_report", "annual_midea_2025_report",
+                "annual_cmb_2025_report", "annual_cscec_2025_report",
+            ],
+        )
+        labels = {key: solver._choice_metric_bundle_rule(question, option)[0] for key, option in options.items()}
+        self.assertEqual(labels, {"A": True, "B": False, "C": True, "D": True})
+
+    def test_statement_scope_bundle_distinguishes_consolidated_and_parent_rows(self) -> None:
+        units = [
+            make_metric(
+                "midea::scope_revenue", "annual_midea_2025_report",
+                "项目 | 2025年度合并 | 2024年度合并 | 2025年度公司 | 2024年度公司\n其中:营业收入 | 456,451,731 | 407,149,600 | 936,519 | 946,607",
+                "营业收入",
+            ),
+            make_unit(
+                "midea::scope_cash", "annual_midea_2025_report",
+                "经营活动产生/(使用)的现金流量净额 | 四(64)(h) | 53,345,930 | 60,511,572 | (11,628,058) | 4,645,875",
+            ),
+            make_metric(
+                "midea::eps", "annual_midea_2025_report",
+                "经营活动产生的现金流量净额 | 53,345,930 | 60,511,572 | -11.84%\n基本每股收益(元/股) | 5.80 | 5.44 | 6.62%",
+                "经营活动产生的现金流量净额",
+            ),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "合并口径营业收入同比增长，而母公司口径营业收入同比下降",
+            "B": "合并口径经营活动现金流量净额为正，而母公司口径为负",
+            "C": "5.80 元的基本每股收益为母公司单体财务报表指标",
+            "D": "母公司 2025 年经营活动产生的现金流量净额为 53,345,930 千元",
+        }
+        question = Question(
+            qid="fin_b_012", domain="financial_reports", split="B",
+            question="根据美的集团2025年年度报告中的合并财务报表与母公司财务报表。",
+            options=options, answer_format="multi", type="多选题", doc_ids=["annual_midea_2025_report"],
+        )
+        labels = {key: solver._choice_metric_bundle_rule(question, option)[0] for key, option in options.items()}
+        self.assertEqual(labels, {"A": True, "B": True, "C": False, "D": False})
 
 
 class RegulatoryCompositeClauseTests(unittest.TestCase):

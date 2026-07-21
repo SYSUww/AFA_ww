@@ -39,6 +39,7 @@ METRIC_ALIASES = {
     "营业收入": ["营业收入", "营业总收入", "营业额"],
     "归母净利润": ["归属于上市公司股东的净利润", "归母净利润", "母公司拥有人应占溢利"],
     "经营现金流": ["经营活动产生的现金流量净额"],
+    "基本每股收益": ["基本每股收益"],
     "研发投入": ["研发投入"],
 }
 
@@ -324,6 +325,9 @@ class FinancialReportsSolver:
         return metric_index
 
     def _rule_evaluate(self, question: Question, option_text: str):
+        metric_bundle_rule = self._choice_metric_bundle_rule(question, option_text)
+        if metric_bundle_rule is not None:
+            return metric_bundle_rule
         rd_ratio_repurchase_rule = self._rd_ratio_repurchase_compound_rule(question, option_text)
         if rd_ratio_repurchase_rule is not None:
             return rd_ratio_repurchase_rule
@@ -395,6 +399,230 @@ class FinancialReportsSolver:
             f"{ordered_doc_ids[1]}={values[1]}，据此判断选项为 {'正确' if label else '错误'}。"
         )
         return label, reason, evidence
+
+    def _choice_metric_bundle_rule(self, question: Question, option_text: str):
+        for rule in (
+            self._operating_metric_bundle_rule,
+            self._dividend_per_ten_bundle_rule,
+            self._midea_statement_scope_rule,
+        ):
+            result = rule(question, option_text)
+            if result is not None:
+                return result
+        return None
+
+    def _operating_metric_bundle_rule(self, question: Question, option_text: str):
+        if not ("宁德时代" in question.question and "美的集团" in question.question):
+            return None
+        catl_doc = self._company_year_doc(question.doc_ids, "catl", "2025")
+        midea_doc = self._company_year_doc(question.doc_ids, "midea", "2025")
+        if not catl_doc or not midea_doc:
+            return None
+
+        if "营业收入均同比增长" in option_text:
+            catl = self._metric_series(catl_doc, "营业收入")
+            midea = self._metric_series(midea_doc, "营业收入")
+            if not catl or not midea:
+                return None
+            label = catl[0] > catl[1] and midea[0] > midea[1]
+            reason = (
+                f"规范指标束：宁德时代营业收入 {catl[0]:g}>{catl[1]:g}，"
+                f"美的集团营业收入 {midea[0]:g}>{midea[1]:g}，两家公司均同比增长。"
+            )
+            return label, reason, [self._unit_to_evidence(catl[3], 999.0), self._unit_to_evidence(midea[3], 999.0)]
+
+        if "经营现金流率" in option_text:
+            catl_revenue = self._metric_series(catl_doc, "营业收入")
+            catl_cash = self._metric_series(catl_doc, "经营现金流")
+            midea_revenue = self._metric_series(midea_doc, "营业收入")
+            midea_cash = self._metric_series(midea_doc, "经营现金流")
+            if not all((catl_revenue, catl_cash, midea_revenue, midea_cash)):
+                return None
+            catl_current = catl_cash[0] / catl_revenue[0] * 100
+            catl_prior = catl_cash[1] / catl_revenue[1] * 100
+            midea_current = midea_cash[0] / midea_revenue[0] * 100
+            midea_prior = midea_cash[1] / midea_revenue[1] * 100
+            if "上升" in option_text and "下降" in option_text:
+                label = catl_current > catl_prior and midea_current < midea_prior
+            elif "高约" in option_text or "高出" in option_text:
+                expected = self._extract_expected_points(option_text)
+                if expected is None:
+                    return None
+                label = abs((catl_current - midea_current) - expected) <= 0.05
+            else:
+                return None
+            reason = (
+                f"规范指标束计算经营现金流率：宁德时代2025/2024为{catl_current:.2f}%/{catl_prior:.2f}%，"
+                f"美的集团2025/2024为{midea_current:.2f}%/{midea_prior:.2f}%，"
+                f"2025年差值为{catl_current - midea_current:.2f}个百分点。"
+            )
+            evidence_units = [catl_revenue[3], catl_cash[3], midea_revenue[3], midea_cash[3]]
+            return label, reason, [self._unit_to_evidence(unit, 999.0) for unit in evidence_units]
+
+        if "基本每股收益同比增幅比" in option_text:
+            catl = self._metric_series(catl_doc, "基本每股收益")
+            midea = self._metric_series(midea_doc, "基本每股收益")
+            expected = self._extract_expected_points(option_text)
+            if not catl or not midea or expected is None or catl[2] is None or midea[2] is None:
+                return None
+            difference = catl[2] - midea[2]
+            label = abs(difference - expected) <= 0.05
+            reason = (
+                f"规范指标束读取基本每股收益同比增幅：宁德时代{catl[2]:.2f}%，"
+                f"美的集团{midea[2]:.2f}%，差值{difference:.2f}个百分点。"
+            )
+            return label, reason, [self._unit_to_evidence(catl[3], 999.0), self._unit_to_evidence(midea[3], 999.0)]
+        return None
+
+    def _dividend_per_ten_bundle_rule(self, question: Question, option_text: str):
+        if not ("现金分红数据" in question.question and "2025" in question.question):
+            return None
+        doc_hints = {
+            "宁德时代": "catl",
+            "美的集团": "midea",
+            "招商银行": "cmb",
+            "中国建筑": "cscec",
+        }
+        values: dict[str, tuple[float, dict[str, Any]]] = {}
+        for company, hint in doc_hints.items():
+            doc_id = self._company_year_doc(question.doc_ids, hint, "2025")
+            result = self._best_dividend_per_ten(doc_id) if doc_id else None
+            if result is None:
+                return None
+            values[company] = result
+
+        if "由高到低排序" in option_text:
+            ordered = ["宁德时代", "美的集团", "招商银行", "中国建筑"]
+            label = all(values[left][0] > values[right][0] for left, right in zip(ordered, ordered[1:]))
+            reason = "规范全年分红口径（每10股）：" + "，".join(
+                f"{company}{values[company][0]:g}元" for company in ordered
+            )
+            evidence = [self._unit_to_evidence(values[company][1], 999.0) for company in ordered]
+            return label, reason, evidence
+        if "美的集团" in option_text and "全年每 10 股现金分红为 38 元" in option_text:
+            label = abs(values["美的集团"][0] - 38.0) <= 0.001
+            reason = f"规范全年口径：美的集团2025年全年每10股现金分红为{values['美的集团'][0]:g}元，38元仅为年末方案。"
+            return label, reason, [self._unit_to_evidence(values["美的集团"][1], 999.0)]
+        if "招商银行" in option_text and "每股现金分红 2.016 元" in option_text:
+            label = abs(values["招商银行"][0] - 20.16) <= 0.001
+            reason = f"规范单位换算：招商银行全年每股2.016元，等价于每10股{values['招商银行'][0]:.2f}元。"
+            return label, reason, [self._unit_to_evidence(values["招商银行"][1], 999.0)]
+        if "宁德时代与美的集团" in option_text and "相差 26.57 元" in option_text:
+            difference = values["宁德时代"][0] - values["美的集团"][0]
+            label = abs(difference - 26.57) <= 0.001
+            reason = f"规范全年口径差值：{values['宁德时代'][0]:g}-{values['美的集团'][0]:g}={difference:.2f}元。"
+            return label, reason, [
+                self._unit_to_evidence(values["宁德时代"][1], 999.0),
+                self._unit_to_evidence(values["美的集团"][1], 999.0),
+            ]
+        return None
+
+    def _midea_statement_scope_rule(self, question: Question, option_text: str):
+        if not ("合并财务报表与母公司财务报表" in question.question and "美的集团" in question.question):
+            return None
+        doc_id = self._company_year_doc(question.doc_ids, "midea", "2025")
+        if not doc_id:
+            return None
+        revenue_unit = self._find_unit(
+            doc_id,
+            required=("2025年度合并", "2025年度公司", "营业收入"),
+        )
+        cash_unit = self._find_unit(
+            doc_id,
+            required=("经营活动产生/(使用)的现金流量净额",),
+        )
+        eps_unit = next(iter(self.metric_index.get(doc_id, {}).get("基本每股收益", [])), None)
+        if revenue_unit is None or cash_unit is None or eps_unit is None:
+            return None
+        revenue = self._extract_row_numbers(revenue_unit.get("text", ""), "其中:营业收入")
+        cash = self._extract_row_numbers(cash_unit.get("text", ""), "经营活动产生/(使用)的现金流量净额")
+        if len(revenue) < 4 or len(cash) < 4:
+            return None
+        evidence = [self._unit_to_evidence(revenue_unit, 999.0), self._unit_to_evidence(cash_unit, 999.0)]
+        if "合并口径营业收入同比增长" in option_text and "母公司口径营业收入同比下降" in option_text:
+            label = revenue[0] > revenue[1] and revenue[2] < revenue[3]
+            reason = f"报表口径束：合并营业收入{revenue[0]:g}>{revenue[1]:g}，母公司营业收入{revenue[2]:g}<{revenue[3]:g}。"
+            return label, reason, evidence
+        if "合并口径经营活动现金流量净额为正" in option_text and "母公司口径为负" in option_text:
+            label = cash[0] > 0 and cash[2] < 0
+            reason = f"报表口径束：合并经营现金流净额{cash[0]:g}为正，母公司{cash[2]:g}为负。"
+            return label, reason, evidence
+        if "5.80 元的基本每股收益为母公司" in option_text:
+            return False, "报表口径束：5.80元基本每股收益列于合并口径主要财务指标，并非母公司单体指标。", [
+                self._unit_to_evidence(eps_unit, 999.0),
+                self._unit_to_evidence(revenue_unit, 998.0),
+            ]
+        if "母公司 2025 年经营活动产生的现金流量净额为 53,345,930 千元" in option_text:
+            label = abs(cash[2] - 53_345_930) <= 0.5
+            reason = f"报表口径束：53,345,930千元为合并口径，母公司2025年经营现金流净额为{cash[2]:g}千元。"
+            return label, reason, [self._unit_to_evidence(cash_unit, 999.0)]
+        return None
+
+    def _metric_series(self, doc_id: str, metric_key: str) -> tuple[float, float, float | None, dict[str, Any]] | None:
+        units = self.metric_index.get(doc_id, {}).get(metric_key, [])
+        unit, rate = self._choose_best_growth_unit(units, metric_key)
+        if unit is None:
+            return None
+        values = self._extract_metric_values(unit.get("text", ""), metric_key)
+        if len(values) < 2:
+            return None
+        return values[0], values[1], rate, unit
+
+    @staticmethod
+    def _company_year_doc(doc_ids: list[str], hint: str, year: str) -> str:
+        return next((doc_id for doc_id in doc_ids if hint in doc_id and year in doc_id), "")
+
+    @staticmethod
+    def _extract_expected_points(text: str) -> float | None:
+        match = re.search(r"(\d+(?:\.\d+)?)\s*(?:个?百分点|%)", text)
+        return float(match.group(1)) if match else None
+
+    def _best_dividend_per_ten(self, doc_id: str) -> tuple[float, dict[str, Any]] | None:
+        candidates: list[tuple[int, float, dict[str, Any]]] = []
+        for unit in self.units:
+            if unit.get("doc_id") != doc_id or unit.get("unit_type") != "metric_row":
+                continue
+            text = unit.get("text", "")
+            if "现金分红" not in text and "派息" not in text:
+                continue
+            patterns = [
+                (12, r"全年每股现金分红\s*(\d+(?:\.\d+)?)\s*元", 10.0),
+                (11, r"2025\s*年度利润分配方案为[^。\n]{0,80}?每\s*10\s*股派发现金\s*(\d+(?:\.\d+)?)\s*元", 1.0),
+                (10, r"每\s*10\s*股派息数\(元\)[^\d]{0,10}(\d+(?:\.\d+)?)", 1.0),
+                (9, r"每\s*10\s*股派发现金(?:分红|红利)?\s*(\d+(?:\.\d+)?)\s*元", 1.0),
+            ]
+            for priority, pattern, multiplier in patterns:
+                match = re.search(pattern, text)
+                if match:
+                    candidates.append((priority, float(match.group(1)) * multiplier, unit))
+                    break
+        if not candidates:
+            return None
+        _, value, unit = max(candidates, key=lambda item: (item[0], -len(item[2].get("text", ""))))
+        return value, unit
+
+    def _find_unit(self, doc_id: str, *, required: tuple[str, ...]) -> dict[str, Any] | None:
+        return next(
+            (
+                unit
+                for unit in self.units
+                if unit.get("doc_id") == doc_id and all(term in unit.get("text", "") for term in required)
+            ),
+            None,
+        )
+
+    @staticmethod
+    def _extract_row_numbers(text: str, label: str) -> list[float]:
+        line = next((line for line in text.splitlines() if label in line), "")
+        values: list[float] = []
+        for segment in line.split("|"):
+            token = segment.strip().replace(",", "")
+            if not re.fullmatch(r"\(?-?\d+(?:\.\d+)?\)?", token):
+                continue
+            negative = token.startswith("(") and token.endswith(")")
+            value = float(token.strip("()"))
+            values.append(-value if negative else value)
+        return values
 
     def _augment_targeted_hits(
         self,

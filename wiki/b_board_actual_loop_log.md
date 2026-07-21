@@ -4178,3 +4178,385 @@
   "trial_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/regulatory_remaining_clauses/effective_reporting_fee_a1_composite"
 }
 ```
+
+## b-loop-financial-reports-company-year-metric-bundle-a1
+
+- recorded_at: `2026-07-21T22:12:16+00:00`
+
+```json
+{
+  "answered_qids": [
+    "fin_b_003",
+    "fin_b_005",
+    "fin_b_012"
+  ],
+  "attempt_index": 1,
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 991,
+    "prompt_tokens": 10799,
+    "total_tokens": 11790
+  },
+  "blind_pairs": {
+    "fin_b_003": {
+      "candidate_label": "A",
+      "evaluation": {
+        "confidence": 98,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "A选择ABCD，且其封存证据覆盖两家公司2025/2024营业收入、经营活动现金流量净额及基本每股收益，可验证四项均正确：营业收入均同比增长；宁德时代经营现金流率由96,990,345/362,012,554≈26.79%升至133,219,982/423,701,834≈31.44%，美的由60,511,572/407,149,600≈14.86%降至53,345,930/456,451,731≈11.69%；2025年两者经营现金流率差约19.75个百分点；EPS同比增幅差为39.38%-6.62%=32.76个百分点。B仅选BCD，遗漏有证据支持且正确的A项，并且其证据未覆盖经营现金流和EPS，决策轨迹也标记无支持选项，因此A更受证据支持且可验证。",
+        "winner": "A"
+      },
+      "incumbent_label": "B",
+      "token_usage": {
+        "completion_tokens": 573,
+        "prompt_tokens": 4109,
+        "total_tokens": 4682
+      }
+    },
+    "fin_b_005": {
+      "candidate_label": "A",
+      "evaluation": {
+        "confidence": 98,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "A 的答案 ACD 与其封存证据完全一致且可复算：宁德时代 2025 每10股派息 69.57 元；美的集团 2025 年度利润分配为每10股 43 元，其中中期 5 元、年末 38 元；招商银行全年每股 2.016 元，折合每10股 20.16 元；中国建筑每10股 2.718 元。因此排序为宁德时代、美的集团、招商银行、中国建筑，C 正确，宁德时代与美的集团差额 69.57-43=26.57 元，D 正确；B 选项把美的集团年末分红 38 元误作全年分红，错误。B 的答案 AC 漏选 D，且其宁德时代证据使用了 2024 年报告而非 2025 年，存在年份错误，决策轨迹也标记了强制选项和错误选项问题。",
+        "winner": "A"
+      },
+      "incumbent_label": "B",
+      "token_usage": {
+        "completion_tokens": 418,
+        "prompt_tokens": 6690,
+        "total_tokens": 7108
+      }
+    }
+  },
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "code_hash": "6fa0cf477df9687dee02ee82ba167726ff0510fcd9e5efd3da1f8296a3012a9b",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "dividend_per_ten_normalization": true,
+          "group_by": [
+            "company",
+            "report_year",
+            "metric_role"
+          ],
+          "latest_report_current_prior_rows": true,
+          "selection": "uncovered_role_first",
+          "statement_scope_binding": true
+        },
+        "domains": [
+          "financial_reports"
+        ],
+        "hypothesis": "selecting latest-report current/prior metric bundles by company and option role prevents early-document truncation, mixed-year evidence, and consolidated/parent scope confusion.",
+        "pipeline_stage": "retrieval",
+        "question_types": [
+          "mcq"
+        ],
+        "root_cause_cluster": "choice_evidence_coverage",
+        "target_qids": [
+          "fin_b_003",
+          "fin_b_005",
+          "fin_b_012"
+        ]
+      }
+    },
+    "context_sha256": "0ee7d121897cbb494a86d3d7a16ca4526a614cec15430bf563e7eb3beb476cab",
+    "direction_sha256": "641a22dfc6b20d0aa420ff6c02a131bc03c0a78c392c4eee6aeb6eb2c86bb817",
+    "schema_version": 1,
+    "semantic_sha256": "da14647e2b0d81855573500053d9ae1c7dc10b6fffa4038d6d9a76d91fe00f60",
+    "sha256": "3634d16c90845f62151ef77e54029aeecea8e74e0803eab989bc451012a8f3ad"
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 44,
+    "high": 30,
+    "low": 1,
+    "medium": 25
+  },
+  "causal_promoted_tiers": {
+    "blocked": 41,
+    "high": 33,
+    "low": 1,
+    "medium": 25
+  },
+  "change_vector": {
+    "dividend_per_ten_normalization": true,
+    "group_by": [
+      "company",
+      "report_year",
+      "metric_role"
+    ],
+    "latest_report_current_prior_rows": true,
+    "selection": "uncovered_role_first",
+    "statement_scope_binding": true
+  },
+  "changed_answer_qids": [
+    "fin_b_003",
+    "fin_b_005"
+  ],
+  "code_hash": "6fa0cf477df9687dee02ee82ba167726ff0510fcd9e5efd3da1f8296a3012a9b",
+  "comparable_attempt_count_after": 1,
+  "comparable_attempt_count_before": 0,
+  "confidence_after": {
+    "fin_b_003": 95,
+    "fin_b_005": 95,
+    "fin_b_012": 100
+  },
+  "confidence_before": {
+    "fin_b_003": 0,
+    "fin_b_005": 0,
+    "fin_b_012": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "financial_reports_company_year_metric_bundle",
+  "domains": [
+    "financial_reports"
+  ],
+  "effective_branch": "codex/b榜-loop-i010-financial-report-metric-bundles",
+  "evaluator_failed_attempts_not_in_usage": 0,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-financial-reports-company-year-metric-bundle-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 86730,
+    "prompt_tokens": 480119,
+    "total_tokens": 566849
+  },
+  "generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_related_experiment_ids": [],
+  "history_similarity": null,
+  "hypothesis": "Selecting latest-report current/prior metric bundles by company and option role prevents early-document truncation, mixed-year evidence, and consolidated/parent scope confusion.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 119,
+    "tests_passed": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_reports_metric_bundle/company_year_roles_a1_composite",
+  "material_delta": {
+    "choice_metric_bundle": true,
+    "company_year_identity": true,
+    "scope_role_identity": true
+  },
+  "next_root_causes": [
+    "financial_reports_remaining_ratio_and_solvency_bundles",
+    "financial_contracts_subject_clause_binding",
+    "research_multi_clause_choice_coverage",
+    "evidence_serialization_unique_backfill"
+  ],
+  "pipeline_stage": "retrieval",
+  "promoted_qids": [
+    "fin_b_003",
+    "fin_b_005",
+    "fin_b_012"
+  ],
+  "promotion_decisions": {
+    "fin_b_003": {
+      "blind_winner": "A",
+      "candidate_blind_label": "A",
+      "promote": true,
+      "reasons": [],
+      "score_delta": 95,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fin_b_005": {
+      "blind_winner": "A",
+      "candidate_blind_label": "A",
+      "promote": true,
+      "reasons": [],
+      "score_delta": 95,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fin_b_012": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 100,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "mcq"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 41,
+    "high": 31,
+    "low": 4,
+    "medium": 24
+  },
+  "reason": "Company/year/metric-role bundles produced fully grounded zero-generation-token answers. fin_b_003 and fin_b_005 changed to ABCD and ACD, improved from blocked 0 to high 95, and each won blind A/B at confidence 98. fin_b_012 kept AB and improved from blocked 0 to high 100 by binding consolidated and parent-statement rows.",
+  "recorded_at": "2026-07-21T22:12:16+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [],
+  "root_cause_cluster": "choice_evidence_coverage",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failures": 0,
+      "sentinels_passed": true,
+      "token_accounting_complete": true
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "fin_b_003",
+        "fin_b_005",
+        "fin_b_012"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 13,
+          "blocked_low_before": 13,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 6,
+          "blocked_low_before": 9,
+          "low_tier_improved_qids": [
+            "fin_b_003",
+            "fin_b_005",
+            "fin_b_012"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 7,
+          "blocked_low_before": 7,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 65,
+          "p10_before": 65,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 15,
+          "blocked_low_before": 15,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_005": -2,
+        "fc_b_006": 5,
+        "fc_b_013": -15,
+        "fc_b_014": -20,
+        "fc_b_016": 5,
+        "fc_b_018": -10,
+        "fc_b_019": -7,
+        "fin_b_009": -5,
+        "fin_b_011": -1,
+        "fin_b_016": -5,
+        "fin_b_017": 1,
+        "fin_b_018": 5,
+        "fin_b_020": 3,
+        "ins_b_002": -3,
+        "ins_b_004": 4,
+        "ins_b_005": 2,
+        "ins_b_006": -17,
+        "ins_b_007": -2,
+        "ins_b_008": 10,
+        "ins_b_010": -3,
+        "ins_b_012": -17,
+        "ins_b_014": -6,
+        "ins_b_016": -6,
+        "ins_b_017": 13,
+        "ins_b_018": -7,
+        "ins_b_020": 2,
+        "reg_b_003": 5,
+        "reg_b_008": 5,
+        "reg_b_009": 2,
+        "reg_b_013": 5,
+        "reg_b_014": 5,
+        "reg_b_015": 2,
+        "reg_b_016": 3,
+        "reg_b_017": -2,
+        "reg_b_018": 10,
+        "reg_b_021": -4,
+        "reg_b_023": 6,
+        "reg_b_024": 7,
+        "reg_b_025": -3,
+        "reg_b_026": -6,
+        "res_b_001": 6,
+        "res_b_007": 5,
+        "res_b_013": -4,
+        "res_b_015": 23
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_013",
+        "fc_b_014",
+        "fc_b_019",
+        "ins_b_004",
+        "ins_b_006",
+        "ins_b_007",
+        "ins_b_012",
+        "ins_b_017",
+        "reg_b_018",
+        "reg_b_024",
+        "res_b_015"
+      ]
+    },
+    "promoted_qids": [
+      "fin_b_003",
+      "fin_b_005",
+      "fin_b_012"
+    ],
+    "reasons": [],
+    "tests": {
+      "count": 119,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_reports_metric_bundle/company_year_roles_a1",
+  "status": "accepted",
+  "target_qids": [
+    "fin_b_003",
+    "fin_b_005",
+    "fin_b_012"
+  ],
+  "token_accounting_complete": true
+}
+```
