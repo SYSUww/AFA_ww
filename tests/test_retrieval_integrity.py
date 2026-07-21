@@ -229,6 +229,103 @@ class FinancialContractSubjectClauseTests(unittest.TestCase):
         )
         self.assert_bundle_labels(solver, question, {"A": False, "B": True, "C": True, "D": False}, "text12")
 
+    def test_investor_protection_bundle_covers_covenant_default_and_dispute_clauses(self) -> None:
+        units = [
+            make_unit(
+                "text03::protection",
+                "text03",
+                "厦门金圆投资集团有限公司。出现交叉保护承诺情形的，发行人将及时采取措施以在10个交易日内恢复承诺相关要求。"
+                "发行人违反交叉保护条款且未在上述第（2）条约定期限内恢复承诺的，持有人有权要求发行人按照负面事项救济措施的约定采取负面事项救济措施。",
+            ),
+            make_unit(
+                "text03::default-dispute",
+                "text03",
+                "债券持有人同意给予发行人自原约定各给付日起90个自然日的宽限期。协商不成的，双方约定向位于发行人住所所在地有管辖权的法院提请诉讼。",
+            ),
+            make_unit("text14::other", "text14", "其他发行人的投资者保护条款。"),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "发生交叉保护情形时，发行人应在10个交易日内采取措施恢复承诺相关要求",
+            "B": "发行人发生违约时，债券持有人同意给予发行人自原约定给付日起90个自然日的宽限期",
+            "C": "争议解决方式约定为向位于发行人住所所在地有管辖权的法院提请诉讼",
+            "D": "发行人违反交叉保护条款且未在约定期限内恢复承诺的，持有人有权要求发行人按照负面事项救济措施采取行动",
+        }
+        question = Question(
+            qid="unseen_protection_question", domain="financial_contracts", split="B",
+            question="关于《厦门金圆投资集团有限公司募集说明书》中投资者保护条款与违约事项。",
+            options=options, answer_format="multi", type="多选题", doc_ids=["text14", "text03"],
+        )
+        self.assert_bundle_labels(solver, question, {key: True for key in options}, "text03")
+
+    def test_subscription_commitments_bind_each_option_to_its_issuer(self) -> None:
+        units = [
+            make_unit(
+                "text04::subscription", "text04",
+                "安克创新。发行人独立董事承诺本人及本人配偶、父母、子女不参与本次可转债的发行认购，亦不会委托其他主体参与本次可转债的发行认购。"
+                "若发行日与最后一次减持公司股票的日期间隔不满六个月，本人及配偶、父母、子女将不参与认购公司本次发行的可转债。",
+            ),
+            make_unit(
+                "text11::subscription", "text11",
+                "普联软件。公司独立董事关于不参与本次可转债发行认购的承诺：本人及本人配偶、父母、子女将不参与本次可转债发行认购，亦不会委托其他主体参与。",
+            ),
+            make_unit(
+                "text05::subscription", "text05",
+                "本川智能。发行人独立董事出具承诺：本人及本人关系密切的家庭成员承诺不认购本次发行可转债，亦不会委托其他主体参与本次发行可转债发行认购。",
+            ),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "安克创新的独立董事承诺不参与本次可转债的发行认购，亦不会委托其他主体参与",
+            "B": "普联软件的独立董事承诺不参与本次可转债发行认购，但未明确其配偶、父母、子女是否参与",
+            "C": "本川智能的独立董事承诺本人及本人关系密切的家庭成员不认购本次发行可转债",
+            "D": "安克创新的控股股东承诺若发行日与最后一次减持公司股票的日期间隔不满六个月，将不参与认购公司本次发行的可转债",
+        }
+        question = Question(
+            qid="unseen_subscription_question", domain="financial_contracts", split="B",
+            question="关于上市公司相关主体针对本次可转债发行认购的承诺，以下说法错误的是？",
+            options=options, answer_format="mcq", type="单选题", doc_ids=["text11", "text04"],
+        )
+        expected = {"A": False, "B": True, "C": False, "D": False}
+        labels = {}
+        expected_docs = {"A": "text04", "B": "text11", "C": "text05", "D": "text04"}
+        for option_key, option_text in options.items():
+            hits = solver._targeted_literal_hits(question, option_key, option_text)
+            self.assertTrue(hits, option_key)
+            self.assertTrue(all(hit.doc_id == expected_docs[option_key] for hit in hits), option_key)
+            result = solver._rule_override(question, option_key, option_text, hits)
+            self.assertIsNotNone(result, option_key)
+            labels[option_key] = bool(result["label"])
+        self.assertEqual(labels, expected)
+
+    def test_convertible_rights_bundle_covers_price_vote_redemption_and_put(self) -> None:
+        units = [
+            make_unit(
+                "text06::conversion", "text06",
+                "鼎捷数智。本次发行可转换公司债券的初始转股价格不低于募集说明书公告日前二十个交易日公司股票交易均价和前一个交易日公司股票交易均价。"
+                "向下修正方案须经出席会议的股东所持表决权的三分之二以上通过。",
+            ),
+            make_unit(
+                "text06::redemption-put", "text06",
+                "到期赎回条款：具体赎回价格将提请股东大会授权董事会根据市场情况与保荐机构（主承销商）协商确定。"
+                "本次发行的可转债最后两个计息年度，可转债持有人在每年回售条件首次满足后可行使回售权一次，不能多次行使部分回售权。",
+            ),
+            make_unit("text11::other", "text11", "其他发行人的可转换公司债券发行条款。"),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "初始转股价格不低于募集说明书公告日前二十个交易日公司股票交易均价和前一个交易日交易均价",
+            "B": "转股价格向下修正方案须经出席会议的股东所持表决权的三分之二以上通过",
+            "C": "到期赎回价格由董事会根据市场情况直接确定，无需股东大会授权",
+            "D": "有条件回售条款仅在最后两个计息年度内触发，且每年只能行使一次",
+        }
+        question = Question(
+            qid="unseen_convertible_rights", domain="financial_contracts", split="B",
+            question="关于鼎捷数智可转换公司债券的发行条款。",
+            options=options, answer_format="multi", type="多选题", doc_ids=["text11", "text06"],
+        )
+        self.assert_bundle_labels(solver, question, {"A": True, "B": True, "C": False, "D": True}, "text06")
+
 
 class FinancialReportMetricBundleTests(unittest.TestCase):
     @staticmethod

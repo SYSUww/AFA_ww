@@ -5788,3 +5788,439 @@
   "token_accounting_complete": true
 }
 ```
+
+## b-loop-financial-contracts-subject-clause-binding-a2-option-subjects
+
+- recorded_at: `2026-07-21T23:47:30+00:00`
+
+```json
+{
+  "answered_qids": [
+    "fc_b_003",
+    "fc_b_006",
+    "fc_b_018"
+  ],
+  "attempt_index": 2,
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 519,
+    "prompt_tokens": 10212,
+    "total_tokens": 10731
+  },
+  "blind_pairs": {
+    "fc_b_003": {
+      "candidate_label": "B",
+      "evaluation": {
+        "confidence": 95,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "B的答案ABCD均由目标文件text03的可验证证据直接支持：交叉保护情形下10个交易日内恢复承诺要求支持A；无法按时还本付息时给予自原约定给付日起90个自然日宽限期支持B；争议解决为向发行人住所所在地有管辖权法院诉讼支持C；违反交叉保护且未在期限内恢复时持有人可要求采取负面事项救济措施支持D。A仅选择BD，遗漏了有明确证据支持的A、C，且其主要证据多来自非目标主体文件text14等，证据相关性和可验证性明显不足。",
+        "winner": "B"
+      },
+      "incumbent_label": "A",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "token_usage": {
+        "completion_tokens": 519,
+        "prompt_tokens": 10212,
+        "total_tokens": 10731
+      }
+    }
+  },
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contracts_subject_clause_binding/option_subject_clause_bundle_a2_v2_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "code_hash": "380ed31d8c12e6c5620a7ddf1c17f49a99c6f5043c1e97bf020671415631e099",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "clause_families": [
+            "investor_protection",
+            "subscription_commitment",
+            "convertible_rights"
+          ],
+          "group_by": [
+            "document_identity",
+            "option_subject",
+            "clause_role"
+          ],
+          "option_level_issuer_binding": true,
+          "selection": "uncovered_clause_first"
+        },
+        "domains": [
+          "financial_contracts"
+        ],
+        "hypothesis": "extending subject binding to option-level multi-document issuers and complete covenant, subscription, conversion, redemption, and put clause roles resolves remaining financial-contract evidence gaps.",
+        "pipeline_stage": "retrieval",
+        "question_types": [
+          "mcq"
+        ],
+        "root_cause_cluster": "choice_evidence_coverage",
+        "target_qids": [
+          "fc_b_003",
+          "fc_b_006",
+          "fc_b_018"
+        ]
+      }
+    },
+    "context_sha256": "93200c56be52611f027361982ab65b01eea03feb1d30df31b41a36425b72f63e",
+    "direction_sha256": "25c569bdc8efb527203dfb3c34089c5e6c06d3e3b55e88dca32c77e8141d84e5",
+    "schema_version": 1,
+    "semantic_sha256": "2fd803204eb97a35a393aabc4c0efde2a90f5daed1452e7c6b84d702f06048e4",
+    "sha256": "f44ddd580810ba090c90087a070f9877d605e908ea1fba96a4794b49dc5ccdb2"
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 32,
+    "high": 41,
+    "low": 2,
+    "medium": 25
+  },
+  "causal_promoted_tiers": {
+    "blocked": 31,
+    "high": 42,
+    "low": 2,
+    "medium": 25
+  },
+  "change_vector": {
+    "clause_families": [
+      "investor_protection",
+      "subscription_commitment",
+      "convertible_rights"
+    ],
+    "group_by": [
+      "document_identity",
+      "option_subject",
+      "clause_role"
+    ],
+    "option_level_issuer_binding": true,
+    "selection": "uncovered_clause_first"
+  },
+  "changed_answer_qids": [
+    "fc_b_003"
+  ],
+  "code_hash": "380ed31d8c12e6c5620a7ddf1c17f49a99c6f5043c1e97bf020671415631e099",
+  "comparable_attempt_count_after": 2,
+  "comparable_attempt_count_before": 1,
+  "confidence_after": {
+    "fc_b_003": 82,
+    "fc_b_006": 45,
+    "fc_b_018": 30
+  },
+  "confidence_before": {
+    "fc_b_003": 0,
+    "fc_b_006": 58,
+    "fc_b_018": 35
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "financial_contracts_subject_clause_binding",
+  "direction_status": "active",
+  "domains": [
+    "financial_contracts"
+  ],
+  "effective_branch": "codex/b榜-loop-i014-financial-contract-option-subjects",
+  "evaluator_failed_attempts_not_in_usage": 0,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 83292,
+    "prompt_tokens": 492737,
+    "total_tokens": 576029
+  },
+  "generation_token_usage": {
+    "completion_tokens": 1773,
+    "prompt_tokens": 20749,
+    "total_tokens": 22522
+  },
+  "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+  "generator_model": "gpt-5.5",
+  "history_decision": "refine_existing",
+  "history_reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+  "history_related_experiment_ids": [
+    "b-loop-financial-contracts-subject-clause-binding-a1"
+  ],
+  "history_similarity": 0.779524,
+  "hypothesis": "Extending subject binding to option-level multi-document issuers and complete covenant, subscription, conversion, redemption, and put clause roles resolves remaining financial-contract evidence gaps.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 131,
+    "tests_passed": true,
+    "token_accounting_complete": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contracts_subject_clause_binding/option_subject_clause_bundle_a2_v2_composite",
+  "lessons": [
+    "Exact subject recovery must search the full corpus when the lexical locator omits a referenced issuer document.",
+    "More complete evidence is not sufficient for promotion when the fixed judge reports dimension regressions; keep unchanged-answer evidence variants out of the incumbent.",
+    "Partial promotion isolates the causal gain and preserves the prior artifacts for rejected targets."
+  ],
+  "material_delta": {
+    "new_clause_families": true,
+    "option_level_multi_document_binding": true,
+    "unchanged_answer_evidence_upgrade": true
+  },
+  "next_root_causes": [
+    "remaining_financial_contract_clause_coverage_attempt_3",
+    "financial_contract_table_metric_recovery",
+    "research_multi_clause_choice_coverage",
+    "remaining_fin_b_010_evidence_sufficiency"
+  ],
+  "pipeline_stage": "retrieval",
+  "preflight_attempts": [
+    {
+      "observed_answer": {
+        "fc_b_003": "ABCD",
+        "fc_b_006": "B",
+        "fc_b_018": "ABD"
+      },
+      "root_cause": "Exact option-subject recovery was limited to the locator shortlist; text05 was omitted, causing fc_b_006 option C to fall back to the model.",
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contracts_subject_clause_binding/option_subject_clause_bundle_a2",
+      "status": "refined_before_evaluation",
+      "token_usage": {
+        "completion_tokens": 1773,
+        "prompt_tokens": 20749,
+        "total_tokens": 22522
+      }
+    },
+    {
+      "observed_answer": {
+        "fc_b_003": "ABCD",
+        "fc_b_006": "B",
+        "fc_b_018": "ABD"
+      },
+      "root_cause_resolution": "Recover exact option-subject documents from the full financial-contract corpus while retaining question-bound document guards.",
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contracts_subject_clause_binding/option_subject_clause_bundle_a2_v2",
+      "status": "accepted_for_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      }
+    }
+  ],
+  "promoted_qids": [
+    "fc_b_003"
+  ],
+  "promoted_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contracts_subject_clause_binding/option_subject_clause_bundle_a2_v2_promoted",
+  "promotion_decisions": {
+    "fc_b_003": {
+      "blind_required": true,
+      "blind_winner": "B",
+      "candidate_blind_label": "B",
+      "promote": true,
+      "reasons": [],
+      "score_delta": 82,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fc_b_006": {
+      "blind_required": false,
+      "promote": false,
+      "reasons": [
+        "dimension_regressed:alternative_exclusion",
+        "dimension_regressed:answer_entailment",
+        "dimension_regressed:citation_alignment",
+        "dimension_regressed:evidence_sufficiency",
+        "dimension_regressed:overall_confidence",
+        "insufficient_confidence_gain"
+      ],
+      "score_delta": -13,
+      "tier_after": "low",
+      "tier_before": "low"
+    },
+    "fc_b_018": {
+      "blind_required": false,
+      "promote": false,
+      "reasons": [
+        "dimension_regressed:alternative_exclusion",
+        "insufficient_confidence_gain"
+      ],
+      "score_delta": -5,
+      "tier_after": "blocked",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_result": "promoted",
+  "promotion_scope": "partial",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "mcq"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 31,
+    "high": 48,
+    "low": 5,
+    "medium": 16
+  },
+  "reason": "Option-subject binding raised fc_b_003 from 0 blocked to 82 high and the changed ABCD answer won blind A/B at confidence 95. fc_b_006 and fc_b_018 did not improve and were explicitly rejected from the incumbent overlay.",
+  "recorded_at": "2026-07-21T23:47:30+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [
+    "fc_b_006",
+    "fc_b_018"
+  ],
+  "root_cause_cluster": "choice_evidence_coverage",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failures": 0,
+      "sentinels_passed": true,
+      "token_accounting_complete": true
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "fc_b_003"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 9,
+          "blocked_low_before": 10,
+          "low_tier_improved_qids": [
+            "fc_b_003"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 85,
+          "p10_before": 85,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 9,
+          "blocked_low_before": 9,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 60,
+          "p10_before": 60,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 15,
+          "blocked_low_before": 15,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_004": -10,
+        "fc_b_006": -13,
+        "fc_b_012": 3,
+        "fc_b_013": 3,
+        "fc_b_014": 10,
+        "fc_b_017": -4,
+        "fc_b_018": -5,
+        "fc_b_019": -13,
+        "fin_b_002": -5,
+        "fin_b_004": -5,
+        "fin_b_006": -5,
+        "fin_b_007": 3,
+        "fin_b_009": -2,
+        "fin_b_010": -3,
+        "fin_b_011": -3,
+        "fin_b_014": 5,
+        "fin_b_015": 3,
+        "fin_b_019": -2,
+        "fin_b_020": 3,
+        "ins_b_002": 5,
+        "ins_b_004": 7,
+        "ins_b_005": 3,
+        "ins_b_007": 2,
+        "ins_b_008": 10,
+        "ins_b_010": -20,
+        "ins_b_012": -3,
+        "ins_b_014": 10,
+        "ins_b_016": 8,
+        "ins_b_020": 5,
+        "reg_b_004": 10,
+        "reg_b_005": 10,
+        "reg_b_007": 5,
+        "reg_b_008": -4,
+        "reg_b_009": -23,
+        "reg_b_013": -3,
+        "reg_b_014": -5,
+        "reg_b_015": 2,
+        "reg_b_016": -15,
+        "reg_b_017": -3,
+        "reg_b_018": -5,
+        "reg_b_021": 16,
+        "reg_b_023": 10,
+        "reg_b_024": -4,
+        "reg_b_025": 2,
+        "reg_b_027": -6,
+        "res_b_001": 2,
+        "res_b_007": -5,
+        "res_b_013": -10,
+        "res_b_015": 8
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_019",
+        "ins_b_004",
+        "ins_b_010",
+        "reg_b_005",
+        "reg_b_009",
+        "reg_b_021",
+        "reg_b_023",
+        "res_b_013",
+        "res_b_015"
+      ]
+    },
+    "reasons": [],
+    "tests": {
+      "count": 131,
+      "passed": true
+    },
+    "valid": true
+  },
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "fc_b_003",
+    "fc_b_006",
+    "fc_b_018"
+  ],
+  "token_accounting_complete": true,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 83811,
+    "prompt_tokens": 502949,
+    "total_tokens": 586760
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 85584,
+    "prompt_tokens": 523698,
+    "total_tokens": 609282
+  }
+}
+```
