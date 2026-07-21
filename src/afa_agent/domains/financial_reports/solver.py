@@ -407,6 +407,8 @@ class FinancialReportsSolver:
             self._midea_statement_scope_rule,
             self._byd_cross_year_amount_rule,
             self._cscec_original_basis_rule,
+            self._solvency_metric_bundle_rule,
+            self._research_expense_rate_bundle_rule,
         ):
             result = rule(question, option_text)
             if result is not None:
@@ -729,6 +731,190 @@ class FinancialReportsSolver:
         match = re.search(r"比例为\s*(\d+(?:\.\d+)?)%", text)
         return float(match.group(1)) if match else None
 
+    def _solvency_metric_bundle_rule(self, question: Question, option_text: str):
+        if "资产负债率、流动比率和速动比率" in question.question:
+            doc_hints = {"比亚迪": "byd", "宁德时代": "catl", "美的集团": "midea"}
+            tables: dict[str, tuple[dict[str, list[float]], dict[str, Any]]] = {}
+            for company, hint in doc_hints.items():
+                doc_id = self._company_year_doc(question.doc_ids, hint, "2025")
+                result = self._solvency_table(doc_id) if doc_id else None
+                if result is None:
+                    return None
+                tables[company] = result
+            ratios = {company: values for company, (values, _) in tables.items()}
+            if "三家公司 2025 年资产负债率均较 2024 年下降" in option_text:
+                label = all(values["资产负债率"][0] < values["资产负债率"][1] for values in ratios.values())
+            elif "2025 年资产负债率由低到高排序" in option_text:
+                expected_order = ["美的集团", "宁德时代", "比亚迪"]
+                actual_order = sorted(expected_order, key=lambda company: ratios[company]["资产负债率"][0])
+                label = actual_order == expected_order
+            elif "比亚迪 2025 年流动比率和速动比率均较 2024 年上升" in option_text:
+                values = ratios["比亚迪"]
+                label = values["流动比率"][0] > values["流动比率"][1] and values["速动比率"][0] > values["速动比率"][1]
+            elif "宁德时代 2025 年流动比率和速动比率均较 2024 年上升" in option_text:
+                values = ratios["宁德时代"]
+                label = values["流动比率"][0] > values["流动比率"][1] and values["速动比率"][0] > values["速动比率"][1]
+            else:
+                return None
+            reason = "偿债指标束：" + "；".join(
+                f"{company}资产负债率{values['资产负债率'][0]:.2f}%/{values['资产负债率'][1]:.2f}%，"
+                f"流动比率{values['流动比率'][0]:g}/{values['流动比率'][1]:g}，"
+                f"速动比率{values['速动比率'][0]:g}/{values['速动比率'][1]:g}"
+                for company, values in ratios.items()
+            )
+            return label, reason, [self._unit_to_evidence(unit, 999.0) for _, unit in tables.values()]
+
+        if not ("2023—2025 年偿债指标" in question.question and "比亚迪" in question.question and "宁德时代" in question.question):
+            return None
+        byd_2025 = self._company_year_doc(question.doc_ids, "byd", "2025")
+        byd_2024 = self._company_year_doc(question.doc_ids, "byd", "2024")
+        catl_2025 = self._company_year_doc(question.doc_ids, "catl", "2025")
+        catl_2024 = self._company_year_doc(question.doc_ids, "catl", "2024")
+        if not all((byd_2025, byd_2024, catl_2025, catl_2024)):
+            return None
+        byd_balance = self._solvency_table(byd_2025)
+        catl_balance = self._solvency_table(catl_2025)
+        byd_current = self._interest_coverage_table(byd_2025)
+        byd_prior = self._interest_coverage_table(byd_2024)
+        catl_current = self._interest_coverage_table(catl_2025)
+        catl_prior = self._interest_coverage_table(catl_2024)
+        if not all((byd_balance, catl_balance, byd_current, byd_prior, catl_current, catl_prior)):
+            return None
+        catl_assets = [
+            catl_prior[0]["资产负债率"][1],
+            catl_balance[0]["资产负债率"][1],
+            catl_balance[0]["资产负债率"][0],
+        ]
+        catl_interest = [
+            catl_prior[0]["利息保障倍数"][1],
+            catl_current[0]["利息保障倍数"][1],
+            catl_current[0]["利息保障倍数"][0],
+        ]
+        byd_cash = [
+            byd_prior[0]["现金利息保障倍数"][1],
+            byd_current[0]["现金利息保障倍数"][1],
+            byd_current[0]["现金利息保障倍数"][0],
+        ]
+        byd_balance_values = byd_balance[0]["资产负债率"]
+        byd_interest_values = byd_current[0]["利息保障倍数"]
+        byd_cash_values = byd_current[0]["现金利息保障倍数"]
+        byd_cash_relative_decline = (byd_cash[0] - byd_cash[2]) / byd_cash[0] * 100
+        catl_interest_relative_growth = (catl_interest[2] - catl_interest[0]) / catl_interest[0] * 100
+
+        if "宁德时代资产负债率连续下降，利息保障倍数连续上升" in option_text:
+            label = all(left > right for left, right in zip(catl_assets, catl_assets[1:])) and all(
+                left < right for left, right in zip(catl_interest, catl_interest[1:])
+            )
+        elif "比亚迪现金利息保障倍数由 2023 年" in option_text and "百分点" in option_text:
+            expected = self._extract_expected_points(option_text)
+            label = expected is not None and abs((byd_cash[0] - byd_cash[2]) - expected) <= 0.02
+        elif "宁德时代利息保障倍数 2025 年较 2023 年提高" in option_text and "百分点" in option_text:
+            expected = self._extract_expected_points(option_text)
+            label = expected is not None and abs((catl_interest[2] - catl_interest[0]) - expected) <= 0.02
+        elif "比亚迪 2025 年资产负债率下降" in option_text and "均较 2024 年下降" in option_text:
+            label = (
+                byd_balance_values[0] < byd_balance_values[1]
+                and byd_interest_values[0] < byd_interest_values[1]
+                and byd_cash_values[0] < byd_cash_values[1]
+            )
+        else:
+            return None
+        reason = (
+            f"三年偿债指标束：宁德时代资产负债率2023/2024/2025为{catl_assets[0]:.2f}%/"
+            f"{catl_assets[1]:.2f}%/{catl_assets[2]:.2f}%，利息保障倍数为"
+            f"{catl_interest[0]:g}/{catl_interest[1]:g}/{catl_interest[2]:g}（相对增长"
+            f"{catl_interest_relative_growth:.2f}%）；比亚迪现金利息保障倍数为"
+            f"{byd_cash[0]:g}/{byd_cash[1]:g}/{byd_cash[2]:g}（相对下降{byd_cash_relative_decline:.2f}%），"
+            "倍数的相对变化不能表述为百分点。"
+        )
+        evidence_units = [
+            byd_balance[1], byd_current[1], byd_prior[1],
+            catl_balance[1], catl_current[1], catl_prior[1],
+        ]
+        unique = {unit["unit_id"]: unit for unit in evidence_units}
+        return label, reason, [self._unit_to_evidence(unit, 999.0) for unit in unique.values()]
+
+    def _research_expense_rate_bundle_rule(self, question: Question, option_text: str):
+        if not (
+            "宁德时代与美的集团" in question.question
+            and "研发费用及研发费用占营业收入比例" in question.question
+        ):
+            return None
+        catl_doc = self._company_year_doc(question.doc_ids, "catl", "2025")
+        midea_doc = self._company_year_doc(question.doc_ids, "midea", "2025")
+        if not catl_doc or not midea_doc:
+            return None
+        catl_unit = self._find_unit(catl_doc, required=("研发投入金额", "研发投入占营业收入比例", "2025年", "2024年"))
+        midea_unit = self._find_unit(midea_doc, required=("研发费用金额", "研发费用占营业收入比例"))
+        if catl_unit is None or midea_unit is None:
+            return None
+        catl_amount = self._extract_row_numbers(catl_unit.get("text", ""), "研发投入金额")
+        catl_rate = self._extract_row_numbers(catl_unit.get("text", ""), "研发投入占营业收入比例")
+        midea_amount = self._extract_row_numbers(midea_unit.get("text", ""), "研发费用金额")
+        midea_rate = self._extract_row_numbers(midea_unit.get("text", ""), "研发费用占营业收入比例")
+        if min(len(catl_amount), len(catl_rate), len(midea_amount), len(midea_rate)) < 2:
+            return None
+        catl_amount_growth = (catl_amount[0] - catl_amount[1]) / catl_amount[1] * 100
+        catl_revenue_growth = (
+            (catl_amount[0] / (catl_rate[0] / 100)) / (catl_amount[1] / (catl_rate[1] / 100)) - 1
+        ) * 100
+        midea_amount_growth = (midea_amount[0] - midea_amount[1]) / midea_amount[1] * 100
+        catl_rate_change = catl_rate[0] - catl_rate[1]
+        midea_rate_change = midea_rate[0] - midea_rate[1]
+        current_rate_difference = catl_rate[0] - midea_rate[0]
+        if "两家公司 2025 年研发费用占营业收入比例均较 2024 年上升" in option_text:
+            label = catl_rate_change > 0 and midea_rate_change > 0
+        elif "宁德时代 2025 年研发费用增幅高于营业收入增幅" in option_text:
+            label = catl_amount_growth > catl_revenue_growth and catl_rate_change > 0
+        elif "美的集团 2025 年研发费用金额增长约" in option_text and "研发费用率下降" in option_text:
+            expected = [
+                float(value)
+                for value in re.findall(r"(\d+(?:\.\d+)?)\s*(?:%|个百分点)", option_text)
+            ]
+            label = (
+                len(expected) >= 2
+                and abs(midea_amount_growth - expected[0]) <= 0.02
+                and abs(abs(midea_rate_change) - expected[1]) <= 0.01
+                and midea_rate_change < 0
+            )
+        elif "宁德时代研发费用率比美的集团高约" in option_text:
+            expected = self._extract_expected_points(option_text)
+            label = expected is not None and abs(current_rate_difference - expected) <= 0.01
+        else:
+            return None
+        reason = (
+            f"研发费用率束：宁德时代研发投入增幅{catl_amount_growth:.2f}%、反推营业收入增幅"
+            f"{catl_revenue_growth:.2f}%，研发投入率{catl_rate[1]:.2f}%→{catl_rate[0]:.2f}%；"
+            f"美的研发费用增幅{midea_amount_growth:.2f}%，研发费用率{midea_rate[1]:.2f}%→"
+            f"{midea_rate[0]:.2f}%；2025年两者费率差{current_rate_difference:.2f}个百分点。"
+        )
+        return label, reason, [self._unit_to_evidence(catl_unit, 999.0), self._unit_to_evidence(midea_unit, 999.0)]
+
+    def _solvency_table(self, doc_id: str) -> tuple[dict[str, list[float]], dict[str, Any]] | None:
+        unit = self._find_unit(doc_id, required=("流动比率", "资产负债率", "速动比率"))
+        if unit is None:
+            return None
+        values = {
+            key: self._extract_row_numbers(unit.get("text", ""), key)
+            for key in ("流动比率", "资产负债率", "速动比率")
+        }
+        if any(len(row) < 2 for row in values.values()):
+            return None
+        return values, unit
+
+    def _interest_coverage_table(self, doc_id: str) -> tuple[dict[str, list[float]], dict[str, Any]] | None:
+        unit = self._find_unit(doc_id, required=("利息保障倍数", "现金利息保障倍数"))
+        if unit is None:
+            return None
+        values = {
+            "利息保障倍数": self._extract_row_numbers(unit.get("text", ""), "利息保障倍数"),
+            "现金利息保障倍数": self._extract_row_numbers(unit.get("text", ""), "现金利息保障倍数"),
+            "资产负债率": self._extract_row_numbers(unit.get("text", ""), "资产负债率"),
+        }
+        if len(values["利息保障倍数"]) < 2 or len(values["现金利息保障倍数"]) < 2:
+            return None
+        return values, unit
+
     def _metric_series(self, doc_id: str, metric_key: str) -> tuple[float, float, float | None, dict[str, Any]] | None:
         units = self.metric_index.get(doc_id, {}).get(metric_key, [])
         unit, rate = self._choose_best_growth_unit(units, metric_key)
@@ -784,10 +970,10 @@ class FinancialReportsSolver:
 
     @staticmethod
     def _extract_row_numbers(text: str, label: str) -> list[float]:
-        line = next((line for line in text.splitlines() if label in line), "")
+        line = next((line for line in text.splitlines() if label in line and "|" in line), "")
         values: list[float] = []
         for segment in line.split("|"):
-            token = segment.strip().replace(",", "")
+            token = segment.strip().replace(",", "").removesuffix("%")
             if not re.fullmatch(r"\(?-?\d+(?:\.\d+)?\)?", token):
                 continue
             negative = token.startswith("(") and token.endswith(")")

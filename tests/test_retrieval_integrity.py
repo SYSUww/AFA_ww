@@ -329,6 +329,117 @@ class FinancialReportMetricBundleTests(unittest.TestCase):
         labels = {key: solver._choice_metric_bundle_rule(question, option)[0] for key, option in options.items()}
         self.assertEqual(labels, {"A": True, "B": False, "C": True, "D": False})
 
+    def test_solvency_bundle_compares_three_companies(self) -> None:
+        units = [
+            make_unit(
+                "byd::solvency", "annual_byd_2025_report",
+                "流动比率 | 0.79 | 0.75 | 5.33%\n资产负债率 | 70.74% | 74.64% | -3.90%\n"
+                "速动比率 | 0.42 | 0.47 | -10.64%",
+            ),
+            make_unit(
+                "catl::solvency", "annual_catl_2025_report",
+                "流动比率 | 1.60 | 1.61 | -0.62%\n资产负债率 | 61.94% | 65.24% | -3.30%\n"
+                "速动比率 | 1.36 | 1.42 | -4.23%",
+            ),
+            make_unit(
+                "midea::solvency", "annual_midea_2025_report",
+                "流动比率 | 121.34% | 110.59% | 10.75%\n资产负债率 | 61.17% | 62.33% | -1.16%\n"
+                "速动比率 | 94.60% | 85.94% | 8.66%",
+            ),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "三家公司 2025 年资产负债率均较 2024 年下降",
+            "B": "按 2025 年资产负债率由低到高排序为：美的集团、宁德时代、比亚迪",
+            "C": "比亚迪 2025 年流动比率和速动比率均较 2024 年上升",
+            "D": "宁德时代 2025 年流动比率和速动比率均较 2024 年上升",
+        }
+        question = Question(
+            qid="fin_b_004", domain="financial_reports", split="B",
+            question="比较比亚迪、宁德时代和美的集团 2024 年、2025 年年度报告中的资产负债率、流动比率和速动比率。",
+            options=options, answer_format="multi", type="多选题",
+            doc_ids=["annual_byd_2025_report", "annual_catl_2025_report", "annual_midea_2025_report"],
+        )
+        labels = {key: solver._choice_metric_bundle_rule(question, option)[0] for key, option in options.items()}
+        self.assertEqual(labels, {"A": True, "B": True, "C": False, "D": False})
+
+    def test_solvency_bundle_preserves_ratio_units_across_three_years(self) -> None:
+        units = [
+            make_unit(
+                "byd::2025-balance", "annual_byd_2025_report",
+                "流动比率 | 0.79 | 0.75\n资产负债率 | 70.74% | 74.64%\n速动比率 | 0.42 | 0.47",
+            ),
+            make_unit(
+                "byd::2025-interest", "annual_byd_2025_report",
+                "利息保障倍数 | 16.58 | 24.73\n现金利息保障倍数 | 33.38 | 88.70",
+            ),
+            make_unit(
+                "byd::2024-interest", "annual_byd_2024_report",
+                "利息保障倍数 | 24.73 | 21.39\n现金利息保障倍数 | 88.70 | 128.98",
+            ),
+            make_unit(
+                "catl::2025-balance", "annual_catl_2025_report",
+                "流动比率 | 1.60 | 1.61\n资产负债率 | 61.94% | 65.24%\n速动比率 | 1.36 | 1.42",
+            ),
+            make_unit(
+                "catl::2025-interest", "annual_catl_2025_report",
+                "利息保障倍数 | 31.95 | 16.16\n现金利息保障倍数 | 54.51 | 28.61",
+            ),
+            make_unit(
+                "catl::2024-interest", "annual_catl_2024_report",
+                "流动比率 | 1.61 | 1.57\n资产负债率 | 65.24% | 69.34%\n速动比率 | 1.42 | 1.41\n"
+                "利息保障倍数 | 16.16 | 15.35\n现金利息保障倍数 | 28.61 | 27.47",
+            ),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "宁德时代资产负债率连续下降，利息保障倍数连续上升",
+            "B": "比亚迪现金利息保障倍数由 2023 年的 128.98 降至 2025 年的 33.38，共下降约 74.12 个百分点",
+            "C": "宁德时代利息保障倍数 2025 年较 2023 年提高约 108.14 个百分点",
+            "D": "比亚迪 2025 年资产负债率下降，但利息保障倍数和现金利息保障倍数均较 2024 年下降",
+        }
+        question = Question(
+            qid="fin_b_010", domain="financial_reports", split="B",
+            question="根据比亚迪与宁德时代 2023—2025 年偿债指标。",
+            options=options, answer_format="multi", type="多选题",
+            doc_ids=[
+                "annual_byd_2024_report", "annual_byd_2025_report",
+                "annual_catl_2024_report", "annual_catl_2025_report",
+            ],
+        )
+        labels = {key: solver._choice_metric_bundle_rule(question, option)[0] for key, option in options.items()}
+        self.assertEqual(labels, {"A": True, "B": False, "C": False, "D": True})
+
+    def test_research_expense_rate_bundle_replays_amount_and_rate_changes(self) -> None:
+        units = [
+            make_unit(
+                "catl::research", "annual_catl_2025_report",
+                "项目 | 2025年 | 2024年 | 2023年\n"
+                "研发投入金额(千元) | 22,146,581 | 18,606,756 | 18,356,108\n"
+                "研发投入占营业收入比例 | 5.23% | 5.14% | 4.58%",
+            ),
+            make_unit(
+                "midea::research", "annual_midea_2025_report",
+                "研发费用金额(千元) | 17,787,624 | 16,232,771 | 9.58%\n"
+                "研发费用占营业收入比例 | 3.90% | 3.99% | -0.09%",
+            ),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "两家公司 2025 年研发费用占营业收入比例均较 2024 年上升",
+            "B": "宁德时代 2025 年研发费用增幅高于营业收入增幅，因此研发费用率小幅上升",
+            "C": "美的集团 2025 年研发费用金额增长约 9.58%，但研发费用率下降 0.09 个百分点",
+            "D": "2025 年宁德时代研发费用率比美的集团高约 1.33 个百分点",
+        }
+        question = Question(
+            qid="fin_b_009", domain="financial_reports", split="B",
+            question="根据宁德时代与美的集团 2024 年、2025 年年度报告中的研发费用及研发费用占营业收入比例。",
+            options=options, answer_format="multi", type="多选题",
+            doc_ids=["annual_catl_2025_report", "annual_midea_2025_report"],
+        )
+        labels = {key: solver._choice_metric_bundle_rule(question, option)[0] for key, option in options.items()}
+        self.assertEqual(labels, {"A": False, "B": True, "C": True, "D": True})
+
 
 class RegulatoryCompositeClauseTests(unittest.TestCase):
     @staticmethod

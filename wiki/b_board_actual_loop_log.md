@@ -4953,3 +4953,411 @@
   "token_accounting_complete": false
 }
 ```
+
+## b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios
+
+- recorded_at: `2026-07-21T22:57:23+00:00`
+
+```json
+{
+  "answered_qids": [
+    "fin_b_004",
+    "fin_b_009",
+    "fin_b_010"
+  ],
+  "attempt_index": 3,
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 705,
+    "prompt_tokens": 4820,
+    "total_tokens": 5525
+  },
+  "blind_pairs": {
+    "fin_b_009": {
+      "candidate_label": "B",
+      "evaluation": {
+        "confidence": 94,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "证据显示：美的集团2025年研发费用率为3.90%，2024年为3.99%，下降0.09个百分点，因此A选项“均上升”错误，C正确；宁德时代2025年研发投入占营业收入比例为5.23%，2024年为5.14%，上升0.09个百分点，且研发投入金额由18,606,756千元增至22,146,581千元，研发投入增幅可验证高于由投入额/投入占比反推的营业收入增幅，因此B正确；2025年宁德时代研发费用率5.23%与美的集团3.90%相差约1.33个百分点，D正确。A答案仅选CD，遗漏了有证据和可计算支持的B；B答案BCD更完整、更受证据支持。",
+        "winner": "B"
+      },
+      "incumbent_label": "A",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "token_usage": {
+        "completion_tokens": 705,
+        "prompt_tokens": 4820,
+        "total_tokens": 5525
+      }
+    }
+  },
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_reports_metric_bundle/remaining_ratio_roles_a3_v2_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "code_hash": "6f19c5874ecf97b52dd09ab61a2fddb9901e551cf697b2321796cf420548cd58",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "group_by": [
+            "company",
+            "report_year",
+            "metric_role"
+          ],
+          "ratio_unit_semantics_guard": true,
+          "research_expense_rate_replay": true,
+          "selection": "remaining_financial_ratio_bundle",
+          "solvency_time_series": true
+        },
+        "domains": [
+          "financial_reports"
+        ],
+        "hypothesis": "binding remaining solvency time-series and research-expense-rate rows by company, year, and metric role resolves the final financial-report choice evidence gaps while preserving ratio-unit semantics.",
+        "pipeline_stage": "retrieval",
+        "question_types": [
+          "mcq"
+        ],
+        "root_cause_cluster": "choice_evidence_coverage",
+        "target_qids": [
+          "fin_b_004",
+          "fin_b_009",
+          "fin_b_010"
+        ]
+      }
+    },
+    "context_sha256": "e43169a4c6a6e460c367bd9beae7355fad09f87fca266c5dc8169ed058e424c7",
+    "direction_sha256": "6e7de72d2b5ea3cf7e3b5a7a654d96c95a473c173feafda5c2507e9c46c8d32a",
+    "schema_version": 1,
+    "semantic_sha256": "67c73585c9555b470393aa1c17a034ec0bf2c244e56047ae445ef40e84300195",
+    "sha256": "280f8b6b8069d19498e6f5f29ddf30b15b919ad67da4b8f0f2c94f2399542794"
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 38,
+    "high": 36,
+    "low": 1,
+    "medium": 25
+  },
+  "causal_promoted_tiers": {
+    "blocked": 35,
+    "high": 38,
+    "low": 2,
+    "medium": 25
+  },
+  "change_vector": {
+    "group_by": [
+      "company",
+      "report_year",
+      "metric_role"
+    ],
+    "ratio_unit_semantics_guard": true,
+    "research_expense_rate_replay": true,
+    "selection": "remaining_financial_ratio_bundle",
+    "solvency_time_series": true
+  },
+  "changed_answer_qids": [
+    "fin_b_009"
+  ],
+  "code_hash": "6f19c5874ecf97b52dd09ab61a2fddb9901e551cf697b2321796cf420548cd58",
+  "comparable_attempt_count_after": 3,
+  "comparable_attempt_count_before": 2,
+  "confidence_after": {
+    "fin_b_004": 85,
+    "fin_b_009": 90,
+    "fin_b_010": 50
+  },
+  "confidence_before": {
+    "fin_b_004": 0,
+    "fin_b_009": 35,
+    "fin_b_010": 30
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "financial_reports_company_year_metric_bundle",
+  "direction_status": "exhausted",
+  "domains": [
+    "financial_reports"
+  ],
+  "effective_branch": "codex/b榜-loop-i012-financial-report-remaining-ratios",
+  "evaluator_failed_attempts_not_in_usage": 0,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 83580,
+    "prompt_tokens": 486549,
+    "total_tokens": 570129
+  },
+  "generation_token_usage": {
+    "completion_tokens": 1177,
+    "prompt_tokens": 3325,
+    "total_tokens": 4502
+  },
+  "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+  "generator_model": "gpt-5.5",
+  "history_decision": "refine_existing",
+  "history_reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+  "history_related_experiment_ids": [
+    "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+    "b-loop-financial-reports-company-year-metric-bundle-a1"
+  ],
+  "history_similarity": 0.789441,
+  "hypothesis": "Binding remaining solvency time-series and research-expense-rate rows by company, year, and metric role resolves the final financial-report choice evidence gaps while preserving ratio-unit semantics.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 125,
+    "tests_passed": true,
+    "token_accounting_complete": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_reports_metric_bundle/remaining_ratio_roles_a3_v2_composite",
+  "material_delta": {
+    "research_rate_reverse_calculation": true,
+    "solvency_arithmetic": true,
+    "three_year_sequence": true
+  },
+  "next_root_causes": [
+    "financial_contracts_subject_clause_binding",
+    "research_multi_clause_choice_coverage",
+    "evidence_serialization_unique_backfill",
+    "remaining_fin_b_010_evidence_sufficiency"
+  ],
+  "pipeline_stage": "retrieval",
+  "preflight_attempts": [
+    {
+      "observed_answer": {
+        "fin_b_004": "AB",
+        "fin_b_009": "CD",
+        "fin_b_010": "AD"
+      },
+      "reason": "The row extractor matched a section heading containing 研发投入金额 before the pipe-delimited data row, so fin_b_009 fell back to the model and still omitted B.",
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_reports_metric_bundle/remaining_ratio_roles_a3",
+      "status": "refined_before_evaluation",
+      "token_usage": {
+        "completion_tokens": 1177,
+        "prompt_tokens": 3325,
+        "total_tokens": 4502
+      }
+    },
+    {
+      "observed_answer": {
+        "fin_b_004": "AB",
+        "fin_b_009": "BCD",
+        "fin_b_010": "AD"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_reports_metric_bundle/remaining_ratio_roles_a3_v2",
+      "status": "accepted_for_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      }
+    }
+  ],
+  "promoted_qids": [
+    "fin_b_004",
+    "fin_b_009",
+    "fin_b_010"
+  ],
+  "promotion_decisions": {
+    "fin_b_004": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 85,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fin_b_009": {
+      "blind_required": true,
+      "blind_winner": "B",
+      "candidate_blind_label": "B",
+      "promote": true,
+      "reasons": [],
+      "score_delta": 55,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fin_b_010": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 20,
+      "tier_after": "low",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "mcq"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 36,
+    "high": 38,
+    "low": 5,
+    "medium": 21
+  },
+  "reason": "Remaining financial ratio bundles promoted fin_b_004 to 85 high, fin_b_009 to 90 high, and fin_b_010 to 50 low. The only changed answer, fin_b_009 BCD, won blind A/B at confidence 94. Financial-report low-tail count fell from 3 to 1 and p10 rose from 25 to 82.",
+  "recorded_at": "2026-07-21T22:57:23+00:00",
+  "rejected_qids": [],
+  "root_cause_cluster": "choice_evidence_coverage",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failures": 0,
+      "sentinels_passed": true,
+      "token_accounting_complete": true
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "fin_b_004",
+        "fin_b_009",
+        "fin_b_010"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 13,
+          "blocked_low_before": 13,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 3,
+          "low_tier_improved_qids": [
+            "fin_b_004",
+            "fin_b_009",
+            "fin_b_010"
+          ],
+          "p10_after": 82,
+          "p10_before": 25,
+          "p10_delta": 57
+        },
+        "insurance": {
+          "blocked_low_after": 7,
+          "blocked_low_before": 7,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 65,
+          "p10_before": 65,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 15,
+          "blocked_low_before": 15,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": true,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_001": -2,
+        "fc_b_003": -5,
+        "fc_b_005": -4,
+        "fc_b_006": -25,
+        "fc_b_013": -15,
+        "fc_b_016": -10,
+        "fc_b_018": 5,
+        "fc_b_019": -3,
+        "fin_b_001": 3,
+        "fin_b_002": -5,
+        "fin_b_003": -1,
+        "fin_b_006": 5,
+        "fin_b_007": 3,
+        "fin_b_008": -4,
+        "fin_b_011": -4,
+        "fin_b_015": -4,
+        "fin_b_016": 10,
+        "fin_b_019": -3,
+        "ins_b_002": 5,
+        "ins_b_004": -15,
+        "ins_b_005": -10,
+        "ins_b_006": 6,
+        "ins_b_007": 4,
+        "ins_b_008": -5,
+        "ins_b_010": -14,
+        "ins_b_014": 6,
+        "ins_b_016": -4,
+        "ins_b_017": 27,
+        "ins_b_018": -10,
+        "ins_b_020": -2,
+        "reg_b_003": 15,
+        "reg_b_005": -10,
+        "reg_b_007": 1,
+        "reg_b_008": -10,
+        "reg_b_009": -3,
+        "reg_b_013": 12,
+        "reg_b_015": 4,
+        "reg_b_016": -5,
+        "reg_b_017": -6,
+        "reg_b_020": -3,
+        "reg_b_024": -6,
+        "reg_b_025": -12,
+        "reg_b_027": -4,
+        "res_b_001": 3,
+        "res_b_005": 5,
+        "res_b_007": -5,
+        "res_b_013": 5,
+        "res_b_015": 8
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_006",
+        "fc_b_013",
+        "ins_b_004",
+        "ins_b_005",
+        "ins_b_010",
+        "ins_b_014",
+        "ins_b_016",
+        "ins_b_017",
+        "reg_b_003",
+        "reg_b_005",
+        "reg_b_025",
+        "reg_b_027"
+      ]
+    },
+    "reasons": [],
+    "tests": {
+      "count": 125,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_reports_metric_bundle/remaining_ratio_roles_a3_v2",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "fin_b_004",
+    "fin_b_009",
+    "fin_b_010"
+  ],
+  "token_accounting_complete": true
+}
+```
