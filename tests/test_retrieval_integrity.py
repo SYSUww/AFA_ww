@@ -965,6 +965,101 @@ class ResearchFinancialClauseBundleTests(unittest.TestCase):
         )
         self.assert_labels(solver=self.make_solver(units), question=question, expected={"A": True, "B": False, "C": True, "D": False})
 
+    def test_source_control_bundle_distinguishes_operational_control_and_asset_ownership(self) -> None:
+        units = [
+            make_unit(
+                "chicken::chain", "chicken",
+                "公司构建覆盖种源育种、食品深加工至终端销售的全产业生态闭环；育种、饲料、养殖到屠宰、"
+                "食品深加工各环节均为自有。下游订单需求反向指导上游养殖出栏节奏，实现供需精准匹配，"
+                "并通过食品加工延伸下游增值链条。",
+            ),
+            make_unit(
+                "commerce::quality", "commerce",
+                "公司推出透明工厂并建立严格的质量检验机制，通过用户调研持续优化产品配方，确保原材料到终端产品"
+                "全链条品质可控；供应链选品和提高品控能力支撑自营品发展。",
+            ),
+            make_unit(
+                "commerce::store", "commerce",
+                "线下旗舰店成为直播电商机构强化消费者品牌心智、打造长期品牌的重要载体。",
+            ),
+        ]
+        question = Question(
+            qid="res_b_002", domain="research", split="B",
+            question="一家白羽肉鸡全产业链龙头与一家直播电商公司推行一体化或自营战略。",
+            options={
+                "A": "前者向上游延伸至种源育种，后者向上游延伸至产品配方和透明工厂，两者都通过控制源头建立品质壁垒",
+                "B": "前者重资产、后者轻资产，因此后者不具备供应链控制力",
+                "C": "线下旗舰店与深加工厂都向下游延伸，前者偏品牌体验、后者偏产品增值",
+                "D": "原材料低迷时前者扩大出栏量，后者要求供应商降价维持毛利率",
+            },
+            answer_format="multi", type="多选题", doc_ids=["chicken", "commerce"],
+        )
+        self.assert_labels(solver=self.make_solver(units), question=question, expected={"A": True, "B": False, "C": True, "D": False})
+
+    def test_brand_building_bundle_rejects_absolute_rankings_and_binds_customer_recognition(self) -> None:
+        units = [
+            make_unit(
+                "chicken::brand", "chicken",
+                "品牌+渠道双轮驱动形成品牌溢价，C端零售渠道快速增长，品牌矩阵持续完善且品牌价值不断提升。",
+            ),
+            make_unit(
+                "pet::risk", "pet",
+                "公司布局智能养宠硬件，但跨界布局缺乏成熟运营经验；宠物经济赛道竞争激烈、头部集中，"
+                "存在产品同质化、市场教育及供应链壁垒。",
+            ),
+            make_unit(
+                "commerce::transition", "commerce",
+                "公司从流量驱动迈向产品驱动，长期信任关系要求优质内容供给与供应链选品共同支撑。",
+            ),
+            make_unit(
+                "equipment::recognition", "equipment",
+                "针对特征参数小的产品推出设备组合并获得国内外客户一致认可；高可靠加工方案具备产能与交付区位优势，"
+                "已获得行业龙头认可。焊线机凭借稳定性上的优势获得行业龙头企业意向订单。",
+            ),
+        ]
+        question = Question(
+            qid="res_b_018", domain="research", split="B",
+            question="四家分属不同行业的企业都面临品牌化挑战，哪些品牌化难度判断符合实际？",
+            options={
+                "A": "从B端向C端延伸的品牌化难度最大，因为农产品差异化小且鸡肉品牌认知低",
+                "B": "宠物经济品牌化难度最小，因为宠物智能硬件仍是蓝海且已有全球渠道",
+                "C": "从渠道品牌向产品品牌转型，需要维持内容热度与产品品质双轮驱动",
+                "D": "设备品牌需要以技术参数、稳定性和持续交付能力建立客户认可",
+            },
+            answer_format="multi", type="多选题", doc_ids=["chicken", "pet", "commerce", "equipment"],
+        )
+        self.assert_labels(solver=self.make_solver(units), question=question, expected={"A": False, "B": False, "C": True, "D": True})
+
+    def test_globalization_bundle_combines_multi_region_capacity_with_solution_output(self) -> None:
+        units = [
+            make_unit(
+                "capacity::regions", "capacity",
+                "头部企业形成产能落地与全球协同模式，同时布局欧洲市场和东南亚市场；欧洲项目契合欧盟本土化率要求，"
+                "用于规避贸易壁垒；东南亚市场则利用劳动力成本优势和政策激励。",
+            ),
+            make_unit(
+                "auto::standards", "auto",
+                "合资平台由中方主导定义，中国开始反向输出技术标准。",
+            ),
+            make_unit(
+                "rfid::solutions", "rfid",
+                "企业通过定制化解决方案输出，为海外客户提供硬件+软件+实施+运维一体化服务，获取持续性收入；"
+                "全球营销网络和国际收入体现定制化服务能力。",
+            ),
+        ]
+        question = Question(
+            qid="res_b_020", domain="research", split="B",
+            question="多个行业提到全球化布局或出海战略，哪些中国企业出海逻辑有充分依据？",
+            options={
+                "A": "出海主要目的地集中在东南亚，因为劳动力成本低且贸易壁垒少",
+                "B": "出海不仅是产能转移，更是技术标准和服务能力输出",
+                "C": "服务消费通过跨境旅游和免税实现，与制造业出海模式完全不同",
+                "D": "为对冲地缘风险和关税壁垒，在海外多区域布局产能已成为确定性趋势",
+            },
+            answer_format="multi", type="多选题", doc_ids=["capacity", "auto", "rfid"],
+        )
+        self.assert_labels(solver=self.make_solver(units), question=question, expected={"A": False, "B": True, "C": False, "D": True})
+
 
 class FinancialReportMetricBundleTests(unittest.TestCase):
     @staticmethod

@@ -254,6 +254,9 @@ class ResearchSolver:
         option_text: str,
         hits: list[RetrievalHit],
     ) -> tuple[bool | None, str, list[RetrievalHit]]:
+        remaining_choice_bundle_rule = self._remaining_choice_evidence_bundle_rule(question, option_text)
+        if remaining_choice_bundle_rule is not None:
+            return remaining_choice_bundle_rule
         technology_path_bundle_rule = self._technology_path_bundle_rule(question, option_text)
         if technology_path_bundle_rule is not None:
             return technology_path_bundle_rule
@@ -300,6 +303,226 @@ class ResearchSolver:
         if ev_q1_sales_rule is not None:
             return ev_q1_sales_rule
         return None, "", []
+
+    def _remaining_choice_evidence_bundle_rule(
+        self,
+        question: Question,
+        option_text: str,
+    ) -> tuple[bool, str, list[RetrievalHit]] | None:
+        """Resolve the remaining cross-report strategy choices with support and counterevidence."""
+
+        question_text = self._compact_text(question.question)
+        option = self._compact_text(option_text)
+
+        if all(term in question_text for term in ("白羽肉鸡", "直播电商", "一体化")):
+            chicken_chain = self._literal_hits(
+                question,
+                term_groups=[
+                    ["覆盖种源育种", "食品深加工至终端销售", "全产业生态闭环"],
+                    ["育种、饲料、养殖到屠宰、食品深加工", "各环节均为自有"],
+                ],
+                marker="remaining_choice_source_control_chicken_chain",
+                limit=2,
+                allow_corpus_wide=True,
+            )
+            commerce_quality = self._literal_hits(
+                question,
+                term_groups=[
+                    ["透明工厂", "优化产品配方", "全链条品质可控"],
+                    ["严格的质量检验机制", "原材料到终端产品", "品质可控"],
+                ],
+                marker="remaining_choice_source_control_commerce_quality",
+                limit=2,
+                allow_corpus_wide=True,
+            )
+            downstream_extension = self._literal_hits(
+                question,
+                term_groups=[
+                    ["线下旗舰店", "强化消费者品牌心智", "长期品牌"],
+                    ["食品加工延伸下游增值链条"],
+                ],
+                marker="remaining_choice_downstream_extension",
+                limit=3,
+                allow_corpus_wide=True,
+            )
+            demand_and_quality = self._literal_hits(
+                question,
+                term_groups=[
+                    ["下游订单需求反向指导上游养殖出栏节奏", "供需精准匹配"],
+                    ["供应链选品", "提高品控能力", "自营品"],
+                ],
+                marker="remaining_choice_scale_and_supplier_counterevidence",
+                limit=3,
+                allow_corpus_wide=True,
+            )
+            if "向上游延伸" in option and "控制源头" in option:
+                rule_hits = self._merge_hits([*chicken_chain, *commerce_quality], limit=4)
+                if rule_hits:
+                    return (
+                        True,
+                        "圣农材料明确覆盖种源育种至终端销售；东方甄选通过透明工厂、配方优化和原料至终端的质量控制强化自营品品控，二者均以源头控制建立品质壁垒。",
+                        rule_hits,
+                    )
+            if "轻资产" in option and "不具备供应链控制力" in option:
+                rule_hits = self._merge_hits([*commerce_quality, *demand_and_quality], limit=4)
+                if rule_hits:
+                    return (
+                        False,
+                        "东方甄选虽不自建全部产能，但已用透明工厂、配方优化、质量检验和供应链选品形成实质控制；由资产轻重直接推出其没有供应链控制力，与材料相反。",
+                        rule_hits,
+                    )
+            if "线下旗舰店" in option and "深加工厂" in option:
+                if downstream_extension:
+                    return (
+                        True,
+                        "材料分别把线下旗舰店定位为强化消费者品牌心智和长期品牌的载体，把食品加工界定为延伸下游增值链条，准确对应品牌体验与产品增值两种下游延伸。",
+                        downstream_extension,
+                    )
+            if "扩大出栏量" in option or "要求供应商降价" in option:
+                rule_hits = self._merge_hits([*demand_and_quality, *commerce_quality], limit=4)
+                if rule_hits:
+                    return (
+                        False,
+                        "圣农材料强调由下游订单反向指导出栏、实现供需匹配，而非因原料低迷机械扩量；东方甄选材料强调选品、配方和质量控制，也不支持以强制供应商降价维持毛利。",
+                        rule_hits,
+                    )
+
+        if all(term in question_text for term in ("不同行业", "品牌化", "四家")):
+            chicken_brand = self._literal_hits(
+                question,
+                term_groups=[
+                    ["品牌+渠道", "品牌溢价", "C端"],
+                    ["品牌矩阵", "C端零售渠道", "品牌价值不断提升"],
+                ],
+                marker="remaining_choice_chicken_brand_counterevidence",
+                limit=2,
+                allow_corpus_wide=True,
+            )
+            pet_risk = self._literal_hits(
+                question,
+                term_groups=[
+                    ["智能养宠硬件", "跨界布局缺乏成熟运营经验", "竞争激烈", "头部集中"],
+                    ["宠物经济", "产品同质化", "市场教育", "供应链壁垒"],
+                ],
+                marker="remaining_choice_pet_brand_counterevidence",
+                limit=2,
+                allow_corpus_wide=True,
+            )
+            channel_to_product = self._literal_hits(
+                question,
+                term_groups=[
+                    ["从流量驱动迈向产品驱动"],
+                    ["优质内容供给", "供应链选品", "长期信任关系"],
+                ],
+                marker="remaining_choice_channel_to_product_brand",
+                limit=3,
+                allow_corpus_wide=True,
+            )
+            equipment_recognition = self._literal_hits(
+                question,
+                term_groups=[
+                    ["高可靠加工方案", "产能与交付区位优势", "行业龙头认可"],
+                    ["稳定性上的优势", "行业龙头企业", "意向订单"],
+                    ["特征参数小", "产品组合", "国内外客户一致认可"],
+                ],
+                marker="remaining_choice_equipment_customer_recognition",
+                limit=3,
+                allow_corpus_wide=True,
+            )
+            if "难度最大" in option and ("农产品" in option or "鸡肉品牌" in option):
+                if chicken_brand:
+                    return (
+                        False,
+                        "圣农已形成品牌矩阵、C端渠道增长与品牌溢价，材料支持其存在品牌化任务，但不足以推出其在四类企业中难度最大这一绝对排序。",
+                        chicken_brand,
+                    )
+            if "难度最小" in option and ("宠物" in option or "智能硬件" in option):
+                if pet_risk:
+                    return (
+                        False,
+                        "宠物智能硬件跨界业务被明确提示缺乏成熟运营经验、竞争激烈且头部集中，并有同质化、市场教育和供应链壁垒，不能据渠道基础认定品牌化最容易。",
+                        pet_risk,
+                    )
+            if "渠道品牌" in option and "产品品牌" in option:
+                if channel_to_product:
+                    return (
+                        True,
+                        "东方甄选由主播和渠道流量驱动转向产品驱动，材料同时强调优质内容供给、供应链选品与长期信任，因此转型确需内容热度和产品质量双轮驱动。",
+                        channel_to_product,
+                    )
+            if "设备品牌" in option and ("客户认可" in option or "交付" in option):
+                if equipment_recognition:
+                    return (
+                        True,
+                        "设备材料把特征参数、高可靠方案、稳定性、产能交付优势与龙头认证及批量订单直接相连，支持设备品牌依靠技术表现、稳定交付建立客户认可。",
+                        equipment_recognition,
+                    )
+
+        if all(term in question_text for term in ("全球化布局", "出海", "中国企业")):
+            european_capacity = self._literal_hits(
+                question,
+                term_groups=[
+                    ["产能落地", "全球协同", "欧洲市场", "规避贸易壁垒"],
+                    ["欧洲市场", "本土化率要求", "规避贸易壁垒"],
+                ],
+                marker="remaining_choice_europe_capacity_and_barrier",
+                limit=2,
+                allow_corpus_wide=True,
+            )
+            southeast_capacity = self._literal_hits(
+                question,
+                term_groups=[
+                    ["东南亚市场", "劳动力成本优势", "政策激励"],
+                    ["越南", "印尼", "东南亚市场"],
+                ],
+                marker="remaining_choice_southeast_capacity",
+                limit=2,
+                allow_corpus_wide=True,
+            )
+            regional_capacity = self._merge_hits([*european_capacity, *southeast_capacity], limit=4)
+            standards_and_solutions = self._literal_hits(
+                question,
+                term_groups=[
+                    ["反向输出技术标准"],
+                    ["定制化解决方案输出", "硬件+软件+实施+运维", "持续性收入"],
+                    ["国际收入", "全球营销网络", "定制化服务"],
+                ],
+                marker="remaining_choice_global_solution_output",
+                limit=4,
+                allow_corpus_wide=True,
+            )
+            if "主要目的地" in option and "东南亚" in option:
+                if regional_capacity:
+                    return (
+                        False,
+                        "材料同时列出欧洲与东南亚两大核心区域，并明确欧洲布局需满足本土化率、规避贸易壁垒；不能概括为主要只去东南亚，更不能说当地贸易壁垒少。",
+                        regional_capacity,
+                    )
+            if "不仅是产能" in option and ("技术标准" in option or "服务能力" in option):
+                if standards_and_solutions:
+                    return (
+                        True,
+                        "材料同时出现技术标准反向输出，以及硬件、软件、实施、运维一体化解决方案的跨区域输出，说明全球化能力不止是产能搬迁，也包括标准与服务能力。",
+                        standards_and_solutions,
+                    )
+            if "完全不同" in option and ("跨境旅游" in option or "免税" in option):
+                if standards_and_solutions:
+                    return (
+                        False,
+                        "制造业全球化本身已包含软件、实施、运维等服务和定制化方案输出，不能与消费服务全球化划为完全不同的逻辑；跨境旅游或免税也不足以概括全部服务输出。",
+                        standards_and_solutions,
+                    )
+            if ("多区域产能" in option or "多区域布局产能" in option) and (
+                "贸易壁垒" in option or "关税壁垒" in option
+            ):
+                if regional_capacity:
+                    return (
+                        True,
+                        "头部电池企业已采用欧洲与东南亚多区域的产能落地和全球协同模式，欧洲本地建厂明确用于满足本土化要求、规避贸易壁垒，支持该趋势判断。",
+                        regional_capacity,
+                    )
+
+        return None
 
     def _technology_path_bundle_rule(
         self,

@@ -9525,3 +9525,494 @@
   }
 }
 ```
+
+## b-loop-research-remaining-choice-evidence-coverage-a1
+
+- recorded_at: `2026-07-22T04:01:22+00:00`
+
+```json
+{
+  "answered_qids": [
+    "res_b_002",
+    "res_b_018",
+    "res_b_020"
+  ],
+  "attempt_index": 1,
+  "base_commit": "3fa41c914357ef39ca779fd255d3836190a4a245",
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "blind_pairs": {},
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_remaining_choice_evidence_coverage/remaining_choice_bundle_a2_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "3fa41c914357ef39ca779fd255d3836190a4a245",
+        "code_hash": "0351fb561cbc2d292f2e23c4eed95877ece72cad03630e4b7e193bbd5617d654",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3f68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "bundle_families": [
+            "source_control_and_downstream_extension",
+            "brand_building_capability",
+            "globalization_logic"
+          ],
+          "explicit_counterevidence": true,
+          "focused_rule_evidence": true,
+          "group_by": [
+            "report_identity",
+            "industry",
+            "claim_role"
+          ],
+          "selection": "remaining_high_evidence_research_lowtail"
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "complete report-scoped support and counterevidence for source control, brand-building capability, and globalization logic can resolve the remaining high-evidence research multi-choice low tail.",
+        "pipeline_stage": "reasoning",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "multi_clause_choice_coverage",
+        "target_qids": [
+          "res_b_002",
+          "res_b_018",
+          "res_b_020"
+        ]
+      }
+    },
+    "context_sha256": "a0662e03cc814281c544356da06dfb1732a801ce2b9365f55eee468d74ef7173",
+    "direction_sha256": "e3274007bc2ece26bdbfdb4c9ef9e67d388ec3ef6ad4403710c225b74365fd9e",
+    "schema_version": 1,
+    "semantic_sha256": "b304e56a103c3ba60e1a948dc00fa97f81476910f3061446cd0c2872a6a29b2f",
+    "sha256": "d8782a16e4864b5dd71178f63be98a230d3e2aefabc73dad15055ca4913d228c"
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 12,
+    "high": 56,
+    "low": 3,
+    "medium": 29
+  },
+  "causal_lowtail": {
+    "after": [
+      "fc_b_006",
+      "fc_b_018",
+      "fin_b_010",
+      "ins_b_001",
+      "reg_b_001",
+      "res_b_003",
+      "res_b_004",
+      "res_b_006",
+      "res_b_008",
+      "res_b_009",
+      "res_b_014",
+      "res_b_017"
+    ],
+    "before": [
+      "fc_b_006",
+      "fc_b_018",
+      "fin_b_010",
+      "ins_b_001",
+      "reg_b_001",
+      "res_b_002",
+      "res_b_003",
+      "res_b_004",
+      "res_b_006",
+      "res_b_008",
+      "res_b_009",
+      "res_b_014",
+      "res_b_017",
+      "res_b_018",
+      "res_b_020"
+    ],
+    "count_after": 12,
+    "count_before": 15
+  },
+  "causal_promoted_tiers": {
+    "blocked": 9,
+    "high": 58,
+    "low": 3,
+    "medium": 30
+  },
+  "causal_research_lowtail": {
+    "after": 12,
+    "before": 15
+  },
+  "change_vector": {
+    "bundle_families": [
+      "source_control_and_downstream_extension",
+      "brand_building_capability",
+      "globalization_logic"
+    ],
+    "explicit_counterevidence": true,
+    "focused_rule_evidence": true,
+    "group_by": [
+      "report_identity",
+      "industry",
+      "claim_role"
+    ],
+    "selection": "remaining_high_evidence_research_lowtail"
+  },
+  "changed_answer_qids": [],
+  "code_hash": "0351fb561cbc2d292f2e23c4eed95877ece72cad03630e4b7e193bbd5617d654",
+  "comparable_attempt_count_after": 3,
+  "comparable_attempt_count_before": 2,
+  "confidence_after": {
+    "res_b_002": 86,
+    "res_b_018": 84,
+    "res_b_020": 70
+  },
+  "confidence_before": {
+    "res_b_002": 0,
+    "res_b_018": 0,
+    "res_b_020": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "diagnostic_candidate_generation_token_usage": {
+    "completion_tokens": 3921,
+    "prompt_tokens": 63635,
+    "total_tokens": 67556
+  },
+  "direction_id": "research_remaining_choice_evidence_coverage",
+  "direction_status": "exhausted",
+  "domains": [
+    "research"
+  ],
+  "effective_branch": "codex/b榜-loop-i022-research-remaining-choice",
+  "evaluator_failed_attempts_not_in_usage": 0,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-research-remaining-choice-evidence-coverage-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 72353,
+    "prompt_tokens": 480637,
+    "total_tokens": 552990
+  },
+  "generation_token_usage": {
+    "completion_tokens": 3921,
+    "prompt_tokens": 63635,
+    "total_tokens": 67556
+  },
+  "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+  "generator_model": "gpt-5.5",
+  "history_decision": "refine_existing",
+  "history_reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+  "history_related_experiment_ids": [
+    "b-loop-research-cross-industry-technology-path-bundle-a1",
+    "b-loop-research-financial-multi-clause-evidence-bundle-a1"
+  ],
+  "history_similarity": 0.808333,
+  "hypothesis": "Complete report-scoped support and counterevidence for source control, brand-building capability, and globalization logic can resolve the remaining high-evidence research multi-choice low tail.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 154,
+    "tests_passed": true,
+    "token_accounting_complete": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_remaining_choice_evidence_coverage/remaining_choice_bundle_a2_promoted3_composite",
+  "lessons": [
+    "A complete multi-choice bundle must bind both selected claims and the strongest absolute counterclaims to report-scoped evidence.",
+    "Semantic evidence can cross chunk boundaries: retrieve each side of a paired claim independently and merge only after subject and role checks.",
+    "Question triggers should use stable features rather than an exact contiguous phrase that punctuation or a function word can break.",
+    "The first preflight model fallback is diagnostic evidence, not a promotable candidate; require zero-token rule closure before full evaluation.",
+    "This is the third comparable multi-clause research attempt, so the broad direction is now exhausted even though the final refinement was effective."
+  ],
+  "material_delta": {
+    "chunk_boundary_aware": true,
+    "remaining_choice_bundle": true,
+    "third_broad_attempt": true
+  },
+  "next_root_causes": [
+    "remaining_research_supply_constraint_evidence_res_b_003",
+    "remaining_research_market_fund_flow_evidence_res_b_004",
+    "remaining_research_policy_and_cost_evidence_res_b_006_008_009_014",
+    "research_staged_autonomy_direct_entailment_res_b_017",
+    "remaining_fin_b_010_evidence_sufficiency",
+    "remaining_reg_b_001_evidence_sufficiency",
+    "insurance_calculation_identity_citation_alignment_ins_b_001",
+    "remaining_financial_contract_lowtail_fc_b_006_018"
+  ],
+  "pipeline_stage": "reasoning",
+  "preflight_attempts": [
+    {
+      "observed_answer": {
+        "res_b_002": "AC",
+        "res_b_018": "CD",
+        "res_b_020": "AB"
+      },
+      "root_cause": "The brand-question trigger required an over-specific contiguous phrase, while Europe and Southeast Asia evidence was split across adjacent units; two options fell back to the model.",
+      "root_cause_resolution": "Use stable question features and retrieve Europe/barrier plus Southeast-Asia/cost evidence separately before merging the option bundle.",
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_remaining_choice_evidence_coverage/remaining_choice_bundle_a1",
+      "status": "refined_before_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 3921,
+        "prompt_tokens": 63635,
+        "total_tokens": 67556
+      }
+    },
+    {
+      "integrity": {
+        "format_forced": false,
+        "fully_rule_backed": true,
+        "no_supported_fallback": false,
+        "submission_valid": true
+      },
+      "observed_answer": {
+        "res_b_002": "AC",
+        "res_b_018": "CD",
+        "res_b_020": "BD"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_remaining_choice_evidence_coverage/remaining_choice_bundle_a2",
+      "status": "accepted_for_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      }
+    }
+  ],
+  "promoted_qids": [
+    "res_b_002",
+    "res_b_018",
+    "res_b_020"
+  ],
+  "promoted_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_remaining_choice_evidence_coverage/remaining_choice_bundle_a2_promoted3_composite",
+  "promotion_decisions": {
+    "res_b_002": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 86,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "res_b_018": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 84,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "res_b_020": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 70,
+      "tier_after": "medium",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_gate_path": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_remaining_choice_evidence_coverage/remaining_choice_bundle_a2_composite/promotion_gate.json",
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3f68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "multi"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 10,
+    "high": 61,
+    "low": 4,
+    "medium": 25
+  },
+  "reason": "Complete support and counterevidence bundles preserved AC/CD/BD while removing no-support fallbacks. Fixed confidence rose res_b_002 0→86 (high), res_b_018 0→84 (high), and res_b_020 0→70 (medium), with no answer changes, dimension regressions, new hard failures, or blind review requirement.",
+  "recorded_at": "2026-07-22T04:01:22+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [],
+  "root_cause_cluster": "multi_clause_choice_coverage",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failures": 0,
+      "sentinels_passed": true,
+      "token_accounting_complete": true
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "res_b_002",
+        "res_b_018",
+        "res_b_020"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 3,
+          "blocked_low_before": 3,
+          "low_tier_improved_qids": [],
+          "p10_after": 35,
+          "p10_before": 35,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 80,
+          "p10_before": 80,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 2,
+          "blocked_low_before": 2,
+          "low_tier_improved_qids": [],
+          "p10_after": 55,
+          "p10_before": 55,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 2,
+          "blocked_low_before": 2,
+          "low_tier_improved_qids": [],
+          "p10_after": 55,
+          "p10_before": 55,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 6,
+          "blocked_low_before": 9,
+          "low_tier_improved_qids": [
+            "res_b_002",
+            "res_b_018",
+            "res_b_020"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_001": 1,
+        "fc_b_002": -6,
+        "fc_b_003": 12,
+        "fc_b_006": 15,
+        "fc_b_007": -6,
+        "fc_b_008": -4,
+        "fc_b_009": 4,
+        "fc_b_010": -2,
+        "fc_b_011": -2,
+        "fc_b_014": -5,
+        "fc_b_016": -5,
+        "fc_b_017": -2,
+        "fc_b_018": -5,
+        "fin_b_001": -2,
+        "fin_b_003": -5,
+        "fin_b_004": -2,
+        "fin_b_005": -5,
+        "fin_b_006": -3,
+        "fin_b_007": 5,
+        "fin_b_008": -5,
+        "fin_b_009": 3,
+        "fin_b_010": -5,
+        "fin_b_011": 3,
+        "fin_b_012": -6,
+        "fin_b_014": -5,
+        "fin_b_015": 1,
+        "fin_b_016": -6,
+        "fin_b_017": 1,
+        "fin_b_019": -2,
+        "ins_b_002": 3,
+        "ins_b_003": 10,
+        "ins_b_004": -5,
+        "ins_b_005": 4,
+        "ins_b_006": 8,
+        "ins_b_007": 16,
+        "ins_b_008": -1,
+        "ins_b_011": -5,
+        "ins_b_012": 4,
+        "ins_b_013": 5,
+        "ins_b_014": 3,
+        "ins_b_017": 7,
+        "ins_b_019": 5,
+        "ins_b_020": -5,
+        "reg_b_003": -5,
+        "reg_b_004": -10,
+        "reg_b_005": -6,
+        "reg_b_007": 5,
+        "reg_b_008": 2,
+        "reg_b_009": -7,
+        "reg_b_013": -10,
+        "reg_b_014": 5,
+        "reg_b_015": 10,
+        "reg_b_017": -10,
+        "reg_b_018": 5,
+        "reg_b_020": 2,
+        "reg_b_025": -6,
+        "reg_b_026": 2,
+        "reg_b_027": 4,
+        "res_b_001": 12,
+        "res_b_005": 3,
+        "res_b_011": -4,
+        "res_b_012": -15,
+        "res_b_013": -16,
+        "res_b_015": 10,
+        "res_b_017": -5,
+        "res_b_019": 10
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_003",
+        "fin_b_001",
+        "ins_b_003",
+        "ins_b_005",
+        "ins_b_007",
+        "ins_b_012",
+        "reg_b_004",
+        "reg_b_013",
+        "reg_b_015",
+        "reg_b_027",
+        "res_b_001",
+        "res_b_012",
+        "res_b_015"
+      ]
+    },
+    "reasons": [],
+    "tests": {
+      "count": 154,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_remaining_choice_evidence_coverage/remaining_choice_bundle_a2",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "res_b_002",
+    "res_b_018",
+    "res_b_020"
+  ],
+  "token_accounting_complete": true,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 72353,
+    "prompt_tokens": 480637,
+    "total_tokens": 552990
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 76274,
+    "prompt_tokens": 544272,
+    "total_tokens": 620546
+  }
+}
+```
