@@ -397,8 +397,18 @@ class FinancialContractSubjectClauseTests(unittest.TestCase):
         self.assert_bundle_labels(
             solver,
             question,
-            {"A": True, "B": False, "C": True, "D": True},
+            {"A": True, "B": True, "C": True, "D": True},
             "text03",
+        )
+
+        universal_option = "发行人发生任何违约情形时，持有人均给予自原约定给付日起90个自然日的宽限期"
+        universal_hits = solver._targeted_literal_hits(question, "B", universal_option)
+        universal_result = solver._rule_override(question, "B", universal_option, universal_hits)
+        self.assertIsNotNone(universal_result)
+        self.assertFalse(universal_result["label"])
+        self.assertEqual(
+            universal_result["rule"],
+            "contract_default_grace_explicit_universal_scope",
         )
 
         scoped_option = "发行人无法按时还本付息时，债券持有人同意给予自原约定给付日起90个自然日的宽限期"

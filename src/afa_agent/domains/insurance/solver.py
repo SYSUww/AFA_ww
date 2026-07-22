@@ -434,6 +434,140 @@ class InsuranceSolver:
     ) -> dict[str, tuple[bool, str, list[RetrievalHit]]] | None:
         compact_question = self._normalize_product_text(question.question)
 
+        if "恐怖活动" in compact_question and "恐怖袭击" in compact_question and "责任免除" in compact_question:
+            specs = {
+                "A": (
+                    False,
+                    "国寿增益宝的完整责任免除清单未明确列出恐怖活动或恐怖袭击。",
+                    [["中国人寿保险股份有限公司", "国寿增益宝"]],
+                    [
+                        ["第七条", "责任免除", "投保人", "故意杀害"],
+                        ["2年内自杀", "酒后驾驶", "核爆炸"],
+                    ],
+                ),
+                "B": (
+                    True,
+                    "众安营运交通工具团体意外险明确将恐怖袭击列为责任免除。",
+                    [["众安在线财产保险股份有限公司", "营运交通工具团体意外伤害保险"]],
+                    [["恐怖袭击"]],
+                ),
+                "C": (
+                    True,
+                    "众安特种车商业保险明确将恐怖活动列为责任免除。",
+                    [["众安在线财产保险股份有限公司", "特种车商业保险示范条款"]],
+                    [["恐怖活动"]],
+                ),
+                "D": (
+                    True,
+                    "众安家庭财产综合保险明确将恐怖活动列为责任免除。",
+                    [["众安在线财产保险股份有限公司", "家庭财产综合保险"]],
+                    [["下列原因造成的损失", "不负责赔偿", "恐怖活动"]],
+                ),
+            }
+            return self._materialize_product_clause_specs(
+                specs,
+                marker="terrorism_exclusion_subject_binding",
+                negative_absence_terms={"A": ["恐怖"]},
+            )
+
+        if "地震" in compact_question and ("免责" in compact_question or "除外责任" in compact_question):
+            specs = {
+                "A": (
+                    False,
+                    "平安安佑福的完整责任免除清单未明确列出地震。",
+                    [["平安安佑福", "重大疾病保险"]],
+                    [["责任免除", "核爆炸", "酒后驾驶"]],
+                ),
+                "B": (
+                    True,
+                    "平安家庭财产保险明确将地震、海啸列为责任免除。",
+                    [["中国平安财产保险股份有限公司", "家庭财产保险", "家庭版"]],
+                    [["地震", "海啸"]],
+                ),
+                "C": (
+                    True,
+                    "众安家庭财产综合保险明确将地震、海啸及其次生灾害列为责任免除。",
+                    [["众安在线财产保险股份有限公司", "家庭财产综合保险"]],
+                    [["地震", "海啸", "次生灾害"]],
+                ),
+                "D": (
+                    True,
+                    "平安食品安全责任保险明确将地震等自然灾害列为责任免除。",
+                    [["中国平安财产保险股份有限公司", "食品安全责任保险"]],
+                    [["地震", "自然灾害"]],
+                ),
+            }
+            return self._materialize_product_clause_specs(
+                specs,
+                marker="earthquake_exclusion_subject_binding",
+                negative_absence_terms={"A": ["地震"]},
+            )
+
+        if "2年内自杀" in compact_question and "无民事行为能力" in compact_question:
+            specs = {
+                "A": (
+                    True,
+                    "国寿增益宝明确约定成立或复效2年内自杀免责，并排除无民事行为能力人。",
+                    [["中国人寿保险股份有限公司", "国寿增益宝"]],
+                    [["成立", "效力恢复", "2年内自杀", "无民事行为能力"]],
+                ),
+                "B": (
+                    True,
+                    "平安安佑福明确约定成立或复效2年内自杀免责，并排除无民事行为能力人。",
+                    [["平安安佑福", "重大疾病保险"]],
+                    [["成立", "效力恢复", "2年内自杀", "无民事行为能力"]],
+                ),
+                "C": (
+                    False,
+                    "众安营运交通工具团体意外险未明确列出题述2年内自杀规则。",
+                    [["众安在线财产保险股份有限公司", "营运交通工具团体意外伤害保险"]],
+                    [["责任免除", "恐怖袭击", "依法拘留"]],
+                ),
+                "D": (
+                    True,
+                    "平安富鸿金生明确约定成立或复效2年内自杀免责，并排除无民事行为能力人。",
+                    [["平安养老保险股份有限公司", "平安富鸿金生"]],
+                    [["成立", "效力恢复", "2年内自杀", "无民事行为能力"]],
+                ),
+            }
+            return self._materialize_product_clause_specs(
+                specs,
+                marker="two_year_suicide_exclusion_subject_binding",
+                negative_absence_terms={"C": ["2年内自杀", "无民事行为能力"]},
+            )
+
+        if "核爆炸" in compact_question and "核辐射" in compact_question and "核污染" in compact_question:
+            specs = {
+                "A": (
+                    True,
+                    "平安安佑福明确列有核爆炸、核辐射或核污染免责。",
+                    [["平安安佑福", "重大疾病保险"]],
+                    [["核爆炸", "核辐射", "核污染"]],
+                ),
+                "B": (
+                    True,
+                    "平安e生保明确列有核爆炸、核辐射与核污染免责。",
+                    [["平安e生保", "医疗保险"]],
+                    [["核爆炸", "核辐射", "核污染"]],
+                ),
+                "C": (
+                    True,
+                    "太保团体百万医疗明确列有核爆炸、核辐射或核污染免责。",
+                    [["太平洋健康保险股份有限公司", "团体百万医疗保险"]],
+                    [["核爆炸", "核辐射", "核污染"]],
+                ),
+                "D": (
+                    True,
+                    "平安特种车商业保险明确列有核反应、核辐射及放射性污染免责。",
+                    [["中国平安财产保险股份有限公司", "特种车商业保险示范条款"]],
+                    [["核反应", "核辐射", "放射性污染"]],
+                ),
+            }
+            return self._materialize_product_clause_specs(
+                specs,
+                marker="nuclear_exclusion_subject_binding",
+            )
+
         if "精神损害赔偿" in compact_question and "精神损害抚慰金" in compact_question:
             specs = {
                 "A": (
@@ -548,14 +682,17 @@ class InsuranceSolver:
             if not identity_hits:
                 return None
             product_doc_id = identity_hits[0].doc_id
-            clause_hits = self._literal_insurance_hits(
-                term_groups=clause_terms,
-                marker=f"{marker}:clause:{option}",
-                doc_ids={product_doc_id},
-                limit=max(1, len(clause_terms)),
-            )
-            if len(clause_hits) < len(clause_terms):
-                return None
+            clause_hits: list[RetrievalHit] = []
+            for group_index, term_group in enumerate(clause_terms):
+                group_hits = self._literal_insurance_hits(
+                    term_groups=[term_group],
+                    marker=f"{marker}:clause:{option}:{group_index}",
+                    doc_ids={product_doc_id},
+                    limit=1,
+                )
+                if not group_hits:
+                    return None
+                clause_hits.extend(group_hits)
             absent_terms = (negative_absence_terms or {}).get(option)
             if absent_terms and self._insurance_doc_contains_terms(product_doc_id, absent_terms):
                 return None

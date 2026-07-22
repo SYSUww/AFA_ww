@@ -24,7 +24,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--submission-template", default="upload_b/submit.csv")
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--model", default="gpt-5.6")
-    parser.add_argument("--output-name", default="evaluation_gpt56_error_audit_v7")
+    parser.add_argument("--output-name", default="evaluation_gpt56_error_audit_v9")
     parser.add_argument("--qid", action="append", default=[])
     parser.add_argument("--qid-file", default="")
     return parser.parse_args()

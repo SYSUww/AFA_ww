@@ -17,6 +17,7 @@ from afa_agent.b_board.evaluator import (
     ConfidenceEvaluation,
     FixedConfidenceEvaluator,
     build_calibration_subjects,
+    build_calibration_sentinels,
     confidence_tier,
     prompt_fingerprint,
     validate_calibration_sentinels,
@@ -84,8 +85,11 @@ def run_fixed_evaluation(
         allow_extra_answers=allow_extra_answers,
     )
     sentinel_subjects = {item["qid"]: item for item in build_calibration_subjects()}
-    if len(sentinel_subjects) != 6:
-        raise RuntimeError("the fixed evaluator must contain exactly six calibration sentinels")
+    expected_sentinel_count = len(build_calibration_sentinels())
+    if len(sentinel_subjects) != expected_sentinel_count:
+        raise RuntimeError(
+            "the fixed evaluator calibration subjects do not match their sentinel definitions"
+        )
 
     evaluator_identity = _evaluator_identity(model_config)
     fingerprint = _build_fingerprint(

@@ -90,7 +90,9 @@ class FakeEvaluationController:
                         raise RuntimeError(
                             "request to http://secret.example/v1 failed with Bearer sk-secret"
                         )
-                if qid.startswith(("wrong_", "irrelevant_", "missing_", "format_")):
+                if qid.startswith(
+                    ("wrong_", "irrelevant_", "missing_", "format_", "invented_")
+                ):
                     result = make_evaluation(qid, 20, "unsupported")
                 else:
                     result = make_evaluation(qid, 85, "supported")
@@ -136,15 +138,15 @@ class FixedEvaluationRunTests(unittest.TestCase):
             evaluator_factory=controller.factory,
         )
 
-    def test_complete_run_seals_answers_uses_six_sentinels_and_returns_aggregate(self) -> None:
+    def test_complete_run_seals_answers_uses_fixed_sentinels_and_returns_aggregate(self) -> None:
         controller = FakeEvaluationController()
 
         result = self.execute(controller)
 
         self.assertEqual(result.manifest["status"], "complete")
         self.assertEqual(result.manifest["expected_answer_count"], 2)
-        self.assertEqual(result.manifest["expected_sentinel_count"], 6)
-        self.assertEqual(len(controller.calls), 8)
+        self.assertEqual(result.manifest["expected_sentinel_count"], 7)
+        self.assertEqual(len(controller.calls), 9)
         self.assertEqual(result.aggregate["question_count"], 2)
         self.assertEqual(result.aggregate["tiers"], {"high": 2})
         self.assertEqual(set(result.evaluations), {"q1", "q2"})
@@ -173,7 +175,7 @@ class FixedEvaluationRunTests(unittest.TestCase):
         self.assertEqual(resumed.calls, ["q2"])
         self.assertEqual(result.manifest["status"], "complete")
         self.assertTrue(result.manifest["resumed"])
-        self.assertEqual(result.manifest["resumed_evaluation_count"], 7)
+        self.assertEqual(result.manifest["resumed_evaluation_count"], 8)
 
     def test_completed_run_is_idempotent_without_model_calls(self) -> None:
         self.execute(FakeEvaluationController())

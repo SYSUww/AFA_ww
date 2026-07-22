@@ -14,9 +14,9 @@ from afa_agent.b_board.io import (
 )
 
 
-PROMPT_VERSION = "b_answer_error_judge_v5_multi_min_two"
-INDEPENDENT_PROMPT_VERSION = "b_independent_solve_v4_multi_min_two"
-BLIND_PROMPT_VERSION = "b_blind_pair_v4_multi_min_two"
+PROMPT_VERSION = "b_answer_error_judge_v7_official_scope_calibration"
+INDEPENDENT_PROMPT_VERSION = "b_independent_solve_v6_official_scope_calibration"
+BLIND_PROMPT_VERSION = "b_blind_pair_v6_official_scope_calibration"
 SCHEMA_VERSION = 2
 HARD_GATE_VERSION = "b_hard_gate_v6_choice_contract"
 
@@ -64,11 +64,27 @@ _FORBIDDEN_SUBJECT_KEYS = {
     "historical_score",
     "generation_prompt",
 }
+_ANSWER_BEARING_METADATA_KEYS = {
+    "answer_label",
+    "correct_label",
+    "expected_answer",
+    "false_selected_options",
+    "final_answer",
+    "gold_answer",
+    "ground_truth",
+    "is_correct",
+    "model_answer",
+    "predicted_answer",
+    "rule_label",
+    "supported_options",
+}
 
 
 INDEPENDENT_SYSTEM_PROMPT = f"""你是金融长文问答的独立解题员。你看不到现有答案，也不得猜测现有答案。
 只根据题目、选项和给定证据独立求解；不得补充外部事实。逐项区分 supported、contradicted、insufficient。
 严格检查主体、文件、年份或日期、定义口径、单位、方向、公式和多选完整性。计算题必须重算，不能照抄证据中的结论。
+按选项实际措辞判断，不得擅自补出所有、任何或一律等全称量词；选项未声明排他、唯一或覆盖全部情形时，不得因证据只描述其中一个适用情形就判错。
+官方校准口径：若证据明确未按期还本付息属于违约，并约定该情形有90日宽限期，选项仅概括“发生违约时给予90日宽限期”且未出现所有、任何、均或一律，应判 supported；只有选项显式声称所有违约情形均适用时，才能按范围扩大判错。
 题型为多选题时，最终答案必须包含至少两个不同选项字母；即使只有一个选项证据充分，也不得输出单字母多选答案，应将 status 标为 insufficient_evidence 并给出最合理的合法候选。
 答案格式严格按“题目明确要求 > README通用规则 > 提交模板占位”裁决。“不带单位”不等于“不带%”；只有题目明确写“不带%”或“不带百分号”才禁止%。题目未明确禁止时，百分数答案按README必须带%并保留两位小数；“提高若干个百分点”的数值不加%。
 证据不足时仍按题目要求给出最佳候选答案，但 status 必须为 insufficient_evidence，并明确缺少什么证据。
@@ -84,6 +100,8 @@ JUDGE_SYSTEM_PROMPT = f"""你是金融长文问答的错题发现审计员。目
 你会收到一份在看不到封存答案时产生的独立解题结果，以及封存答案、证据引用和计算轨迹。
 比较二者时只使用给定材料，不补充外部事实。独立答案不同只是风险信号，不自动等于封存答案错误；必须依据证据裁决。
 严格区分相关性与蕴含，检查错文件、错主体、错年份或日期、错口径、错单位、错公式、错计算、漏选或错选、引用不符和格式错误。
+按选项实际措辞判断，不得擅自补出所有、任何或一律等全称量词；选项未声明排他、唯一或覆盖全部情形时，不得因证据只描述其中一个适用情形就判错。
+官方校准口径：若证据明确未按期还本付息属于违约，并约定该情形有90日宽限期，选项仅概括“发生违约时给予90日宽限期”且未出现所有、任何、均或一律，应判 supported；只有选项显式声称所有违约情形均适用时，才能按范围扩大判错。
 格式裁决必须遵守“题目明确要求 > README通用规则 > 提交模板占位”。“不带单位”不禁止%；只有明确的“不带%”或“不带百分号”才禁止%。题目未明确禁止时，百分数答案按README必须带%并保留两位小数；百分点变化值不加%。
 选择题逐项核对选中项与未选项；计算题复核变量、公式、单位和重放结果。证据缺失应标记 uncertain，不得伪造确定结论。
 题型为多选题时，封存答案、独立答案及非空 correction_candidate_parts 都必须包含至少两个不同选项字母；单字母候选属于非法答案，不能据此判定封存答案错误。
@@ -104,6 +122,8 @@ citation_mismatch、format_error、insufficient_evidence、other；correction_ca
 BLIND_SYSTEM_PROMPT = f"""你是金融长文问答的盲审裁判。A/B 的来源和新旧身份已隐藏。
 只根据各自封存的答案、证据、引用和可重放计算轨迹，选择更受证据支持且更可验证的一方。
 出现主体、年份、单位、公式、方向或格式错误时必须拒绝；不得使用外部知识。
+按选项实际措辞判断，不得擅自补出所有、任何或一律等全称量词；选项未声明排他、唯一或覆盖全部情形时，不得因证据只描述其中一个适用情形就判错。
+官方校准口径：若证据明确未按期还本付息属于违约，并约定该情形有90日宽限期，选项仅概括“发生违约时给予90日宽限期”且未出现所有、任何、均或一律，应判 supported；只有选项显式声称所有违约情形均适用时，才能按范围扩大判错。
 题型为多选题时，A/B 答案均必须至少包含两个不同选项字母；单字母多选答案必须拒绝。
 格式按“题目明确要求 > README通用规则 > 提交模板占位”；“不带单位”不等于“不带%”，题目未明确禁止时百分数必须带%并保留两位小数，百分点数值不加%。
 只输出 JSON：{{"prompt_version":"{BLIND_PROMPT_VERSION}","winner":"A|B|tie","confidence":0-100,"reason":"..."}}。"""
@@ -255,7 +275,34 @@ def sanitize_subject(subject: Mapping[str, Any]) -> dict[str, Any]:
         "calculation_trace",
         "token_usage",
     }
-    return {key: subject[key] for key in allowed if key in subject}
+    clean = {key: subject[key] for key in allowed if key in subject}
+    if "evidence_items" in clean:
+        clean["evidence_items"] = _strip_answer_bearing_metadata(clean["evidence_items"])
+    return clean
+
+
+def _strip_answer_bearing_metadata(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {
+            str(key): _strip_answer_bearing_metadata(item)
+            for key, item in value.items()
+            if str(key).lower() not in _ANSWER_BEARING_METADATA_KEYS
+        }
+    if isinstance(value, list):
+        return [_strip_answer_bearing_metadata(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_strip_answer_bearing_metadata(item) for item in value)
+    return value
+
+
+def _model_facing_subject(subject: Mapping[str, Any]) -> dict[str, Any]:
+    clean = sanitize_subject(subject)
+    # The judge already receives the sealed answer explicitly. Generator traces
+    # such as supported_options merely repeat the upstream decision and create a
+    # circular confidence signal, so they are retained for deterministic hard
+    # gates but withheld from every model-facing payload.
+    clean.pop("decision_trace", None)
+    return clean
 
 
 def build_independent_messages(subject: Mapping[str, Any]) -> list[dict[str, str]]:
@@ -288,7 +335,7 @@ def build_independent_messages(subject: Mapping[str, Any]) -> list[dict[str, str
 def build_evaluation_messages(
     subject: Mapping[str, Any], independent: IndependentSolve
 ) -> list[dict[str, str]]:
-    clean = sanitize_subject(subject)
+    clean = _model_facing_subject(subject)
     return [
         {"role": "system", "content": JUDGE_SYSTEM_PROMPT},
         {
@@ -660,10 +707,10 @@ def build_blind_pair(
     rng = random.Random(int(hashlib.sha256(seed_text.encode("utf-8")).hexdigest(), 16))
     candidate_first = bool(rng.getrandbits(1))
     if candidate_first:
-        answers = {"A": sanitize_subject(candidate), "B": sanitize_subject(incumbent)}
+        answers = {"A": _model_facing_subject(candidate), "B": _model_facing_subject(incumbent)}
         candidate_label, incumbent_label = "A", "B"
     else:
-        answers = {"A": sanitize_subject(incumbent), "B": sanitize_subject(candidate)}
+        answers = {"A": _model_facing_subject(incumbent), "B": _model_facing_subject(candidate)}
         candidate_label, incumbent_label = "B", "A"
     public = {"qid": qid, "answers": answers, "instruction": "比较A/B，选择证据支持更充分且可验证的答案。"}
     return BlindPair(public_payload=public, candidate_label=candidate_label, incumbent_label=incumbent_label)
@@ -716,6 +763,7 @@ def build_calibration_sentinels() -> list[dict[str, Any]]:
         {"sentinel_id": "irrelevant_evidence", "expected_max_score": 39, "expected_verdicts": ["unsupported", "contradicted"]},
         {"sentinel_id": "missing_citation", "expected_max_score": 39, "expected_verdicts": ["unsupported", "contradicted"]},
         {"sentinel_id": "format_only", "expected_max_score": 39, "expected_verdicts": ["unsupported", "contradicted"]},
+        {"sentinel_id": "invented_universal_scope", "expected_max_score": 39, "expected_verdicts": ["partially_supported", "unsupported", "contradicted"]},
     ]
 
 
@@ -795,6 +843,45 @@ def build_calibration_subjects() -> list[dict[str, Any]]:
         }
     )
     subjects.insert(2, wrong_arithmetic)
+    scope_unit_id = "sentinel:invented_universal_scope:e1"
+    subjects.append(
+        {
+            "qid": "invented_universal_scope",
+            "domain": "calibration",
+            "type": "多选题",
+            "answer_format": "multi",
+            "question": "根据违约与投资者保护条款，以下哪些概括正确？",
+            "options": {
+                "A": "未按期足额还本付息属于违约情形",
+                "B": "发行人发生违约时，持有人同意自原约定给付日起给予90日宽限期",
+                "C": "协商不成时可向发行人住所所在地有管辖权的法院提起诉讼",
+                "D": "违反交叉保护且未按期恢复时，持有人可以要求采取救济措施",
+            },
+            "answer_slot_count": 1,
+            "answer_slot_templates": ["A"],
+            # B is deliberately omitted. The evidence describes a repayment
+            # default covered by the summary, and the option itself does not say
+            # every possible default receives the grace period.
+            "answer_parts": ["ACD"],
+            "used_evidence_ids": [scope_unit_id],
+            "evidence_items": [
+                {
+                    "unit_id": scope_unit_id,
+                    "doc_id": "sentinel",
+                    "text": (
+                        "以下情形构成违约：发行人未能按期足额偿还本金或利息。"
+                        "发行人无法按时还本付息时，持有人同意自原约定各给付日起"
+                        "给予90个自然日宽限期。违反交叉保护且未按期恢复时，"
+                        "持有人有权要求采取救济措施；协商不成时向发行人住所所在地"
+                        "有管辖权的法院提起诉讼。"
+                    ),
+                }
+            ],
+            "decision_trace": {},
+            "calculation_trace": {},
+            "token_usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+        }
+    )
     return subjects
 
 

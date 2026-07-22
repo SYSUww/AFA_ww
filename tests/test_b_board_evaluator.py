@@ -119,6 +119,51 @@ class BBoardEvaluatorTests(unittest.TestCase):
             self.assertIn("保留两位小数", prompt)
             self.assertRegex(prompt, r"至少(?:包含)?两个")
 
+    def test_model_prompts_strip_generator_answer_labels_and_trace(self):
+        leaky_subject = subject(
+            type="多选题",
+            answer_format="multi",
+            options={"A": "甲", "B": "乙"},
+            answer_parts=["AB"],
+            evidence_items=[
+                {
+                    "unit_id": "u1",
+                    "text": "原始条款证据",
+                    "metadata": {
+                        "option_key": "B",
+                        "rule_label": False,
+                        "targeted_literal": True,
+                    },
+                }
+            ],
+            decision_trace={
+                "raw_answer": "A",
+                "answer_policy": {
+                    "final_answer": "A",
+                    "supported_options": ["A"],
+                },
+            },
+        )
+        independent = parse_independent_payload(
+            independent_payload(
+                answer_parts=["AB"],
+                option_assessments={"A": "supported", "B": "supported"},
+            ),
+            subject=leaky_subject,
+        )
+
+        independent_prompt = build_independent_messages(leaky_subject)[1]["content"]
+        judge_prompt = build_evaluation_messages(leaky_subject, independent)[1]["content"]
+
+        self.assertNotIn('"rule_label"', independent_prompt)
+        self.assertNotIn('"rule_label"', judge_prompt)
+        self.assertNotIn('"raw_answer"', judge_prompt)
+        self.assertNotIn('"supported_options"', judge_prompt)
+
+    def test_fixed_prompts_forbid_inventing_universal_quantifiers(self):
+        for prompt in (INDEPENDENT_SYSTEM_PROMPT, JUDGE_SYSTEM_PROMPT):
+            self.assertIn("不得擅自补出所有、任何或一律等全称量词", prompt)
+
     def test_subject_rejects_optimizer_metadata(self):
         with self.assertRaisesRegex(ValueError, "optimizer metadata"):
             build_independent_messages(subject(candidate_id="candidate"))
@@ -376,13 +421,35 @@ class BBoardEvaluatorTests(unittest.TestCase):
             suggested_improvements=(),
             hard_failures=(),
         )
-        evaluations = {name: low for name in ["wrong_year", "wrong_unit", "wrong_arithmetic", "irrelevant_evidence", "missing_citation", "format_only"]}
+        evaluations = {
+            name: low
+            for name in [
+                "wrong_year",
+                "wrong_unit",
+                "wrong_arithmetic",
+                "irrelevant_evidence",
+                "missing_citation",
+                "format_only",
+                "invented_universal_scope",
+            ]
+        }
         self.assertTrue(validate_calibration_sentinels(evaluations)["passed"])
 
     def test_calibration_subjects_are_structurally_valid(self):
         subjects = build_calibration_subjects()
-        self.assertEqual(len(subjects), 6)
-        self.assertEqual({item["qid"] for item in subjects}, {"wrong_year", "wrong_unit", "wrong_arithmetic", "irrelevant_evidence", "missing_citation", "format_only"})
+        self.assertEqual(len(subjects), 7)
+        self.assertEqual(
+            {item["qid"] for item in subjects},
+            {
+                "wrong_year",
+                "wrong_unit",
+                "wrong_arithmetic",
+                "irrelevant_evidence",
+                "missing_citation",
+                "format_only",
+                "invented_universal_scope",
+            },
+        )
         for item in subjects:
             self.assertEqual(detect_hard_failures(item), [], item["qid"])
 

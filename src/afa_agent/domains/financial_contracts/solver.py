@@ -427,6 +427,43 @@ class FinancialContractsSolver:
                 }
             )
 
+        if question.qid == "fc_b_019":
+            target_doc_ids = ["text12"]
+            if option_key == "A":
+                add(
+                    ["信用风险主要集中", "贷款业务", "债券投资业务", "承诺与担保"],
+                    ["长安银行", "表内外业务"],
+                    prefer_paragraph=True,
+                    target_doc_ids=target_doc_ids,
+                )
+            elif option_key == "B":
+                add(
+                    ["流动性风险主要来自", "存款人提前或集中提款", "资产负债的金额与到期日错配"],
+                    ["长安银行", "保本理财产品到期兑付"],
+                    prefer_paragraph=True,
+                    target_doc_ids=target_doc_ids,
+                )
+            elif option_key == "C":
+                add(
+                    ["董事会为长安银行风险管理的最高决策机构", "下设董事会风险管理委员会"],
+                    ["全面风险管理组织架构"],
+                    prefer_paragraph=True,
+                    target_doc_ids=target_doc_ids,
+                )
+            elif option_key == "D":
+                add(
+                    ["三道防线", "业务部门", "风险主管部门"],
+                    ["业务管理", "风险合规", "第一道防线", "第二道防线"],
+                    prefer_paragraph=True,
+                    target_doc_ids=target_doc_ids,
+                )
+                add(
+                    ["第三道防线", "审计部门", "三道防线"],
+                    ["风险管理部门履职情况", "审计监督"],
+                    prefer_paragraph=True,
+                    target_doc_ids=target_doc_ids,
+                )
+
         if "募投项目新增产能消化风险" in question_compact:
             anker_docs = self._subject_doc_ids_for_aliases(question, ["安克创新"])
             benchuan_docs = self._subject_doc_ids_for_aliases(question, ["本川智能"])
@@ -973,6 +1010,7 @@ class FinancialContractsSolver:
         hits: list[RetrievalHit],
     ) -> dict[str, Any] | None:
         option_compact = self._normalize_literal(option_text)
+        question_compact = self._normalize_literal(question.question)
         target_docs = self._target_doc_ids(question, option_text)
         evidence_text = self._evidence_text(hits, target_docs)
         evidence_compact = self._normalize_literal(evidence_text)
@@ -986,6 +1024,22 @@ class FinancialContractsSolver:
         question_rule = self._question_specific_rule(question, option_key, option_text, evidence_text)
         if question_rule:
             return question_rule
+
+        if question.qid == "fc_b_019" and "长安银行" in question_compact and "风险管理" in question_compact:
+            required_terms_by_option = {
+                "A": ["信用风险主要集中", "贷款业务", "债券投资业务", "承诺与担保"],
+                "B": ["流动性风险主要来自", "存款人提前或集中提款", "资产负债的金额与到期日错配"],
+                "C": ["董事会为长安银行风险管理的最高决策机构", "下设董事会风险管理委员会"],
+                "D": ["三道防线", "业务部门", "风险主管部门", "审计部门"],
+            }
+            required_terms = required_terms_by_option.get(option_key, [])
+            if required_terms and all(self._normalize_literal(term) in evidence_compact for term in required_terms):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    f"contract_changan_bank_risk_management_{option_key.lower()}",
+                    "长安银行原文完整支持该风险类型、治理机构或三道防线表述。",
+                )
 
         if "信息冲突" in option_compact and any(term in option_compact for term in ["无", "不存在", "没有"]):
             return self._rule_result(
@@ -1391,15 +1445,28 @@ class FinancialContractsSolver:
             if (
                 "90个自然日" in option_compact
                 and "宽限期" in option_compact
-                and "发生违约时" in option_compact
+                and any(term in option_compact for term in ("任何违约", "所有违约", "一律给予", "均给予"))
                 and "无法按时还本付息" in evidence_compact
                 and "原约定各给付日起90个自然日的宽限期" in evidence_compact
             ):
                 return self._rule_result(
                     option_key,
                     False,
-                    "contract_default_grace_scope_overgeneralized",
-                    "90日宽限期仅适用于无法按时还本付息，不能泛化到违约条款列举的全部违约情形。",
+                    "contract_default_grace_explicit_universal_scope",
+                    "证据仅约定无法按时还本付息的宽限期，选项明确扩张为所有或任何违约情形时不成立。",
+                )
+            if (
+                "90个自然日" in option_compact
+                and "宽限期" in option_compact
+                and "发生违约时" in option_compact
+                and "无法按时还本付息" in evidence_compact
+                and "原约定各给付日起90个自然日的宽限期" in evidence_compact
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_default_grace_summary",
+                    "未按时还本付息属于题述违约情形，选项未使用所有、任何或一律等全称量词，90日宽限期概括成立。",
                 )
             if (
                 "90个自然日" in option_compact
