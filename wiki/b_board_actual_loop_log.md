@@ -6224,3 +6224,546 @@
   }
 }
 ```
+
+## b-loop-financial-contracts-subject-clause-binding-a3-full-bundles
+
+- recorded_at: `2026-07-22T00:12:40+00:00`
+
+```json
+{
+  "answered_qids": [
+    "fc_b_004",
+    "fc_b_009",
+    "fc_b_010",
+    "fc_b_011",
+    "fc_b_015"
+  ],
+  "attempt_index": 3,
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 989,
+    "prompt_tokens": 24645,
+    "total_tokens": 25634
+  },
+  "blind_pairs": {
+    "fc_b_010": {
+      "candidate_label": "A",
+      "evaluation": {
+        "confidence": 95,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "A选择BCD，且其封存证据直接包含收入资产补偿公式：以累积承诺收入与累积实际收入差额为基础计算，并乘以交易作价及补偿义务人本次交易前持有宏济堂股份比例39.61%，支持C、D；同一证据还说明股份补偿不足时以现金补偿，支持B并排除A。B仅选BD，遗漏了由证据明确支持的C；且B的证据大量为无关材料，决策轨迹还标注无支持选项，整体可验证性明显弱于A。",
+        "winner": "A"
+      },
+      "incumbent_label": "B",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "token_usage": {
+        "completion_tokens": 323,
+        "prompt_tokens": 6201,
+        "total_tokens": 6524
+      }
+    },
+    "fc_b_011": {
+      "candidate_label": "A",
+      "evaluation": {
+        "confidence": 98,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "A答案为ABC，并引用了西部证券募集说明书中偿债能力分析及主要财务指标表，表内明确列示：2025年末资产负债率（扣除代理款）64.00%、流动比率1.83；2024年末62.47%、1.95；2023年末66.27%、1.91，因此A、B、C均正确，D的67.27%和1.89不符。B答案为AB，遗漏了同一证据可直接支持的C，且其证据大量来自非西部证券或无关文本，可验证性和相关性不足。",
+        "winner": "A"
+      },
+      "incumbent_label": "B",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "token_usage": {
+        "completion_tokens": 303,
+        "prompt_tokens": 8700,
+        "total_tokens": 9003
+      }
+    },
+    "fc_b_015": {
+      "candidate_label": "B",
+      "evaluation": {
+        "confidence": 98,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "题目要求选择错误说法。封存证据显示：力诺投资、力诺集团承诺本次取得股份自发行结束之日起36个月内不得转让，故A为正确说法；济南财投新动能、济南财金投资、济南鑫控亦承诺36个月不得转让，故B为正确说法；除上述主体外的其他交易对方通常为12个月，但若用于认购股份的资产持续拥有权益不足12个月，则锁定期为36个月，因此C将该情形说成12个月，错误；并非所有交易对方均承诺36个月，其他交易对方在满足条件时为12个月，故D错误。B选择CD，与证据一致且引用完整；A选择AC，错误地将受证据支持的A列为错误项，且漏选D。",
+        "winner": "B"
+      },
+      "incumbent_label": "A",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "token_usage": {
+        "completion_tokens": 363,
+        "prompt_tokens": 9744,
+        "total_tokens": 10107
+      }
+    }
+  },
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contracts_subject_clause_binding/full_section_table_bundle_a3_v3_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "code_hash": "a8edd3e0b02216b3860d5de126b46e0b8c23e15ecaf456d15268afbf32f93e8e",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "bundle_families": [
+            "concentration_regulation",
+            "depreciation_projection",
+            "compensation_formula",
+            "solvency_table",
+            "lockup_schedule"
+          ],
+          "focused_rule_evidence_serialization": true,
+          "group_by": [
+            "document_identity",
+            "section_identity",
+            "table_or_clause_bundle"
+          ],
+          "selection": "complete_bundle_before_option_decision"
+        },
+        "domains": [
+          "financial_contracts"
+        ],
+        "hypothesis": "subject-bound full-section and table-bundle retrieval recovers omitted rows and adjacent clauses needed to verify remaining financial-contract multi-choice answers end to end.",
+        "pipeline_stage": "context",
+        "question_types": [
+          "mcq"
+        ],
+        "root_cause_cluster": "choice_evidence_coverage",
+        "target_qids": [
+          "fc_b_004",
+          "fc_b_009",
+          "fc_b_010",
+          "fc_b_011",
+          "fc_b_015"
+        ]
+      }
+    },
+    "context_sha256": "b0e685a65ac79dd2ab3a77c9596567793c724c2019034da48928ac7a925f3e9b",
+    "direction_sha256": "2718d1218bd91dd2afde55fce6d081b6fc2a171e0159eef5e1597a91f6680498",
+    "schema_version": 1,
+    "semantic_sha256": "52ba82cb29dbaf7058805bf0f44b71f300f49cc1ab584546b19b49af87e71719",
+    "sha256": "fd6bd8c20b99aa05e8f51847e31658065d9dc890d2dd846504f923a037b8098f"
+  },
+  "causal_financial_contract_lowtail": {
+    "after": 4,
+    "before": 9
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 31,
+    "high": 42,
+    "low": 2,
+    "medium": 25
+  },
+  "causal_promoted_tiers": {
+    "blocked": 26,
+    "high": 47,
+    "low": 2,
+    "medium": 25
+  },
+  "change_vector": {
+    "bundle_families": [
+      "concentration_regulation",
+      "depreciation_projection",
+      "compensation_formula",
+      "solvency_table",
+      "lockup_schedule"
+    ],
+    "focused_rule_evidence_serialization": true,
+    "group_by": [
+      "document_identity",
+      "section_identity",
+      "table_or_clause_bundle"
+    ],
+    "selection": "complete_bundle_before_option_decision"
+  },
+  "changed_answer_qids": [
+    "fc_b_010",
+    "fc_b_011",
+    "fc_b_015"
+  ],
+  "code_hash": "a8edd3e0b02216b3860d5de126b46e0b8c23e15ecaf456d15268afbf32f93e8e",
+  "comparable_attempt_count_after": 3,
+  "comparable_attempt_count_before": 2,
+  "confidence_after": {
+    "fc_b_004": 88,
+    "fc_b_009": 92,
+    "fc_b_010": 90,
+    "fc_b_011": 90,
+    "fc_b_015": 95
+  },
+  "confidence_before": {
+    "fc_b_004": 25,
+    "fc_b_009": 0,
+    "fc_b_010": 0,
+    "fc_b_011": 0,
+    "fc_b_015": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "financial_contracts_subject_clause_binding",
+  "direction_status": "exhausted",
+  "domains": [
+    "financial_contracts"
+  ],
+  "effective_branch": "codex/b榜-loop-i015-financial-contract-full-bundles",
+  "evaluator_failed_attempts_not_in_usage": 0,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 78430,
+    "prompt_tokens": 491362,
+    "total_tokens": 569792
+  },
+  "generation_token_usage": {
+    "completion_tokens": 1305,
+    "prompt_tokens": 5008,
+    "total_tokens": 6313
+  },
+  "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+  "generator_model": "gpt-5.5",
+  "history_decision": "refine_existing",
+  "history_reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+  "history_related_experiment_ids": [
+    "b-loop-financial-contracts-subject-clause-binding-a1",
+    "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects"
+  ],
+  "history_similarity": 0.7,
+  "hypothesis": "Subject-bound full-section and table-bundle retrieval recovers omitted rows and adjacent clauses needed to verify remaining financial-contract multi-choice answers end to end.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 137,
+    "tests_passed": true,
+    "token_accounting_complete": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contracts_subject_clause_binding/full_section_table_bundle_a3_v3_composite",
+  "lessons": [
+    "Long financial-contract questions need a complete section or table bundle rather than the single highest-scoring row.",
+    "Match the source agreement's direct semantic sequence instead of a synthesized summary phrase.",
+    "When every option is rule-backed, serialize both support and counterevidence and suppress unrelated per-locator-document backfill.",
+    "This direction reached the three-comparable-attempt limit and must not be repeated without a new direction identity."
+  ],
+  "material_delta": {
+    "complete_competing_option_exclusion": true,
+    "cross_row_table_recovery": true,
+    "full_section_reconstruction": true,
+    "remove_locator_backfill_for_rule_evidence": true
+  },
+  "next_root_causes": [
+    "financial_contract_cross_issuer_clause_comparison",
+    "research_multi_clause_choice_coverage",
+    "evidence_serialization_unique_backfill",
+    "remaining_fin_b_010_evidence_sufficiency"
+  ],
+  "pipeline_stage": "context",
+  "preflight_attempts": [
+    {
+      "observed_answer": {
+        "fc_b_004": "ABC",
+        "fc_b_009": "ABD",
+        "fc_b_010": "CD",
+        "fc_b_011": "ABC",
+        "fc_b_015": "CD"
+      },
+      "root_cause": "fc_b_010 looked for the summary phrase 'share compensation first' instead of the target agreement's direct wording that cash applies only after transaction shares are insufficient.",
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contracts_subject_clause_binding/full_section_table_bundle_a3",
+      "status": "refined_before_evaluation",
+      "token_usage": {
+        "completion_tokens": 1305,
+        "prompt_tokens": 5008,
+        "total_tokens": 6313
+      }
+    },
+    {
+      "observed_answer": {
+        "fc_b_004": "ABC",
+        "fc_b_009": "ABD",
+        "fc_b_010": "BCD",
+        "fc_b_011": "ABC",
+        "fc_b_015": "CD"
+      },
+      "root_cause": "Answers were deterministic, but generic per-locator-document evidence backfill serialized unrelated issuers and omitted focused counterevidence.",
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contracts_subject_clause_binding/full_section_table_bundle_a3_v2",
+      "status": "refined_before_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      }
+    },
+    {
+      "evidence_docs": {
+        "fc_b_004": [
+          "text02"
+        ],
+        "fc_b_009": [
+          "text04",
+          "text05",
+          "text11"
+        ],
+        "fc_b_010": [
+          "text10"
+        ],
+        "fc_b_011": [
+          "text14"
+        ],
+        "fc_b_015": [
+          "text10"
+        ]
+      },
+      "observed_answer": {
+        "fc_b_004": "ABC",
+        "fc_b_009": "ABD",
+        "fc_b_010": "BCD",
+        "fc_b_011": "ABC",
+        "fc_b_015": "CD"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contracts_subject_clause_binding/full_section_table_bundle_a3_v3",
+      "status": "accepted_for_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      }
+    }
+  ],
+  "promoted_qids": [
+    "fc_b_004",
+    "fc_b_009",
+    "fc_b_010",
+    "fc_b_011",
+    "fc_b_015"
+  ],
+  "promotion_decisions": {
+    "fc_b_004": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 63,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fc_b_009": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 92,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fc_b_010": {
+      "blind_required": true,
+      "blind_winner": "A",
+      "candidate_blind_label": "A",
+      "promote": true,
+      "reasons": [],
+      "score_delta": 90,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fc_b_011": {
+      "blind_required": true,
+      "blind_winner": "A",
+      "candidate_blind_label": "A",
+      "promote": true,
+      "reasons": [],
+      "score_delta": 90,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "fc_b_015": {
+      "blind_required": true,
+      "blind_winner": "B",
+      "candidate_blind_label": "B",
+      "promote": true,
+      "reasons": [],
+      "score_delta": 95,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "mcq"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 27,
+    "high": 47,
+    "low": 2,
+    "medium": 24
+  },
+  "reason": "Full-section and table-bundle recovery promoted five financial-contract questions from blocked to high (88, 92, 90, 90, 95). All three changed answers won blind A/B at 95, 98, and 98; focused rule evidence removed unrelated locator backfill.",
+  "recorded_at": "2026-07-22T00:12:40+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [],
+  "root_cause_cluster": "choice_evidence_coverage",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failures": 0,
+      "sentinels_passed": true,
+      "token_accounting_complete": true
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "fc_b_004",
+        "fc_b_009",
+        "fc_b_010",
+        "fc_b_011",
+        "fc_b_015"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 5,
+          "blocked_low_before": 10,
+          "low_tier_improved_qids": [
+            "fc_b_004",
+            "fc_b_009",
+            "fc_b_010",
+            "fc_b_011",
+            "fc_b_015"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 85,
+          "p10_before": 85,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 8,
+          "blocked_low_before": 8,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 2,
+          "blocked_low_before": 2,
+          "low_tier_improved_qids": [],
+          "p10_after": 55,
+          "p10_before": 55,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 15,
+          "blocked_low_before": 15,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_003": -12,
+        "fc_b_006": -10,
+        "fc_b_012": -7,
+        "fc_b_013": -13,
+        "fc_b_017": 8,
+        "fc_b_018": -5,
+        "fin_b_001": 5,
+        "fin_b_002": 8,
+        "fin_b_005": 5,
+        "fin_b_007": 1,
+        "fin_b_009": 2,
+        "fin_b_010": -5,
+        "fin_b_011": 3,
+        "fin_b_015": -2,
+        "fin_b_016": 5,
+        "fin_b_019": 7,
+        "fin_b_020": -3,
+        "ins_b_002": -5,
+        "ins_b_004": -5,
+        "ins_b_005": -9,
+        "ins_b_006": -4,
+        "ins_b_007": 4,
+        "ins_b_010": 8,
+        "ins_b_012": -10,
+        "ins_b_014": 6,
+        "ins_b_017": 20,
+        "reg_b_003": 12,
+        "reg_b_004": -10,
+        "reg_b_005": -2,
+        "reg_b_009": 23,
+        "reg_b_013": 7,
+        "reg_b_016": 5,
+        "reg_b_018": 5,
+        "reg_b_020": -5,
+        "reg_b_021": -8,
+        "reg_b_023": -10,
+        "reg_b_024": 4,
+        "reg_b_025": -2,
+        "reg_b_026": 4,
+        "reg_b_027": 6,
+        "res_b_001": 6,
+        "res_b_005": 5,
+        "res_b_015": -16
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_003",
+        "fc_b_006",
+        "fc_b_012",
+        "fc_b_013",
+        "ins_b_005",
+        "ins_b_017",
+        "reg_b_009",
+        "reg_b_021",
+        "reg_b_023",
+        "reg_b_026",
+        "res_b_015"
+      ]
+    },
+    "reasons": [],
+    "tests": {
+      "count": 137,
+      "passed": true
+    },
+    "valid": true
+  },
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "fc_b_004",
+    "fc_b_009",
+    "fc_b_010",
+    "fc_b_011",
+    "fc_b_015"
+  ],
+  "token_accounting_complete": true,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 79419,
+    "prompt_tokens": 516007,
+    "total_tokens": 595426
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 80724,
+    "prompt_tokens": 521015,
+    "total_tokens": 601739
+  }
+}
+```

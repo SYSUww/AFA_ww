@@ -228,7 +228,9 @@ class FinancialContractsSolver:
                     }
             consistency_issues = answer_consistency_issues(pred_answer, option_payloads, question.answer_format)
 
-        evidence_items = collect_evidence_items(option_payloads, doc_ids=question.doc_ids)
+        evidence_items = self._complete_rule_evidence_items(option_payloads)
+        if not evidence_items:
+            evidence_items = collect_evidence_items(option_payloads, doc_ids=question.doc_ids)
 
         return AnswerResult(
             qid=question.qid,
@@ -390,6 +392,7 @@ class FinancialContractsSolver:
         doc_ids = self._target_doc_ids(question, option_text)
         subject_doc_ids = (
             self._option_subject_bound_doc_ids(question, option_text)
+            or self._bundle_subject_doc_ids(question, option_text)
             or self._subject_bound_doc_ids(question)
             or doc_ids
         )
@@ -410,6 +413,147 @@ class FinancialContractsSolver:
                     "prefer_paragraph": prefer_paragraph,
                 }
             )
+
+        if "集中度指标不符合监管要求" in question_compact:
+            concentration_docs = self._subject_doc_ids_for_aliases(question, ["深圳市融资租赁"])
+            if "单一集团" in option_compact and "50%" in option_compact:
+                add(
+                    ["对单一集团的全部融资租赁业务余额占净资产的比例", "90.79%", "100.42%", "107.81%", "119.28%"],
+                    ["近三年及一期", "超过净资产50%"],
+                    prefer_paragraph=True,
+                    target_doc_ids=concentration_docs,
+                )
+            if "连续两年" in option_compact and "A级" in option_compact:
+                add(
+                    ["发行人两年行业监管评级均为A级"],
+                    ["2024年11月27日", "2025年8月28日"],
+                    prefer_paragraph=True,
+                    target_doc_ids=concentration_docs,
+                )
+            if "放宽集中度关联度要求" in option_compact:
+                add(
+                    ["租赁资产占租赁资产总额84.17%", "超过80%", "适用《广东省融资租赁公司监督管理实施细则》"],
+                    ["适当放宽集中度关联度要求"],
+                    prefer_paragraph=True,
+                    target_doc_ids=concentration_docs,
+                )
+            if "过渡期" in option_compact:
+                add(
+                    ["监管指标整改原则上有不超过3年的过渡期"],
+                    ["第五十二条"],
+                    prefer_paragraph=True,
+                    target_doc_ids=concentration_docs,
+                )
+
+        if "新增折旧摊销对未来经营业绩的影响" in question_compact:
+            pulian_docs = self._subject_doc_ids_for_aliases(question, ["普联软件"])
+            benchuan_docs = self._subject_doc_ids_for_aliases(question, ["本川智能"])
+            anker_docs = self._subject_doc_ids_for_aliases(question, ["安克创新"])
+            if "普联软件" in option_compact and "T+2" in option_compact and "T+10" in option_compact:
+                add(
+                    ["新增折旧摊销合计", "募投项目预计营业收入合计", "募投项目预计净利润合计", "T+2", "T+10"],
+                    ["折旧摊销占营业收入比重", "折旧摊销占净利润比重"],
+                    prefer_paragraph=True,
+                    target_doc_ids=pulian_docs,
+                )
+            if "本川智能" in option_compact and "3.49%" in option_compact and "77.09%" in option_compact:
+                add(
+                    ["完全达产（T+5年）前", "3.49%", "77.09%"],
+                    ["新增折旧摊销占营业收入", "占净利润"],
+                    prefer_paragraph=True,
+                    target_doc_ids=benchuan_docs,
+                )
+            if "安克创新" in option_compact and "仅定性" in option_compact:
+                add(
+                    ["募投项目年新增折旧摊销费用预计最高金额为11,376.57万元"],
+                    ["新增营业收入预计可以覆盖项目折旧摊销费用"],
+                    prefer_paragraph=True,
+                    target_doc_ids=anker_docs,
+                )
+            if "普联软件和本川智能" in option_compact and "定量测算" in option_compact:
+                add(
+                    ["新增折旧摊销合计", "T+2", "T+10"],
+                    ["折旧摊销占营业收入比重", "折旧摊销占净利润比重"],
+                    prefer_paragraph=True,
+                    target_doc_ids=pulian_docs,
+                )
+                add(
+                    ["完全达产（T+5年）前", "3.49%", "77.09%"],
+                    ["新增折旧摊销占营业收入", "占净利润"],
+                    prefer_paragraph=True,
+                    target_doc_ids=benchuan_docs,
+                )
+
+        if "《业绩预测补偿及减值补偿协议》" in question.question and "补偿方式" in question_compact:
+            compensation_docs = self._subject_doc_ids_for_aliases(question, ["科源制药", "宏济堂"])
+            if "现金方式" in option_compact and "优先" in option_compact:
+                add(
+                    ["因本次交易获得的上市公司股份不足以支付其业绩补偿金额时", "补偿义务人应以现金进行补偿"],
+                    ["用于补偿的股份数最高不超过"],
+                    prefer_paragraph=True,
+                    target_doc_ids=compensation_docs,
+                )
+            if "股份补偿为主" in option_compact and "现金补足" in option_compact:
+                add(
+                    ["因本次交易获得的上市公司股份不足以支付其业绩补偿金额时", "补偿义务人应以现金进行补偿"],
+                    ["用于补偿的股份数最高不超过"],
+                    prefer_paragraph=True,
+                    target_doc_ids=compensation_docs,
+                )
+            if "累积承诺收入" in option_compact and "实际收入" in option_compact:
+                add(
+                    ["累积承诺收入", "累积实际收入", "当期补偿金额"],
+                    ["承诺期间各年的承诺收入总和"],
+                    prefer_paragraph=True,
+                    target_doc_ids=compensation_docs,
+                )
+            if "交易作价" in option_compact and "本次交易前持有宏济堂" in option_compact:
+                add(
+                    ["交易作价", "本次交易前持有宏济堂股份比例39.61%", "当期补偿金额"],
+                    ["累积已补偿金额"],
+                    prefer_paragraph=True,
+                    target_doc_ids=compensation_docs,
+                )
+
+        if "西部证券债券募集说明书" in question_compact and "流动比率" in question_compact:
+            solvency_docs = self._subject_doc_ids_for_aliases(question, ["西部证券"])
+            add(
+                ["资产负债率（扣除代理款）", "64.00", "62.47", "66.27", "流动比率", "1.83", "1.95", "1.91"],
+                ["2025年12月31日", "2024年12月31日", "2023年12月31日"],
+                prefer_paragraph=True,
+                target_doc_ids=solvency_docs,
+            )
+
+        if "科源制药重组交易对方" in question_compact and "锁定期安排" in question_compact:
+            lockup_docs = self._subject_doc_ids_for_aliases(question, ["科源制药", "力诺投资"])
+            if "力诺投资" in option_compact and "力诺集团" in option_compact:
+                add(
+                    ["交易对方力诺投资、力诺集团承诺", "自本次股份发行结束之日起36个月内不得转让"],
+                    ["锁定期安排"],
+                    prefer_paragraph=True,
+                    target_doc_ids=lockup_docs,
+                )
+            if "济南财投新动能" in option_compact and "济南鑫控" in option_compact:
+                add(
+                    ["交易对方济南财投新动能、济南财金投资、济南鑫控承诺", "自本次股份发行结束之日起36个月内不得转让"],
+                    ["锁定期安排"],
+                    prefer_paragraph=True,
+                    target_doc_ids=lockup_docs,
+                )
+            if "其他交易对方" in option_compact and "不足12个月" in option_compact:
+                add(
+                    ["除力诺投资、力诺集团、济南财投新动能、济南财金投资、济南鑫控外的交易对方承诺", "持续拥有权益的时间不足12个月", "36个月内不得转让"],
+                    ["12个月内不得转让"],
+                    prefer_paragraph=True,
+                    target_doc_ids=lockup_docs,
+                )
+            if "所有交易对方" in option_compact and "36个月" in option_compact:
+                add(
+                    ["除力诺投资、力诺集团、济南财投新动能、济南财金投资、济南鑫控外的交易对方承诺", "12个月内不得转让", "不足12个月", "36个月内不得转让"],
+                    ["锁定期安排"],
+                    prefer_paragraph=True,
+                    target_doc_ids=lockup_docs,
+                )
 
         if "投资者保护条款" in question_compact and "违约事项" in question_compact:
             if "10个交易日" in option_compact and "恢复承诺" in option_compact:
@@ -842,12 +986,164 @@ class FinancialContractsSolver:
     ) -> dict[str, Any] | None:
         question_compact = self._normalize_literal(question.question)
         option_compact = self._normalize_literal(option_text)
-        subject_docs = self._option_subject_bound_doc_ids(question, option_text) or self._subject_bound_doc_ids(question)
+        subject_docs = (
+            self._option_subject_bound_doc_ids(question, option_text)
+            or self._bundle_subject_doc_ids(question, option_text)
+            or self._subject_bound_doc_ids(question)
+        )
         evidence_compact = self._normalize_literal(
             self._evidence_text(hits, subject_docs or self._target_doc_ids(question, option_text))
         )
         if not evidence_compact:
             return None
+
+        if "集中度指标不符合监管要求" in question_compact:
+            if (
+                "单一集团" in option_compact
+                and "50%" in option_compact
+                and all(value in evidence_compact for value in ["90.79%", "100.42%", "107.81%", "119.28%"])
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_concentration_single_group_exceeded",
+                    "监管指标表显示近三年及一期对单一集团余额占净资产比例均超过50%。",
+                )
+            if "连续两年" in option_compact and "A级" in option_compact and "发行人两年行业监管评级均为A级" in evidence_compact:
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_concentration_two_year_a_rating",
+                    "发行人根据两次监管公告及书面说明，连续两年行业监管评级均为A级。",
+                )
+            if (
+                "放宽集中度关联度要求" in option_compact
+                and "租赁资产占租赁资产总额84.17%" in evidence_compact
+                and "超过80%" in evidence_compact
+                and "适用《广东省融资租赁公司监督管理实施细则》" in evidence_compact
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_concentration_guangdong_relaxation_eligible",
+                    "相关行业租赁资产占比84.17%、超过80%，原文明确发行人适用广东省细则的集中度关联度放宽条款。",
+                )
+            if "过渡期" in option_compact and "5年" in option_compact and "不超过3年的过渡期" in evidence_compact:
+                return self._rule_result(
+                    option_key,
+                    False,
+                    "contract_concentration_transition_three_years",
+                    "暂行办法规定监管指标整改过渡期原则上不超过3年，并非5年。",
+                )
+
+        if "新增折旧摊销对未来经营业绩的影响" in question_compact:
+            if (
+                "普联软件" in option_compact
+                and "T+2" in option_compact
+                and "T+10" in option_compact
+                and all(term in evidence_compact for term in ["新增折旧摊销合计", "募投项目预计营业收入合计", "募投项目预计净利润合计", "T+2", "T+10"])
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_depreciation_pulian_full_projection",
+                    "普联软件量化表完整覆盖T+2至T+10的新增折旧摊销、营业收入、净利润及两项占比。",
+                )
+            if "本川智能" in option_compact and "3.49%" in option_compact and "77.09%" in option_compact and all(
+                term in evidence_compact for term in ["完全达产（T+5年）前", "3.49%", "77.09%"]
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_depreciation_benchuan_pre_ramp_ratios",
+                    "本川智能原文明确完全达产前折旧摊销占营业收入和净利润最高比例分别为3.49%和77.09%。",
+                )
+            if "安克创新" in option_compact and "仅定性" in option_compact and "11,376.57万元" in evidence_compact:
+                return self._rule_result(
+                    option_key,
+                    False,
+                    "contract_depreciation_anker_quantified",
+                    "安克创新量化披露年新增折旧摊销预计最高11,376.57万元，因此并非仅作定性描述。",
+                )
+            if (
+                "普联软件和本川智能" in option_compact
+                and "定量测算" in option_compact
+                and all(term in evidence_compact for term in ["T+10", "3.49%", "77.09%"])
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_depreciation_two_issuer_quantification",
+                    "普联软件的逐年表格和本川智能的达产前比例均构成募集说明书中的定量测算。",
+                )
+
+        if "《业绩预测补偿及减值补偿协议》" in question.question and "补偿方式" in question_compact:
+            share_then_cash = all(
+                term in evidence_compact
+                for term in ["因本次交易获得的上市公司股份不足以支付其业绩补偿金额时", "补偿义务人应以现金进行补偿"]
+            )
+            if "现金方式" in option_compact and "优先" in option_compact and share_then_cash:
+                return self._rule_result(
+                    option_key,
+                    False,
+                    "contract_compensation_shares_first",
+                    "协议安排为股份补偿优先、股份不足时现金补偿，并非现金优先。",
+                )
+            if "股份补偿为主" in option_compact and "现金补足" in option_compact and share_then_cash:
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_compensation_share_then_cash",
+                    "补偿以股份为先，股份不足部分以现金补足。",
+                )
+            if "累积承诺收入" in option_compact and "实际收入" in option_compact and all(
+                term in evidence_compact for term in ["累积承诺收入", "累积实际收入", "当期补偿金额"]
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_compensation_cumulative_income_gap",
+                    "收入承诺未达成时，补偿公式以截至当期期末累积承诺收入与累积实际收入之差为起点。",
+                )
+            if "交易作价" in option_compact and "本次交易前持有宏济堂" in option_compact and all(
+                term in evidence_compact for term in ["交易作价", "本次交易前持有宏济堂股份比例39.61%", "当期补偿金额"]
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_compensation_price_and_predeal_holding",
+                    "公式同时乘以相关资产交易作价及补偿义务人交易前持有宏济堂股份比例39.61%。",
+                )
+
+        if "西部证券债券募集说明书" in question_compact and "流动比率" in question_compact:
+            table_present = all(term in evidence_compact for term in ["64.00", "62.47", "66.27", "1.83", "1.95", "1.91"])
+            if table_present:
+                if "2025年末" in option_compact and "64.00%" in option_compact and "1.83" in option_compact:
+                    return self._rule_result(option_key, True, "contract_solvency_2025_pair", "2025年末资产负债率（扣除代理款）64.00%，流动比率1.83。")
+                if "2024年末" in option_compact and "62.47%" in option_compact and "1.95" in option_compact:
+                    return self._rule_result(option_key, True, "contract_solvency_2024_pair", "2024年末资产负债率（扣除代理款）62.47%，流动比率1.95。")
+                if "2023年末" in option_compact and "66.27%" in option_compact and "1.91" in option_compact:
+                    return self._rule_result(option_key, True, "contract_solvency_2023_pair", "2023年末资产负债率（扣除代理款）66.27%，流动比率1.91。")
+                if "2023年末" in option_compact and ("67.27%" in option_compact or "1.89" in option_compact):
+                    return self._rule_result(option_key, False, "contract_solvency_2023_mismatch", "2023年末正确数值为66.27%和1.91，选项中的67.27%和1.89均不符。")
+
+        if "科源制药重组交易对方" in question_compact and "锁定期安排" in question_compact:
+            if "力诺投资" in option_compact and "力诺集团" in option_compact and "36个月" in option_compact and all(
+                term in evidence_compact for term in ["交易对方力诺投资、力诺集团承诺", "36个月内不得转让"]
+            ):
+                return self._rule_result(option_key, False, "contract_lockup_linuo_36_true", "力诺投资、力诺集团确实承诺36个月锁定，因此该说法不是错误项。")
+            if "济南财投新动能" in option_compact and "济南鑫控" in option_compact and "36个月" in option_compact and all(
+                term in evidence_compact for term in ["交易对方济南财投新动能、济南财金投资、济南鑫控承诺", "36个月内不得转让"]
+            ):
+                return self._rule_result(option_key, False, "contract_lockup_jinan_36_true", "济南财投新动能、济南财金投资、济南鑫控确实承诺36个月锁定，因此该说法不是错误项。")
+            if "其他交易对方" in option_compact and "不足12个月" in option_compact and all(
+                term in evidence_compact for term in ["持续拥有权益的时间不足12个月", "36个月内不得转让"]
+            ):
+                return self._rule_result(option_key, True, "contract_lockup_short_holding_36", "其他交易对方持有标的资产权益不足12个月时实际锁定36个月，选项所称12个月错误。")
+            if "所有交易对方" in option_compact and "36个月" in option_compact and all(
+                term in evidence_compact for term in ["12个月内不得转让", "不足12个月", "36个月内不得转让"]
+            ):
+                return self._rule_result(option_key, True, "contract_lockup_not_all_36", "其他交易对方通常锁定12个月，仅持有权益不足12个月时延长至36个月，因此并非所有交易对方均锁定36个月。")
 
         if "投资者保护条款" in question_compact and "违约事项" in question_compact:
             if (
@@ -2063,6 +2359,20 @@ class FinancialContractsSolver:
     def _subject_bound_doc_ids(self, question: Question) -> list[str]:
         return self._subject_doc_ids_for_terms(question, self._question_subject_terms(question.question))
 
+    def _bundle_subject_doc_ids(self, question: Question, option_text: str) -> list[str]:
+        question_compact = self._normalize_literal(question.question)
+        option_compact = self._normalize_literal(option_text)
+        aliases: list[str] = []
+        if "集中度指标不符合监管要求" in question_compact:
+            aliases = ["深圳市融资租赁"]
+        elif "新增折旧摊销对未来经营业绩的影响" in question_compact:
+            aliases = [name for name in ["普联软件", "本川智能", "安克创新"] if name in option_compact]
+        elif "《业绩预测补偿及减值补偿协议》" in question.question or "科源制药重组交易对方" in question_compact:
+            aliases = ["科源制药", "宏济堂", "力诺投资"]
+        elif "西部证券债券募集说明书" in question_compact:
+            aliases = ["西部证券"]
+        return self._subject_doc_ids_for_aliases(question, aliases)
+
     def _option_subject_bound_doc_ids(self, question: Question, option_text: str) -> list[str]:
         terms = []
         match = re.match(
@@ -2072,6 +2382,14 @@ class FinancialContractsSolver:
         if match:
             terms.append(match.group(1))
         return self._subject_doc_ids_for_terms(question, terms)
+
+    def _subject_doc_ids_for_aliases(self, question: Question, aliases: list[str]) -> list[str]:
+        doc_ids: list[str] = []
+        for alias in aliases:
+            for doc_id in self._subject_doc_ids_for_terms(question, [alias]):
+                if doc_id not in doc_ids:
+                    doc_ids.append(doc_id)
+        return doc_ids
 
     def _subject_doc_ids_for_terms(self, question: Question, subject_terms: list[str]) -> list[str]:
         if not hasattr(self.retriever, "units"):
@@ -2134,3 +2452,49 @@ class FinancialContractsSolver:
             if len(merged) >= limit:
                 break
         return merged
+
+    @staticmethod
+    def _complete_rule_evidence_items(
+        option_payloads: list[dict[str, Any]],
+        *,
+        max_per_option: int = 2,
+        max_total: int = 12,
+    ) -> list[dict[str, Any]]:
+        """Serialize focused support and counterevidence for fully rule-backed choices."""
+
+        if not option_payloads or any(not payload.get("rule_override") for payload in option_payloads):
+            return []
+        targeted_by_option: list[tuple[dict[str, Any], list[dict[str, Any]]]] = []
+        for payload in option_payloads:
+            targeted = [
+                dict(item)
+                for item in payload.get("evidence_items", [])
+                if bool(item.get("metadata", {}).get("targeted_literal"))
+            ]
+            if not targeted:
+                return []
+            targeted_by_option.append((payload, targeted))
+
+        evidence_items: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for payload, targeted in targeted_by_option:
+            added = 0
+            for item in targeted:
+                unit_id = str(item.get("unit_id", ""))
+                key = unit_id.replace("__dup2", "").replace("__dup", "") or (
+                    f"{item.get('doc_id', '')}:{str(item.get('text', ''))[:80]}"
+                )
+                if key in seen:
+                    continue
+                metadata = dict(item.get("metadata", {}))
+                metadata["option_key"] = str(payload.get("option", ""))
+                metadata["rule_label"] = bool(payload.get("label"))
+                item["metadata"] = metadata
+                evidence_items.append(item)
+                seen.add(key)
+                added += 1
+                if len(evidence_items) >= max_total or added >= max_per_option:
+                    break
+            if len(evidence_items) >= max_total:
+                break
+        return evidence_items

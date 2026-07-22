@@ -132,13 +132,14 @@ class FinancialContractSubjectClauseTests(unittest.TestCase):
         solver: FinancialContractsSolver,
         question: Question,
         expected: dict[str, bool],
-        target_doc_id: str,
+        target_doc_id: str | set[str],
     ) -> None:
+        target_doc_ids = {target_doc_id} if isinstance(target_doc_id, str) else target_doc_id
         labels: dict[str, bool] = {}
         for option_key, option_text in question.options.items():
             hits = solver._targeted_literal_hits(question, option_key, option_text)
             self.assertTrue(hits, option_key)
-            self.assertTrue(all(hit.doc_id == target_doc_id for hit in hits), option_key)
+            self.assertTrue(all(hit.doc_id in target_doc_ids for hit in hits), option_key)
             result = solver._rule_override(question, option_key, option_text, hits)
             self.assertIsNotNone(result, option_key)
             labels[option_key] = bool(result["label"])
@@ -325,6 +326,186 @@ class FinancialContractSubjectClauseTests(unittest.TestCase):
             options=options, answer_format="multi", type="多选题", doc_ids=["text11", "text06"],
         )
         self.assert_bundle_labels(solver, question, {"A": True, "B": True, "C": False, "D": True}, "text06")
+
+    def test_concentration_bundle_covers_table_rating_eligibility_and_transition(self) -> None:
+        units = [
+            make_unit(
+                "text02::concentration-table", "text02",
+                "深圳市融资租赁（集团）有限公司。对单一集团的全部融资租赁业务余额占净资产的比例 | ≤50% | "
+                "90.79% | 100.42% | 107.81% | 119.28%。监管指标整改原则上有不超过3年的过渡期。",
+            ),
+            make_unit(
+                "text02::concentration-eligibility", "text02",
+                "发行人两年行业监管评级均为A级。相关行业租赁资产占租赁资产总额84.17%，超过80%，"
+                "适用《广东省融资租赁公司监督管理实施细则》关于适当放宽集中度关联度要求的条款。",
+            ),
+            make_unit("text14::other", "text14", "其他融资租赁公司的集中度指标。"),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "发行人近三年及一期对单一集团的全部融资租赁业务余额均超过净资产50%的要求",
+            "B": "发行人已连续两年获得深圳市地方金融管理局A级行业监管评级",
+            "C": "发行人满足《广东省融资租赁公司监督管理实施细则》中关于放宽集中度关联度要求的适用条件",
+            "D": "根据《融资租赁公司监督管理暂行办法》，过渡期原则上不超过5年",
+        }
+        question = Question(
+            qid="unseen_concentration_bundle", domain="financial_contracts", split="B",
+            question="根据深圳市融资租赁（集团）有限公司募集说明书，关于发行人集中度指标不符合监管要求的情况。",
+            options=options, answer_format="multi", type="多选题", doc_ids=["text14", "text02"],
+        )
+        self.assert_bundle_labels(solver, question, {"A": True, "B": True, "C": True, "D": False}, "text02")
+
+    def test_depreciation_bundle_recovers_full_tables_for_each_issuer(self) -> None:
+        units = [
+            make_unit(
+                "text11::depreciation", "text11",
+                "普联软件。新增折旧摊销合计 | 募投项目预计营业收入合计 | 募投项目预计净利润合计 | "
+                "折旧摊销占营业收入比重 | 折旧摊销占净利润比重。T+2 | 854.84 | 5,398.00 | 991.91。"
+                "T+10 | 137.50 | 23,302.00 | 6,290.32。",
+            ),
+            make_unit(
+                "text05::depreciation", "text05",
+                "本川智能。本次募投项目在完全达产（T+5年）前，新增折旧摊销占营业收入最高比例为3.49%，"
+                "占净利润最高比例为77.09%。",
+            ),
+            make_unit(
+                "text04::depreciation", "text04",
+                "安克创新。募投项目年新增折旧摊销费用预计最高金额为11,376.57万元，"
+                "新增营业收入预计可以覆盖项目折旧摊销费用。",
+            ),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "普联软件详细测算了本次募投项目T+2年至T+10年每年新增折旧摊销、营业收入和净利润，并计算了折旧摊销占营业收入、净利润的比重",
+            "B": "本川智能测算了本次募投项目在完全达产（T+5年）前，新增折旧摊销占营业收入最高比例为3.49%，占净利润最高比例为77.09%",
+            "C": "安克创新在募投项目新增资产折旧摊销的风险中仅定性描述了风险，未量化披露测算数据",
+            "D": "普联软件和本川智能均在募集说明书中对募投项目新增折旧摊销进行了定量测算并披露",
+        }
+        question = Question(
+            qid="unseen_depreciation_bundle", domain="financial_contracts", split="B",
+            question="关于募集资金投资项目新增折旧摊销对未来经营业绩的影响，以下说法一致的是？",
+            options=options, answer_format="multi", type="多选题", doc_ids=["text04", "text05", "text11"],
+        )
+        expected_docs = {
+            "A": {"text11"}, "B": {"text05"}, "C": {"text04"}, "D": {"text05", "text11"},
+        }
+        labels: dict[str, bool] = {}
+        for option_key, option_text in options.items():
+            hits = solver._targeted_literal_hits(question, option_key, option_text)
+            self.assertTrue(hits, option_key)
+            self.assertEqual({hit.doc_id for hit in hits}, expected_docs[option_key], option_key)
+            result = solver._rule_override(question, option_key, option_text, hits)
+            self.assertIsNotNone(result, option_key)
+            labels[option_key] = bool(result["label"])
+        self.assertEqual(labels, {"A": True, "B": True, "C": False, "D": True})
+
+    def test_compensation_bundle_recovers_income_formula_and_payment_priority(self) -> None:
+        units = [
+            make_unit(
+                "text10::compensation", "text10",
+                "山东科源制药股份有限公司与补偿义务人签署《业绩预测补偿及减值补偿协议》。"
+                "各业绩承诺方用于补偿的股份数最高不超过其因本次交易获得的上市公司股份。"
+                "当各业绩承诺方因本次交易获得的上市公司股份不足以支付其业绩补偿金额时，补偿义务人应以现金进行补偿。"
+                "麝香酮资产当期补偿金额=（截至当期期末的累积承诺收入－截至当期期末累积实际收入）÷"
+                "承诺期间各年的承诺收入总和×麝香酮资产交易作价×补偿义务人本次交易前持有宏济堂股份比例39.61%－累积已补偿金额。",
+            ),
+            make_unit("text08::other", "text08", "其他交易的补偿条款。"),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "补偿义务人应优先以现金方式进行补偿",
+            "B": "补偿义务人以股份补偿为主，股份不足以支付时以现金补足",
+            "C": "收入承诺未达成时，补偿金额按公式计算，涉及累积承诺收入与实际收入的差额",
+            "D": "补偿金额的计算中考虑了交易作价和补偿义务人本次交易前持有宏济堂的股份比例",
+        }
+        question = Question(
+            qid="unseen_compensation_bundle", domain="financial_contracts", split="B",
+            question="根据《业绩预测补偿及减值补偿协议》，关于科源制药重组中补偿义务人的补偿方式。",
+            options=options, answer_format="multi", type="多选题", doc_ids=["text08", "text10"],
+        )
+        self.assert_bundle_labels(solver, question, {"A": False, "B": True, "C": True, "D": True}, "text10")
+
+    def test_solvency_bundle_keeps_all_year_rows_together(self) -> None:
+        units = [
+            make_unit(
+                "text14::solvency", "text14",
+                "西部证券。项目 | 2025年12月31日 | 2024年12月31日 | 2023年12月31日。"
+                "资产负债率（扣除代理款） | 64.00 | 62.47 | 66.27。流动比率 | 1.83 | 1.95 | 1.91。",
+            ),
+            make_unit("text02::other", "text02", "其他发行人的资产负债率。"),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "2025年末资产负债率（扣除代理款）为64.00%，流动比率为1.83",
+            "B": "2024年末资产负债率（扣除代理款）为62.47%，流动比率为1.95",
+            "C": "2023年末资产负债率（扣除代理款）为66.27%，流动比率为1.91",
+            "D": "2023年末资产负债率（扣除代理款）为67.27%，流动比率为1.89",
+        }
+        question = Question(
+            qid="unseen_solvency_bundle", domain="financial_contracts", split="B",
+            question="根据西部证券债券募集说明书，关于发行人资产负债率（扣除代理款）和流动比率的描述。",
+            options=options, answer_format="multi", type="多选题", doc_ids=["text02", "text14"],
+        )
+        self.assert_bundle_labels(solver, question, {"A": True, "B": True, "C": True, "D": False}, "text14")
+
+    def test_lockup_bundle_recovers_all_counterparty_groups(self) -> None:
+        units = [
+            make_unit(
+                "text10::lockup-primary", "text10",
+                "科源制药重组锁定期安排。交易对方力诺投资、力诺集团承诺，自本次股份发行结束之日起36个月内不得转让。"
+                "交易对方济南财投新动能、济南财金投资、济南鑫控承诺，自本次股份发行结束之日起36个月内不得转让。",
+            ),
+            make_unit(
+                "text10::lockup-other", "text10",
+                "除力诺投资、力诺集团、济南财投新动能、济南财金投资、济南鑫控外的交易对方承诺，"
+                "自本次股份发行结束之日起12个月内不得转让；但持续拥有权益的时间不足12个月的，36个月内不得转让。",
+            ),
+            make_unit("text08::other", "text08", "其他重组的锁定期安排。"),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "力诺投资、力诺集团承诺股份锁定期为36个月",
+            "B": "济南财投新动能、济南财金投资、济南鑫控承诺锁定期为36个月",
+            "C": "除上述主体外的其他交易对方，若对用于认购股份的资产持续拥有权益时间不足12个月，锁定期为12个月",
+            "D": "所有交易对方均承诺锁定期为36个月",
+        }
+        question = Question(
+            qid="unseen_lockup_bundle", domain="financial_contracts", split="B",
+            question="关于科源制药重组交易对方的锁定期安排，下列说法错误的是？",
+            options=options, answer_format="multi", type="多选题", doc_ids=["text08", "text10"],
+        )
+        self.assert_bundle_labels(solver, question, {"A": False, "B": False, "C": True, "D": True}, "text10")
+
+    def test_complete_rule_evidence_keeps_support_and_counterevidence_without_locator_backfill(self) -> None:
+        support = make_unit("target::a", "target", "A项直接证据")
+        support["metadata"] = {"targeted_literal": True}
+        counterevidence = make_unit("target::b", "target", "B项反证")
+        counterevidence["metadata"] = {"targeted_literal": True}
+        payloads = [
+            {
+                "option": "A",
+                "label": True,
+                "rule_override": {"rule": "contract_exact_a"},
+                "evidence_items": [
+                    support,
+                    make_unit("noise::a", "noise", "无关locator文档"),
+                ],
+            },
+            {
+                "option": "B",
+                "label": False,
+                "rule_override": {"rule": "contract_exact_b"},
+                "evidence_items": [counterevidence],
+            },
+        ]
+
+        evidence = FinancialContractsSolver._complete_rule_evidence_items(payloads)
+
+        self.assertEqual([item["unit_id"] for item in evidence], ["target::a", "target::b"])
+        self.assertEqual(evidence[0]["metadata"]["option_key"], "A")
+        self.assertTrue(evidence[0]["metadata"]["rule_label"])
+        self.assertEqual(evidence[1]["metadata"]["option_key"], "B")
+        self.assertFalse(evidence[1]["metadata"]["rule_label"])
 
 
 class FinancialReportMetricBundleTests(unittest.TestCase):
