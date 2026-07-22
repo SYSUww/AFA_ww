@@ -32,8 +32,23 @@ def artifact(qid: str, answer: str) -> dict:
         "answer_parts": [answer],
         "used_evidence_ids": [f"{qid}:e"],
         "evidence_items": [{"unit_id": f"{qid}:e", "text": answer}],
-        "decision_summary": "",
-        "decision_trace": {},
+        "decision_summary": "定位到题目对应的直接数值证据，按题目要求保留两位小数，因此得到该答案。",
+        "decision_trace": {
+            "api_usage_ledger": {
+                "call_count": 1,
+                "calls": [
+                    {
+                        "call_index": 1,
+                        "model_name": "qwen3.5-plus",
+                        "token_usage": {
+                            "prompt_tokens": 2,
+                            "completion_tokens": 1,
+                            "total_tokens": 3,
+                        },
+                    }
+                ],
+            }
+        },
         "calculation_trace": {"replay_verified": True},
         "token_usage": {"prompt_tokens": 2, "completion_tokens": 1, "total_tokens": 3},
         "locator": {},
@@ -48,6 +63,8 @@ class BBoardMergeTests(unittest.TestCase):
             repair = root / "repair"
             base.mkdir()
             repair.mkdir()
+            write_json(base / "run_manifest.json", {"model": {"model_name": "qwen3.5-plus"}})
+            write_json(repair / "run_manifest.json", {"model": {"model_name": "qwen3.6"}})
             write_json(base / "answers.json", [artifact("q1", "1.00")])
             write_json(repair / "answers.json", [artifact("q2", "2.00")])
 
@@ -66,6 +83,7 @@ class BBoardMergeTests(unittest.TestCase):
             root = Path(directory)
             source = root / "source"
             source.mkdir()
+            write_json(source / "run_manifest.json", {"model": {"model_name": "qwen3.5-plus"}})
             write_json(source / "answers.json", [artifact("q1", "无法计算")])
 
             manifest = assemble_answer_run(
@@ -78,6 +96,23 @@ class BBoardMergeTests(unittest.TestCase):
             self.assertFalse(manifest["submission_valid"])
             self.assertEqual(manifest["submission_validation_failures"][0]["qid"], "q1")
             self.assertFalse((root / "merged" / "submit.csv").exists())
+
+    def test_disallowed_source_model_is_not_submission_ready(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source"
+            source.mkdir()
+            write_json(source / "answers.json", [artifact("q1", "1.00")])
+            write_json(source / "run_manifest.json", {"model": {"model_name": "gpt-5.5"}})
+
+            manifest = assemble_answer_run(
+                questions=[question("q1")],
+                source_run_dirs=[source],
+                output_dir=root / "merged",
+            )
+
+            self.assertFalse(manifest["submission_valid"])
+            self.assertIn("allowed Qwen", manifest["submission_validation_failures"][0]["error"])
 
 
 if __name__ == "__main__":

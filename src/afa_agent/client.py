@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 import re
 import time
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Iterator
 
 import requests
 
@@ -17,6 +19,44 @@ class LLMResponse:
     content: str
     token_usage: TokenUsage
     raw_payload: dict[str, Any]
+
+
+@dataclass(slots=True)
+class LLMUsageLedger:
+    calls: list[dict[str, Any]]
+
+    def record(self, model_name: str, usage: TokenUsage) -> None:
+        self.calls.append(
+            {
+                "call_index": len(self.calls) + 1,
+                "model_name": model_name,
+                "token_usage": usage.to_dict(),
+            }
+        )
+
+    def total(self) -> dict[str, int]:
+        return {
+            field_name: sum(int(call["token_usage"][field_name]) for call in self.calls)
+            for field_name in ("prompt_tokens", "completion_tokens", "total_tokens")
+        }
+
+
+_ACTIVE_USAGE_LEDGER: ContextVar[LLMUsageLedger | None] = ContextVar(
+    "afa_active_llm_usage_ledger",
+    default=None,
+)
+
+
+@contextmanager
+def capture_llm_usage() -> Iterator[LLMUsageLedger]:
+    """Capture raw usage for every successful API response in the current context."""
+
+    ledger = LLMUsageLedger(calls=[])
+    token = _ACTIVE_USAGE_LEDGER.set(ledger)
+    try:
+        yield ledger
+    finally:
+        _ACTIVE_USAGE_LEDGER.reset(token)
 
 
 class OpenAICompatibleClient:
@@ -66,6 +106,10 @@ class OpenAICompatibleClient:
             completion_tokens=usage_payload.get("completion_tokens", 0),
             total_tokens=usage_payload.get("total_tokens", 0),
         )
+        _validate_raw_usage(usage)
+        ledger = _ACTIVE_USAGE_LEDGER.get()
+        if ledger is not None:
+            ledger.record(self.config.model_name, usage)
         return LLMResponse(content=content, token_usage=usage, raw_payload=parsed)
 
 
@@ -110,3 +154,11 @@ def _regex_fallback_payload(text: str) -> dict[str, Any] | None:
         ids = [part.strip() for part in evidence_match.group(1).split(",") if part.strip().isdigit()]
         payload["used_evidence_ids"] = [int(item) for item in ids]
     return payload if payload else None
+
+
+def _validate_raw_usage(usage: TokenUsage) -> None:
+    values = (usage.prompt_tokens, usage.completion_tokens, usage.total_tokens)
+    if any(isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in values):
+        raise ValueError("model API usage fields must be non-negative integers")
+    if usage.total_tokens != usage.prompt_tokens + usage.completion_tokens:
+        raise ValueError("model API total_tokens must equal prompt_tokens + completion_tokens")

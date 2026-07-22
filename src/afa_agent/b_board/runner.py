@@ -19,7 +19,8 @@ from afa_agent.b_board.io import (
     validate_b_answer,
     write_b_submission,
 )
-from afa_agent.client import OpenAICompatibleClient, extract_json_object
+from afa_agent.b_board.scoring import require_allowed_submission_model
+from afa_agent.client import OpenAICompatibleClient, capture_llm_usage, extract_json_object
 from afa_agent.config import build_run_config
 from afa_agent.domains.generic_retriever import GenericBM25Retriever
 from afa_agent.domains.registry import get_plugin
@@ -56,7 +57,13 @@ format 仅 raw,decimal0,decimal1,decimal2,percent2,date_cn,text。中间过程�
 格式优先级为：题干具体要求 > README通用规则 > 提交模板占位。题干未规定时，README要求百分数答案带%并保留两位小数，其他数值不带单位并保留两位小数。
 证据 ID 必须原样使用给定 evidence_id。题目本身给出的数值可引用 question:<qid>。只输出 JSON。"""
 
-RUNNER_VERSION = "b_actual_v9_expanded_readme_semantics"
+SUBMISSION_REASONING_PROMPT_VERSION = "b_submission_reasoning_v1"
+SUBMISSION_REASONING_SYSTEM_PROMPT = f"""你是金融长文问答的提交摘要生成器。只使用给定题目、答案、已有求解摘要和证据，不补充外部事实，也不得改变答案。
+输出一个 JSON 对象，字段仅为 answer_parts 和 reasoning。answer_parts 必须逐字复制给定答案。
+reasoning 是可审计但不暴露冗长思维链的推理摘要，使用中文，建议 60-220 字；必须具体说明定位到的主体/条款/指标，给出关键证据事实或计算关系，再说明这些依据如何支持答案。不得只复述题目或答案，不得写空泛模板，不得声称未提供的页码、条款号或事实。
+即使已有求解摘要很短，也要依据给定证据形成自洽摘要。只输出 JSON。prompt_version={SUBMISSION_REASONING_PROMPT_VERSION}。"""
+
+RUNNER_VERSION = "b_actual_v10_reasoning_audit"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 
 
@@ -98,6 +105,7 @@ class BAnswerArtifact:
             prompt_tokens=int(self.token_usage.get("prompt_tokens", 0)),
             completion_tokens=int(self.token_usage.get("completion_tokens", 0)),
             total_tokens=int(self.token_usage.get("total_tokens", 0)),
+            reasoning=self.decision_summary,
         )
 
 
@@ -135,6 +143,7 @@ class BBoardActualRunner:
         self.config = build_run_config(ROOT)
         if self.config.model is None:
             raise RuntimeError("Missing model config in .env")
+        require_allowed_submission_model(self.config.model.model_name)
         self.client = OpenAICompatibleClient(self.config.model)
         self.calculator = CalculationExecutor()
         self._migration = _migration_module()
@@ -153,11 +162,42 @@ class BBoardActualRunner:
         return {row["qid"]: row for row in located}
 
     def answer_one(self, question: BQuestion, locator: Mapping[str, Any]) -> BAnswerArtifact:
-        effective_attempt = self._migration._effective_attempt_for_domain(self.attempt, question.domain)
-        candidate_doc_ids = self._migration.select_answer_doc_ids(dict(locator), _question_row(question), effective_attempt)
-        if question.answer_format == "calculation":
-            return self._answer_calculation(question, candidate_doc_ids, locator)
-        return self._answer_choice(question, candidate_doc_ids, locator)
+        with capture_llm_usage() as usage_ledger:
+            try:
+                effective_attempt = self._migration._effective_attempt_for_domain(
+                    self.attempt, question.domain
+                )
+                candidate_doc_ids = self._migration.select_answer_doc_ids(
+                    dict(locator), _question_row(question), effective_attempt
+                )
+                if question.answer_format == "calculation":
+                    artifact = self._answer_calculation(question, candidate_doc_ids, locator)
+                else:
+                    artifact = self._answer_choice(question, candidate_doc_ids, locator)
+            except Exception as exc:
+                diagnostics = list(getattr(exc, "diagnostics", []))
+                diagnostics.append({"stage": "api_usage_ledger", "calls": usage_ledger.calls})
+                raise BAnswerGenerationError(
+                    str(exc),
+                    token_usage=usage_ledger.total(),
+                    diagnostics=diagnostics,
+                ) from exc
+
+        ledger_total = usage_ledger.total()
+        if artifact.token_usage != ledger_total:
+            artifact.decision_trace = {
+                **artifact.decision_trace,
+                "solver_reported_token_usage": dict(artifact.token_usage),
+            }
+        artifact.token_usage = ledger_total
+        artifact.decision_trace = {
+            **artifact.decision_trace,
+            "api_usage_ledger": {
+                "call_count": len(usage_ledger.calls),
+                "calls": usage_ledger.calls,
+            },
+        }
+        return artifact
 
     def run(
         self,
@@ -212,6 +252,7 @@ class BBoardActualRunner:
                 run_dir / "submit.csv",
                 selected,
                 [item.to_submission_answer() for item in ordered_artifacts],
+                audit_ready=True,
             )
         write_json(run_dir / "answers.json", [item.to_dict() for item in ordered_artifacts])
         write_jsonl(run_dir / "failures.jsonl", failures)
@@ -262,7 +303,7 @@ class BBoardActualRunner:
         finalization = result.debug_meta.get("answer_finalization", {}) or {}
         consistency = result.debug_meta.get("final_consistency_check", {}) or {}
         decision_trace = {**finalization, "final_consistency_check": consistency}
-        return BAnswerArtifact(
+        artifact = BAnswerArtifact(
             qid=question.qid,
             domain=question.domain,
             answer_format=question.answer_format,
@@ -276,6 +317,7 @@ class BBoardActualRunner:
             token_usage=result.token_usage.to_dict(),
             locator={**dict(locator), "selected_doc_ids": candidate_doc_ids},
         )
+        return self._attach_submission_reasoning(question, artifact)
 
     def _answer_calculation(
         self,
@@ -359,12 +401,7 @@ class BBoardActualRunner:
                     answer_parts=list(result.answer_parts),
                     used_evidence_ids=list(result.used_evidence_ids),
                     evidence_items=selected_evidence,
-                    decision_summary=(
-                        "结构化计算已通过本地重放与证据变量核验；"
-                        "最终按题目具体格式输出："
-                        + "；".join(result.answer_parts)
-                        + "。"
-                    ),
+                    decision_summary=str(plan.get("decision_summary", "")).strip(),
                     decision_trace={"source": "structured_calculation_plan", "format_forced": False},
                     calculation_trace=result.trace,
                     token_usage=usage.to_dict(),
@@ -374,9 +411,16 @@ class BBoardActualRunner:
                         "calculation_retrieval_rounds": retrieval_rounds,
                     },
                 )
+                artifact = self._attach_submission_reasoning(question, artifact)
                 validate_b_answer(question, artifact.to_submission_answer())
                 return artifact
             except Exception as exc:
+                if isinstance(exc, BAnswerGenerationError):
+                    raise BAnswerGenerationError(
+                        str(exc),
+                        token_usage=exc.token_usage,
+                        diagnostics=[*diagnostics, *exc.diagnostics],
+                    ) from exc
                 last_error = exc
                 diagnostics.append(
                     {
@@ -437,6 +481,79 @@ class BBoardActualRunner:
             token_usage=usage.to_dict(),
             diagnostics=diagnostics,
         ) from last_error
+
+    def _attach_submission_reasoning(
+        self,
+        question: BQuestion,
+        artifact: BAnswerArtifact,
+    ) -> BAnswerArtifact:
+        evidence_payload = [
+            {
+                "unit_id": str(item.get("unit_id", "")),
+                "doc_id": str(item.get("doc_id", "")),
+                "title": " > ".join(str(value) for value in item.get("title_path", [])),
+                "text": str(item.get("text", ""))[:1800],
+            }
+            for item in artifact.evidence_items[:12]
+        ]
+        messages = [
+            {"role": "system", "content": SUBMISSION_REASONING_SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        "qid": question.qid,
+                        "question": question.question,
+                        "options": question.options,
+                        "answer_parts": artifact.answer_parts,
+                        "existing_solution_summary": artifact.decision_summary,
+                        "evidence": evidence_payload,
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+            },
+        ]
+        response = self.client.chat_json(messages)
+        combined_usage = _add_token_usage(artifact.token_usage, response.token_usage.to_dict())
+        diagnostics = [
+            {
+                "stage": "submission_reasoning",
+                "prompt_version": SUBMISSION_REASONING_PROMPT_VERSION,
+                "response_preview": response.content[:1000],
+            }
+        ]
+        try:
+            payload = extract_json_object(response.content)
+            answer_parts = payload.get("answer_parts")
+            if not isinstance(answer_parts, list) or [str(item) for item in answer_parts] != artifact.answer_parts:
+                raise ValueError("submission reasoning response changed answer_parts")
+            reasoning = str(payload.get("reasoning", "")).strip()
+            if len(re.sub(r"\s+", "", reasoning)) < 20:
+                raise ValueError("submission reasoning is shorter than 20 non-whitespace characters")
+            if response.token_usage.prompt_tokens <= 0 or response.token_usage.completion_tokens <= 0:
+                raise ValueError("submission reasoning API response is missing positive raw usage")
+        except Exception as exc:
+            diagnostics[0]["error_type"] = exc.__class__.__name__
+            diagnostics[0]["error"] = str(exc)[:1000]
+            raise BAnswerGenerationError(
+                f"Submission reasoning finalization failed: {exc}",
+                token_usage=combined_usage,
+                diagnostics=diagnostics,
+            ) from exc
+
+        artifact.decision_summary = reasoning
+        artifact.token_usage = combined_usage
+        artifact.decision_trace = {
+            **artifact.decision_trace,
+            "submission_reasoning": {
+                "prompt_version": SUBMISSION_REASONING_PROMPT_VERSION,
+                "model_name": self.config.model.model_name,
+                "token_usage": response.token_usage.to_dict(),
+                "answer_parts_preserved": True,
+            },
+        }
+        return artifact
 
     def _build_fingerprint(self, questions: Sequence[BQuestion], workers: int) -> dict[str, Any]:
         public_model = {

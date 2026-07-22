@@ -84,7 +84,7 @@ class BBoardCalculationRevalidationTests(unittest.TestCase):
         self.assertFalse(result.decision_trace["format_forced"])
         self.assertTrue(result.decision_trace["format_migrated"])
         self.assertTrue(result.decision_trace["format_change_allowed"])
-        self.assertEqual(result.token_usage["total_tokens"], 0)
+        self.assertEqual(result.token_usage["total_tokens"], 2)
 
 
 if __name__ == "__main__":

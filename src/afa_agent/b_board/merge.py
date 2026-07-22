@@ -7,6 +7,7 @@ from typing import Any, Mapping, Sequence
 
 from afa_agent.b_board.io import BQuestion, validate_b_answer, write_b_submission
 from afa_agent.b_board.runner import BAnswerArtifact, _artifact_from_dict, _sum_tokens
+from afa_agent.b_board.scoring import is_allowed_submission_model
 from afa_agent.io_utils import ensure_dir, read_json, write_json
 
 
@@ -38,9 +39,23 @@ def assemble_answer_run(
     artifacts: dict[str, BAnswerArtifact] = {}
     provenance: dict[str, dict[str, Any]] = {}
     sources: list[dict[str, Any]] = []
+    source_failures: list[dict[str, str]] = []
     for source_index, source_dir in enumerate(source_run_dirs):
         resolved = Path(source_dir).resolve()
         answers_path = resolved / "answers.json"
+        manifest_path = resolved / "run_manifest.json"
+        source_manifest = read_json(manifest_path) if manifest_path.exists() else {}
+        source_model = str(dict(source_manifest.get("model") or {}).get("model_name", ""))
+        if not is_allowed_submission_model(source_model):
+            source_failures.append(
+                {
+                    "qid": "*",
+                    "error": (
+                        f"source run {resolved} does not declare an allowed Qwen3.5/Qwen3.6 "
+                        f"generation model (got {source_model or 'missing'})"
+                    ),
+                }
+            )
         rows = read_json(answers_path)
         if not isinstance(rows, list):
             raise ValueError(f"{answers_path}: expected a JSON array")
@@ -57,6 +72,7 @@ def assemble_answer_run(
                 "source_index": source_index,
                 "source_run_dir": str(resolved),
                 "answers_sha256": _file_sha256(answers_path),
+                "model_name": source_model,
             }
         if len(source_qids) != len(set(source_qids)):
             raise ValueError(f"{answers_path}: duplicate qids")
@@ -66,6 +82,7 @@ def assemble_answer_run(
                 "run_dir": str(resolved),
                 "answer_count": len(source_qids),
                 "answers_sha256": _file_sha256(answers_path),
+                "model_name": source_model,
             }
         )
 
@@ -73,10 +90,11 @@ def assemble_answer_run(
     if missing:
         raise ValueError(f"composite answer coverage is incomplete: {missing}")
     ordered = [artifacts[item.qid] for item in questions]
-    invalid: list[dict[str, str]] = []
+    invalid: list[dict[str, str]] = list(source_failures)
     for question, artifact in zip(questions, ordered):
         try:
             validate_b_answer(question, artifact.to_submission_answer())
+            _validate_usage_ledger(artifact)
         except ValueError as exc:
             invalid.append({"qid": question.qid, "error": str(exc)})
 
@@ -91,6 +109,7 @@ def assemble_answer_run(
             path,
             questions,
             [item.to_submission_answer() for item in ordered],
+            audit_ready=True,
         )
         submission_path = str(path)
 
@@ -119,3 +138,31 @@ def _file_sha256(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _validate_usage_ledger(artifact: BAnswerArtifact) -> None:
+    ledger = dict(artifact.decision_trace.get("api_usage_ledger") or {})
+    calls = ledger.get("calls")
+    if not isinstance(calls, list) or not calls:
+        raise ValueError(f"{artifact.qid}: missing per-call API usage ledger")
+    totals = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+    for index, call in enumerate(calls, start=1):
+        if not isinstance(call, Mapping):
+            raise ValueError(f"{artifact.qid}: usage ledger call {index} is invalid")
+        model_name = str(call.get("model_name", ""))
+        if not is_allowed_submission_model(model_name):
+            raise ValueError(
+                f"{artifact.qid}: usage ledger call {index} used disallowed model {model_name!r}"
+            )
+        usage = dict(call.get("token_usage") or {})
+        values = [usage.get(field_name) for field_name in totals]
+        if any(isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in values):
+            raise ValueError(f"{artifact.qid}: usage ledger call {index} has invalid raw usage")
+        if values[2] != values[0] + values[1]:
+            raise ValueError(f"{artifact.qid}: usage ledger call {index} has inconsistent total_tokens")
+        for field_name, value in zip(totals, values):
+            totals[field_name] += value
+    if totals != artifact.token_usage:
+        raise ValueError(
+            f"{artifact.qid}: usage ledger total {totals} does not match row usage {artifact.token_usage}"
+        )

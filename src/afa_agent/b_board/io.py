@@ -11,6 +11,21 @@ from typing import Any, Iterable, Mapping, Sequence
 
 SUBMISSION_COLUMNS = (
     "qid",
+    "answer1",
+    "answer2",
+    "answer3",
+    "answer4",
+    "prompt_tokens",
+    "completion_tokens",
+    "total_tokens",
+    "reasoning",
+)
+
+# The question package predates the July 2026 scoring change.  Keep accepting
+# its eight-column CSV as a slot template, but never emit that legacy schema as
+# a submission.
+LEGACY_TEMPLATE_COLUMNS = (
+    "qid",
     "answer_1",
     "answer_2",
     "answer_3",
@@ -81,6 +96,7 @@ class BAnswer:
     prompt_tokens: int = 0
     completion_tokens: int = 0
     total_tokens: int | None = None
+    reasoning: str = ""
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "answer_parts", tuple(self.answer_parts))
@@ -97,6 +113,10 @@ class BAnswer:
                     f"{self.qid}: total_tokens={self.total_tokens} does not equal "
                     f"prompt_tokens + completion_tokens ({expected_total})"
                 )
+        if not isinstance(self.reasoning, str):
+            raise ValueError(f"{self.qid}.reasoning must be a string")
+        if "\x00" in self.reasoning:
+            raise ValueError(f"{self.qid}.reasoning contains a NUL character")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -105,6 +125,7 @@ class BAnswer:
             "prompt_tokens": self.prompt_tokens,
             "completion_tokens": self.completion_tokens,
             "total_tokens": self.total_tokens,
+            "reasoning": self.reasoning,
         }
 
 
@@ -252,12 +273,15 @@ def load_submission_template(path: Path | str) -> SubmissionTemplate:
     source = Path(path)
     with source.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
-        if tuple(reader.fieldnames or ()) != SUBMISSION_COLUMNS:
+        columns = tuple(reader.fieldnames or ())
+        if columns not in {SUBMISSION_COLUMNS, LEGACY_TEMPLATE_COLUMNS}:
             raise ValueError(
-                f"{source}: expected submission columns {SUBMISSION_COLUMNS}, "
-                f"got {tuple(reader.fieldnames or ())}"
+                f"{source}: expected current columns {SUBMISSION_COLUMNS} or legacy template "
+                f"columns {LEGACY_TEMPLATE_COLUMNS}, got {columns}"
             )
         rows = list(reader)
+
+    answer_prefix = "answer" if columns == SUBMISSION_COLUMNS else "answer_"
 
     if not rows or rows[0]["qid"].strip() != "summary":
         raise ValueError(f"{source}: summary must be the first data row")
@@ -272,7 +296,7 @@ def load_submission_template(path: Path | str) -> SubmissionTemplate:
         _require_nonempty_text(qid, f"{source}:{row_number} qid")
         if qid == "summary" or qid in slot_templates:
             raise ValueError(f"{source}:{row_number}: duplicate or reserved qid {qid!r}")
-        slots = tuple(row[f"answer_{index}"].strip() for index in range(1, 5))
+        slots = tuple(row[f"{answer_prefix}{index}"].strip() for index in range(1, 5))
         used = sum(bool(value) for value in slots)
         if used == 0 or slots[:used] != tuple(value for value in slots if value):
             raise ValueError(
@@ -397,8 +421,14 @@ def write_b_submission(
     path: Path | str,
     questions: Sequence[BQuestion],
     answers: Iterable[BAnswer] | Mapping[str, BAnswer],
+    *,
+    audit_ready: bool = False,
 ) -> None:
-    """Write and re-validate the official eight-column B-board CSV."""
+    """Write and re-validate the current nine-column B-board CSV.
+
+    ``audit_ready`` additionally rejects rows that would receive an automatic
+    zero reasoning score or cannot plausibly originate from a model API call.
+    """
 
     destination = Path(path)
     answer_by_qid = _index_answers(answers)
@@ -414,13 +444,14 @@ def write_b_submission(
         writer.writerow(
             {
                 "qid": "summary",
-                "answer_1": "",
-                "answer_2": "",
-                "answer_3": "",
-                "answer_4": "",
+                "answer1": "",
+                "answer2": "",
+                "answer3": "",
+                "answer4": "",
                 "prompt_tokens": prompt_total,
                 "completion_tokens": completion_total,
                 "total_tokens": total,
+                "reasoning": "",
             }
         )
         for question in questions:
@@ -430,59 +461,87 @@ def write_b_submission(
                 "prompt_tokens": answer.prompt_tokens,
                 "completion_tokens": answer.completion_tokens,
                 "total_tokens": answer.total_tokens,
+                "reasoning": answer.reasoning,
             }
             for index in range(1, 5):
-                row[f"answer_{index}"] = (
+                row[f"answer{index}"] = (
                     answer.answer_parts[index - 1] if index <= len(answer.answer_parts) else ""
                 )
             writer.writerow(row)
 
-    validate_b_submission(destination, questions)
+    validate_b_submission(destination, questions, audit_ready=audit_ready)
 
 
 write_submission_csv = write_b_submission
 
 
-def validate_b_submission(path: Path | str, questions: Sequence[BQuestion]) -> list[BAnswer]:
+def validate_b_submission(
+    path: Path | str,
+    questions: Sequence[BQuestion],
+    *,
+    audit_ready: bool = False,
+) -> list[BAnswer]:
     source = Path(path)
     with source.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
-        if tuple(reader.fieldnames or ()) != SUBMISSION_COLUMNS:
-            raise ValueError(f"{source}: submission must have exactly the official eight columns")
+        columns = tuple(reader.fieldnames or ())
+        missing_columns = [column for column in SUBMISSION_COLUMNS if column not in columns]
+        if missing_columns:
+            raise ValueError(
+                f"{source}: submission is missing required columns {missing_columns}; "
+                f"required columns are {SUBMISSION_COLUMNS}"
+            )
         rows = list(reader)
 
-    if len(rows) != len(questions) + 1 or not rows or rows[0]["qid"] != "summary":
-        raise ValueError(f"{source}: expected summary first and exactly {len(questions)} answer rows")
-    _validate_summary_row_shape(rows[0], source)
+    summary_rows = [row for row in rows if row["qid"] == "summary"]
+    if len(summary_rows) > 1:
+        raise ValueError(f"{source}: submission contains multiple summary rows")
+    question_rows = [row for row in rows if row["qid"] != "summary"]
+    if len(question_rows) != len(questions):
+        raise ValueError(f"{source}: expected exactly {len(questions)} answer rows")
+    if summary_rows:
+        _validate_summary_row_shape(summary_rows[0], source)
 
     parsed: list[BAnswer] = []
-    for row_number, (row, question) in enumerate(zip(rows[1:], questions), start=3):
+    for row_number, (row, question) in enumerate(zip(question_rows, questions), start=2):
         if row["qid"] != question.qid:
             raise ValueError(
                 f"{source}:{row_number}: expected qid {question.qid!r}, got {row['qid']!r}"
             )
         prompt, completion, total = _parse_row_tokens(row, f"{source}:{row_number}")
-        parts = tuple(row[f"answer_{index}"] for index in range(1, question.answer_slots + 1))
-        if any(row[f"answer_{index}"] for index in range(question.answer_slots + 1, 5)):
+        parts = tuple(row[f"answer{index}"] for index in range(1, question.answer_slots + 1))
+        if any(row[f"answer{index}"] for index in range(question.answer_slots + 1, 5)):
             raise ValueError(f"{source}:{row_number}: unused answer slots must be empty")
-        answer = BAnswer(question.qid, parts, prompt, completion, total)
+        answer = BAnswer(
+            question.qid,
+            parts,
+            prompt,
+            completion,
+            total,
+            row["reasoning"],
+        )
         validate_b_answer(question, answer)
+        if audit_ready:
+            _validate_audit_ready_answer(answer, f"{source}:{row_number}")
         parsed.append(answer)
 
     expected_prompt = sum(answer.prompt_tokens for answer in parsed)
     expected_completion = sum(answer.completion_tokens for answer in parsed)
     expected_total = expected_prompt + expected_completion
-    summary_prompt, summary_completion, summary_total = _parse_row_tokens(rows[0], f"{source}:2")
-    if (summary_prompt, summary_completion, summary_total) != (
-        expected_prompt,
-        expected_completion,
-        expected_total,
-    ):
-        raise ValueError(
-            f"{source}: summary token totals do not equal the sum of question rows: "
-            f"expected {(expected_prompt, expected_completion, expected_total)}, "
-            f"got {(summary_prompt, summary_completion, summary_total)}"
+    if summary_rows:
+        summary_prompt, summary_completion, summary_total = _parse_row_tokens(
+            summary_rows[0], f"{source}:summary"
         )
+        if (summary_prompt, summary_completion, summary_total) != (
+            expected_prompt,
+            expected_completion,
+            expected_total,
+        ):
+            raise ValueError(
+                f"{source}: summary token totals do not equal the sum of question rows: "
+                f"expected {(expected_prompt, expected_completion, expected_total)}, "
+                f"got {(summary_prompt, summary_completion, summary_total)}"
+            )
     return parsed
 
 
@@ -639,9 +698,22 @@ def _parse_row_tokens(row: Mapping[str, str], context: str) -> tuple[int, int, i
 
 
 def _validate_summary_row_shape(row: Mapping[str, str], source: Path) -> None:
-    if any(row[f"answer_{index}"] for index in range(1, 5)):
+    answer_prefix = "answer" if "answer1" in row else "answer_"
+    if any(row[f"{answer_prefix}{index}"] for index in range(1, 5)):
         raise ValueError(f"{source}: summary answer slots must be empty")
+    if "reasoning" in row and row["reasoning"]:
+        raise ValueError(f"{source}: summary reasoning must be empty")
     _parse_row_tokens(row, f"{source}:2")
+
+
+def _validate_audit_ready_answer(answer: BAnswer, context: str) -> None:
+    reasoning = re.sub(r"\s+", "", answer.reasoning)
+    if len(reasoning) < 20:
+        raise ValueError(f"{context}: reasoning must contain at least 20 non-whitespace characters")
+    if answer.prompt_tokens <= 0 or answer.completion_tokens <= 0:
+        raise ValueError(
+            f"{context}: audit-ready rows require positive prompt_tokens and completion_tokens"
+        )
 
 
 def _require_nonempty_text(value: object, context: str) -> None:

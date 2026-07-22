@@ -186,6 +186,10 @@ class ActualBQuestionLoadingTests(unittest.TestCase):
 
         validate_b_answer(question, BAnswer("q1", ("甲公司>乙公司", "1.20")))
 
+    @unittest.skipUnless(
+        (UPLOAD_B / "question_b").is_dir() and (UPLOAD_B / "submit.csv").is_file(),
+        "local B-board competition package is not tracked in git",
+    )
     def test_loads_real_json_jsonl_and_bom_in_official_order(self) -> None:
         questions = load_b_questions(UPLOAD_B)
 
@@ -232,9 +236,9 @@ class ActualBQuestionLoadingTests(unittest.TestCase):
             with (root / "submit.csv").open("w", encoding="utf-8", newline="") as handle:
                 writer = csv.writer(handle)
                 writer.writerow(SUBMISSION_COLUMNS)
-                writer.writerow(["summary", "", "", "", "", 0, 0, 0])
-                writer.writerow(["q1", "文本", "", "", "", 0, 0, 0])
-                writer.writerow(["q2", "A", "", "", "", 0, 0, 0])
+                writer.writerow(["summary", "", "", "", "", 0, 0, 0, ""])
+                writer.writerow(["q1", "文本", "", "", "", 0, 0, 0, ""])
+                writer.writerow(["q2", "A", "", "", "", 0, 0, 0, ""])
 
             self.assertEqual(read_b_question_file(json_path)[0]["type"], "抽取题")
             self.assertEqual(read_b_question_file(jsonl_path)[0]["qid"], "q2")
@@ -253,8 +257,8 @@ class ActualBQuestionLoadingTests(unittest.TestCase):
             with (root / "submit.csv").open("w", encoding="utf-8", newline="") as handle:
                 writer = csv.writer(handle)
                 writer.writerow(SUBMISSION_COLUMNS)
-                writer.writerow(["summary", "", "", "", "", 0, 0, 0])
-                writer.writerow(["q2", "A", "", "", "", 0, 0, 0])
+                writer.writerow(["summary", "", "", "", "", 0, 0, 0, ""])
+                writer.writerow(["q2", "A", "", "", "", 0, 0, 0, ""])
 
             with self.assertRaisesRegex(ValueError, "qid mismatch"):
                 load_b_questions(root)
@@ -322,15 +326,61 @@ class BSubmissionWriterTests(unittest.TestCase):
 
         self.assertEqual(tuple(rows[0]), SUBMISSION_COLUMNS)
         self.assertEqual(rows[0], {
-            "qid": "summary", "answer_1": "", "answer_2": "", "answer_3": "", "answer_4": "",
+            "qid": "summary", "answer1": "", "answer2": "", "answer3": "", "answer4": "",
             "prompt_tokens": "30", "completion_tokens": "5", "total_tokens": "35",
+            "reasoning": "",
         })
-        self.assertEqual(rows[1]["answer_1"], "B")
-        self.assertEqual(rows[1]["answer_2"], "")
-        self.assertEqual(rows[2]["answer_1"], "12.34")
-        self.assertEqual(rows[2]["answer_2"], "56.78%")
-        self.assertEqual(rows[2]["answer_3"], "")
+        self.assertEqual(rows[1]["answer1"], "B")
+        self.assertEqual(rows[1]["answer2"], "")
+        self.assertEqual(rows[2]["answer1"], "12.34")
+        self.assertEqual(rows[2]["answer2"], "56.78%")
+        self.assertEqual(rows[2]["answer3"], "")
         self.assertEqual([answer.qid for answer in parsed], ["q1", "q2"])
+
+    def test_accepts_extra_columns_and_optional_summary(self) -> None:
+        question = make_question(answer_format="mcq")
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory) / "submit.csv"
+            with destination.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.writer(handle)
+                writer.writerow([*SUBMISSION_COLUMNS, "model_declaration"])
+                writer.writerow([
+                    "q1", "A", "", "", "", 10, 5, 15,
+                    "定位到题目对应条款，逐项核对后只有A符合条件，因此选择A。",
+                    "qwen3.5-plus",
+                ])
+
+            parsed = validate_b_submission(destination, [question], audit_ready=True)
+
+        self.assertEqual(parsed[0].answer_parts, ("A",))
+
+    def test_audit_ready_rejects_short_reasoning_and_zero_usage(self) -> None:
+        question = make_question(answer_format="mcq")
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory) / "submit.csv"
+            with self.assertRaisesRegex(ValueError, "at least 20"):
+                write_b_submission(
+                    destination,
+                    [question],
+                    [BAnswer("q1", ("A",), 1, 1, 2, "理由太短")],
+                    audit_ready=True,
+                )
+            with self.assertRaisesRegex(ValueError, "positive"):
+                write_b_submission(
+                    destination,
+                    [question],
+                    [
+                        BAnswer(
+                            "q1",
+                            ("A",),
+                            0,
+                            0,
+                            0,
+                            "定位到题目对应条款，逐项核对后只有A符合条件，因此选择A。",
+                        )
+                    ],
+                    audit_ready=True,
+                )
 
     def test_rejects_missing_answers_and_wrong_slot_count(self) -> None:
         question = make_question(answer_format="calculation", slots=2)

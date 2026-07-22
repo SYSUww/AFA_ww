@@ -108,11 +108,9 @@ def revalidate_calculation_artifact(
         answer_parts=list(replay.answer_parts),
         used_evidence_ids=used_ids,
         evidence_items=selected_evidence,
-        decision_summary=(
-            "Deterministically replayed the incumbent calculation trace against literal "
-            "evidence and applied the question-first, README-second answer-format contract."
-        ),
+        decision_summary=artifact.decision_summary,
         decision_trace={
+            **artifact.decision_trace,
             "source": "incumbent_trace_literal_revalidation_a5",
             "format_forced": False,
             "format_migrated": not answer_preserved,
@@ -121,7 +119,7 @@ def revalidate_calculation_artifact(
             "supporting_evidence_ids": requested_support,
         },
         calculation_trace=replay.trace,
-        token_usage={"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+        token_usage=dict(artifact.token_usage),
         locator={
             **artifact.locator,
             "calculation_revalidation": {

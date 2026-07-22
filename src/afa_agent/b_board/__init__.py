@@ -1,6 +1,7 @@
 """Public contracts for loading and exporting the real B-board dataset."""
 
 from .io import (
+    LEGACY_TEMPLATE_COLUMNS,
     SUBMISSION_COLUMNS,
     BAnswer,
     BAnswerResult,
@@ -16,9 +17,17 @@ from .io import (
     write_b_submission,
     write_submission_csv,
 )
+from .scoring import (
+    BBoardScore,
+    is_allowed_submission_model,
+    require_allowed_submission_model,
+    score_submission,
+    token_efficiency_score,
+)
 
 __all__ = [
     "SUBMISSION_COLUMNS",
+    "LEGACY_TEMPLATE_COLUMNS",
     "BAnswer",
     "BAnswerResult",
     "BQuestion",
@@ -32,4 +41,9 @@ __all__ = [
     "validate_b_submission",
     "write_b_submission",
     "write_submission_csv",
+    "BBoardScore",
+    "is_allowed_submission_model",
+    "require_allowed_submission_model",
+    "score_submission",
+    "token_efficiency_score",
 ]
