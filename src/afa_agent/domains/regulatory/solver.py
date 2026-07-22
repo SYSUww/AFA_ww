@@ -863,12 +863,18 @@ class RegulatorySolver:
             specs.extend(
                 [
                     {
-                        "required": ["存量非自然人客户", "6个月内完成", "较高风险以上存量客户", "受益所有人识别核实"],
-                        "optional": ["2年内完成全部存量客户", "本办法施行之日起"],
+                        "required": [
+                            "对本办法施行前已经建立业务关系的存量客户",
+                            "半年内完成较高风险以上存量客户的尽职调查",
+                        ],
+                        "optional": ["2年内完成全部存量客户的尽职调查", "第五十一条"],
                     },
                     {
-                        "required": ["开展客户尽职调查应当采取下列尽职调查措施", "识别并采取合理措施核实客户的受益所有人"],
-                        "optional": ["对于客户为法人或者非法人组织的", "第七条"],
+                        "required": [
+                            "金融机构客户尽职调查和客户身份资料及交易记录保存管理办法",
+                            "自2026年1月1日起施行",
+                        ],
+                        "optional": ["第五十二条", "2025年10月31日"],
                     },
                 ]
             )
@@ -1208,12 +1214,10 @@ class RegulatorySolver:
         elif (
             "较高风险以上存量客户" in compact_option
             and ("半年" in compact_option or "6个月" in compact_option)
-            and "6个月内完成较高风险以上存量客户" in compact_evidence
-            and "受益所有人识别核实工作" in compact_evidence
-            and "开展客户尽职调查应当采取下列尽职调查措施" in compact_evidence
-            and "识别并采取合理措施核实客户的受益所有人" in compact_evidence
+            and "半年内完成较高风险以上存量客户的尽职调查" in compact_evidence
+            and "自2026年1月1日起施行" in compact_evidence
         ):
-            override_reason = "规则复核：受益所有人识别办法第三十九条要求6个月内完成较高风险以上存量客户的受益所有人识别核实；客户尽调办法第七条又明确该识别核实属于客户尽职调查措施。"
+            override_reason = "规则复核：客户尽调办法第五十一条直接要求自施行日起半年内完成较高风险以上存量客户尽调；该办法已于2026年1月1日施行。"
         elif (
             "受益所有人识别新办法" in compact_option
             and "2026年1月15日" in compact_option
@@ -1235,12 +1239,12 @@ class RegulatorySolver:
         ):
             return {
                 **payload,
-                "label": False,
-                "support_score": 0.0,
-                "verdict": "refute",
-                "is_clearly_refuted": True,
-                "reasoning_summary": "规则复核：选项称新办法于2026年1月15日生效，但原文明确生效日为2026年1月1日。",
-                "rule_override": "regulatory_cdd_effective_date_mismatch",
+                "label": True,
+                "support_score": max(float(payload.get("support_score", 0.0) or 0.0), 0.95),
+                "verdict": "support",
+                "is_clearly_refuted": False,
+                "reasoning_summary": "规则复核：题设以2026年1月15日为参考时点；客户尽调新办法自2026年1月1日起施行，因此届时已经生效。",
+                "rule_override": "regulatory_cdd_effective_by_reference_date",
             }
         elif (
             "业务统计应按办法报人民银行" in compact_option

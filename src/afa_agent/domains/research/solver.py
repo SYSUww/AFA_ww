@@ -1249,15 +1249,31 @@ class ResearchSolver:
                 allow_corpus_wide=True,
             )
             regional_capacity = self._merge_hits([*european_capacity, *southeast_capacity], limit=4)
-            standards_and_solutions = self._literal_hits(
+            standard_output = self._literal_hits(
+                question,
+                term_groups=[["反向输出技术标准"]],
+                marker="remaining_choice_global_standard_output",
+                limit=2,
+                allow_corpus_wide=True,
+            )
+            service_output = self._literal_hits(
                 question,
                 term_groups=[
-                    ["反向输出技术标准"],
                     ["定制化解决方案输出", "硬件+软件+实施+运维", "持续性收入"],
                     ["国际收入", "全球营销网络", "定制化服务"],
                 ],
-                marker="remaining_choice_global_solution_output",
-                limit=4,
+                marker="remaining_choice_global_service_output",
+                limit=3,
+                allow_corpus_wide=True,
+            )
+            geopolitical_trade_risk = self._literal_hits(
+                question,
+                term_groups=[
+                    ["应对地缘政治风险", "规避贸易风险", "泰国建设工厂"],
+                    ["美国关税", "越南工厂", "海外布局"],
+                ],
+                marker="remaining_choice_geopolitical_trade_risk",
+                limit=3,
                 allow_corpus_wide=True,
             )
             if "主要目的地" in option and "东南亚" in option:
@@ -1268,27 +1284,32 @@ class ResearchSolver:
                         regional_capacity,
                     )
             if "不仅是产能" in option and ("技术标准" in option or "服务能力" in option):
-                if standards_and_solutions:
+                if standard_output and service_output:
+                    rule_hits = self._merge_hits([*standard_output, *service_output], limit=4)
                     return (
                         True,
                         "材料同时出现技术标准反向输出，以及硬件、软件、实施、运维一体化解决方案的跨区域输出，说明全球化能力不止是产能搬迁，也包括标准与服务能力。",
-                        standards_and_solutions,
+                        rule_hits,
                     )
             if "完全不同" in option and ("跨境旅游" in option or "免税" in option):
-                if standards_and_solutions:
+                if service_output:
                     return (
                         False,
                         "制造业全球化本身已包含软件、实施、运维等服务和定制化方案输出，不能与消费服务全球化划为完全不同的逻辑；跨境旅游或免税也不足以概括全部服务输出。",
-                        standards_and_solutions,
+                        service_output,
                     )
             if ("多区域产能" in option or "多区域布局产能" in option) and (
                 "贸易壁垒" in option or "关税壁垒" in option
             ):
-                if regional_capacity:
+                if regional_capacity and geopolitical_trade_risk:
+                    rule_hits = self._merge_hits(
+                        [*geopolitical_trade_risk, *regional_capacity],
+                        limit=5,
+                    )
                     return (
                         True,
-                        "头部电池企业已采用欧洲与东南亚多区域的产能落地和全球协同模式，欧洲本地建厂明确用于满足本土化要求、规避贸易壁垒，支持该趋势判断。",
-                        regional_capacity,
+                        "材料明确把海外建厂与地缘政治、关税和贸易风险相联系，并展示欧洲、东南亚等多区域产能落地，支持企业以多区域布局对冲相关风险。",
+                        rule_hits,
                     )
 
         return None

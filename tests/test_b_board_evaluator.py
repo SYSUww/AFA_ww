@@ -216,6 +216,41 @@ class BBoardEvaluatorTests(unittest.TestCase):
         )
         self.assertIn("invalid_answer_slot:1", failures)
 
+    def test_question_specific_precision_overrides_generic_slot_template(self):
+        base = subject(
+            question="请计算该指标，保留一位小数，答案不带单位。",
+            type="计算题",
+            answer_format="calculation",
+            answer_slot_templates=["999999.99"],
+            calculation_trace={
+                "replay_verified": True,
+                "grounding_verified": True,
+            },
+        )
+        self.assertNotIn("invalid_answer_slot:1", detect_hard_failures(base | {"answer_parts": ["67.1"]}))
+        self.assertIn("invalid_answer_slot:1", detect_hard_failures(base | {"answer_parts": ["67.10"]}))
+
+    def test_question_specific_no_percent_overrides_percent_slot_template(self):
+        base = subject(
+            question="答案格式为权益乘数；近似资产收益率，均保留两位小数，后者不带%。",
+            type="计算题",
+            answer_format="calculation",
+            answer_slot_count=2,
+            answer_slot_templates=["999999.99", "999999.99%"],
+            calculation_trace={
+                "replay_verified": True,
+                "grounding_verified": True,
+            },
+        )
+        self.assertNotIn(
+            "invalid_answer_slot:2",
+            detect_hard_failures(base | {"answer_parts": ["2.58", "7.65"]}),
+        )
+        self.assertIn(
+            "invalid_answer_slot:2",
+            detect_hard_failures(base | {"answer_parts": ["2.58", "7.65%"]}),
+        )
+
     def test_fixed_evaluator_uses_clean_subject_and_usage(self):
         client = FakeClient([independent_payload(), evaluation_payload()])
         evaluator = FixedConfidenceEvaluator(client)

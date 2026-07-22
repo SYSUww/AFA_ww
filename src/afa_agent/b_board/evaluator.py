@@ -7,14 +7,18 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping, Protocol, Sequence
 
 from afa_agent.client import extract_json_object
-from afa_agent.b_board.io import validate_freeform_slot
+from afa_agent.b_board.io import (
+    infer_percent_suffix_requirement,
+    infer_requested_decimal_places,
+    validate_freeform_slot,
+)
 
 
 PROMPT_VERSION = "b_answer_error_judge_v2"
 INDEPENDENT_PROMPT_VERSION = "b_independent_solve_v1"
 BLIND_PROMPT_VERSION = "b_blind_pair_v1"
 SCHEMA_VERSION = 2
-HARD_GATE_VERSION = "b_hard_gate_v2"
+HARD_GATE_VERSION = "b_hard_gate_v3_question_specific_format"
 
 COMMON_DIMENSIONS = (
     "document_relevance",
@@ -303,13 +307,23 @@ def detect_hard_failures(subject: Mapping[str, Any]) -> list[str]:
         failures.append("answer_slot_count_mismatch")
     templates = subject.get("answer_slot_templates")
     question_type = str(subject.get("answer_format") or subject.get("type") or "")
+    question_text = str(subject.get("question") or "")
     if question_type in {"calculation", "freeform", "extraction", "计算题", "抽取题"}:
         if not isinstance(templates, list) or len(templates) != expected_slots:
             failures.append("answer_slot_templates_missing_or_mismatched")
         elif isinstance(parts, list) and len(parts) == len(templates):
             for index, (part, template) in enumerate(zip(parts, templates), start=1):
                 try:
-                    validate_freeform_slot(str(part), str(template))
+                    validate_freeform_slot(
+                        str(part),
+                        str(template),
+                        numeric_decimal_places=infer_requested_decimal_places(question_text),
+                        percent_suffix=infer_percent_suffix_requirement(
+                            question_text,
+                            slot_index=index,
+                            slot_count=expected_slots,
+                        ),
+                    )
                 except ValueError:
                     failures.append(f"invalid_answer_slot:{index}")
 

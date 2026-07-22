@@ -686,8 +686,8 @@ class FinancialContractsSolver:
                 )
             if "90个自然日" in option_compact and "宽限期" in option_compact:
                 add(
-                    ["原约定各给付日起90个自然日的宽限期"],
-                    ["无法按时还本付息", "债券持有人同意"],
+                    ["无法按时还本付息", "原约定各给付日起90个自然日的宽限期"],
+                    ["债券持有人同意"],
                     prefer_paragraph=True,
                     target_doc_ids=subject_doc_ids,
                 )
@@ -1391,6 +1391,21 @@ class FinancialContractsSolver:
             if (
                 "90个自然日" in option_compact
                 and "宽限期" in option_compact
+                and "发生违约时" in option_compact
+                and "无法按时还本付息" in evidence_compact
+                and "原约定各给付日起90个自然日的宽限期" in evidence_compact
+            ):
+                return self._rule_result(
+                    option_key,
+                    False,
+                    "contract_default_grace_scope_overgeneralized",
+                    "90日宽限期仅适用于无法按时还本付息，不能泛化到违约条款列举的全部违约情形。",
+                )
+            if (
+                "90个自然日" in option_compact
+                and "宽限期" in option_compact
+                and "无法按时还本付息" in option_compact
+                and "无法按时还本付息" in evidence_compact
                 and "原约定各给付日起90个自然日的宽限期" in evidence_compact
             ):
                 return self._rule_result(

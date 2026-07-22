@@ -39,10 +39,35 @@ class BBoardCalculationTests(unittest.TestCase):
             expected_numeric_decimal_places=1,
         )
 
-        self.assertEqual(result.answer_parts, ("67.10",))
-        self.assertEqual(result.trace["outputs"][0]["format"], "decimal2")
+        self.assertEqual(result.answer_parts, ("67.1",))
+        self.assertEqual(result.trace["outputs"][0]["format"], "decimal1")
         self.assertEqual(result.trace["outputs"][0]["question_decimal_places"], 1)
         self.assertEqual(result.trace["outputs"][0]["question_rounded_value"], "67.1")
+
+    def test_question_no_percent_instruction_overrides_percent_slot(self):
+        result = CalculationExecutor().execute(
+            {
+                "variables": [
+                    {
+                        "name": "return_rate",
+                        "value": "7.64951",
+                        "value_type": "decimal",
+                        "unit": "%",
+                        "evidence_ids": ["report"],
+                    }
+                ],
+                "steps": [],
+                "outputs": [{"source": {"ref": "return_rate"}, "format": "percent2"}],
+            },
+            expected_slots=1,
+            evidence_text_by_id={"report": "近似资产收益率为7.64951%"},
+            expected_slot_templates=("999999.99%",),
+            expected_numeric_decimal_places=2,
+            expected_percent_suffixes=(False,),
+        )
+
+        self.assertEqual(result.answer_parts, ("7.65",))
+        self.assertEqual(result.trace["outputs"][0]["format"], "percent2_bare")
 
     def test_legacy_trace_revalidation_prunes_helpers_and_converts_percent_ratio(self):
         result = CalculationExecutor().replay_legacy_trace(

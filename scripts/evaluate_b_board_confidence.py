@@ -24,7 +24,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--submission-template", default="upload_b/submit.csv")
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--model", default="gpt-5.6")
-    parser.add_argument("--output-name", default="evaluation_gpt56_error_audit_v2")
+    parser.add_argument("--output-name", default="evaluation_gpt56_error_audit_v3")
     return parser.parse_args()
 
 

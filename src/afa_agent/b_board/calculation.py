@@ -51,6 +51,7 @@ class CalculationExecutor:
         evidence_text_by_id: Mapping[str, str] | None = None,
         expected_slot_templates: Sequence[str] | None = None,
         expected_numeric_decimal_places: int | None = None,
+        expected_percent_suffixes: Sequence[bool | None] | None = None,
     ) -> CalculationResult:
         variables: dict[str, Any] = {}
         value_kinds: dict[str, str] = {}
@@ -152,10 +153,23 @@ class CalculationExecutor:
             if expected_slot_templates is not None:
                 if len(expected_slot_templates) != expected_slots:
                     raise CalculationPlanError("expected_slot_templates count mismatch")
+                if (
+                    expected_percent_suffixes is not None
+                    and len(expected_percent_suffixes) != expected_slots
+                ):
+                    raise CalculationPlanError("expected_percent_suffixes count mismatch")
                 slot_template = str(expected_slot_templates[position - 1])
+                percent_suffix = (
+                    expected_percent_suffixes[position - 1]
+                    if expected_percent_suffixes is not None
+                    else None
+                )
                 if (
                     expected_numeric_decimal_places is not None
-                    and re.fullmatch(r"9+\.99", slot_template)
+                    and (
+                        re.fullmatch(r"9+\.99", slot_template)
+                        or slot_template.endswith("%")
+                    )
                     and not isinstance(value, date)
                 ):
                     if expected_numeric_decimal_places not in {0, 1, 2}:
@@ -166,10 +180,12 @@ class CalculationExecutor:
                     quantum = Decimal("1").scaleb(-expected_numeric_decimal_places)
                     rendered_value = _decimal(value).quantize(quantum, rounding=ROUND_HALF_UP)
                     question_rounded_value = _serialize_value(rendered_value)
-                format_name = _format_for_slot_template(
+                format_name = _format_for_slot_contract(
                     slot_template,
                     rendered_value,
                     requested_format=requested_format,
+                    numeric_decimal_places=expected_numeric_decimal_places,
+                    percent_suffix=percent_suffix,
                 )
             rendered = _format_value(rendered_value, format_name, value_kind=value_kind)
             if not rendered:
@@ -180,6 +196,12 @@ class CalculationExecutor:
                         rendered,
                         str(expected_slot_templates[position - 1]),
                         f"output slot {position}",
+                        numeric_decimal_places=expected_numeric_decimal_places,
+                        percent_suffix=(
+                            expected_percent_suffixes[position - 1]
+                            if expected_percent_suffixes is not None
+                            else None
+                        ),
                     )
                 except ValueError as exc:
                     raise CalculationPlanError(str(exc)) from exc
@@ -680,12 +702,15 @@ def _format_value(value: Any, format_name: str, *, value_kind: str = "decimal") 
         return format(_decimal(value).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP), "f")
     if format_name == "decimal2":
         return format(_decimal(value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP), "f")
-    if format_name in {"percent2", "percent2_bare"}:
+    percent_match = re.fullmatch(r"percent([012])(_bare)?", format_name)
+    if percent_match:
         numeric = _decimal(value)
         if value_kind == "ratio":
             numeric *= Decimal("100")
-        rendered = format(numeric.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP), "f")
-        return rendered + ("%" if format_name == "percent2" else "")
+        places = int(percent_match.group(1))
+        quantum = Decimal("1").scaleb(-places)
+        rendered = format(numeric.quantize(quantum, rounding=ROUND_HALF_UP), "f")
+        return rendered + ("" if percent_match.group(2) else "%")
     if format_name == "date_cn":
         parsed = _date(value)
         return f"{parsed.year}年{parsed.month}月{parsed.day}日"
@@ -730,22 +755,32 @@ def _first_kind(kinds: Sequence[str]) -> str:
     return kinds[0] if kinds else "decimal"
 
 
-def _format_for_slot_template(
+def _format_for_slot_contract(
     template: str,
     value: Any,
     *,
     requested_format: str,
+    numeric_decimal_places: int | None,
+    percent_suffix: bool | None,
 ) -> str:
-    if template.endswith("%"):
-        return "percent2"
     if ">" in template:
         return "text"
-    if re.fullmatch(r"9+\.99", template):
+    if template.endswith("%") or re.fullmatch(r"9+\.99", template):
         if isinstance(value, date):
             return "date_cn"
-        if requested_format == "percent2":
-            return "percent2_bare"
-        return "decimal2"
+        places = 2 if numeric_decimal_places is None else numeric_decimal_places
+        if places not in {0, 1, 2}:
+            raise CalculationPlanError(
+                f"Unsupported question numeric precision: {numeric_decimal_places}"
+            )
+        template_requires_percent = template.endswith("%")
+        requires_percent = (
+            template_requires_percent if percent_suffix is None else percent_suffix
+        )
+        percent_semantics = requested_format.startswith("percent")
+        if requires_percent or percent_semantics:
+            return f"percent{places}" + ("" if requires_percent else "_bare")
+        return f"decimal{places}"
     raise CalculationPlanError(f"Unsupported output slot template: {template!r}")
 
 

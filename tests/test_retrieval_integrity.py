@@ -376,7 +376,9 @@ class FinancialContractSubjectClauseTests(unittest.TestCase):
             make_unit(
                 "text03::default-dispute",
                 "text03",
-                "债券持有人同意给予发行人自原约定各给付日起90个自然日的宽限期。协商不成的，双方约定向位于发行人住所所在地有管辖权的法院提请诉讼。",
+                "发行人无法按时还本付息时，债券持有人同意给予发行人自原约定各给付日起90个自然日的宽限期。"
+                "其他违约事项还包括提前偿付未足额、违反交叉保护承诺及其他承诺。"
+                "协商不成的，双方约定向位于发行人住所所在地有管辖权的法院提请诉讼。",
             ),
             make_unit("text14::other", "text14", "其他发行人的投资者保护条款。"),
         ]
@@ -392,7 +394,19 @@ class FinancialContractSubjectClauseTests(unittest.TestCase):
             question="关于《厦门金圆投资集团有限公司募集说明书》中投资者保护条款与违约事项。",
             options=options, answer_format="multi", type="多选题", doc_ids=["text14", "text03"],
         )
-        self.assert_bundle_labels(solver, question, {key: True for key in options}, "text03")
+        self.assert_bundle_labels(
+            solver,
+            question,
+            {"A": True, "B": False, "C": True, "D": True},
+            "text03",
+        )
+
+        scoped_option = "发行人无法按时还本付息时，债券持有人同意给予自原约定给付日起90个自然日的宽限期"
+        scoped_hits = solver._targeted_literal_hits(question, "B", scoped_option)
+        scoped_result = solver._rule_override(question, "B", scoped_option, scoped_hits)
+        self.assertIsNotNone(scoped_result)
+        self.assertTrue(scoped_result["label"])
+        self.assertEqual(scoped_result["rule"], "contract_default_payment_grace_period")
 
     def test_subscription_commitments_bind_each_option_to_its_issuer(self) -> None:
         units = [
@@ -1125,6 +1139,10 @@ class ResearchFinancialClauseBundleTests(unittest.TestCase):
                 "企业通过定制化解决方案输出，为海外客户提供硬件+软件+实施+运维一体化服务，获取持续性收入；"
                 "全球营销网络和国际收入体现定制化服务能力。",
             ),
+            make_unit(
+                "battery::risk", "battery",
+                "为应对地缘政治风险并规避贸易风险，企业陆续在泰国建设工厂；美国关税变化也推动越南工厂和海外布局。",
+            ),
         ]
         question = Question(
             qid="res_b_020", domain="research", split="B",
@@ -1135,9 +1153,17 @@ class ResearchFinancialClauseBundleTests(unittest.TestCase):
                 "C": "服务消费通过跨境旅游和免税实现，与制造业出海模式完全不同",
                 "D": "为对冲地缘风险和关税壁垒，在海外多区域布局产能已成为确定性趋势",
             },
-            answer_format="multi", type="多选题", doc_ids=["capacity", "auto", "rfid"],
+            answer_format="multi", type="多选题", doc_ids=["capacity", "auto", "rfid", "battery"],
         )
-        self.assert_labels(solver=self.make_solver(units), question=question, expected={"A": False, "B": True, "C": False, "D": True})
+        solver = self.make_solver(units)
+        self.assert_labels(solver=solver, question=question, expected={"A": False, "B": True, "C": False, "D": True})
+
+        b_result = solver._remaining_choice_evidence_bundle_rule(question, question.options["B"])
+        d_result = solver._remaining_choice_evidence_bundle_rule(question, question.options["D"])
+        self.assertIsNotNone(b_result)
+        self.assertIsNotNone(d_result)
+        self.assertEqual({hit.doc_id for hit in b_result[2]}, {"auto", "rfid"})
+        self.assertEqual({hit.doc_id for hit in d_result[2]}, {"capacity", "battery"})
 
     def test_supply_constraint_bundle_binds_downstream_impact_and_duration_counterevidence(self) -> None:
         units = [
@@ -2007,9 +2033,9 @@ class RegulatoryCompositeClauseTests(unittest.TestCase):
         solver = self.make_solver(
             [
                 make_unit(
-                    "bo::39",
-                    "beneficial-owner",
-                    "第三十九条 存量非自然人客户应当自本办法施行之日起6个月内完成较高风险以上存量客户受益所有人识别核实工作，自施行之日起2年内完成全部存量客户。",
+                    "cdd::51",
+                    "customer-diligence",
+                    "第五十一条 对本办法施行前已经建立业务关系的存量客户，未满足本办法有关客户尽职调查要求的，金融机构应当自本办法施行之日起半年内完成较高风险以上存量客户的尽职调查，自本办法施行之日起2年内完成全部存量客户的尽职调查。",
                 ),
                 make_unit(
                     "bo::preamble",
@@ -2020,11 +2046,6 @@ class RegulatoryCompositeClauseTests(unittest.TestCase):
                     "cdd::preamble",
                     "customer-diligence",
                     "金融机构客户尽职调查和客户身份资料及交易记录保存管理办法现予公布，自2026年1月1日起施行。2025年10月31日。",
-                ),
-                make_unit(
-                    "cdd::7",
-                    "customer-diligence",
-                    "第七条 开展客户尽职调查应当采取下列尽职调查措施：（五）对于客户为法人或者非法人组织的，识别并采取合理措施核实客户的受益所有人。",
                 ),
                 make_unit(
                     "aml::34",
@@ -2055,8 +2076,8 @@ class RegulatoryCompositeClauseTests(unittest.TestCase):
             hits = solver._targeted_literal_hits(question, option)
             evidence_ids[key] = {hit.unit_id for hit in hits}
             labels[key] = solver._targeted_rule_payload(option, hits)["label"]
-        self.assertEqual(labels, {"A": True, "B": False, "C": False, "D": True})
-        self.assertEqual(evidence_ids["A"], {"bo::39", "cdd::7"})
+        self.assertEqual(labels, {"A": True, "B": False, "C": True, "D": True})
+        self.assertEqual(evidence_ids["A"], {"cdd::51", "cdd::preamble"})
         self.assertEqual(evidence_ids["B"], {"bo::preamble"})
         self.assertEqual(evidence_ids["C"], {"cdd::preamble"})
         self.assertEqual(evidence_ids["D"], {"aml::34"})

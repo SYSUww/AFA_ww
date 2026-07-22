@@ -13465,3 +13465,50 @@
   }
 }
 ```
+
+## b-loop-i023-suspect-case-optimization-v3
+
+- recorded_at: `2026-07-22T18:41:57+08:00`
+- branch: `codex/b榜-i023-suspect-case-optimization`
+- baseline: 官网 I023 真实得分 `91%`；仅作为整体错误数量约束，不反推单题标签。
+- status: `accepted_internal`
+- submission_effect: `not_submitted`
+- final_candidate: `artifacts/b_board_actual/candidates/i023_gpt56_suspect_case_optimization/suspect_bundle_v7_a4_composite`
+
+### 本轮规则与方向复用
+
+- 格式优先级固定为：题目具体要求 > README 通用规则 > `submit.csv` 占位。`fin_b_018` 题目明确“后者不带 %”，因此保持 `2.58；7.65`；v3 独立解题同样输出该结果，置信度 `99/high`。
+- `res_b_012` 题目明确保留一位小数，修正 `67.10 → 67.1`；生成、本地重放、提交校验和评测硬门统一使用题目精度。
+- 沿用历史结论而非重复试验：`res_b_004` 复用 I026 的 `BCD` 路径；`res_b_008`、`res_b_009` 保留既有答案并补证；`res_b_020` 在既有方向上拆分“技术标准+服务能力”和“地缘/贸易风险+多区域产能”证据组。
+- 代码审查发现旧硬门版本号无法区分新旧格式语义，故将回答链升级为 `b_actual_v7_question_specific_format`，硬门升级为 `b_hard_gate_v3_question_specific_format`；v2 半程结果不参与晋级。
+
+### 答案与证据变化
+
+| qid | I023 | v7 候选 | 变化类型 | v3 分数（前→后） |
+| --- | --- | --- | --- | ---: |
+| `fc_b_003` | `ABCD` | `ACD` | 去除把 90 日宽限期泛化到全部违约的 B | `35 → 97` |
+| `reg_b_001` | `AD` | `ACD` | 补齐客户尽调办法第五十一条及 1 月 1 日生效证据，加入 C | `0 → 99` |
+| `res_b_004` | `AD` | `BCD` | 删除强制加入且不受支持的 A，补齐 B/C/D | `0 → 98` |
+| `res_b_012` | `67.10` | `67.1` | 按题目一位小数修正格式 | `0 → 99` |
+| `res_b_008` | `AC` | `AC` | 仅补证，移除 fallback 硬失败 | `0 → 90` |
+| `res_b_009` | `ABC` | `ABC` | 仅补证，移除 fallback 硬失败 | `0 → 95` |
+| `res_b_020` | `BD` | `BD` | 仅补齐两组跨文档证据 | `39 → 94` |
+
+### 固定评测与晋级
+
+- evaluator: `gpt-5.6`，temperature `0`，judge prompt `b_answer_error_judge_v2`，hard gate `v3`，prompt hash `08389e713767fdd67aecf112598b2d9829e8e536ac23369c4ecff5047d950675`。
+- coverage: 基线与候选均为 `100/100` answers + `6/6` sentinels；failure `0`；候选提交校验 `100/100` 有效。
+- aggregate: blocked `22 → 14`，high `66 → 71`，p10 `5 → 30`，median `92 → 94`，suspected errors `6 → 2`，review candidates `24 → 19`，独立答案分歧 `8 → 7`。
+- causal round gate: `valid=true`，无新硬失败；监管域 p10 `59 → 72`，七个目标题全部由 blocked 升为 high。
+- blind pair: 四个改答 case 均由候选胜出：`fc_b_003=98`、`reg_b_001=100`、`res_b_004=99`、`res_b_012=99`。
+- promotion: 四个改答 case 的单题晋级门均 `promote=true`；本轮候选可作为下一次官网提交候选，但尚未消耗提交次数。
+- tests: B 榜 `79/79` + 检索完整性 `54/54`，合计 `133/133` 通过；`git diff --check` 通过。
+
+### Token 与未采用尝试
+
+- v7 最终定向生成：`42,967` tokens；v3 基线评测：`1,117,414`；v3 候选评测：`1,113,652`；最终四题盲审：`33,803`。
+- v2 候选筛查曾完整消耗 `1,111,230` tokens；随后发现硬门版本未隔离。另一个 v2 A3 全量任务在 `66/106` 时停止，已消耗 `630,075` tokens。两者仅作诊断，不用于最终晋级结论。
+
+### 下一轮候选
+
+- v3 仍标记 `fc_b_018`（error likelihood `76`）和 `res_b_006`（`97`）为疑似错误；本轮不继续扩改，后续应先做主体绑定和独立证据审计，再决定是否改变答案。

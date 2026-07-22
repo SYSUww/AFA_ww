@@ -42,8 +42,6 @@ _QUESTION_TYPE_ALIASES = {
 }
 
 _DATE_RE = re.compile(r"(\d{4})年(\d{1,2})月(\d{1,2})日")
-_DECIMAL_RE = re.compile(r"-?(?:0|[1-9]\d*)\.\d{2}")
-_PERCENT_RE = re.compile(r"-?(?:0|[1-9]\d*)\.\d{2}%")
 _EXPLICIT_DECIMAL_PLACES_RE = re.compile(
     r"(?:保留|精确到|四舍五入到|四舍五入至)(?:小数点后)?\s*([零一二两012])\s*位小数"
 )
@@ -139,6 +137,42 @@ def infer_requested_decimal_places(question_text: str) -> int | None:
 
     match = _EXPLICIT_DECIMAL_PLACES_RE.search(str(question_text))
     return _DECIMAL_PLACE_VALUES[match.group(1)] if match else None
+
+
+def infer_percent_suffix_requirement(
+    question_text: str,
+    *,
+    slot_index: int,
+    slot_count: int,
+) -> bool | None:
+    """Return a question-specific percent-sign requirement for one answer slot.
+
+    ``None`` means the question is silent and the submission template/README
+    contract should be used.  A concrete instruction in the question is more
+    specific and therefore takes precedence over that generic contract.
+    """
+
+    text = re.sub(r"\s+", "", str(question_text)).replace("％", "%")
+    if "均不带单位" in text or "均不带%" in text or "均不带百分号" in text:
+        return False
+    if slot_index == 1 and re.search(r"前者不带(?:单位|%|百分号)", text):
+        return False
+    if slot_index == slot_count and re.search(r"后者不带(?:单位|%|百分号)", text):
+        return False
+    scoped_positive = False
+    if re.search(r"前者(?:须|需|必须)?(?:填写|带|添加)(?:百分号|%)", text):
+        scoped_positive = True
+        if slot_index == 1:
+            return True
+    if re.search(r"后者(?:须|需|必须)?(?:填写|带|添加)(?:百分号|%)", text):
+        scoped_positive = True
+        if slot_index == slot_count:
+            return True
+    if scoped_positive:
+        return None
+    if re.search(r"(?:须|需|必须)(?:填写|带|添加)(?:百分号|%)", text):
+        return True
+    return None
 
 
 def read_b_question_file(path: Path | str) -> list[dict[str, Any]]:
@@ -302,10 +336,21 @@ def validate_b_answer(question: BQuestion, answer: BAnswer) -> None:
             raise ValueError(f"{question.qid}: multi-choice answer requires at least two options")
         return
 
+    decimal_places = infer_requested_decimal_places(question.question)
     for index, (part, template) in enumerate(
         zip(answer.answer_parts, question.answer_slot_templates), start=1
     ):
-        validate_freeform_slot(part, template, f"{question.qid}.answer_{index}")
+        validate_freeform_slot(
+            part,
+            template,
+            f"{question.qid}.answer_{index}",
+            numeric_decimal_places=decimal_places,
+            percent_suffix=infer_percent_suffix_requirement(
+                question.question,
+                slot_index=index,
+                slot_count=question.answer_slots,
+            ),
+        )
 
 
 def write_b_submission(
@@ -481,20 +526,30 @@ def _validate_question_answer_sets(
         validate_b_answer(question, answer_by_qid[question.qid])
 
 
-def validate_freeform_slot(value: str, template: str, context: str = "answer") -> None:
+def validate_freeform_slot(
+    value: str,
+    template: str,
+    context: str = "answer",
+    *,
+    numeric_decimal_places: int | None = None,
+    percent_suffix: bool | None = None,
+) -> None:
     """Validate one freeform value against the official slot shape.
 
     The numeric placeholder is also used by the official template for Chinese
-    dates, so it accepts either an exact two-decimal number or a valid date.
-    It never accepts an explanatory sentence.
+    dates, so it accepts either the question-specific numeric precision or a
+    valid date. It never accepts an explanatory sentence.
     """
 
-    if template.endswith("%"):
-        if not _PERCENT_RE.fullmatch(value):
-            raise ValueError(
-                f"{context}: percentage slot requires exactly two decimals and '%' suffix"
-            )
-        return
+    decimal_places = 2 if numeric_decimal_places is None else numeric_decimal_places
+    if decimal_places not in {0, 1, 2}:
+        raise ValueError(f"{context}: unsupported decimal-place requirement {decimal_places}")
+    numeric_pattern = rf"-?(?:0|[1-9]\d*)" + (
+        "" if decimal_places == 0 else rf"\.\d{{{decimal_places}}}"
+    )
+    decimal_label = "decimal" if decimal_places == 1 else "decimals"
+    requires_percent = template.endswith("%") if percent_suffix is None else percent_suffix
+
     if ">" in template:
         if not re.fullmatch(r"[^>\s]+(?:>[^>\s]+)+", value):
             raise ValueError(
@@ -502,17 +557,29 @@ def validate_freeform_slot(value: str, template: str, context: str = "answer") -
             )
         return
     date_match = _DATE_RE.fullmatch(value)
-    if date_match:
+    if date_match and re.fullmatch(r"9+\.99", template):
         year, month, day = (int(part) for part in date_match.groups())
         try:
             date(year, month, day)
         except ValueError as exc:
             raise ValueError(f"{context}: invalid Chinese date {value!r}") from exc
         return
-    if re.fullmatch(r"9+\.99", template):
-        if not _DECIMAL_RE.fullmatch(value):
+    if template.endswith("%") or (
+        re.fullmatch(r"9+\.99", template) and percent_suffix is not None
+    ):
+        suffix = "%" if requires_percent else ""
+        if not re.fullmatch(numeric_pattern + re.escape(suffix), value):
+            suffix_description = " and '%' suffix" if requires_percent else " without '%' suffix"
             raise ValueError(
-                f"{context}: numeric/date slot requires two-decimal number or valid Chinese date"
+                f"{context}: numeric slot requires exactly {decimal_places} {decimal_label}"
+                f"{suffix_description}"
+            )
+        return
+    if re.fullmatch(r"9+\.99", template):
+        if not re.fullmatch(numeric_pattern, value):
+            raise ValueError(
+                f"{context}: numeric/date slot requires exactly {decimal_places} {decimal_label}"
+                " or valid Chinese date"
             )
         return
     raise ValueError(f"{context}: unsupported freeform slot template {template!r}")

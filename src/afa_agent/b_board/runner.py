@@ -15,6 +15,7 @@ from afa_agent.b_board.io import (
     BAnswer,
     BQuestion,
     infer_requested_decimal_places,
+    infer_percent_suffix_requirement,
     validate_b_answer,
     write_b_submission,
 )
@@ -52,10 +53,10 @@ next_workday 的 args 写 {"date":{"ref":"日期变量"}}；days_between 的 arg
 允许 op: add,sub,mul,div,mean,abs,max,min,pct_change,pct_point_delta,count_gte,count_gt,sort_desc,date_add_days,next_workday,days_between。
 sort_desc 使用 items:[{label,source}]。outputs 数量必须等于答案槽数；每项为 {source,format}。
 format 仅 raw,decimal0,decimal1,decimal2,percent2,date_cn,text。中间过程不得舍入，最终才按格式四舍五入。
-题干明确要求保留的小数位决定计算舍入精度；随后按官方提交模板补足答案槽的小数位。
+题干对小数位、百分号和单位的具体要求优先于README通用规则及提交模板占位；题干没有具体要求时才按模板格式化。
 证据 ID 必须原样使用给定 evidence_id。题目本身给出的数值可引用 question:<qid>。只输出 JSON。"""
 
-RUNNER_VERSION = "b_actual_v6"
+RUNNER_VERSION = "b_actual_v7_question_specific_format"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 
 
@@ -336,6 +337,14 @@ class BBoardActualRunner:
                     expected_numeric_decimal_places=infer_requested_decimal_places(
                         question.question
                     ),
+                    expected_percent_suffixes=tuple(
+                        infer_percent_suffix_requirement(
+                            question.question,
+                            slot_index=index,
+                            slot_count=question.answer_slots,
+                        )
+                        for index in range(1, question.answer_slots + 1)
+                    ),
                 )
                 available = {str(item["unit_id"]) for item in evidence_items}
                 missing = sorted(set(result.used_evidence_ids) - available)
@@ -350,7 +359,12 @@ class BBoardActualRunner:
                     answer_parts=list(result.answer_parts),
                     used_evidence_ids=list(result.used_evidence_ids),
                     evidence_items=selected_evidence,
-                    decision_summary=str(plan.get("decision_summary", "")),
+                    decision_summary=(
+                        "结构化计算已通过本地重放与证据变量核验；"
+                        "最终按题目具体格式输出："
+                        + "；".join(result.answer_parts)
+                        + "。"
+                    ),
                     decision_trace={"source": "structured_calculation_plan", "format_forced": False},
                     calculation_trace=result.trace,
                     token_usage=usage.to_dict(),

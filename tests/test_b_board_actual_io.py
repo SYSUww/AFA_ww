@@ -57,9 +57,46 @@ class ActualBQuestionLoadingTests(unittest.TestCase):
         question = make_question(answer_format="calculation")
         question.question = "计算普通用户人数，保留一位小数。"
 
-        validate_b_answer(question, BAnswer("q1", ("67.10",)))
-        with self.assertRaisesRegex(ValueError, "requires two-decimal"):
-            validate_b_answer(question, BAnswer("q1", ("67.1",)))
+        validate_b_answer(question, BAnswer("q1", ("67.1",)))
+        with self.assertRaisesRegex(ValueError, "requires exactly 1 decimal"):
+            validate_b_answer(question, BAnswer("q1", ("67.10",)))
+
+    def test_question_specific_no_percent_instruction_overrides_percent_template(self) -> None:
+        question = make_question(
+            answer_format="calculation",
+            slots=2,
+            slot_templates=("999999.99", "999999.99%"),
+        )
+        question.question = (
+            "答案格式为‘权益乘数；近似资产收益率’，"
+            "均保留两位小数，后者不带 %。"
+        )
+
+        validate_b_answer(question, BAnswer("q1", ("2.58", "7.65")))
+        with self.assertRaisesRegex(ValueError, "without '%' suffix"):
+            validate_b_answer(question, BAnswer("q1", ("2.58", "7.65%")))
+
+    def test_scoped_positive_percent_instruction_only_applies_to_named_slot(self) -> None:
+        question = make_question(
+            answer_format="calculation",
+            slots=2,
+            slot_templates=("999999.99", "999999.99"),
+        )
+        question.question = "答案均保留两位小数，后者必须带%。"
+
+        validate_b_answer(question, BAnswer("q1", ("2.58", "7.65%")))
+        with self.assertRaisesRegex(ValueError, "answer_1"):
+            validate_b_answer(question, BAnswer("q1", ("2.58%", "7.65%")))
+
+    def test_no_unit_instruction_does_not_turn_ordering_slot_into_numeric_slot(self) -> None:
+        question = make_question(
+            answer_format="calculation",
+            slots=2,
+            slot_templates=("公司>公司", "999999.99"),
+        )
+        question.question = "答案格式为公司>公司；差值，均不带单位，均保留两位小数。"
+
+        validate_b_answer(question, BAnswer("q1", ("甲公司>乙公司", "1.20")))
 
     def test_loads_real_json_jsonl_and_bom_in_official_order(self) -> None:
         questions = load_b_questions(UPLOAD_B)
