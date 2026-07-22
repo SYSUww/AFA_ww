@@ -421,8 +421,11 @@ class FinancialContractSubjectClauseTests(unittest.TestCase):
     def test_subscription_commitments_bind_each_option_to_its_issuer(self) -> None:
         units = [
             make_unit(
-                "text04::subscription", "text04",
-                "安克创新。发行人独立董事承诺本人及本人配偶、父母、子女不参与本次可转债的发行认购，亦不会委托其他主体参与本次可转债的发行认购。"
+                "text04::independent", "text04",
+                "安克创新。发行人独立董事承诺本人及本人配偶、父母、子女不参与本次可转债的发行认购，亦不会委托其他主体参与本次可转债的发行认购。",
+            ),
+            make_unit(
+                "text04::controller", "text04",
                 "若发行日与最后一次减持公司股票的日期间隔不满六个月，本人及配偶、父母、子女将不参与认购公司本次发行的可转债。",
             ),
             make_unit(
@@ -448,6 +451,7 @@ class FinancialContractSubjectClauseTests(unittest.TestCase):
         )
         expected = {"A": False, "B": True, "C": False, "D": False}
         labels = {}
+        payloads = []
         expected_docs = {"A": "text04", "B": "text11", "C": "text05", "D": "text04"}
         for option_key, option_text in options.items():
             hits = solver._targeted_literal_hits(question, option_key, option_text)
@@ -456,7 +460,23 @@ class FinancialContractSubjectClauseTests(unittest.TestCase):
             result = solver._rule_override(question, option_key, option_text, hits)
             self.assertIsNotNone(result, option_key)
             labels[option_key] = bool(result["label"])
+            focused_hits = solver._prioritize_rule_hits(result["rule"], hits, question.doc_ids)
+            self.assertEqual(sum(bool(hit.metadata.get("targeted_literal")) for hit in focused_hits), 1)
+            payloads.append(
+                {
+                    "option": option_key,
+                    "label": bool(result["label"]),
+                    "rule_override": result,
+                    "evidence_items": [hit.to_dict() for hit in focused_hits],
+                }
+            )
         self.assertEqual(labels, expected)
+        focused_evidence = solver._complete_rule_evidence_items(payloads)
+        self.assertEqual(len(focused_evidence), 4)
+        self.assertEqual(
+            {item["metadata"]["option_key"]: item["metadata"]["document_subject"] for item in focused_evidence},
+            {"A": "安克创新", "B": "普联软件", "C": "本川智能", "D": "安克创新"},
+        )
 
     def test_convertible_rights_bundle_covers_price_vote_redemption_and_put(self) -> None:
         units = [

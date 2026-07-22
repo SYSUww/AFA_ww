@@ -2499,6 +2499,18 @@ class FinancialContractsSolver:
 
     @classmethod
     def _prioritize_rule_hits(cls, rule_name: str, hits: list[RetrievalHit], doc_ids: list[str]) -> list[RetrievalHit]:
+        if rule_name.startswith("contract_subscription_"):
+            targeted = [hit for hit in hits if hit.metadata.get("targeted_literal")]
+            if targeted:
+                focused = min(
+                    targeted,
+                    key=lambda hit: (
+                        0 if hit.metadata.get("unit_type") == "element_block" else 1,
+                        len(cls._normalize_literal(hit.text)),
+                        hit.unit_id,
+                    ),
+                )
+                return [focused, *(hit for hit in hits if not hit.metadata.get("targeted_literal"))]
         if rule_name != "contract_director_statement_and_ratio":
             return hits
         selected: list[RetrievalHit] = []
