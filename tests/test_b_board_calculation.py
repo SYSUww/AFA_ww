@@ -262,6 +262,7 @@ class BBoardCalculationTests(unittest.TestCase):
         self.assertEqual(result.answer_parts, ("310740988000.00",))
         self.assertTrue(result.trace["grounding_verified"])
         self.assertIn("表格只有裸金额", CALCULATION_SYSTEM_PROMPT)
+        self.assertIn("不得再创建 100% 基数", CALCULATION_SYSTEM_PROMPT)
 
     def test_diagnostic_retry_query_and_evidence_merge(self):
         question = BQuestion(
@@ -619,6 +620,116 @@ class BBoardCalculationTests(unittest.TestCase):
             result.trace["steps"][0]["unit_conversions"],
             [{"argument": "denominator", "from": "percent_points", "to": "ratio"}],
         )
+
+    def test_percent_points_divided_by_percent_points_cancel_to_ratio(self):
+        result = CalculationExecutor().execute(
+            {
+                "variables": [
+                    {"name": "income", "value": "12", "unit": "万元", "evidence_ids": ["q"]},
+                    {"name": "refund_rate", "value": "75", "unit": "%", "evidence_ids": ["e"]},
+                    {"name": "percent_base", "value": "100", "unit": "%", "evidence_ids": ["e"]},
+                ],
+                "steps": [
+                    {
+                        "id": "ratio",
+                        "op": "div",
+                        "args": [
+                            {"ref": "refund_rate"},
+                            {"ref": "percent_base"},
+                        ],
+                    },
+                    {
+                        "id": "refund",
+                        "op": "mul",
+                        "args": [{"ref": "income"}, {"ref": "ratio"}],
+                    },
+                ],
+                "outputs": [{"source": {"ref": "refund"}, "format": "decimal2"}],
+            },
+            expected_slots=1,
+            evidence_text_by_id={"q": "累计收益12万元", "e": "返还75%，百分比基数100%"},
+            expected_slot_templates=("999999.99",),
+        )
+
+        self.assertEqual(result.answer_parts, ("9.00",))
+        self.assertEqual(result.trace["steps"][0]["value_kind"], "ratio")
+        self.assertEqual(
+            result.trace["steps"][0]["unit_conversions"],
+            [
+                {"argument": "numerator", "from": "percent_points", "to": "ratio"},
+                {"argument": "denominator", "from": "percent_points", "to": "ratio"},
+            ],
+        )
+
+    def test_amount_multiplied_by_percent_points_converts_percent_to_ratio(self):
+        result = CalculationExecutor().execute(
+            {
+                "variables": [
+                    {"name": "premium", "value": "100", "unit": "万元", "evidence_ids": ["q"]},
+                    {"name": "rate", "value": "99", "unit": "%", "evidence_ids": ["e"]},
+                ],
+                "steps": [
+                    {
+                        "id": "refund",
+                        "op": "mul",
+                        "args": [{"ref": "premium"}, {"ref": "rate"}],
+                    }
+                ],
+                "outputs": [{"source": {"ref": "refund"}, "format": "decimal2"}],
+            },
+            expected_slots=1,
+            evidence_text_by_id={"q": "累计保费100万元", "e": "给付比例99%"},
+            expected_slot_templates=("999999.99",),
+        )
+
+        self.assertEqual(result.answer_parts, ("99.00",))
+        self.assertEqual(result.trace["steps"][0]["value_kind"], "amount")
+        self.assertEqual(
+            result.trace["steps"][0]["unit_conversions"],
+            [{"argument": "argument_2", "from": "percent_points", "to": "ratio"}],
+        )
+
+    def test_common_named_argument_objects_and_percent_suffix_are_normalized(self):
+        result = CalculationExecutor().execute(
+            {
+                "variables": [
+                    {"name": "ebitda", "value": "338931", "unit": "百万元", "evidence_ids": ["e"]},
+                    {"name": "rate", "value": "32.3%", "unit": "%", "evidence_ids": ["e"]},
+                    {"name": "reported", "value": "1050187", "unit": "百万元", "evidence_ids": ["e"]},
+                ],
+                "steps": [
+                    {
+                        "id": "implied",
+                        "op": "div",
+                        "args": {
+                            "numerator": {"ref": "ebitda"},
+                            "denominator": {"ref": "rate"},
+                        },
+                    },
+                    {
+                        "id": "deviation",
+                        "op": "pct_change",
+                        "args": {"new": {"ref": "implied"}, "old": {"ref": "reported"}},
+                    },
+                    {
+                        "id": "absolute_deviation",
+                        "op": "abs",
+                        "args": {"value": {"ref": "deviation"}},
+                    },
+                ],
+                "outputs": [
+                    {"source": {"ref": "implied"}, "format": "decimal2"},
+                    {"source": {"ref": "absolute_deviation"}, "format": "percent2"},
+                ],
+            },
+            expected_slots=2,
+            evidence_text_by_id={
+                "e": "EBITDA为338931百万元，EBITDA率32.3%，营业收入1050187百万元"
+            },
+            expected_slot_templates=("999999.99", "999999.99"),
+        )
+
+        self.assertEqual(result.answer_parts, ("1049321.98", "0.08"))
 
     def test_readme_percent_suffix_formats_ratio_and_percent_points_correctly(self):
         ratio_result = CalculationExecutor().execute(

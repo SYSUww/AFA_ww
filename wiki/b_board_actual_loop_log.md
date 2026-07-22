@@ -14364,3 +14364,857 @@
   ]
 }
 ```
+
+## b-loop-full-chain-reproduction-baseline-v10
+
+- recorded_at: `2026-07-22T19:52:20+00:00`
+
+```json
+{
+  "approach": "先读历史日志后运行v10完整research链，答案求解阶段不读取97%参考答案。",
+  "artifacts": {
+    "run_manifest": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_score_loop/full_chain_e08e737_research_v1/run_manifest.json"
+  },
+  "base_commit": "e08e73768384dd89b8fafe69be8e4ecdcf363d41",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "e08e73768384dd89b8fafe69be8e4ecdcf363d41",
+        "code_hash": "5c54296a1b1c177a9427b18cf27b359ea6f4c56e320cd27adf38078dccff6cda",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "answers_not_exposed_to_solver": true,
+          "reference": "official97_incumbent",
+          "run_mode": "research",
+          "runner": "b_actual_v10_reasoning_audit"
+        },
+        "domains": [],
+        "hypothesis": "当前v10 research链应能完整生成100题、reasoning和逐调用usage，并量化对97% incumbent的伪标签一致率",
+        "pipeline_stage": "runtime",
+        "question_types": [],
+        "root_cause_cluster": "end_to_end_reproducibility",
+        "target_qids": []
+      }
+    },
+    "context_sha256": "f56bd5861383f18d08e605aa5892c0c4e6702902f4d35f81a55473057ee76188",
+    "direction_sha256": "910076fe66c7f2d33e159fa9a2c3fa1aac879822187cffcc51781599a5ea2845",
+    "schema_version": 1,
+    "semantic_sha256": "72af82dd9a8059a0c07dbe5771f687b900cb8a6fcf05061a78237b76520f5eb8",
+    "sha256": "76ac44feb29285978824f607829a2ad24f087a15a5645c051b7d201b37d14fa5"
+  },
+  "change_vector": {
+    "answers_not_exposed_to_solver": true,
+    "reference": "official97_incumbent",
+    "run_mode": "research",
+    "runner": "b_actual_v10_reasoning_audit"
+  },
+  "code_hash": "5c54296a1b1c177a9427b18cf27b359ea6f4c56e320cd27adf38078dccff6cda",
+  "direction_id": "full_chain_reproduction_baseline_v10",
+  "effect": "完成98/100题，尚不能形成可比全量结果。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-full-chain-reproduction-baseline-v10",
+  "failure_analysis": "失败qid: ['fin_b_017', 'res_b_005']",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "e08e73768384dd89b8fafe69be8e4ecdcf363d41",
+          "code_hash": "5c54296a1b1c177a9427b18cf27b359ea6f4c56e320cd27adf38078dccff6cda",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "answers_not_exposed_to_solver": true,
+            "reference": "official97_incumbent",
+            "run_mode": "research",
+            "runner": "b_actual_v10_reasoning_audit"
+          },
+          "domains": [],
+          "hypothesis": "当前v10 research链应能完整生成100题、reasoning和逐调用usage，并量化对97% incumbent的伪标签一致率",
+          "pipeline_stage": "runtime",
+          "question_types": [],
+          "root_cause_cluster": "end_to_end_reproducibility",
+          "target_qids": []
+        }
+      },
+      "context_sha256": "f56bd5861383f18d08e605aa5892c0c4e6702902f4d35f81a55473057ee76188",
+      "direction_sha256": "910076fe66c7f2d33e159fa9a2c3fa1aac879822187cffcc51781599a5ea2845",
+      "schema_version": 1,
+      "semantic_sha256": "72af82dd9a8059a0c07dbe5771f687b900cb8a6fcf05061a78237b76520f5eb8",
+      "sha256": "76ac44feb29285978824f607829a2ad24f087a15a5645c051b7d201b37d14fa5"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "e08e73768384dd89b8fafe69be8e4ecdcf363d41",
+            "code_hash": "5c54296a1b1c177a9427b18cf27b359ea6f4c56e320cd27adf38078dccff6cda",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "answers_not_exposed_to_solver": true,
+              "reference": "official97_incumbent",
+              "run_mode": "research",
+              "runner": "b_actual_v10_reasoning_audit"
+            },
+            "domains": [],
+            "hypothesis": "当前v10 research链应能完整生成100题、reasoning和逐调用usage，并量化对97% incumbent的伪标签一致率",
+            "pipeline_stage": "runtime",
+            "question_types": [],
+            "root_cause_cluster": "end_to_end_reproducibility",
+            "target_qids": []
+          }
+        },
+        "context_sha256": "f56bd5861383f18d08e605aa5892c0c4e6702902f4d35f81a55473057ee76188",
+        "direction_sha256": "910076fe66c7f2d33e159fa9a2c3fa1aac879822187cffcc51781599a5ea2845",
+        "schema_version": 1,
+        "semantic_sha256": "72af82dd9a8059a0c07dbe5771f687b900cb8a6fcf05061a78237b76520f5eb8",
+        "sha256": "76ac44feb29285978824f607829a2ad24f087a15a5645c051b7d201b37d14fa5"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "cf5048c690593f119e3f6349612dc824ec5d8c96ba6fadc584106c73c7b2d580",
+      "size": 483426
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "030f06443d52d5e6aaf001d7e0abe782849c71615ec3d6c6b546b545c471bd20",
+      "size": 390501
+    },
+    "related_log_sections": [
+      "b0-run-integrity-reg016-v2",
+      "b0-run-integrity-reg016-v3",
+      "b0-run-integrity-reg016-v4",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1"
+    ],
+    "reviewed_at": "2026-07-22T19:37:59+00:00"
+  },
+  "hypothesis": "当前v10 research链应能完整生成100题、reasoning和逐调用usage，并量化对97% incumbent的伪标签一致率",
+  "material_delta": {
+    "end_to_end_reasoning_and_usage": true
+  },
+  "metrics": {
+    "answered_question_count": 98,
+    "comparable": false,
+    "failed_qids": [
+      "fin_b_017",
+      "res_b_005"
+    ]
+  },
+  "next_step": "修复技术失败并原目录安全续跑；技术失败不消耗三轮可比尝试。",
+  "pipeline_stage": "runtime",
+  "recorded_at": "2026-07-22T19:52:20+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "end_to_end_reproducibility",
+  "status": "blocked_technical",
+  "submission_effect": "not_submitted",
+  "target_qids": []
+}
+```
+
+## b-loop-calculation-percent-unit-semantics-a1-target8
+
+- recorded_at: `2026-07-22T19:59:51+00:00`
+
+```json
+{
+  "approach": "在CalculationExecutor中显式执行百分数点单位代数：百分数÷百分数同时转为ratio，金额×百分数先除100；兼容模型常见的具名args对象和带%数值。先以8题真实生成链验证。",
+  "artifact_path": "artifacts/b_board_score_loop/calculation_unit_semantics_a1_target8",
+  "base_commit": "ae9b06e688cd20eac4592e348d64363051647d90",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "ae9b06e688cd20eac4592e348d64363051647d90",
+        "code_hash": "41e382311ffdce695062114232704b44d009f52eb28493148e72df4c862c6693",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "mul_percent_points": "convert_operand_to_ratio",
+          "named_argument_objects": [
+            "div",
+            "abs",
+            "pct_change",
+            "pct_point_delta"
+          ],
+          "percent_points_div_percent_points": "convert_both_then_ratio",
+          "percent_suffix_normalization": true,
+          "variant": "a1"
+        },
+        "domains": [
+          "financial_reports",
+          "insurance",
+          "research"
+        ],
+        "hypothesis": "百分数点参与除法和乘法时进行显式单位消去，可一次修复6个100倍量级错误，并让2个等价具名参数计划成功重放",
+        "pipeline_stage": "calculation",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "percent_ratio_unit_algebra",
+        "target_qids": [
+          "fin_b_017",
+          "fin_b_019",
+          "ins_b_001",
+          "ins_b_003",
+          "ins_b_011",
+          "ins_b_019",
+          "res_b_005",
+          "res_b_007"
+        ]
+      }
+    },
+    "context_sha256": "651c8ab1d9274301599580dbca18d89e4334627204d51c2ed7ad7cb06ff31272",
+    "direction_sha256": "ad93d0ce6ddc10a16b41a05159ecf4946e520ea60e2dad5d2051d689ae32d2a8",
+    "schema_version": 1,
+    "semantic_sha256": "c9a4df9b3b446d93ae69795f6c279e6b5d734561dbfd6e19590a1c9a70c2dcd4",
+    "sha256": "97efa9f23b78dffd907c73eb5a3a87d60aebfa8f9e54cf3db110d16fa3a441c1"
+  },
+  "change_vector": {
+    "mul_percent_points": "convert_operand_to_ratio",
+    "named_argument_objects": [
+      "div",
+      "abs",
+      "pct_change",
+      "pct_point_delta"
+    ],
+    "percent_points_div_percent_points": "convert_both_then_ratio",
+    "percent_suffix_normalization": true,
+    "variant": "a1"
+  },
+  "code_hash": "41e382311ffdce695062114232704b44d009f52eb28493148e72df4c862c6693",
+  "direction_id": "calculation_percent_unit_semantics",
+  "domains": [
+    "financial_reports",
+    "insurance",
+    "research"
+  ],
+  "effect": "目标集完成8/8，伪标签一致7/8。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-calculation-percent-unit-semantics-a1-target8",
+  "failure_analysis": "仍失败或不一致：failed=[], mismatch=['fin_b_017']",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "ae9b06e688cd20eac4592e348d64363051647d90",
+          "code_hash": "41e382311ffdce695062114232704b44d009f52eb28493148e72df4c862c6693",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "mul_percent_points": "convert_operand_to_ratio",
+            "named_argument_objects": [
+              "div",
+              "abs",
+              "pct_change",
+              "pct_point_delta"
+            ],
+            "percent_points_div_percent_points": "convert_both_then_ratio",
+            "percent_suffix_normalization": true,
+            "variant": "a1"
+          },
+          "domains": [
+            "financial_reports",
+            "insurance",
+            "research"
+          ],
+          "hypothesis": "百分数点参与除法和乘法时进行显式单位消去，可一次修复6个100倍量级错误，并让2个等价具名参数计划成功重放",
+          "pipeline_stage": "calculation",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "percent_ratio_unit_algebra",
+          "target_qids": [
+            "fin_b_017",
+            "fin_b_019",
+            "ins_b_001",
+            "ins_b_003",
+            "ins_b_011",
+            "ins_b_019",
+            "res_b_005",
+            "res_b_007"
+          ]
+        }
+      },
+      "context_sha256": "651c8ab1d9274301599580dbca18d89e4334627204d51c2ed7ad7cb06ff31272",
+      "direction_sha256": "ad93d0ce6ddc10a16b41a05159ecf4946e520ea60e2dad5d2051d689ae32d2a8",
+      "schema_version": 1,
+      "semantic_sha256": "c9a4df9b3b446d93ae69795f6c279e6b5d734561dbfd6e19590a1c9a70c2dcd4",
+      "sha256": "97efa9f23b78dffd907c73eb5a3a87d60aebfa8f9e54cf3db110d16fa3a441c1"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "ae9b06e688cd20eac4592e348d64363051647d90",
+            "code_hash": "41e382311ffdce695062114232704b44d009f52eb28493148e72df4c862c6693",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "mul_percent_points": "convert_operand_to_ratio",
+              "named_argument_objects": [
+                "div",
+                "abs",
+                "pct_change",
+                "pct_point_delta"
+              ],
+              "percent_points_div_percent_points": "convert_both_then_ratio",
+              "percent_suffix_normalization": true,
+              "variant": "a1"
+            },
+            "domains": [
+              "financial_reports",
+              "insurance",
+              "research"
+            ],
+            "hypothesis": "百分数点参与除法和乘法时进行显式单位消去，可一次修复6个100倍量级错误，并让2个等价具名参数计划成功重放",
+            "pipeline_stage": "calculation",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "percent_ratio_unit_algebra",
+            "target_qids": [
+              "fin_b_017",
+              "fin_b_019",
+              "ins_b_001",
+              "ins_b_003",
+              "ins_b_011",
+              "ins_b_019",
+              "res_b_005",
+              "res_b_007"
+            ]
+          }
+        },
+        "context_sha256": "651c8ab1d9274301599580dbca18d89e4334627204d51c2ed7ad7cb06ff31272",
+        "direction_sha256": "ad93d0ce6ddc10a16b41a05159ecf4946e520ea60e2dad5d2051d689ae32d2a8",
+        "schema_version": 1,
+        "semantic_sha256": "c9a4df9b3b446d93ae69795f6c279e6b5d734561dbfd6e19590a1c9a70c2dcd4",
+        "sha256": "97efa9f23b78dffd907c73eb5a3a87d60aebfa8f9e54cf3db110d16fa3a441c1"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "180c74d7463ac84ed8f9392894623ed82ce2ff2b00203f3643f8871d0b2b4fcf",
+      "size": 490359
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "331722f412146f08178219cb41e3bb1380e566ce04f748028c96b7611d613c9c",
+      "size": 396247
+    },
+    "related_log_sections": [
+      "B0-actual-integrity",
+      "b0-run-integrity-reg016-v2",
+      "b0-run-integrity-reg016-v3",
+      "b0-run-integrity-reg016-v4",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "B0-actual-evaluation",
+      "B0-actual-root-cause-analysis",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_executor-a3-directional-operands-v3-history-correction",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-readme-percent-format-priority-v6",
+      "b-loop-reasoning-shadow-baseline-v1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-full-chain-reproduction-baseline-v10"
+    ],
+    "reviewed_at": "2026-07-22T19:57:29+00:00"
+  },
+  "hypothesis": "百分数点参与除法和乘法时进行显式单位消去，可一次修复6个100倍量级错误，并让2个等价具名参数计划成功重放",
+  "material_delta": {
+    "unit_algebra": "percent_points_are_not_implicit_scalars"
+  },
+  "metrics": {
+    "answer_by_qid": {
+      "fin_b_017": [
+        "104932198.14",
+        "9891.76%"
+      ],
+      "fin_b_019": [
+        "比亚迪>宁德时代>美的集团",
+        "0.84"
+      ],
+      "ins_b_001": [
+        "333.20"
+      ],
+      "ins_b_003": [
+        "366.00"
+      ],
+      "ins_b_011": [
+        "16.00"
+      ],
+      "ins_b_019": [
+        "211.50"
+      ],
+      "res_b_005": [
+        "22.27%"
+      ],
+      "res_b_007": [
+        "61.98"
+      ]
+    },
+    "answered_count": 8,
+    "baseline_pseudo_matches": 0,
+    "comparable_scope": "target8_only_not_global",
+    "failed_qids": [],
+    "generation_token_total_including_failed": 172827,
+    "pseudo_match_rate": 87.5,
+    "pseudo_matches": 7,
+    "reasoning_aggregate": {
+      "dimension_means": {
+        "clarity": 94.625,
+        "completeness": 92.0,
+        "logical": 91.0
+      },
+      "p10": 75.33333333333333,
+      "question_count": 8,
+      "reasoning_score": 92.54166666666667,
+      "status_counts": {
+        "scored": 8
+      },
+      "zero_score_count": 0
+    },
+    "reasoning_judge_token_usage": {
+      "completion_tokens": 878,
+      "prompt_tokens": 5197,
+      "total_tokens": 6075
+    },
+    "submission_token_total": 172827,
+    "target_count": 8,
+    "target_scorecard": {
+      "accuracy_score": 87.5,
+      "accuracy_source": "target8_pseudo_match_to_official97_incumbent_not_ground_truth",
+      "judge_tokens_included_in_submission": false,
+      "reasoning_judge_model": "gpt-5.6",
+      "reasoning_prompt_version": "b_reasoning_judge_v1_new_md",
+      "reasoning_score": 92.54166666666667,
+      "token_efficiency_score": 34.565400000000004,
+      "token_total": 172827,
+      "total_score": 77.92141333333333
+    }
+  },
+  "next_step": "分析剩余失败；本方向最多再尝试2个material variant。",
+  "pipeline_stage": "calculation",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-22T19:59:51+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "percent_ratio_unit_algebra",
+  "status": "completed",
+  "submission_effect": "not_submitted",
+  "target_qids": [
+    "fin_b_017",
+    "fin_b_019",
+    "ins_b_001",
+    "ins_b_003",
+    "ins_b_011",
+    "ins_b_019",
+    "res_b_005",
+    "res_b_007"
+  ]
+}
+```
+
+## b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8
+
+- recorded_at: `2026-07-22T20:03:31+00:00`
+
+```json
+{
+  "approach": "保留A1单位代数，并在计算Prompt中明确执行器自动处理百分数，禁止100%辅助基数和手工重复乘除100；以同一8题真实链复测。",
+  "artifact_path": "artifacts/b_board_score_loop/calculation_unit_semantics_a2_prompt_contract_target8",
+  "base_commit": "ae9b06e688cd20eac4592e348d64363051647d90",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "ae9b06e688cd20eac4592e348d64363051647d90",
+        "code_hash": "19c7199a20c4e4bfc10e2d8889d9d4cb9ed47a3eead141f8b02768fe25073176",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "executor_rules": "a1",
+          "prompt_contract": "forbid_manual_percent_base_and_duplicate_scaling",
+          "variant": "a2"
+        },
+        "domains": [
+          "financial_reports",
+          "insurance",
+          "research"
+        ],
+        "hypothesis": "在a1显式单位代数基础上，把执行器自动缩放契约告知结构化求解器，可消除fin_b_017重复乘100且保持其余7题稳定",
+        "pipeline_stage": "calculation",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "percent_ratio_unit_algebra",
+        "target_qids": [
+          "fin_b_017",
+          "fin_b_019",
+          "ins_b_001",
+          "ins_b_003",
+          "ins_b_011",
+          "ins_b_019",
+          "res_b_005",
+          "res_b_007"
+        ]
+      }
+    },
+    "context_sha256": "e830b3ef6b8a511ffe635e263db4997eebe872cece6ac5cdf529190a14370daa",
+    "direction_sha256": "196dc8d91e4fd2e53ef8c3fd455e069843ca64c321d113a8bea937b35eb03efa",
+    "schema_version": 1,
+    "semantic_sha256": "7c2d2794b1df309501b78676c069555faaae4146324f3f3b477ac7fd69ab3220",
+    "sha256": "ceb1fb21414934709494f71b45e89782eaa2559a533691dac9700f4d16750765"
+  },
+  "change_vector": {
+    "executor_rules": "a1",
+    "prompt_contract": "forbid_manual_percent_base_and_duplicate_scaling",
+    "variant": "a2"
+  },
+  "code_hash": "19c7199a20c4e4bfc10e2d8889d9d4cb9ed47a3eead141f8b02768fe25073176",
+  "direction_id": "calculation_percent_unit_semantics",
+  "domains": [
+    "financial_reports",
+    "insurance",
+    "research"
+  ],
+  "effect": "完成8/8，伪标签一致8/8（A1为7/8）；reasoning均分93.21。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+  "failure_analysis": "目标8题全部对齐97% incumbent伪标签，无技术失败；逐题伪标签仍非真实答案，需全量验证防止非目标计算题回归。",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "ae9b06e688cd20eac4592e348d64363051647d90",
+          "code_hash": "19c7199a20c4e4bfc10e2d8889d9d4cb9ed47a3eead141f8b02768fe25073176",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "executor_rules": "a1",
+            "prompt_contract": "forbid_manual_percent_base_and_duplicate_scaling",
+            "variant": "a2"
+          },
+          "domains": [
+            "financial_reports",
+            "insurance",
+            "research"
+          ],
+          "hypothesis": "在a1显式单位代数基础上，把执行器自动缩放契约告知结构化求解器，可消除fin_b_017重复乘100且保持其余7题稳定",
+          "pipeline_stage": "calculation",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "percent_ratio_unit_algebra",
+          "target_qids": [
+            "fin_b_017",
+            "fin_b_019",
+            "ins_b_001",
+            "ins_b_003",
+            "ins_b_011",
+            "ins_b_019",
+            "res_b_005",
+            "res_b_007"
+          ]
+        }
+      },
+      "context_sha256": "e830b3ef6b8a511ffe635e263db4997eebe872cece6ac5cdf529190a14370daa",
+      "direction_sha256": "196dc8d91e4fd2e53ef8c3fd455e069843ca64c321d113a8bea937b35eb03efa",
+      "schema_version": 1,
+      "semantic_sha256": "7c2d2794b1df309501b78676c069555faaae4146324f3f3b477ac7fd69ab3220",
+      "sha256": "ceb1fb21414934709494f71b45e89782eaa2559a533691dac9700f4d16750765"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "ae9b06e688cd20eac4592e348d64363051647d90",
+            "code_hash": "19c7199a20c4e4bfc10e2d8889d9d4cb9ed47a3eead141f8b02768fe25073176",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "executor_rules": "a1",
+              "prompt_contract": "forbid_manual_percent_base_and_duplicate_scaling",
+              "variant": "a2"
+            },
+            "domains": [
+              "financial_reports",
+              "insurance",
+              "research"
+            ],
+            "hypothesis": "在a1显式单位代数基础上，把执行器自动缩放契约告知结构化求解器，可消除fin_b_017重复乘100且保持其余7题稳定",
+            "pipeline_stage": "calculation",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "percent_ratio_unit_algebra",
+            "target_qids": [
+              "fin_b_017",
+              "fin_b_019",
+              "ins_b_001",
+              "ins_b_003",
+              "ins_b_011",
+              "ins_b_019",
+              "res_b_005",
+              "res_b_007"
+            ]
+          }
+        },
+        "context_sha256": "e830b3ef6b8a511ffe635e263db4997eebe872cece6ac5cdf529190a14370daa",
+        "direction_sha256": "196dc8d91e4fd2e53ef8c3fd455e069843ca64c321d113a8bea937b35eb03efa",
+        "schema_version": 1,
+        "semantic_sha256": "7c2d2794b1df309501b78676c069555faaae4146324f3f3b477ac7fd69ab3220",
+        "sha256": "ceb1fb21414934709494f71b45e89782eaa2559a533691dac9700f4d16750765"
+      },
+      "comparable_attempt_count": 1,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-calculation-percent-unit-semantics-a1-target8"
+      ],
+      "similarity": 0.7
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "d91e2fcd2484f6473b842dd9475dd2884032513d9051c622757323c9fb001d71",
+      "size": 503989
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "fc3ddf7a0d773e42e0f4fe30c954ef2b46c20c7102fb7b24622911a666b28520",
+      "size": 407141
+    },
+    "related_log_sections": [
+      "b0-run-integrity-reg016-v2",
+      "b0-run-integrity-reg016-v3",
+      "b0-run-integrity-reg016-v4",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "B0-actual-evaluation",
+      "B0-actual-root-cause-analysis",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_executor-a3-directional-operands-v3-history-correction",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-readme-percent-format-priority-v6",
+      "b-loop-reasoning-shadow-baseline-v1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-full-chain-reproduction-baseline-v10",
+      "b-loop-calculation-percent-unit-semantics-a1-target8"
+    ],
+    "reviewed_at": "2026-07-22T20:01:11+00:00"
+  },
+  "hypothesis": "在A1显式单位代数基础上，把执行器自动缩放契约告知结构化求解器，可消除fin_b_017重复乘100且保持其余7题稳定",
+  "material_delta": {
+    "prompt_executor_contract_alignment": true
+  },
+  "metrics": {
+    "a1_pseudo_matches": 7,
+    "answer_by_qid": {
+      "fin_b_017": [
+        "1049321.98",
+        "0.08%"
+      ],
+      "fin_b_019": [
+        "比亚迪>宁德时代>美的集团",
+        "0.84"
+      ],
+      "ins_b_001": [
+        "333.20"
+      ],
+      "ins_b_003": [
+        "366.00"
+      ],
+      "ins_b_011": [
+        "16.00"
+      ],
+      "ins_b_019": [
+        "211.50"
+      ],
+      "res_b_005": [
+        "22.27%"
+      ],
+      "res_b_007": [
+        "61.98"
+      ]
+    },
+    "answered_count": 8,
+    "comparable_scope": "target8_only_not_global",
+    "failed_qids": [],
+    "pseudo_match_rate": 100.0,
+    "pseudo_matches": 8,
+    "reasoning_aggregate": {
+      "dimension_means": {
+        "clarity": 93.875,
+        "completeness": 93.875,
+        "logical": 91.875
+      },
+      "p10": 77.33333333333333,
+      "question_count": 8,
+      "reasoning_score": 93.20833333333333,
+      "status_counts": {
+        "scored": 8
+      },
+      "zero_score_count": 0
+    },
+    "reasoning_judge_token_usage": {
+      "completion_tokens": 975,
+      "prompt_tokens": 5209,
+      "total_tokens": 6184
+    },
+    "submission_token_total": 173061,
+    "target_count": 8,
+    "target_scorecard": {
+      "accuracy_score": 100.0,
+      "accuracy_source": "target8_pseudo_match_to_official97_incumbent_not_ground_truth",
+      "judge_tokens_included_in_submission": false,
+      "reasoning_judge_model": "gpt-5.6",
+      "reasoning_prompt_version": "b_reasoning_judge_v1_new_md",
+      "reasoning_score": 93.20833333333333,
+      "token_efficiency_score": 34.6122,
+      "token_total": 173061,
+      "total_score": 85.56410666666666
+    }
+  },
+  "next_step": "运行233项全量测试；若通过则提交并推送该有效分支，再跑全100题research链和最终三维评分。",
+  "pipeline_stage": "calculation",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-22T20:03:31+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "percent_ratio_unit_algebra",
+  "status": "effective",
+  "submission_effect": "not_submitted",
+  "target_qids": [
+    "fin_b_017",
+    "fin_b_019",
+    "ins_b_001",
+    "ins_b_003",
+    "ins_b_011",
+    "ins_b_019",
+    "res_b_005",
+    "res_b_007"
+  ]
+}
+```

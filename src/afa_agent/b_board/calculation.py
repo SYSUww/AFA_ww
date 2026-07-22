@@ -65,19 +65,20 @@ class CalculationExecutor:
             if not name or name in variables:
                 raise CalculationPlanError(f"Invalid or duplicate variable name: {name!r}")
             value_type = str(item.get("value_type", "decimal"))
-            value = _parse_value(item.get("value"), value_type)
+            unit = str(item.get("unit", ""))
+            value = _parse_variable_value(item.get("value"), value_type, unit)
             variable_evidence = [str(value) for value in item.get("evidence_ids", []) if str(value)]
             if not variable_evidence:
                 raise CalculationPlanError(f"Variable {name} has no evidence_ids")
             evidence_ids.extend(variable_evidence)
             variables[name] = value
-            value_kinds[name] = _variable_kind(value_type, str(item.get("unit", "")))
+            value_kinds[name] = _variable_kind(value_type, unit)
             normalized_variables.append(
                 {
                     "name": name,
                     "value": _serialize_value(value),
                     "value_type": value_type,
-                    "unit": str(item.get("unit", "")),
+                    "unit": unit,
                     "evidence_ids": variable_evidence,
                 }
             )
@@ -86,7 +87,7 @@ class CalculationExecutor:
                     name=name,
                     value=value,
                     value_type=value_type,
-                    unit=str(item.get("unit", "")),
+                    unit=unit,
                     evidence_ids=variable_evidence,
                     evidence_text_by_id=evidence_text_by_id,
                 )
@@ -301,13 +302,42 @@ class CalculationExecutor:
             return _decimal(args[0]) - _decimal(args[1]), _first_kind(arg_kinds), conversions
         if op == "mul":
             result = Decimal("1")
-            for item in args:
-                result *= _decimal(item)
-            return result, "decimal", conversions
+            for index, (item, kind) in enumerate(zip(args, arg_kinds), start=1):
+                operand = _decimal(item)
+                if kind == "percent_points":
+                    operand /= Decimal("100")
+                    conversions.append(
+                        {
+                            "argument": f"argument_{index}",
+                            "from": "percent_points",
+                            "to": "ratio",
+                        }
+                    )
+                result *= operand
+            return result, _multiplication_kind(arg_kinds), conversions
         if op == "div":
             _require_arg_count(op, args, 2)
+            numerator = _decimal(args[0])
             denominator = _decimal(args[1])
-            if arg_kinds[1] == "percent_points":
+            if arg_kinds[0] == "percent_points" and arg_kinds[1] == "percent_points":
+                numerator /= Decimal("100")
+                denominator /= Decimal("100")
+                conversions.extend(
+                    [
+                        {
+                            "argument": "numerator",
+                            "from": "percent_points",
+                            "to": "ratio",
+                        },
+                        {
+                            "argument": "denominator",
+                            "from": "percent_points",
+                            "to": "ratio",
+                        },
+                    ]
+                )
+                result_kind = "ratio"
+            elif arg_kinds[1] == "percent_points":
                 denominator /= Decimal("100")
                 conversions.append(
                     {
@@ -316,10 +346,12 @@ class CalculationExecutor:
                         "to": "ratio",
                     }
                 )
+                result_kind = arg_kinds[0]
+            else:
+                result_kind = "ratio"
             if denominator == 0:
                 raise CalculationPlanError("Division by zero")
-            result_kind = arg_kinds[0] if arg_kinds[1] == "percent_points" else "ratio"
-            return _decimal(args[0]) / denominator, result_kind, conversions
+            return numerator / denominator, result_kind, conversions
         if op == "mean":
             if not args:
                 raise CalculationPlanError("mean requires at least one argument")
@@ -616,11 +648,20 @@ def _legacy_ratio_as_percent(
 def _require_named_directional_operands(
     op: str, step: Mapping[str, Any]
 ) -> tuple[Any, Any]:
-    if "new" not in step or "old" not in step:
+    if "new" in step and "old" in step:
+        return step["new"], step["old"]
+    raw_args = step.get("args")
+    if isinstance(raw_args, Mapping) and "new" in raw_args and "old" in raw_args:
+        extra = sorted(str(key) for key in raw_args if key not in {"new", "old"})
+        if extra:
+            raise CalculationPlanError(
+                f"{op} named args mismatch: extra=" + ",".join(extra)
+            )
+        return raw_args["new"], raw_args["old"]
+    else:
         raise CalculationPlanError(
             f"{op} requires named 'new' and 'old' operands"
         )
-    return step["new"], step["old"]
 
 
 def _operation_arg_specs(op: str, step: Mapping[str, Any]) -> list[Any]:
@@ -631,6 +672,10 @@ def _operation_arg_specs(op: str, step: Mapping[str, Any]) -> list[Any]:
         raise CalculationPlanError(f"{op} args must be a list or supported named object")
 
     named_roles = {
+        "abs": ("value",),
+        "div": ("numerator", "denominator"),
+        "pct_change": ("new", "old"),
+        "pct_point_delta": ("new", "old"),
         "date_add_days": ("date", "days"),
         "next_workday": ("date",),
         "days_between": ("end", "start"),
@@ -660,6 +705,19 @@ def _parse_value(value: Any, value_type: str) -> Any:
             raise CalculationPlanError("Text variable cannot be empty")
         return text
     raise CalculationPlanError(f"Unsupported value_type: {value_type!r}")
+
+
+def _parse_variable_value(value: Any, value_type: str, unit: str) -> Any:
+    if value_type != "decimal":
+        return _parse_value(value, value_type)
+    text = str(value).strip()
+    if text.endswith("%"):
+        if _variable_kind(value_type, unit) != "percent_points":
+            raise CalculationPlanError(
+                "A decimal value with a % suffix must also declare a percentage unit"
+            )
+        text = text[:-1].strip()
+    return _decimal(text)
 
 
 def _resolve(value: Any, values: Mapping[str, Any]) -> Any:
@@ -774,6 +832,14 @@ def _resolve_kind(value: Any, kinds: Mapping[str, str]) -> str:
 
 def _first_kind(kinds: Sequence[str]) -> str:
     return kinds[0] if kinds else "decimal"
+
+
+def _multiplication_kind(kinds: Sequence[str]) -> str:
+    if "amount" in kinds:
+        return "amount"
+    if kinds and all(kind in {"ratio", "percent_points"} for kind in kinds):
+        return "ratio"
+    return "decimal"
 
 
 def _format_for_slot_contract(
