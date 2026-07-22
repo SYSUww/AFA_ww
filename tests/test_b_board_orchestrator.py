@@ -8,7 +8,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 from afa_agent.autoresearch import run_loop_plan
+from afa_agent.b_board.evaluator import PROMPT_VERSION, SCHEMA_VERSION
 from afa_agent.b_board.orchestrator import BBoardLoopOrchestrator
+from afa_agent.config import ModelConfig
 from afa_agent.io_utils import write_json
 
 
@@ -39,8 +41,8 @@ def audit_row(qid: str, score: int, tier: str, reasons: list[str]) -> dict[str, 
         "low_confidence_reasons": reasons,
         "suggested_improvements": [],
         "hard_failures": [],
-        "prompt_version": "b_confidence_judge_v1",
-        "schema_version": 1,
+        "prompt_version": PROMPT_VERSION,
+        "schema_version": SCHEMA_VERSION,
     }
 
 
@@ -63,7 +65,14 @@ class BBoardOrchestratorTests(unittest.TestCase):
             "experiment_registry_path": "experiments/b/registry.jsonl",
             "markdown_log_path": "wiki/b_loop.md",
             "baseline": {"run_id": "B0-actual", "workers": 1},
-            "evaluation": {"workers": 1},
+            "evaluation": {
+                "model_name": "gpt-5.6",
+                "temperature": 0.0,
+                "prompt_version": PROMPT_VERSION,
+                "schema_version": SCHEMA_VERSION,
+                "output_name": "evaluation",
+                "workers": 1,
+            },
             "scheduler": {"max_comparable_attempts": 3},
         }
         self.plan_path.write_text(json.dumps(self.plan), encoding="utf-8")
@@ -198,6 +207,21 @@ class BBoardOrchestratorTests(unittest.TestCase):
 
         self.assertEqual(result["status"], "test")
         mocked.assert_called_once()
+
+    def test_evaluator_model_is_overridden_without_changing_generator_config(self) -> None:
+        orchestrator = self.build_orchestrator()
+        base = ModelConfig(
+            api_key="secret",
+            api_base="https://example.test/v1",
+            model_name="gpt-5.5",
+            temperature=0.0,
+        )
+
+        evaluator = orchestrator._evaluator_model_config(base)
+
+        self.assertEqual(base.model_name, "gpt-5.5")
+        self.assertEqual(evaluator.model_name, "gpt-5.6")
+        self.assertEqual(evaluator.api_key, base.api_key)
 
 
 if __name__ == "__main__":

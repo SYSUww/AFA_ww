@@ -1,5 +1,5 @@
 {
-  "version": "b_actual_open_loop_gpt56_error_audit_v2",
+  "version": "b_i023_gpt56_error_audit_v2",
   "execution": {
     "runner": "b_actual_open_loop",
     "compatible_with_run_loop_engine": true
@@ -9,8 +9,8 @@
     "submission_template": "upload_b/submit.csv",
     "expected_question_count": 100
   },
-  "output_root": "artifacts/b_board_actual",
-  "loop_state_path": "artifacts/b_board_actual/loop_state_gpt56_error_audit_v2.json",
+  "output_root": "artifacts/b_board_actual/candidates/financial_reports_claim_conditioned_evidence_alignment",
+  "loop_state_path": "artifacts/b_board_actual/i023_gpt56_error_audit_v2/loop_state.json",
   "experiment_registry_path": "experiments/b_board_actual/experiment_registry.jsonl",
   "markdown_log_path": "wiki/b_board_actual_loop_log.md",
   "history_import": {
@@ -24,7 +24,7 @@
     ]
   },
   "baseline": {
-    "run_id": "b0_actual_gpt55_attempt43_composite_v1",
+    "run_id": "claim_evidence_order_a1_promoted1_composite",
     "parsed_root": "artifacts/preprocessed_loop_candidates/parsed",
     "index_root": "artifacts/preprocessed_loop_candidates/index",
     "strategy_path": "configs/autoresearch/evidence_gate_rescue_accuracy_first.json",

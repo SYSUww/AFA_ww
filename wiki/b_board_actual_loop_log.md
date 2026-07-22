@@ -22,6 +22,51 @@
 }
 ```
 
+## b-loop-i023-gpt56-answer-error-audit-v2
+
+- recorded_at: `2026-07-22`
+- branch: `codex/b榜-loop-i034-gpt56-error-audit`
+- baseline: 官网对 `I023` 的真实评分为 `91%`；该分数只用于约束错误总量，不反推单题标签。
+- objective: 用独立求解 + 密封答案复核的两阶段 `gpt-5.6` 评估，定位 I023 中更可能答错的题目，减少下一次官网提交前的盲目改动。
+- status: `evaluation_complete`
+- submission_effect: `not_submitted`
+- answer_changes: `0`
+- promotion: `none`
+
+### 评估链路变更
+
+- evaluator model: `gpt-5.6`，与生成链路的 `LLM_MODEL=gpt-5.5` 解耦。
+- prompt: `b_answer_error_judge_v2`；第一阶段不读取 I023 密封答案，独立输出答案、证据和选项判断，第二阶段再比较密封答案并给出错误概率。
+- output namespace: `evaluation_gpt56_error_audit_v2`，保留旧版评估产物。
+- added outputs: `answer_match`、`answer_verdict`、`error_likelihood`、`suspected_error`、`error_types`、`correction_candidate`、`suspected_errors.json`。
+- retry strategy: 4 并发起跑，在 67/106 后可恢复地提升到 8 并发；3 个 429 项以 3 并发重试并全部恢复。
+
+### I023 全量结果
+
+- coverage: `100/100` answers + `6/6` sentinels，`failure_count=0`。
+- prompt hash: `b21ff06d2413ce46e54f9aae275812e9c0ab86802b8cb80fd0f24b82ed2c6a8f`
+- token usage: prompt `996267`，completion `117835`，total `1114102`。
+- confidence tiers: blocked `20`，low `14`，medium `2`，high `64`。
+- suspected errors: `7`；review candidates: `23`；independent-answer disagreements: `13`。
+
+| qid | I023 答案 | 独立答案/修正方向 | error likelihood | 本轮判断 |
+| --- | --- | --- | ---: | --- |
+| `fc_b_003` | `ABCD` | `ACD` | 99 | 强候选；B 将 90 日宽限期从未付款违约泛化到全部违约。 |
+| `res_b_004` | `AD` | `BD`（至少删除 A） | 98 | A 与证据冲突；B 仍需补证，先做深审。 |
+| `res_b_008` | `AC` | `A` | 97 | 当前证据不能闭合具体因果主张，优先修检索而非直接改答案。 |
+| `res_b_012` | `67.10` | `67.1` | 96 | 仅格式差异且数值等价；题干要求一位小数、提交模板要求两位小数，排除出语义改答案池。 |
+| `reg_b_001` | `AD` | `D` | 89 | A 缺少直接支撑；涉及日期口径，需时点证据复核。 |
+| `res_b_009` | `ABC` | `AB` | 89 | C 的跨领域“降本+提质”未被现有证据支持。 |
+| `res_b_020` | `BD` | `B` | 82 | D 将趋势过度确定化；B 的“技术标准”措辞也需补证。 |
+
+### 决策与下一轮
+
+1. `fc_b_003` 进入最高优先级定向修正验证，目标答案 `ACD`。
+2. `reg_b_001`、`res_b_009`、`res_b_020` 进入第二优先级逐选项证据闭合。
+3. `res_b_004`、`res_b_008` 先优化检索与证据包；没有新证据前不直接改答案。
+4. `res_b_012` 作为评估器格式等价误报记录，后续增加数值规范化，不计入语义错误候选。
+5. 本轮只提高了错误定位能力，尚无官网增益证据；只有定向修正经过固定评估器复测后，才生成新的候选提交。
+
 ## B0-actual-integrity
 
 - recorded_at: `2026-07-21T18:19:37+00:00`

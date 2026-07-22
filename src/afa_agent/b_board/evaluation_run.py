@@ -57,6 +57,7 @@ def run_fixed_evaluation(
     questions: Sequence[BQuestion],
     model_config: ModelConfig,
     workers: int = 4,
+    output_name: str = "evaluation",
     evaluator_factory: EvaluatorFactory | None = None,
 ) -> EvaluationRunResult:
     """Evaluate or safely resume evaluation of a sealed B-board answer run.
@@ -70,6 +71,8 @@ def run_fixed_evaluation(
     resolved_run_dir = Path(run_dir).resolve()
     if workers < 1:
         raise ValueError("workers must be positive")
+    if not output_name or Path(output_name).name != output_name or output_name in {".", ".."}:
+        raise ValueError("output_name must be a single directory name")
     if float(model_config.temperature) != 0.0:
         raise ValueError("the fixed confidence evaluator requires temperature=0")
 
@@ -88,7 +91,7 @@ def run_fixed_evaluation(
         sealed_answers=source_answers,
         sentinel_subjects=sentinel_subjects,
     )
-    output_dir = resolved_run_dir / "evaluation"
+    output_dir = resolved_run_dir / output_name
     manifest, sealed_answers, resumed = _prepare_evaluation(
         output_dir=output_dir,
         run_dir=resolved_run_dir,
@@ -170,6 +173,10 @@ def run_fixed_evaluation(
     valid = complete and sentinel_validation["passed"] and not failures
 
     write_json(output_dir / "aggregate_metrics.json", aggregate)
+    write_json(
+        output_dir / "suspected_errors.json",
+        _suspected_error_rows(answer_evaluations),
+    )
     write_json(output_dir / "sentinel_validation.json", sentinel_validation)
     write_json(output_dir / "token_usage.json", {"by_qid": usage_by_qid, "total": totals})
     write_jsonl(output_dir / "failures.jsonl", failures)
@@ -222,12 +229,28 @@ def aggregate_confidence(
         by_domain[question_by_qid[qid].domain].append(evaluation.confidence_score)
         tiers[evaluation.tier] += 1
     all_values = [item.confidence_score for item in evaluations.values()]
+    suspected = sorted(
+        (
+            item
+            for item in evaluations.values()
+            if item.suspected_error or item.answer_verdict == "uncertain"
+        ),
+        key=lambda item: (-(item.error_likelihood or 0), item.qid),
+    )
+    disagreements = sorted(
+        item.qid for item in evaluations.values() if item.answer_match is False
+    )
     return {
         "question_count": len(evaluations),
         "tiers": dict(sorted(tiers.items())),
         "minimum": min(all_values, default=None),
         "p10": _percentile(all_values, 0.10),
         "median": _percentile(all_values, 0.50),
+        "suspected_error_count": sum(item.suspected_error for item in evaluations.values()),
+        "review_candidate_count": len(suspected),
+        "answer_disagreement_count": len(disagreements),
+        "answer_disagreement_qids": disagreements,
+        "review_candidate_qids": [item.qid for item in suspected],
         "by_domain": {
             domain: {
                 "question_count": len(values),
@@ -419,6 +442,12 @@ def _persist_partial(
     write_jsonl(output_dir / "confidence_audit.jsonl", answer_rows)
     write_json(output_dir / "sentinel_evaluations.json", sentinel_rows)
     write_json(output_dir / "evaluation_usage_partial.json", usage_by_qid)
+    write_json(
+        output_dir / "suspected_errors.json",
+        _suspected_error_rows(
+            {qid: evaluations[qid] for qid in answer_qids & set(evaluations)}
+        ),
+    )
 
 
 def _validate_completed_result(
@@ -477,6 +506,41 @@ def _evaluation_from_dict(row: Any) -> ConfidenceEvaluation:
             str(item) for item in row.get("suggested_improvements", [])
         ),
         hard_failures=tuple(str(item) for item in row.get("hard_failures", [])),
+        independent_status=str(row.get("independent_status", "")),
+        independent_answer_parts=tuple(
+            str(item) for item in row.get("independent_answer_parts", [])
+        ),
+        independent_used_evidence_ids=tuple(
+            str(item) for item in row.get("independent_used_evidence_ids", [])
+        ),
+        independent_option_assessments={
+            str(key): str(value)
+            for key, value in dict(row.get("independent_option_assessments", {})).items()
+        },
+        independent_confidence=(
+            None
+            if row.get("independent_confidence") is None
+            else int(row["independent_confidence"])
+        ),
+        independent_solution_summary=str(row.get("independent_solution_summary", "")),
+        independent_missing_evidence=tuple(
+            str(item) for item in row.get("independent_missing_evidence", [])
+        ),
+        answer_match=(None if row.get("answer_match") is None else bool(row["answer_match"])),
+        answer_verdict=str(row.get("answer_verdict", "")),
+        error_likelihood=(
+            None if row.get("error_likelihood") is None else int(row["error_likelihood"])
+        ),
+        suspected_error=bool(row.get("suspected_error", False)),
+        suspected_error_types=tuple(
+            str(item) for item in row.get("suspected_error_types", [])
+        ),
+        suspected_error_reasons=tuple(
+            str(item) for item in row.get("suspected_error_reasons", [])
+        ),
+        correction_candidate_parts=tuple(
+            str(item) for item in row.get("correction_candidate_parts", [])
+        ),
     )
 
 
@@ -581,6 +645,32 @@ def _percentile(values: Sequence[int], quantile: float) -> int | None:
     ordered = sorted(values)
     index = max(0, min(len(ordered) - 1, math.ceil(quantile * len(ordered)) - 1))
     return ordered[index]
+
+
+def _suspected_error_rows(
+    evaluations: Mapping[str, ConfidenceEvaluation],
+) -> list[dict[str, Any]]:
+    candidates = [
+        item
+        for item in evaluations.values()
+        if item.suspected_error or item.answer_verdict == "uncertain" or item.answer_match is False
+    ]
+    candidates.sort(key=lambda item: (-(item.error_likelihood or 0), item.qid))
+    return [
+        {
+            "qid": item.qid,
+            "answer_verdict": item.answer_verdict,
+            "error_likelihood": item.error_likelihood,
+            "answer_match": item.answer_match,
+            "independent_answer_parts": list(item.independent_answer_parts),
+            "independent_confidence": item.independent_confidence,
+            "correction_candidate_parts": list(item.correction_candidate_parts),
+            "suspected_error_types": list(item.suspected_error_types),
+            "suspected_error_reasons": list(item.suspected_error_reasons),
+            "independent_used_evidence_ids": list(item.independent_used_evidence_ids),
+        }
+        for item in candidates
+    ]
 
 
 def _sanitize_error(message: str, model_config: ModelConfig) -> str:

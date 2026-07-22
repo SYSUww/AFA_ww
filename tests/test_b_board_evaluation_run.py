@@ -120,12 +120,19 @@ class FixedEvaluationRunTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp.cleanup()
 
-    def execute(self, controller: FakeEvaluationController, *, model: ModelConfig | None = None):
+    def execute(
+        self,
+        controller: FakeEvaluationController,
+        *,
+        model: ModelConfig | None = None,
+        output_name: str = "evaluation",
+    ):
         return run_fixed_evaluation(
             run_dir=self.run_dir,
             questions=self.questions,
             model_config=model or self.model,
             workers=3,
+            output_name=output_name,
             evaluator_factory=controller.factory,
         )
 
@@ -208,6 +215,26 @@ class FixedEvaluationRunTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "temperature=0"):
             self.execute(FakeEvaluationController(), model=model)
+
+    def test_versioned_output_namespace_preserves_legacy_evaluation(self) -> None:
+        legacy = self.run_dir / "evaluation"
+        legacy.mkdir()
+        (legacy / "legacy.txt").write_text("v1", encoding="utf-8")
+
+        result = self.execute(
+            FakeEvaluationController(),
+            output_name="evaluation_gpt56_error_audit_v2",
+        )
+
+        self.assertEqual(result.manifest["status"], "complete")
+        self.assertEqual((legacy / "legacy.txt").read_text(encoding="utf-8"), "v1")
+        output = self.run_dir / "evaluation_gpt56_error_audit_v2"
+        self.assertTrue((output / "evaluator_manifest.json").exists())
+        self.assertTrue((output / "suspected_errors.json").exists())
+
+    def test_output_namespace_rejects_paths(self) -> None:
+        with self.assertRaisesRegex(ValueError, "single directory"):
+            self.execute(FakeEvaluationController(), output_name="../evaluation")
 
 
 if __name__ == "__main__":

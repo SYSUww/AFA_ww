@@ -4,6 +4,7 @@ import json
 import unittest
 
 from afa_agent.b_board.evaluator import (
+    INDEPENDENT_PROMPT_VERSION,
     PROMPT_VERSION,
     SCHEMA_VERSION,
     ConfidenceEvaluation,
@@ -12,8 +13,10 @@ from afa_agent.b_board.evaluator import (
     build_blind_pair,
     build_calibration_subjects,
     build_evaluation_messages,
+    build_independent_messages,
     decide_candidate_promotion,
     detect_hard_failures,
+    parse_independent_payload,
     parse_evaluation_payload,
     validate_calibration_sentinels,
 )
@@ -37,6 +40,27 @@ def evaluation_payload(**overrides):
         "blocking_reasons": [],
         "low_confidence_reasons": [],
         "suggested_improvements": [],
+        "answer_verdict": "likely_correct",
+        "error_likelihood": 5,
+        "suspected_error_types": [],
+        "suspected_error_reasons": [],
+        "correction_candidate_parts": ["A"],
+    }
+    payload.update(overrides)
+    return payload
+
+
+def independent_payload(**overrides):
+    payload = {
+        "schema_version": SCHEMA_VERSION,
+        "prompt_version": INDEPENDENT_PROMPT_VERSION,
+        "status": "resolved",
+        "answer_parts": ["A"],
+        "used_evidence_ids": ["u1"],
+        "option_assessments": {"A": "supported", "B": "contradicted"},
+        "confidence": 92,
+        "solution_summary": "证据支持A并排除B",
+        "missing_evidence": [],
     }
     payload.update(overrides)
     return payload
@@ -70,18 +94,18 @@ class FakeResponse:
 
 class FakeClient:
     def __init__(self, payload):
-        self.payload = payload
-        self.messages = None
+        self.payloads = list(payload) if isinstance(payload, list) else [payload]
+        self.messages = []
 
     def chat_json(self, messages):
-        self.messages = messages
-        return FakeResponse(self.payload)
+        self.messages.append(messages)
+        return FakeResponse(self.payloads.pop(0))
 
 
 class BBoardEvaluatorTests(unittest.TestCase):
     def test_subject_rejects_optimizer_metadata(self):
         with self.assertRaisesRegex(ValueError, "optimizer metadata"):
-            build_evaluation_messages(subject(candidate_id="candidate"))
+            build_independent_messages(subject(candidate_id="candidate"))
 
     def test_conservative_score_uses_weakest_dimension(self):
         result = parse_evaluation_payload(
@@ -101,6 +125,44 @@ class BBoardEvaluatorTests(unittest.TestCase):
         )
         self.assertEqual(result.confidence_score, 0)
         self.assertEqual(result.tier, "blocked")
+
+    def test_likely_wrong_is_ranked_as_blocked_with_error_signal(self):
+        result = parse_evaluation_payload(
+            qid="q1",
+            question_type="mcq",
+            payload=evaluation_payload(
+                answer_verdict="likely_wrong",
+                error_likelihood=91,
+                suspected_error_types=["wrong_or_missing_option"],
+                suspected_error_reasons=["独立答案为B，证据直接反驳A"],
+                correction_candidate_parts=["B"],
+            ),
+        )
+        self.assertEqual(result.confidence_score, 39)
+        self.assertEqual(result.tier, "blocked")
+        self.assertTrue(result.suspected_error)
+        self.assertIn("独立答案为B", result.low_confidence_reasons[0])
+
+    def test_independent_status_alias_is_normalized(self):
+        result = parse_independent_payload(
+            independent_payload(status="supported"),
+            subject=subject(),
+        )
+        self.assertEqual(result.status, "resolved")
+
+    def test_choice_answer_comparison_ignores_display_separators(self):
+        independent = parse_independent_payload(
+            independent_payload(answer_parts=["A、B"]),
+            subject=subject(),
+        )
+        result = parse_evaluation_payload(
+            qid="q1",
+            question_type="mcq",
+            payload=evaluation_payload(correction_candidate_parts=[]),
+            sealed_answer_parts=["AB"],
+            independent=independent,
+        )
+        self.assertTrue(result.answer_match)
 
     def test_missing_applicable_dimension_is_zero_only_for_hard_failed_answer(self):
         result = parse_evaluation_payload(
@@ -155,12 +217,15 @@ class BBoardEvaluatorTests(unittest.TestCase):
         self.assertIn("invalid_answer_slot:1", failures)
 
     def test_fixed_evaluator_uses_clean_subject_and_usage(self):
-        client = FakeClient(evaluation_payload())
+        client = FakeClient([independent_payload(), evaluation_payload()])
         evaluator = FixedConfidenceEvaluator(client)
         result, usage = evaluator.evaluate(subject())
         self.assertEqual(result.tier, "high")
-        self.assertEqual(usage["total_tokens"], 12)
-        serialized = client.messages[1]["content"]
+        self.assertEqual(usage["total_tokens"], 24)
+        self.assertTrue(result.answer_match)
+        independent_serialized = client.messages[0][1]["content"]
+        self.assertNotIn("answer_parts", independent_serialized)
+        serialized = client.messages[1][1]["content"]
         self.assertNotIn("candidate_id", serialized)
 
     def test_blind_pair_hides_candidate_identity(self):

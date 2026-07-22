@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections import Counter
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
@@ -92,6 +93,11 @@ class BBoardLoopOrchestrator:
             raise ValueError("B loop evaluation.prompt_version does not match the frozen evaluator")
         if int(self.evaluation.get("schema_version", SCHEMA_VERSION)) != SCHEMA_VERSION:
             raise ValueError("B loop evaluation.schema_version does not match the frozen evaluator")
+        if not str(self.evaluation.get("model_name") or "").strip():
+            raise ValueError("B loop evaluation.model_name must be explicit")
+        if float(self.evaluation.get("temperature", 0.0)) != 0.0:
+            raise ValueError("B loop evaluation.temperature must be 0")
+        self._evaluation_output_dir()
 
     def run(self) -> dict[str, Any]:
         ensure_dir(self.output_root)
@@ -214,12 +220,9 @@ class BBoardLoopOrchestrator:
                 "dynamic_direction_ids": [item.direction_id for item in dynamic_directions],
                 "registry": registry_summary,
                 "artifact_paths": {
-                    "confidence_audit": str(
-                        self.run_dir / "evaluation" / "confidence_audit.json"
-                    ),
-                    "evaluator_manifest": str(
-                        self.run_dir / "evaluation" / "evaluator_manifest.json"
-                    ),
+                    "confidence_audit": str(self._evaluation_output_dir() / "confidence_audit.json"),
+                    "suspected_errors": str(self._evaluation_output_dir() / "suspected_errors.json"),
+                    "evaluator_manifest": str(self._evaluation_output_dir() / "evaluator_manifest.json"),
                 },
             },
         )
@@ -283,7 +286,7 @@ class BBoardLoopOrchestrator:
         return manifest if _run_is_complete(manifest, expected_count) else None
 
     def _completed_evaluation_manifest(self, expected_count: int) -> dict[str, Any] | None:
-        path = self.run_dir / "evaluation" / "evaluator_manifest.json"
+        path = self._evaluation_output_dir() / "evaluator_manifest.json"
         if not path.exists():
             return None
         manifest = read_json(path)
@@ -320,22 +323,34 @@ class BBoardLoopOrchestrator:
         config = build_run_config(self.root)
         if config.model is None:
             raise BBoardLoopStateError("Missing model config for fixed B evaluator")
+        model = self._evaluator_model_config(config.model)
         return {
             "prompt_version": PROMPT_VERSION,
             "schema_version": SCHEMA_VERSION,
             "prompt_sha256": prompt_fingerprint(),
-            "model_name": config.model.model_name,
-            "temperature": config.model.temperature,
+            "model_name": model.model_name,
+            "temperature": model.temperature,
             "api_base_sha256": hashlib.sha256(
-                config.model.api_base.encode("utf-8")
+                model.api_base.encode("utf-8")
             ).hexdigest(),
         }
 
     def _load_confidence_audit(self, expected_count: int) -> dict[str, ConfidenceEvaluation]:
-        path = self.run_dir / "evaluation" / "confidence_audit.json"
+        path = self._evaluation_output_dir() / "confidence_audit.json"
         if not path.exists():
             raise BBoardLoopStateError(f"Missing fixed evaluator audit: {path}")
         rows = read_json(path)
+        mismatched = [
+            str(row.get("qid", ""))
+            for row in rows
+            if row.get("prompt_version") != PROMPT_VERSION
+            or int(row.get("schema_version", -1)) != SCHEMA_VERSION
+        ]
+        if mismatched:
+            raise BBoardLoopStateError(
+                "Fixed evaluator audit uses a different prompt/schema: "
+                + ", ".join(mismatched[:5])
+            )
         evaluations = {str(row["qid"]): _evaluation_from_dict(row) for row in rows}
         if len(evaluations) != expected_count:
             raise BBoardLoopStateError(
@@ -380,13 +395,30 @@ class BBoardLoopOrchestrator:
         run_config = build_run_config(self.root)
         if run_config.model is None:
             raise BBoardLoopStateError("Missing model config for fixed B evaluator")
+        model = self._evaluator_model_config(run_config.model)
         result = run_fixed_evaluation(
             run_dir=run_dir,
             questions=self.question_loader(self.question_root, self.submission_template),
-            model_config=run_config.model,
+            model_config=model,
             workers=int(config.get("workers", 4)),
+            output_name=self._evaluation_output_dir().name,
         )
         return result.manifest
+
+    def _evaluator_model_config(self, base_model: Any) -> Any:
+        model_name = str(self.evaluation.get("model_name") or "").strip()
+        if not model_name:
+            raise BBoardLoopStateError("B loop evaluation.model_name must be explicit")
+        temperature = float(self.evaluation.get("temperature", 0.0))
+        if temperature != 0.0:
+            raise BBoardLoopStateError("B loop evaluator temperature must be 0")
+        return replace(base_model, model_name=model_name, temperature=temperature)
+
+    def _evaluation_output_dir(self) -> Path:
+        output_name = str(self.evaluation.get("output_name") or "evaluation").strip()
+        if not output_name or Path(output_name).name != output_name or output_name in {".", ".."}:
+            raise BBoardLoopStateError("B loop evaluation.output_name must be a directory name")
+        return self.run_dir / output_name
 
     def _log_once(
         self,
@@ -472,8 +504,43 @@ def _evaluation_from_dict(row: Mapping[str, Any]) -> ConfidenceEvaluation:
             str(item) for item in row.get("suggested_improvements", [])
         ),
         hard_failures=tuple(str(item) for item in row.get("hard_failures", [])),
-        prompt_version=str(row.get("prompt_version", "b_confidence_judge_v1")),
-        schema_version=int(row.get("schema_version", 1)),
+        independent_status=str(row.get("independent_status", "")),
+        independent_answer_parts=tuple(
+            str(item) for item in row.get("independent_answer_parts", [])
+        ),
+        independent_used_evidence_ids=tuple(
+            str(item) for item in row.get("independent_used_evidence_ids", [])
+        ),
+        independent_option_assessments={
+            str(key): str(value)
+            for key, value in dict(row.get("independent_option_assessments", {})).items()
+        },
+        independent_confidence=(
+            None
+            if row.get("independent_confidence") is None
+            else int(row["independent_confidence"])
+        ),
+        independent_solution_summary=str(row.get("independent_solution_summary", "")),
+        independent_missing_evidence=tuple(
+            str(item) for item in row.get("independent_missing_evidence", [])
+        ),
+        answer_match=(None if row.get("answer_match") is None else bool(row["answer_match"])),
+        answer_verdict=str(row.get("answer_verdict", "")),
+        error_likelihood=(
+            None if row.get("error_likelihood") is None else int(row["error_likelihood"])
+        ),
+        suspected_error=bool(row.get("suspected_error", False)),
+        suspected_error_types=tuple(
+            str(item) for item in row.get("suspected_error_types", [])
+        ),
+        suspected_error_reasons=tuple(
+            str(item) for item in row.get("suspected_error_reasons", [])
+        ),
+        correction_candidate_parts=tuple(
+            str(item) for item in row.get("correction_candidate_parts", [])
+        ),
+        prompt_version=str(row.get("prompt_version", PROMPT_VERSION)),
+        schema_version=int(row.get("schema_version", SCHEMA_VERSION)),
     )
 
 
@@ -481,6 +548,17 @@ def _confidence_summary(evaluations: Mapping[str, ConfidenceEvaluation]) -> dict
     tiers = Counter(item.tier for item in evaluations.values())
     low_qids = sorted(
         qid for qid, item in evaluations.items() if item.tier in {"blocked", "low"}
+    )
+    suspected_qids = [
+        item.qid
+        for item in sorted(
+            evaluations.values(),
+            key=lambda item: (-(item.error_likelihood or 0), item.qid),
+        )
+        if item.suspected_error
+    ]
+    disagreement_qids = sorted(
+        qid for qid, item in evaluations.items() if item.answer_match is False
     )
     scores = sorted(item.confidence_score for item in evaluations.values())
     p10_index = max(0, (len(scores) + 9) // 10 - 1) if scores else 0
@@ -490,6 +568,8 @@ def _confidence_summary(evaluations: Mapping[str, ConfidenceEvaluation]) -> dict
         "minimum": scores[0] if scores else None,
         "p10": scores[p10_index] if scores else None,
         "low_confidence_qids": low_qids,
+        "suspected_error_qids": suspected_qids,
+        "answer_disagreement_qids": disagreement_qids,
     }
 
 

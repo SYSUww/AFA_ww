@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 
@@ -22,6 +23,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--question-root", default="upload_b/question_b")
     parser.add_argument("--submission-template", default="upload_b/submit.csv")
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--model", default="gpt-5.6")
+    parser.add_argument("--output-name", default="evaluation_gpt56_error_audit_v2")
     return parser.parse_args()
 
 
@@ -30,11 +33,13 @@ def main() -> None:
     config = build_run_config(ROOT)
     if config.model is None:
         raise RuntimeError("Missing model config in .env")
+    model = replace(config.model, model_name=args.model, temperature=0.0)
     result = run_fixed_evaluation(
         run_dir=(ROOT / args.run_dir).resolve(),
         questions=load_b_questions(ROOT / args.question_root, ROOT / args.submission_template),
-        model_config=config.model,
+        model_config=model,
         workers=args.workers,
+        output_name=args.output_name,
     )
     print(json.dumps(result.manifest, ensure_ascii=False, indent=2))
 
