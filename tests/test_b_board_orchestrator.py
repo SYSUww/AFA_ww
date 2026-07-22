@@ -223,6 +223,21 @@ class BBoardOrchestratorTests(unittest.TestCase):
         self.assertEqual(evaluator.model_name, "gpt-5.6")
         self.assertEqual(evaluator.api_key, base.api_key)
 
+    def test_default_answer_runner_forwards_explicit_research_mode(self) -> None:
+        self.plan["baseline"]["run_mode"] = "research"
+        orchestrator = self.build_orchestrator()
+        with patch("afa_agent.b_board.orchestrator.BBoardActualRunner") as runner_type:
+            runner_type.return_value.run.return_value = {
+                "status": "complete",
+                "expected_question_count": 2,
+                "answered_question_count": 2,
+                "failed_qids": [],
+            }
+
+            orchestrator._run_answers(self.questions, self.root / "run", self.plan["baseline"])
+
+        self.assertEqual(runner_type.call_args.kwargs["run_mode"], "research")
+
 
 if __name__ == "__main__":
     unittest.main()

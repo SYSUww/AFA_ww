@@ -19,7 +19,10 @@ from afa_agent.b_board.io import (
     validate_b_answer,
     write_b_submission,
 )
-from afa_agent.b_board.scoring import require_allowed_submission_model
+from afa_agent.b_board.scoring import (
+    is_allowed_submission_model,
+    require_allowed_submission_model,
+)
 from afa_agent.client import OpenAICompatibleClient, capture_llm_usage, extract_json_object
 from afa_agent.config import build_run_config
 from afa_agent.domains.generic_retriever import GenericBM25Retriever
@@ -65,6 +68,9 @@ reasoning 是可审计但不暴露冗长思维链的推理摘要，使用中文�
 
 RUNNER_VERSION = "b_actual_v10_reasoning_audit"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
+RUN_MODE_SUBMISSION = "submission"
+RUN_MODE_RESEARCH = "research"
+RUN_MODES = (RUN_MODE_SUBMISSION, RUN_MODE_RESEARCH)
 
 
 @dataclass(slots=True)
@@ -132,6 +138,7 @@ class BBoardActualRunner:
         strategy_path: Path = DEFAULT_STRATEGY_PATH,
         locator_attempt_id: str = "attempt_43",
         calculation_top_k: int = 18,
+        run_mode: str = RUN_MODE_SUBMISSION,
     ) -> None:
         self.questions = list(questions)
         self.question_by_qid = {item.qid: item for item in questions}
@@ -140,10 +147,12 @@ class BBoardActualRunner:
         self.strategy_path = Path(strategy_path).resolve()
         self.locator_attempt_id = locator_attempt_id
         self.calculation_top_k = calculation_top_k
+        self.run_mode = _validate_run_mode(run_mode)
         self.config = build_run_config(ROOT)
         if self.config.model is None:
             raise RuntimeError("Missing model config in .env")
-        require_allowed_submission_model(self.config.model.model_name)
+        if self.run_mode == RUN_MODE_SUBMISSION:
+            require_allowed_submission_model(self.config.model.model_name)
         self.client = OpenAICompatibleClient(self.config.model)
         self.calculator = CalculationExecutor()
         self._migration = _migration_module()
@@ -247,9 +256,12 @@ class BBoardActualRunner:
 
         ordered_artifacts = [artifacts_by_qid[item.qid] for item in selected if item.qid in artifacts_by_qid]
         missing = [item.qid for item in selected if item.qid not in artifacts_by_qid]
+        output_path = run_dir / (
+            "submit.csv" if self.run_mode == RUN_MODE_SUBMISSION else "research_submit.csv"
+        )
         if not missing:
             write_b_submission(
-                run_dir / "submit.csv",
+                output_path,
                 selected,
                 [item.to_submission_answer() for item in ordered_artifacts],
                 audit_ready=True,
@@ -258,6 +270,7 @@ class BBoardActualRunner:
         write_jsonl(run_dir / "failures.jsonl", failures)
         totals = _sum_tokens(ordered_artifacts)
         failed_totals = _sum_failure_tokens(failures)
+        ineligibility_reasons = self._submission_ineligibility_reasons(missing)
         manifest = read_json(run_dir / "run_manifest.json")
         manifest.update(
             {
@@ -269,7 +282,19 @@ class BBoardActualRunner:
                 "token_usage": totals,
                 "failed_token_usage": failed_totals,
                 "generation_token_usage": _add_token_usage(totals, failed_totals),
-                "submission_path": str(run_dir / "submit.csv") if not missing else None,
+                "run_mode": self.run_mode,
+                "submission_eligible": not ineligibility_reasons,
+                "submission_ineligibility_reasons": ineligibility_reasons,
+                "submission_path": (
+                    str(output_path)
+                    if not missing and self.run_mode == RUN_MODE_SUBMISSION
+                    else None
+                ),
+                "research_submission_path": (
+                    str(output_path)
+                    if not missing and self.run_mode == RUN_MODE_RESEARCH
+                    else None
+                ),
             }
         )
         write_json(run_dir / "run_manifest.json", manifest)
@@ -577,6 +602,7 @@ class BBoardActualRunner:
             project_root=ROOT,
             arguments={
                 "runner": RUNNER_VERSION,
+                "run_mode": self.run_mode,
                 "locator_attempt_id": self.locator_attempt_id,
                 "workers": workers,
                 "calculation_top_k": self.calculation_top_k,
@@ -611,6 +637,13 @@ class BBoardActualRunner:
                 "created_at": datetime.now().isoformat(timespec="seconds"),
                 "status": "running",
                 "fingerprint": fingerprint,
+                "run_mode": self.run_mode,
+                "submission_eligible": False,
+                "submission_ineligibility_reasons": self._submission_ineligibility_reasons(
+                    ["__pending__"]
+                ),
+                "submission_path": None,
+                "research_submission_path": None,
                 "model": {
                     "model_name": self.config.model.model_name,
                     "temperature": self.config.model.temperature,
@@ -620,11 +653,28 @@ class BBoardActualRunner:
         )
         return []
 
+    def _submission_ineligibility_reasons(self, missing: Sequence[str]) -> list[str]:
+        reasons: list[str] = []
+        if self.run_mode == RUN_MODE_RESEARCH:
+            reasons.append("research_mode_is_not_submission_eligible")
+        if not is_allowed_submission_model(self.config.model.model_name):
+            reasons.append("model_is_not_qwen3.5_or_qwen3.6")
+        if missing:
+            reasons.append("run_is_incomplete")
+        return reasons
+
 
 def _migration_module():
     import scripts.run_b_board_migration_loop as migration
 
     return migration
+
+
+def _validate_run_mode(run_mode: str) -> str:
+    value = str(run_mode).strip().lower()
+    if value not in RUN_MODES:
+        raise ValueError(f"Unsupported B-board run mode {run_mode!r}; expected one of {RUN_MODES}")
+    return value
 
 
 def _find_locator_attempt(migration: Any, attempt_id: str):

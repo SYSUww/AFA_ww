@@ -24,6 +24,16 @@ from .scoring import (
     score_submission,
     token_efficiency_score,
 )
+from .reasoning_evaluation import (
+    REASONING_JUDGE_MODEL,
+    REASONING_DIMENSIONS,
+    FixedReasoningEvaluator,
+    ReasoningEvaluation,
+    ReasoningEvaluationFingerprintError,
+    ReasoningEvaluationRunResult,
+    aggregate_reasoning,
+    run_reasoning_evaluation,
+)
 
 __all__ = [
     "SUBMISSION_COLUMNS",
@@ -46,4 +56,12 @@ __all__ = [
     "require_allowed_submission_model",
     "score_submission",
     "token_efficiency_score",
+    "REASONING_JUDGE_MODEL",
+    "REASONING_DIMENSIONS",
+    "FixedReasoningEvaluator",
+    "ReasoningEvaluation",
+    "ReasoningEvaluationFingerprintError",
+    "ReasoningEvaluationRunResult",
+    "aggregate_reasoning",
+    "run_reasoning_evaluation",
 ]

@@ -25,6 +25,7 @@
   },
   "baseline": {
     "run_id": "b0_actual_gpt55_attempt43_composite_v1",
+    "run_mode": "research",
     "parsed_root": "artifacts/preprocessed_loop_candidates/parsed",
     "index_root": "artifacts/preprocessed_loop_candidates/index",
     "strategy_path": "configs/autoresearch/evidence_gate_rescue_accuracy_first.json",

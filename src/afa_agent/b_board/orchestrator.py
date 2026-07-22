@@ -152,7 +152,8 @@ class BBoardLoopOrchestrator:
                 "artifact_paths": {
                     "run_manifest": str(self.run_dir / "run_manifest.json"),
                     "answers": str(self.run_dir / "answers.json"),
-                    "submission": run_manifest.get("submission_path"),
+                    "answer_csv": run_manifest.get("submission_path")
+                    or run_manifest.get("research_submission_path"),
                 },
                 "submission_valid": run_manifest.get("submission_valid"),
                 "submission_validation_failures": run_manifest.get(
@@ -283,6 +284,7 @@ class BBoardLoopOrchestrator:
             "b_actual_v7_question_specific_format",
             "b_actual_v8_question_then_readme_format",
             "b_actual_v9_expanded_readme_semantics",
+            "b_actual_v10_reasoning_audit",
             "b_actual_composite_v1",
         }:
             raise BBoardLoopStateError("Existing B0 manifest runner identity mismatch")
@@ -383,6 +385,7 @@ class BBoardLoopOrchestrator:
             ),
             locator_attempt_id=str(config.get("locator_attempt_id", "attempt_43")),
             calculation_top_k=int(config.get("calculation_top_k", 18)),
+            run_mode=str(config.get("run_mode", "submission")),
         )
         return runner.run(
             run_dir=run_dir,

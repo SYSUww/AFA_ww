@@ -13736,3 +13736,631 @@
 - 五题效果仅可能为“3 个 +1、2 个 0”或“4 个 +1、1 个 -1”；在下一轮拆分前不将任何一道新增候选标记为官网单题确认。
 - 回看完整原文后，`ins_b_006=BCD`、`ins_b_012=BCD`、`ins_b_016=ABD` 的每个入选项均有对应产品直接条款，三题是本次 `+3` 的最强归因；`fc_b_019` 与 `ins_b_017` 的剩余争议都集中在 D 项是否超出题干/原文口径。
 - 下一候选若以冲高分为目标，应基于 97% 文件只尝试 `fc_b_019=ABC`、`ins_b_017=ABC`，其余 98 题冻结；该方案是高概率推断，不是已确认答案。
+
+## b-loop-reasoning-shadow-baseline-v1
+
+- recorded_at: `2026-07-22T19:27:56+00:00`
+
+```json
+{
+  "approach": "冻结97% incumbent的100题答案，直接以现有decision_summary构造research-only九列CSV，并仅把reasoning文本交给固定GPT-5.6 judge。",
+  "artifacts": {
+    "candidate_manifest": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_score_loop/reasoning_baseline_existing_v1/candidate_manifest.json",
+    "reasoning_evaluator_manifest": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_score_loop/reasoning_baseline_existing_v1/evaluation_gpt56_new_md_v1/reasoning_evaluator_manifest.json",
+    "research_submission": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_score_loop/reasoning_baseline_existing_v1/research_submit.csv",
+    "scorecard": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_score_loop/reasoning_baseline_existing_v1/evaluation_gpt56_new_md_v1/scorecard.json"
+  },
+  "base_commit": "b4ea08d8ff28b35abb4fe80a8b553d3ef8b2e016",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "b4ea08d8ff28b35abb4fe80a8b553d3ef8b2e016",
+        "code_hash": "554a0b585ade8bedf277f9db8f7bc4133e19d7d599c29720b579e21595e248c3",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md"
+      },
+      "identity": {
+        "change_vector": {
+          "answers": "frozen",
+          "judge": "gpt-5.6-new.md",
+          "reasoning_source": "existing_decision_summary"
+        },
+        "domains": [],
+        "hypothesis": "先测量97% incumbent已有decision_summary的new.md推理过程分，建立后续优化基线",
+        "pipeline_stage": "evaluation",
+        "question_types": [],
+        "root_cause_cluster": "reasoning_quality",
+        "target_qids": []
+      }
+    },
+    "context_sha256": "00ebb2cd52e0c91d6c853ff6c6d32e14b8149ce508fafeef1248efe6bf9d9461",
+    "direction_sha256": "a2d87915aa3f20fabcf74958b22620f2d3620290cc2d8ec0664e4c5b8df6abbd",
+    "schema_version": 1,
+    "semantic_sha256": "be1aff662f7449283b402c7b651d85a36c13249d6188228852fcd2c73b3f7db8",
+    "sha256": "a123aa3f953617f5f91b984511e750bc22d9348308c3579f4043bba7221edb82"
+  },
+  "change_vector": {
+    "answers": "frozen",
+    "judge": "gpt-5.6-new.md",
+    "reasoning_source": "existing_decision_summary"
+  },
+  "code_hash": "554a0b585ade8bedf277f9db8f7bc4133e19d7d599c29720b579e21595e248c3",
+  "direction_id": "reasoning_shadow_baseline_v1",
+  "effect": "建立new.md shadow基线：reasoning=71.9233，估算总分=92.5847；答案变化0。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-reasoning-shadow-baseline-v1",
+  "failure_analysis": "该旧产物有47题零usage、缺少逐调用账本且生成模型不满足新白名单，因此仅用于离线shadow比较，不能作为新制官网提交。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "b4ea08d8ff28b35abb4fe80a8b553d3ef8b2e016",
+          "code_hash": "554a0b585ade8bedf277f9db8f7bc4133e19d7d599c29720b579e21595e248c3",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md"
+        },
+        "identity": {
+          "change_vector": {
+            "answers": "frozen",
+            "judge": "gpt-5.6-new.md",
+            "reasoning_source": "existing_decision_summary"
+          },
+          "domains": [],
+          "hypothesis": "先测量97% incumbent已有decision_summary的new.md推理过程分，建立后续优化基线",
+          "pipeline_stage": "evaluation",
+          "question_types": [],
+          "root_cause_cluster": "reasoning_quality",
+          "target_qids": []
+        }
+      },
+      "context_sha256": "00ebb2cd52e0c91d6c853ff6c6d32e14b8149ce508fafeef1248efe6bf9d9461",
+      "direction_sha256": "a2d87915aa3f20fabcf74958b22620f2d3620290cc2d8ec0664e4c5b8df6abbd",
+      "schema_version": 1,
+      "semantic_sha256": "be1aff662f7449283b402c7b651d85a36c13249d6188228852fcd2c73b3f7db8",
+      "sha256": "a123aa3f953617f5f91b984511e750bc22d9348308c3579f4043bba7221edb82"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "b4ea08d8ff28b35abb4fe80a8b553d3ef8b2e016",
+            "code_hash": "554a0b585ade8bedf277f9db8f7bc4133e19d7d599c29720b579e21595e248c3",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md"
+          },
+          "identity": {
+            "change_vector": {
+              "answers": "frozen",
+              "judge": "gpt-5.6-new.md",
+              "reasoning_source": "existing_decision_summary"
+            },
+            "domains": [],
+            "hypothesis": "先测量97% incumbent已有decision_summary的new.md推理过程分，建立后续优化基线",
+            "pipeline_stage": "evaluation",
+            "question_types": [],
+            "root_cause_cluster": "reasoning_quality",
+            "target_qids": []
+          }
+        },
+        "context_sha256": "00ebb2cd52e0c91d6c853ff6c6d32e14b8149ce508fafeef1248efe6bf9d9461",
+        "direction_sha256": "a2d87915aa3f20fabcf74958b22620f2d3620290cc2d8ec0664e4c5b8df6abbd",
+        "schema_version": 1,
+        "semantic_sha256": "be1aff662f7449283b402c7b651d85a36c13249d6188228852fcd2c73b3f7db8",
+        "sha256": "a123aa3f953617f5f91b984511e750bc22d9348308c3579f4043bba7221edb82"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "483809273b2467442e0c57994fada754914ce3d0251fdfb726c06fbbf57d222e",
+      "size": 457773
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "fd6494448888c51ab2dace80394eb1a9281303967cdd3b75382840cad153f828",
+      "size": 369677
+    },
+    "related_log_sections": [
+      "b-loop-i023-gpt56-answer-error-audit-v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "B0-actual-evaluation",
+      "B0-actual-root-cause-analysis",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a1-traffic-escape-v1",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-b1",
+      "b-loop-research-structural-cost-reduction-res-b-009-a1",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-readme-percent-format-priority-v6"
+    ],
+    "reviewed_at": "2026-07-22T19:26:24+00:00"
+  },
+  "hypothesis": "先测量97% incumbent已有decision_summary的new.md推理过程分，建立后续优化基线",
+  "material_delta": {
+    "scoring_system": "accuracy60_reasoning20_token20"
+  },
+  "metrics": {
+    "accuracy_source": "official aggregate only; individual answers unknown",
+    "answer_changes": 0,
+    "estimated_total_score": 92.58466666666666,
+    "judge_failure_count": 0,
+    "pseudo_accuracy_score": 97.0,
+    "reasoning_p10": 25.666666666666668,
+    "reasoning_score": 71.92333333333333,
+    "submission_token_total": 931605,
+    "token_efficiency_score": 100.0
+  },
+  "next_step": "在答案冻结条件下，用当前生成模型生成结构化reasoning候选并重新评分；仅当reasoning均值和p10提升且答案不变时晋级。",
+  "pipeline_stage": "evaluation",
+  "recorded_at": "2026-07-22T19:27:56+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "reasoning_quality",
+  "status": "completed",
+  "submission_effect": "not_submitted",
+  "target_qids": []
+}
+```
+
+## b-loop-reasoning-structured-summary-a1
+
+- recorded_at: `2026-07-22T19:33:54+00:00`
+
+```json
+{
+  "approach": "先读取历史日志；冻结97% incumbent全部答案，仅对baseline reasoning<80的49题用当前gpt-5.5生成定位、关键事实、推导、结论四步摘要；所有改写usage逐题累加；再用固定GPT-5.6按new.md仅评分reasoning。",
+  "artifacts": {
+    "candidate_manifest": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_score_loop/reasoning_structured_summary_a1/candidate_manifest.json",
+    "reasoning_scores": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_score_loop/reasoning_structured_summary_a1/evaluation_gpt56_new_md_v1/reasoning_scores.json",
+    "research_submission": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_score_loop/reasoning_structured_summary_a1/research_submit.csv",
+    "scorecard": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_score_loop/reasoning_structured_summary_a1/evaluation_gpt56_new_md_v1/scorecard.json"
+  },
+  "base_commit": "b4ea08d8ff28b35abb4fe80a8b553d3ef8b2e016",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "b4ea08d8ff28b35abb4fe80a8b553d3ef8b2e016",
+        "code_hash": "7c87aceb37872ec80cb7ac004aa1cb9b35e72c71eb25bebcb3f6bddc55f17453",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "answers": "frozen",
+          "target_rule": "baseline_reasoning_score_lt_80",
+          "template": "locate-facts-derive-conclude"
+        },
+        "domains": [],
+        "hypothesis": "对基线推理分低于80的题生成定位-事实-推导-结论四步摘要，可提升完整性与低尾且不改变答案",
+        "pipeline_stage": "reasoning",
+        "question_types": [],
+        "root_cause_cluster": "reasoning_quality",
+        "target_qids": [
+          "fc_b_002",
+          "fc_b_003",
+          "fc_b_004",
+          "fc_b_007",
+          "fc_b_008",
+          "fc_b_009",
+          "fc_b_010",
+          "fc_b_011",
+          "fc_b_012",
+          "fc_b_014",
+          "fc_b_017",
+          "fc_b_019",
+          "fin_b_001",
+          "fin_b_002",
+          "fin_b_003",
+          "fin_b_004",
+          "fin_b_008",
+          "fin_b_009",
+          "fin_b_010",
+          "fin_b_012",
+          "fin_b_013",
+          "fin_b_014",
+          "fin_b_017",
+          "fin_b_020",
+          "ins_b_003",
+          "ins_b_004",
+          "ins_b_005",
+          "ins_b_006",
+          "ins_b_007",
+          "ins_b_008",
+          "ins_b_009",
+          "ins_b_010",
+          "ins_b_011",
+          "ins_b_012",
+          "ins_b_013",
+          "ins_b_014",
+          "ins_b_015",
+          "ins_b_016",
+          "ins_b_017",
+          "ins_b_019",
+          "ins_b_020",
+          "reg_b_001",
+          "reg_b_004",
+          "reg_b_021",
+          "reg_b_024",
+          "reg_b_026",
+          "reg_b_027",
+          "res_b_005",
+          "res_b_012"
+        ]
+      }
+    },
+    "context_sha256": "9ee0ddd3e5797cd9d1229eaa88e424a2f738830ab99be78e0576f2a1e64a63e8",
+    "direction_sha256": "425c4a695102578e17cd4134ca65ed0d532482ef0ff21d09dd25e886bdf3ea88",
+    "schema_version": 1,
+    "semantic_sha256": "d421bdf0c3acb0277bb617881d5d8546d11e284f27ade4802cd3b6195b201c38",
+    "sha256": "6ed6ed4a9b20f50020cb92c0ddf75231969590cfd4b22b36be6e1f56cb7b53d2"
+  },
+  "change_vector": {
+    "answers": "frozen",
+    "target_rule": "baseline_reasoning_score_lt_80",
+    "template": "locate-facts-derive-conclude"
+  },
+  "code_hash": "7c87aceb37872ec80cb7ac004aa1cb9b35e72c71eb25bebcb3f6bddc55f17453",
+  "direction_id": "reasoning_structured_summary",
+  "effect": "reasoning 71.9233->93.9200 (+21.9967)，p10 25.6667->85.3333 (+59.6667)，估算总分 92.5847->96.9840 (+4.3993)。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-reasoning-structured-summary-a1",
+  "failure_analysis": "若未晋级，主要检查低分题是否因四段标题机械化、证据载荷不足或结论未覆盖排除项；当前产物仍基于旧非白名单答案链，只可研究比较。",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "b4ea08d8ff28b35abb4fe80a8b553d3ef8b2e016",
+          "code_hash": "7c87aceb37872ec80cb7ac004aa1cb9b35e72c71eb25bebcb3f6bddc55f17453",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "answers": "frozen",
+            "target_rule": "baseline_reasoning_score_lt_80",
+            "template": "locate-facts-derive-conclude"
+          },
+          "domains": [],
+          "hypothesis": "对基线推理分低于80的题生成定位-事实-推导-结论四步摘要，可提升完整性与低尾且不改变答案",
+          "pipeline_stage": "reasoning",
+          "question_types": [],
+          "root_cause_cluster": "reasoning_quality",
+          "target_qids": [
+            "fc_b_002",
+            "fc_b_003",
+            "fc_b_004",
+            "fc_b_007",
+            "fc_b_008",
+            "fc_b_009",
+            "fc_b_010",
+            "fc_b_011",
+            "fc_b_012",
+            "fc_b_014",
+            "fc_b_017",
+            "fc_b_019",
+            "fin_b_001",
+            "fin_b_002",
+            "fin_b_003",
+            "fin_b_004",
+            "fin_b_008",
+            "fin_b_009",
+            "fin_b_010",
+            "fin_b_012",
+            "fin_b_013",
+            "fin_b_014",
+            "fin_b_017",
+            "fin_b_020",
+            "ins_b_003",
+            "ins_b_004",
+            "ins_b_005",
+            "ins_b_006",
+            "ins_b_007",
+            "ins_b_008",
+            "ins_b_009",
+            "ins_b_010",
+            "ins_b_011",
+            "ins_b_012",
+            "ins_b_013",
+            "ins_b_014",
+            "ins_b_015",
+            "ins_b_016",
+            "ins_b_017",
+            "ins_b_019",
+            "ins_b_020",
+            "reg_b_001",
+            "reg_b_004",
+            "reg_b_021",
+            "reg_b_024",
+            "reg_b_026",
+            "reg_b_027",
+            "res_b_005",
+            "res_b_012"
+          ]
+        }
+      },
+      "context_sha256": "9ee0ddd3e5797cd9d1229eaa88e424a2f738830ab99be78e0576f2a1e64a63e8",
+      "direction_sha256": "425c4a695102578e17cd4134ca65ed0d532482ef0ff21d09dd25e886bdf3ea88",
+      "schema_version": 1,
+      "semantic_sha256": "d421bdf0c3acb0277bb617881d5d8546d11e284f27ade4802cd3b6195b201c38",
+      "sha256": "6ed6ed4a9b20f50020cb92c0ddf75231969590cfd4b22b36be6e1f56cb7b53d2"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "b4ea08d8ff28b35abb4fe80a8b553d3ef8b2e016",
+            "code_hash": "7c87aceb37872ec80cb7ac004aa1cb9b35e72c71eb25bebcb3f6bddc55f17453",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "answers": "frozen",
+              "target_rule": "baseline_reasoning_score_lt_80",
+              "template": "locate-facts-derive-conclude"
+            },
+            "domains": [],
+            "hypothesis": "对基线推理分低于80的题生成定位-事实-推导-结论四步摘要，可提升完整性与低尾且不改变答案",
+            "pipeline_stage": "reasoning",
+            "question_types": [],
+            "root_cause_cluster": "reasoning_quality",
+            "target_qids": [
+              "fc_b_002",
+              "fc_b_003",
+              "fc_b_004",
+              "fc_b_007",
+              "fc_b_008",
+              "fc_b_009",
+              "fc_b_010",
+              "fc_b_011",
+              "fc_b_012",
+              "fc_b_014",
+              "fc_b_017",
+              "fc_b_019",
+              "fin_b_001",
+              "fin_b_002",
+              "fin_b_003",
+              "fin_b_004",
+              "fin_b_008",
+              "fin_b_009",
+              "fin_b_010",
+              "fin_b_012",
+              "fin_b_013",
+              "fin_b_014",
+              "fin_b_017",
+              "fin_b_020",
+              "ins_b_003",
+              "ins_b_004",
+              "ins_b_005",
+              "ins_b_006",
+              "ins_b_007",
+              "ins_b_008",
+              "ins_b_009",
+              "ins_b_010",
+              "ins_b_011",
+              "ins_b_012",
+              "ins_b_013",
+              "ins_b_014",
+              "ins_b_015",
+              "ins_b_016",
+              "ins_b_017",
+              "ins_b_019",
+              "ins_b_020",
+              "reg_b_001",
+              "reg_b_004",
+              "reg_b_021",
+              "reg_b_024",
+              "reg_b_026",
+              "reg_b_027",
+              "res_b_005",
+              "res_b_012"
+            ]
+          }
+        },
+        "context_sha256": "9ee0ddd3e5797cd9d1229eaa88e424a2f738830ab99be78e0576f2a1e64a63e8",
+        "direction_sha256": "425c4a695102578e17cd4134ca65ed0d532482ef0ff21d09dd25e886bdf3ea88",
+        "schema_version": 1,
+        "semantic_sha256": "d421bdf0c3acb0277bb617881d5d8546d11e284f27ade4802cd3b6195b201c38",
+        "sha256": "6ed6ed4a9b20f50020cb92c0ddf75231969590cfd4b22b36be6e1f56cb7b53d2"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "99ffba890b31477276dd02483df70885ae26436cb5084893b44e754fdac92b3a",
+      "size": 467662
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "f73fbcd95e93360dc08718128d3cdb89fc9a8c9c97f7acb8756f1ed74a537a90",
+      "size": 378225
+    },
+    "related_log_sections": [
+      "b-loop-i023-gpt56-answer-error-audit-v2",
+      "B0-actual-integrity",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a1-traffic-escape-v1",
+      "b-loop-insurance_clause_synonym_retrieval-a1-traffic-escape-v1",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-suspect-case-optimization-v3",
+      "b-loop-i023-readme-percent-format-priority-v6",
+      "b-loop-i024-remaining93-direct-source-five-v1",
+      "b-loop-reasoning-shadow-baseline-v1"
+    ],
+    "reviewed_at": "2026-07-22T19:31:05+00:00"
+  },
+  "hypothesis": "对基线推理分低于80的题生成定位-事实-推导-结论四步摘要，可提升完整性与低尾且不改变答案",
+  "material_delta": {
+    "prompt_version": "b_reasoning_rewrite_structured_v1"
+  },
+  "metrics": {
+    "answer_changes": 0,
+    "estimated_total_after": 96.984,
+    "estimated_total_before": 92.58466666666666,
+    "estimated_total_delta": 4.399333333333331,
+    "judge_failure_count": 0,
+    "p10_after": 85.33333333333333,
+    "p10_before": 25.666666666666668,
+    "p10_delta": 59.66666666666666,
+    "promotion_gate_passed": true,
+    "reasoning_score_after": 93.92,
+    "reasoning_score_before": 71.92333333333333,
+    "reasoning_score_delta": 21.99666666666667,
+    "rewrite_failure_count": 0,
+    "rewrite_token_usage": {
+      "completion_tokens": 15567,
+      "prompt_tokens": 186269,
+      "total_tokens": 201836
+    },
+    "rewritten_count": 49,
+    "target_count": 49,
+    "token_efficiency_score": 100.0,
+    "token_total_after": 1133441,
+    "token_total_before": 931605
+  },
+  "next_step": "有效则创建并推送该方向分支；无效则参考逐题分差形成实质不同的第二轮提示，最多三轮。",
+  "pipeline_stage": "reasoning",
+  "recorded_at": "2026-07-22T19:33:54+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "reasoning_quality",
+  "status": "effective",
+  "submission_effect": "not_submitted",
+  "target_qids": [
+    "fc_b_002",
+    "fc_b_003",
+    "fc_b_004",
+    "fc_b_007",
+    "fc_b_008",
+    "fc_b_009",
+    "fc_b_010",
+    "fc_b_011",
+    "fc_b_012",
+    "fc_b_014",
+    "fc_b_017",
+    "fc_b_019",
+    "fin_b_001",
+    "fin_b_002",
+    "fin_b_003",
+    "fin_b_004",
+    "fin_b_008",
+    "fin_b_009",
+    "fin_b_010",
+    "fin_b_012",
+    "fin_b_013",
+    "fin_b_014",
+    "fin_b_017",
+    "fin_b_020",
+    "ins_b_003",
+    "ins_b_004",
+    "ins_b_005",
+    "ins_b_006",
+    "ins_b_007",
+    "ins_b_008",
+    "ins_b_009",
+    "ins_b_010",
+    "ins_b_011",
+    "ins_b_012",
+    "ins_b_013",
+    "ins_b_014",
+    "ins_b_015",
+    "ins_b_016",
+    "ins_b_017",
+    "ins_b_019",
+    "ins_b_020",
+    "reg_b_001",
+    "reg_b_004",
+    "reg_b_021",
+    "reg_b_024",
+    "reg_b_026",
+    "reg_b_027",
+    "res_b_005",
+    "res_b_012"
+  ]
+}
+```

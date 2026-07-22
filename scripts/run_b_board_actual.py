@@ -17,6 +17,8 @@ from afa_agent.b_board.runner import (
     DEFAULT_INDEX_ROOT,
     DEFAULT_PARSED_ROOT,
     DEFAULT_STRATEGY_PATH,
+    RUN_MODES,
+    RUN_MODE_SUBMISSION,
     BBoardActualRunner,
 )
 
@@ -33,6 +35,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--qid", action="append", default=[])
     parser.add_argument("--qid-file", default="")
     parser.add_argument("--run-dir", default="")
+    parser.add_argument(
+        "--run-mode",
+        choices=RUN_MODES,
+        default=RUN_MODE_SUBMISSION,
+        help="submission enforces the official model allowlist; research writes only research_submit.csv",
+    )
     return parser.parse_args()
 
 
@@ -66,6 +74,7 @@ def main() -> None:
         index_root=ROOT / args.index_root,
         strategy_path=ROOT / args.strategy_config,
         locator_attempt_id=args.locator_attempt,
+        run_mode=args.run_mode,
     )
     manifest = runner.run(run_dir=run_dir, qids=qids, workers=max(1, args.workers))
     print(json.dumps(manifest, ensure_ascii=False, indent=2))
