@@ -17106,3 +17106,234 @@
   ]
 }
 ```
+
+## b-loop-full-chain-737675b-reasoning-v2-research-v1
+
+- recorded_at: `2026-07-22T21:12:44+00:00`
+
+```json
+{
+  "approach": "在737675b干净提交上以gpt-5.5从头执行100题定位、答题、v2四步reasoning finalizer和usage汇总；生成后才对97% incumbent做伪标签比较，固定gpt-5.6仅评reasoning。",
+  "artifact_path": "artifacts/b_board_score_loop/full_chain_737675b_research_v1",
+  "base_commit": "737675bd4ad5d9fa7c4e8e24e66e496ea1fd0e08",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "737675bd4ad5d9fa7c4e8e24e66e496ea1fd0e08",
+        "code_hash": "737675bd4ad5d9fa7c4e8e24e66e496ea1fd0e08",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "answers_not_exposed_to_solver": true,
+          "reasoning_prompt_version": "b_submission_reasoning_v2_explicit_structure",
+          "run_mode": "research",
+          "runner": "b_actual_v10_reasoning_audit"
+        },
+        "domains": [],
+        "hypothesis": "737675b统一v2 reasoning prompt应在100题research全链中保持至少99%伪标签一致、reasoning至少95、token满分且代理总分不低于98.666",
+        "pipeline_stage": "runtime",
+        "question_types": [],
+        "root_cause_cluster": "end_to_end_reproducibility",
+        "target_qids": []
+      }
+    },
+    "context_sha256": "23fd0784466aa16b9f9c80d37cc1f6608984e8fd87d4e354a261bef92c7a2bda",
+    "direction_sha256": "cc3bb34820caa07c0fc171d7b543e93c73313f03e206e6cebd8e88574bdd3550",
+    "schema_version": 1,
+    "semantic_sha256": "8d9f19ac1fcf1e0f1eee181501b79596cf41a309a6ddfc5901770c84d761d635",
+    "sha256": "f411c8ddf2448fc1c85ccd9d4d0f0d223a72e3329147cead9932b8d6af0fa2d8"
+  },
+  "change_vector": {
+    "answers_not_exposed_to_solver": true,
+    "reasoning_prompt_version": "b_submission_reasoning_v2_explicit_structure",
+    "run_mode": "research",
+    "runner": "b_actual_v10_reasoning_audit"
+  },
+  "code_hash": "737675bd4ad5d9fa7c4e8e24e66e496ea1fd0e08",
+  "direction_id": "full_chain_validation_reasoning_v2",
+  "domains": [],
+  "effect": "完整100/100，伪标签一致99/100，reasoning 95.95，Token分100.00，代理总分98.590，较476fc31 -0.076。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-full-chain-737675b-reasoning-v2-research-v1",
+  "failure_analysis": "未达到端到端晋级门槛：status=complete, pseudo=99.00, reasoning=95.95, total=98.59, diffs=['ins_b_004']。",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "737675bd4ad5d9fa7c4e8e24e66e496ea1fd0e08",
+          "code_hash": "737675bd4ad5d9fa7c4e8e24e66e496ea1fd0e08",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "answers_not_exposed_to_solver": true,
+            "reasoning_prompt_version": "b_submission_reasoning_v2_explicit_structure",
+            "run_mode": "research",
+            "runner": "b_actual_v10_reasoning_audit"
+          },
+          "domains": [],
+          "hypothesis": "737675b统一v2 reasoning prompt应在100题research全链中保持至少99%伪标签一致、reasoning至少95、token满分且代理总分不低于98.666",
+          "pipeline_stage": "runtime",
+          "question_types": [],
+          "root_cause_cluster": "end_to_end_reproducibility",
+          "target_qids": []
+        }
+      },
+      "context_sha256": "23fd0784466aa16b9f9c80d37cc1f6608984e8fd87d4e354a261bef92c7a2bda",
+      "direction_sha256": "cc3bb34820caa07c0fc171d7b543e93c73313f03e206e6cebd8e88574bdd3550",
+      "schema_version": 1,
+      "semantic_sha256": "8d9f19ac1fcf1e0f1eee181501b79596cf41a309a6ddfc5901770c84d761d635",
+      "sha256": "f411c8ddf2448fc1c85ccd9d4d0f0d223a72e3329147cead9932b8d6af0fa2d8"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "737675bd4ad5d9fa7c4e8e24e66e496ea1fd0e08",
+            "code_hash": "737675bd4ad5d9fa7c4e8e24e66e496ea1fd0e08",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "answers_not_exposed_to_solver": true,
+              "reasoning_prompt_version": "b_submission_reasoning_v2_explicit_structure",
+              "run_mode": "research",
+              "runner": "b_actual_v10_reasoning_audit"
+            },
+            "domains": [],
+            "hypothesis": "737675b统一v2 reasoning prompt应在100题research全链中保持至少99%伪标签一致、reasoning至少95、token满分且代理总分不低于98.666",
+            "pipeline_stage": "runtime",
+            "question_types": [],
+            "root_cause_cluster": "end_to_end_reproducibility",
+            "target_qids": []
+          }
+        },
+        "context_sha256": "23fd0784466aa16b9f9c80d37cc1f6608984e8fd87d4e354a261bef92c7a2bda",
+        "direction_sha256": "cc3bb34820caa07c0fc171d7b543e93c73313f03e206e6cebd8e88574bdd3550",
+        "schema_version": 1,
+        "semantic_sha256": "8d9f19ac1fcf1e0f1eee181501b79596cf41a309a6ddfc5901770c84d761d635",
+        "sha256": "f411c8ddf2448fc1c85ccd9d4d0f0d223a72e3329147cead9932b8d6af0fa2d8"
+      },
+      "comparable_attempt_count": 2,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-full-chain-b15966e-research-v1",
+        "b-loop-full-chain-476fc31-research-v1",
+        "b-loop-full-chain-reproduction-baseline-v10"
+      ],
+      "similarity": 0.847647
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "2258c328369a9f529407be7874af22177cbf2c5bd2c1eb74ccdf4fb255d4a8a1",
+      "size": 591636
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "252841a25b126dcaf95a4fb261e84e99ec7ff39c070ab691a4400dbb5fd9a284",
+      "size": 478397
+    },
+    "related_log_sections": [
+      "b0-run-integrity-reg016-v2",
+      "b0-run-integrity-reg016-v3",
+      "b0-run-integrity-reg016-v4",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-full-chain-reproduction-baseline-v10",
+      "b-loop-full-chain-b15966e-research-v1",
+      "b-loop-full-chain-476fc31-research-v1"
+    ],
+    "reviewed_at": "2026-07-22T20:58:04+00:00"
+  },
+  "hypothesis": "737675b统一v2 reasoning Prompt应在100题research全链中保持至少99%伪标签一致、reasoning至少95、Token满分且代理总分不低于98.666",
+  "material_delta": {
+    "validated_commit": "737675bd4ad5d9fa7c4e8e24e66e496ea1fd0e08"
+  },
+  "metrics": {
+    "answered_question_count": 100,
+    "comparable_scope": "full100_research",
+    "expected_question_count": 100,
+    "failed_qids": [],
+    "incumbent_official_aggregate_accuracy": 97.0,
+    "incumbent_per_qid_truth_available": false,
+    "incumbent_reference_sha256": "497658e3e76c0df3bb28134a4d1b2d442bb5b5602ea4654d7d0ce019aecb400d",
+    "previous_full_scorecard": {
+      "accuracy_score": 100.0,
+      "accuracy_source": "full100_pseudo_match_to_official97_incumbent_not_ground_truth",
+      "judge_tokens_included_in_submission": false,
+      "reasoning_judge_model": "gpt-5.6",
+      "reasoning_prompt_version": "b_reasoning_judge_v1_new_md",
+      "reasoning_score": 93.33,
+      "token_efficiency_score": 100.0,
+      "token_total": 1233221,
+      "total_score": 98.666
+    },
+    "pseudo_differences": {
+      "ins_b_004": {
+        "candidate": [
+          "BC"
+        ],
+        "incumbent": [
+          "BCD"
+        ]
+      }
+    },
+    "pseudo_match_rate": 99.0,
+    "pseudo_matches": 99,
+    "reasoning_aggregate": {
+      "dimension_means": {
+        "clarity": 96.52,
+        "completeness": 95.22,
+        "logical": 96.11
+      },
+      "p10": 92.66666666666667,
+      "question_count": 100,
+      "reasoning_score": 95.95,
+      "status_counts": {
+        "scored": 100
+      },
+      "zero_score_count": 0
+    },
+    "reasoning_judge_token_usage": {
+      "completion_tokens": 7950,
+      "prompt_tokens": 72149,
+      "total_tokens": 80099
+    },
+    "scorecard": {
+      "accuracy_score": 99.0,
+      "accuracy_source": "full100_pseudo_match_to_official97_incumbent_not_ground_truth",
+      "judge_tokens_included_in_submission": false,
+      "reasoning_judge_model": "gpt-5.6",
+      "reasoning_prompt_version": "b_reasoning_judge_v1_new_md",
+      "reasoning_score": 95.95,
+      "token_efficiency_score": 100.0,
+      "token_total": 1252274,
+      "total_score": 98.59
+    },
+    "submission_token_total": 1252274,
+    "token_efficiency_score": 100.0,
+    "total_score_delta_vs_476fc31": -0.0759999999999934
+  },
+  "next_step": "将accuracy漂移与reasoning增益分开处理；reasoning方向已封盘，不追加变体。",
+  "pipeline_stage": "runtime",
+  "question_types": [],
+  "recorded_at": "2026-07-22T21:12:44+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "end_to_end_reproducibility",
+  "status": "completed",
+  "submission_effect": "not_submitted",
+  "target_qids": []
+}
+```
