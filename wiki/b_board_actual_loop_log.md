@@ -6767,3 +6767,415 @@
   }
 }
 ```
+
+## b-loop-financial-contract-cross-issuer-clause-comparison-a1
+
+- recorded_at: `2026-07-22T00:38:43+00:00`
+
+```json
+{
+  "answered_qids": [
+    "fc_b_007",
+    "fc_b_008"
+  ],
+  "attempt_index": 1,
+  "base_commit": "5f554b0ce29b3e821c067ca0a8590076bfd43f57",
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 586,
+    "prompt_tokens": 11715,
+    "total_tokens": 12301
+  },
+  "blind_pairs": {
+    "fc_b_007": {
+      "candidate_label": "A",
+      "evaluation": {
+        "confidence": 92,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "A选择BC，均有封存证据支持：B项在本川智能证据中明确披露“2024年下半年以来…预计年销售额合计约40,500万元”且“采购意向涉及领域与本次募投项目产品主要面向领域的相关性较高”；C项证据显示普联软件募投项目为国产ERP、数智化金融风险管控、云湖平台等软件/研发升级类项目，其风险披露为实施效果、研发风险等，未见新增产能消化风险。A项称安克创新提到新增产能消化风险，但安克证据仅显示募投项目效益、折旧摊销、产业化落地等风险，未支持“新增产能消化风险”；D项将仓储智能化升级等同于新增产能消化风险，证据不支持。B答案选择AB，包含错误选项A，且其自身轨迹也标注A为false、仅B supported，因此不如A可验证。",
+        "winner": "A"
+      },
+      "incumbent_label": "B",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "token_usage": {
+        "completion_tokens": 586,
+        "prompt_tokens": 11715,
+        "total_tokens": 12301
+      }
+    }
+  },
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contract_cross_issuer_clause_comparison/cross_issuer_clause_matrix_a1_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "5f554b0ce29b3e821c067ca0a8590076bfd43f57",
+        "code_hash": "fa214f1d72d42c5c21735af80d2d8935246e262785407a97f829518d8bfb9863",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "bundle_families": [
+            "capacity_risk",
+            "holder_meeting_capital_reduction"
+          ],
+          "document_subject_metadata": true,
+          "focused_counterevidence": true,
+          "group_by": [
+            "document_identity",
+            "issuer",
+            "clause_variant"
+          ],
+          "selection": "cross_issuer_complete_clause_matrix"
+        },
+        "domains": [
+          "financial_contracts"
+        ],
+        "hypothesis": "option-subject scoped cross-issuer clause matrices with explicit positive and negative contrasts resolve remaining financial-contract comparison questions.",
+        "pipeline_stage": "reasoning",
+        "question_types": [
+          "mcq"
+        ],
+        "root_cause_cluster": "cross_issuer_comparison",
+        "target_qids": [
+          "fc_b_007",
+          "fc_b_008"
+        ]
+      }
+    },
+    "context_sha256": "9c3474a88b5678f46103af2d1bb3933b76ff65612e176085dc51223cabff6ca8",
+    "direction_sha256": "02c0eeedcb1eb0627a608de552fb04eca11e1f71efdb423ac26394592f758440",
+    "schema_version": 1,
+    "semantic_sha256": "d9fcc45e790be04199c1a31733912fcad9117f9360e5eb181c3a135db8092801",
+    "sha256": "f4bdf543f664f03ee6b8a82f0d76edf3a20b1b4949278518f4ccc883e72f13c9"
+  },
+  "causal_financial_contract_lowtail": {
+    "after": 2,
+    "before": 4
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 26,
+    "high": 47,
+    "low": 2,
+    "medium": 25
+  },
+  "causal_promoted_tiers": {
+    "blocked": 24,
+    "high": 48,
+    "low": 2,
+    "medium": 26
+  },
+  "change_vector": {
+    "bundle_families": [
+      "capacity_risk",
+      "holder_meeting_capital_reduction"
+    ],
+    "document_subject_metadata": true,
+    "focused_counterevidence": true,
+    "group_by": [
+      "document_identity",
+      "issuer",
+      "clause_variant"
+    ],
+    "selection": "cross_issuer_complete_clause_matrix"
+  },
+  "changed_answer_qids": [
+    "fc_b_007"
+  ],
+  "code_hash": "fa214f1d72d42c5c21735af80d2d8935246e262785407a97f829518d8bfb9863",
+  "comparable_attempt_count_after": 1,
+  "comparable_attempt_count_before": 0,
+  "confidence_after": {
+    "fc_b_007": 78,
+    "fc_b_008": 86
+  },
+  "confidence_before": {
+    "fc_b_007": 0,
+    "fc_b_008": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "financial_contract_cross_issuer_clause_comparison",
+  "direction_status": "resolved",
+  "domains": [
+    "financial_contracts"
+  ],
+  "effective_branch": "codex/b榜-loop-i016-financial-contract-cross-issuer",
+  "evaluator_failed_attempts_not_in_usage": 1,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 78932,
+    "prompt_tokens": 498835,
+    "total_tokens": 577767
+  },
+  "generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_related_experiment_ids": [],
+  "history_similarity": null,
+  "hypothesis": "Option-subject scoped cross-issuer clause matrices with explicit positive and negative contrasts resolve remaining financial-contract comparison questions.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 139,
+    "tests_passed": true,
+    "token_accounting_complete": false
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contract_cross_issuer_clause_comparison/cross_issuer_clause_matrix_a1_composite",
+  "lessons": [
+    "Cross-document options need explicit issuer identity in the sealed evidence, not only internal doc_id routing.",
+    "Negative claims require a scoped full-document absence guard plus the positive risk or project matrix that makes the exclusion auditable.",
+    "When a value is stranded in a parsed title_path, pair it with issuer identity and the adjacent risk clause instead of relying on the title alone.",
+    "Cross-issuer equivalence claims should be tested by a complete clause matrix that preserves material wording differences."
+  ],
+  "material_delta": {
+    "cross_issuer_clause_matrix": true,
+    "explicit_absence_or_difference_guard": true,
+    "issuer_identity_evidence": true,
+    "new_direction": true
+  },
+  "next_root_causes": [
+    "research_multi_clause_choice_coverage",
+    "evidence_serialization_unique_backfill",
+    "remaining_fin_b_010_evidence_sufficiency",
+    "insurance_remaining_subject_clause_coverage"
+  ],
+  "pipeline_stage": "reasoning",
+  "preflight_attempts": [
+    {
+      "evidence_docs": {
+        "fc_b_007": [
+          "text04",
+          "text05",
+          "text11"
+        ],
+        "fc_b_008": [
+          "text04",
+          "text05",
+          "text11"
+        ]
+      },
+      "observed_answer": {
+        "fc_b_007": "BC",
+        "fc_b_008": "ABC"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contract_cross_issuer_clause_comparison/cross_issuer_clause_matrix_a1",
+      "status": "accepted_for_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      }
+    }
+  ],
+  "promoted_qids": [
+    "fc_b_007",
+    "fc_b_008"
+  ],
+  "promotion_decisions": {
+    "fc_b_007": {
+      "blind_required": true,
+      "blind_winner": "A",
+      "candidate_blind_label": "A",
+      "promote": true,
+      "reasons": [],
+      "score_delta": 78,
+      "tier_after": "medium",
+      "tier_before": "blocked"
+    },
+    "fc_b_008": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 86,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "mcq"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 26,
+    "high": 47,
+    "low": 4,
+    "medium": 23
+  },
+  "reason": "Cross-issuer clause matrices added explicit issuer identity, complete positive clauses, and negative contrasts. fc_b_007 corrected AB to BC, rose from blocked to medium, and won blind A/B at confidence 92; fc_b_008 kept ABC and rose from blocked to high.",
+  "recorded_at": "2026-07-22T00:38:43+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [],
+  "root_cause_cluster": "cross_issuer_comparison",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failures": 0,
+      "sentinels_passed": true,
+      "token_accounting_complete": false
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "fc_b_007",
+        "fc_b_008"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 2,
+          "blocked_low_before": 4,
+          "low_tier_improved_qids": [
+            "fc_b_007",
+            "fc_b_008"
+          ],
+          "p10_after": 35,
+          "p10_before": 0,
+          "p10_delta": 35
+        },
+        "financial_reports": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 82,
+          "p10_before": 82,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 7,
+          "blocked_low_before": 7,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 65,
+          "p10_before": 65,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 15,
+          "blocked_low_before": 15,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": true,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_002": -4,
+        "fc_b_004": 2,
+        "fc_b_006": -10,
+        "fc_b_010": 5,
+        "fc_b_011": -8,
+        "fc_b_012": 4,
+        "fc_b_014": -5,
+        "fc_b_017": -8,
+        "fc_b_018": 5,
+        "fc_b_019": -10,
+        "fin_b_001": -5,
+        "fin_b_002": -3,
+        "fin_b_004": -3,
+        "fin_b_005": -12,
+        "fin_b_007": -6,
+        "fin_b_009": -7,
+        "fin_b_010": 5,
+        "fin_b_015": -11,
+        "fin_b_016": -8,
+        "fin_b_017": 3,
+        "fin_b_019": -7,
+        "ins_b_002": -7,
+        "ins_b_004": -25,
+        "ins_b_005": 6,
+        "ins_b_006": 4,
+        "ins_b_007": -2,
+        "ins_b_009": 4,
+        "ins_b_010": -3,
+        "ins_b_012": 3,
+        "ins_b_016": -3,
+        "ins_b_017": -20,
+        "ins_b_020": -5,
+        "reg_b_003": 3,
+        "reg_b_008": 14,
+        "reg_b_009": -6,
+        "reg_b_013": -2,
+        "reg_b_015": 12,
+        "reg_b_016": 1,
+        "reg_b_017": -10,
+        "reg_b_020": 5,
+        "reg_b_021": -8,
+        "reg_b_023": -3,
+        "reg_b_025": 6,
+        "reg_b_026": -4,
+        "reg_b_027": -13,
+        "res_b_001": -2,
+        "res_b_013": -10
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_002",
+        "fc_b_012",
+        "fin_b_015",
+        "ins_b_002",
+        "ins_b_004",
+        "ins_b_005",
+        "ins_b_017",
+        "reg_b_015",
+        "reg_b_026",
+        "reg_b_027"
+      ]
+    },
+    "reasons": [],
+    "tests": {
+      "count": 139,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contract_cross_issuer_clause_comparison/cross_issuer_clause_matrix_a1",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "fc_b_007",
+    "fc_b_008"
+  ],
+  "token_accounting_complete": false,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 79518,
+    "prompt_tokens": 510550,
+    "total_tokens": 590068
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 79518,
+    "prompt_tokens": 510550,
+    "total_tokens": 590068
+  }
+}
+```

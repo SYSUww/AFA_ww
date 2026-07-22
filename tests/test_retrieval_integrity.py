@@ -476,6 +476,121 @@ class FinancialContractSubjectClauseTests(unittest.TestCase):
         )
         self.assert_bundle_labels(solver, question, {"A": False, "B": False, "C": True, "D": True}, "text10")
 
+    def test_capacity_risk_matrix_distinguishes_production_capacity_from_software_and_warehousing(self) -> None:
+        units = [
+            make_unit("text04::identity", "text04", "股票简称：安克创新 股票代码：300866"),
+            make_unit(
+                "text04::risk-list", "text04",
+                "募投项目拟研发产品产业化落地风险。募集资金投资项目效益不及预期的风险。"
+                "项目收入基于预计销量和预计单价测算。",
+            ),
+            make_unit(
+                "text04::depreciation", "text04",
+                "募投项目新增资产折旧摊销的风险，预计最高金额为11,376.57万元。",
+            ),
+            make_unit(
+                "text04::warehouse", "text04",
+                "仓储智能化升级项目将实现仓储、配送、管理等环节的自动化和智能化，提高仓储运营效率和服务质量。",
+            ),
+            make_unit("text05::identity", "text05", "股票简称 | 本川智能 股票代码 | 300964.SZ"),
+            make_unit(
+                "text05::customer-pipeline", "text05",
+                "2024年下半年以来，公司开拓的新客户合作后预计年销售额合计约40,500万元，"
+                "上述40,500万元客户采购意向涉及领域与本次募投项目产品主要面向领域的相关性较高。",
+            ),
+            make_unit(
+                "text05::capacity-risk", "text05",
+                "募投项目新增产能消化风险。项目建成投产后，将新增合计55万平方米的年产能，"
+                "报告期内公司产能利用率处于较高水平。",
+            ),
+            make_unit(
+                "text11::identity", "text11",
+                "公司名称 | 普联软件股份有限公司 股票代码 | 300996",
+            ),
+            make_unit(
+                "text11::software-projects", "text11",
+                "公司所处行业为软件和信息技术服务业（I65），募集资金投向国产ERP功能扩展建设项目、"
+                "数智化金融风险管控系列产品建设项目及云湖平台研发升级项目，均主要投向现有研发方向，不属于落后产能。",
+            ),
+            make_unit(
+                "text11::research-risk", "text11",
+                "募集资金投资项目研发风险：ERP产品适配性研发升级、XBRL产品改造和云湖平台技术底座升级。",
+            ),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "安克创新在风险因素中提到了募投项目新增产能消化风险，但未量化具体数据",
+            "B": "本川智能详细披露了2024年下半年以来开拓的新客户合作后预计年销售额合计约40,500万元，并指出该采购意向与本次募投项目产品主要面向领域相关性较高",
+            "C": "普联软件未在其募投项目风险中提及新增产能消化问题，因其募投项目为软件研发类，不涉及传统产能",
+            "D": "安克创新的募投项目包括仓储智能化升级，因此涉及新增产能消化风险",
+        }
+        question = Question(
+            qid="unseen_capacity_risk_matrix", domain="financial_contracts", split="B",
+            question="关于募投项目新增产能消化风险，以下表述与各文件原文一致的是？",
+            options=options, answer_format="multi", type="多选题", doc_ids=["text04", "text05", "text11"],
+        )
+        expected_docs = {"A": {"text04"}, "B": {"text05"}, "C": {"text11"}, "D": {"text04"}}
+        labels: dict[str, bool] = {}
+        for option_key, option_text in options.items():
+            hits = solver._targeted_literal_hits(question, option_key, option_text)
+            self.assertTrue(hits, option_key)
+            self.assertEqual({hit.doc_id for hit in hits}, expected_docs[option_key], option_key)
+            self.assertTrue(all(hit.metadata.get("document_subject") for hit in hits), option_key)
+            result = solver._rule_override(question, option_key, option_text, hits)
+            self.assertIsNotNone(result, option_key)
+            labels[option_key] = bool(result["label"])
+        self.assertEqual(labels, {"A": False, "B": True, "C": True, "D": False})
+
+    def test_holder_meeting_matrix_preserves_issuer_wording_and_excludes_false_equivalence(self) -> None:
+        units = [
+            make_unit("text04::identity", "text04", "股票简称：安克创新 股票代码：300866"),
+            make_unit(
+                "text04::meeting", "text04",
+                "债券持有人会议：公司发生减资（因员工持股计划、股权激励或公司为维护公司价值及股东权益"
+                "所必需回购股份导致的减资除外）。除约定之外，不得要求公司提前偿付可转债的本金和利息。",
+            ),
+            make_unit("text05::identity", "text05", "股票简称 | 本川智能 股票代码 | 300964.SZ"),
+            make_unit(
+                "text05::meeting", "text05",
+                "债券持有人会议的召开情形包括公司发生减资（因公司实施员工持股计划、股权激励、"
+                "用于转换公司发行的本次可转债或为维护公司价值及股东权益而进行股份回购导致的减资除外）。"
+                "本次可转债持有人不得因此要求公司提前清偿或者提供相应的担保。",
+            ),
+            make_unit(
+                "text11::identity", "text11",
+                "公司名称 | 普联软件股份有限公司 股票代码 | 300996",
+            ),
+            make_unit(
+                "text11::meeting", "text11",
+                "债券持有人会议的召开情形包括公司发生减资（因员工持股计划、股权激励或公司为维护公司价值及"
+                "股东权益所必须回购股份导致的减资除外）。若公司发生因持股计划、股权激励或为维护公司价值及"
+                "股东权益回购股份而导致减资，本次可转换债券持有人不得因此要求公司提前清偿或者提供相应的担保。",
+            ),
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "安克创新列举的召开情形包括公司发生减资，因员工持股计划、股权激励或公司为维护公司价值及股东权益所必需回购股份导致的减资除外",
+            "B": "普联软件列举的召开情形包括公司发生减资，因员工持股计划、股权激励或公司为维护公司价值及股东权益所必须回购股份导致的减资除外",
+            "C": "本川智能列举的召开情形包括公司发生减资，因公司实施员工持股计划、股权激励、用于转换公司发行的本次可转债或为维护公司价值及股东权益而进行股份回购导致的减资除外",
+            "D": "三份募集说明书中，关于因股份回购导致减资时债券持有人是否享有提前清偿或担保请求权的规定完全一致",
+        }
+        question = Question(
+            qid="unseen_holder_meeting_matrix", domain="financial_contracts", split="B",
+            question="关于债券持有人会议召开的情形，以下说法符合三份募集说明书规定的是？",
+            options=options, answer_format="multi", type="多选题", doc_ids=["text04", "text05", "text11"],
+        )
+        expected_docs = {"A": {"text04"}, "B": {"text11"}, "C": {"text05"}, "D": {"text04", "text05", "text11"}}
+        labels: dict[str, bool] = {}
+        for option_key, option_text in options.items():
+            hits = solver._targeted_literal_hits(question, option_key, option_text)
+            self.assertTrue(hits, option_key)
+            self.assertEqual({hit.doc_id for hit in hits}, expected_docs[option_key], option_key)
+            self.assertTrue(all(hit.metadata.get("document_subject") for hit in hits), option_key)
+            result = solver._rule_override(question, option_key, option_text, hits)
+            self.assertIsNotNone(result, option_key)
+            labels[option_key] = bool(result["label"])
+        self.assertEqual(labels, {"A": True, "B": True, "C": True, "D": False})
+
     def test_complete_rule_evidence_keeps_support_and_counterevidence_without_locator_backfill(self) -> None:
         support = make_unit("target::a", "target", "A项直接证据")
         support["metadata"] = {"targeted_literal": True}

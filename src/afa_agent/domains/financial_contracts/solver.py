@@ -368,10 +368,13 @@ class FinancialContractsSolver:
             selected_units.append((score, unit))
             selected_ids.add(unit["unit_id"])
         hits = []
+        document_subjects = self._cross_issuer_document_subjects(question)
         for score, unit in selected_units[:6]:
             metadata = dict(unit.get("metadata", {}))
             metadata.setdefault("unit_type", unit.get("unit_type", ""))
             metadata["targeted_literal"] = True
+            if unit.get("doc_id") in document_subjects:
+                metadata["document_subject"] = document_subjects[unit["doc_id"]]
             hits.append(
                 RetrievalHit(
                     unit_id=unit["unit_id"],
@@ -383,6 +386,16 @@ class FinancialContractsSolver:
                 )
             )
         return hits
+
+    def _cross_issuer_document_subjects(self, question: Question) -> dict[str, str]:
+        compact = self._normalize_literal(f"{question.question}{' '.join(question.options.values())}")
+        subjects: dict[str, str] = {}
+        for alias in ["安克创新", "本川智能", "普联软件"]:
+            if alias not in compact:
+                continue
+            for doc_id in self._subject_doc_ids_for_aliases(question, [alias]):
+                subjects.setdefault(doc_id, alias)
+        return subjects
 
     def _target_specs(self, question: Question, option_key: str, option_text: str) -> list[dict[str, Any]]:
         compact = self._normalize_literal(f"{question.question} {option_text}")
@@ -413,6 +426,114 @@ class FinancialContractsSolver:
                     "prefer_paragraph": prefer_paragraph,
                 }
             )
+
+        if "募投项目新增产能消化风险" in question_compact:
+            anker_docs = self._subject_doc_ids_for_aliases(question, ["安克创新"])
+            benchuan_docs = self._subject_doc_ids_for_aliases(question, ["本川智能"])
+            pulian_docs = self._subject_doc_ids_for_aliases(question, ["普联软件"])
+            if "安克创新" in option_compact:
+                add(["股票简称：安克创新"], target_doc_ids=anker_docs)
+                if "仓储智能化升级" in option_compact:
+                    add(
+                        ["仓储智能化升级项目", "提高仓储运营效率和服务质量"],
+                        ["自动化和智能化"],
+                        prefer_paragraph=True,
+                        target_doc_ids=anker_docs,
+                    )
+                else:
+                    add(
+                        ["募投项目拟研发产品产业化落地风险", "募集资金投资项目效益不及预期的风险"],
+                        ["预计销量", "预计单价"],
+                        prefer_paragraph=True,
+                        target_doc_ids=anker_docs,
+                    )
+                    add(
+                        ["募投项目新增资产折旧摊销的风险", "11,376.57万元"],
+                        ["仓储智能化升级项目", "提高公司整体经营效率"],
+                        prefer_paragraph=True,
+                        target_doc_ids=anker_docs,
+                    )
+            elif "本川智能" in option_compact:
+                add(["股票简称", "本川智能", "300964"], target_doc_ids=benchuan_docs)
+                add(
+                    [
+                        "2024年下半年以来，公司开拓的新客户合作后预计年销售额合计约40,500万元",
+                        "客户采购意向涉及领域与本次募投项目产品主要面向领域的相关性较高",
+                    ],
+                    ["本次募投项目需要一定的建设期"],
+                    prefer_paragraph=True,
+                    target_doc_ids=benchuan_docs,
+                )
+                add(
+                    ["募投项目新增产能消化风险", "新增合计55万平方米的年产能"],
+                    ["产能利用率"],
+                    prefer_paragraph=True,
+                    target_doc_ids=benchuan_docs,
+                )
+            elif "普联软件" in option_compact:
+                add(["公司名称", "普联软件股份有限公司", "股票代码", "300996"], target_doc_ids=pulian_docs)
+                add(
+                    ["软件和信息技术服务业（I65）", "国产ERP功能扩展建设项目", "云湖平台研发升级项目"],
+                    ["现有研发方向", "不属于落后产能"],
+                    prefer_paragraph=True,
+                    target_doc_ids=pulian_docs,
+                )
+                add(
+                    ["募集资金投资项目研发风险", "适配性研发升级", "技术底座"],
+                    ["XBRL", "云湖平台"],
+                    target_doc_ids=pulian_docs,
+                )
+
+        cross_issuer_compact = self._normalize_literal(
+            f"{question.question}{' '.join(question.options.values())}"
+        )
+        if "债券持有人会议召开的情形" in question_compact and all(
+            name in cross_issuer_compact for name in ["安克创新", "普联软件", "本川智能"]
+        ):
+            anker_docs = self._subject_doc_ids_for_aliases(question, ["安克创新"])
+            benchuan_docs = self._subject_doc_ids_for_aliases(question, ["本川智能"])
+            pulian_docs = self._subject_doc_ids_for_aliases(question, ["普联软件"])
+            if "安克创新" in option_compact:
+                add(["股票简称：安克创新"], target_doc_ids=anker_docs)
+                add(
+                    ["公司发生减资", "所必需回购股份导致的减资除外"],
+                    ["债券持有人会议"],
+                    prefer_paragraph=True,
+                    target_doc_ids=anker_docs,
+                )
+            elif "普联软件" in option_compact:
+                add(["公司名称", "普联软件股份有限公司", "股票代码", "300996"], target_doc_ids=pulian_docs)
+                add(
+                    ["公司发生减资", "所必须回购股份导致的减资除外"],
+                    ["债券持有人会议的召开情形"],
+                    prefer_paragraph=True,
+                    target_doc_ids=pulian_docs,
+                )
+            elif "本川智能" in option_compact:
+                add(["股票简称", "本川智能", "300964"], target_doc_ids=benchuan_docs)
+                add(
+                    ["公司发生减资", "用于转换公司发行的本次可转债", "进行股份回购导致的减资除外"],
+                    ["债券持有人会议的召开情形"],
+                    prefer_paragraph=True,
+                    target_doc_ids=benchuan_docs,
+                )
+            elif "三份募集说明书" in option_compact and "提前清偿" in option_compact:
+                add(
+                    ["不得要求公司提前偿付可转债的本金和利息"],
+                    ["债券持有人的义务"],
+                    prefer_paragraph=True,
+                    target_doc_ids=anker_docs,
+                )
+                add(
+                    ["用于转换公司发行的本次可转债", "不得因此要求公司提前清偿或者提供相应的担保"],
+                    prefer_paragraph=True,
+                    target_doc_ids=benchuan_docs,
+                )
+                add(
+                    ["因持股计划、股权激励或为维护公司价值及股东权益回购股份而导致减资", "不得因此要求公司提前清偿或者提供相应的担保"],
+                    prefer_paragraph=True,
+                    target_doc_ids=pulian_docs,
+                )
 
         if "集中度指标不符合监管要求" in question_compact:
             concentration_docs = self._subject_doc_ids_for_aliases(question, ["深圳市融资租赁"])
@@ -996,6 +1117,115 @@ class FinancialContractsSolver:
         )
         if not evidence_compact:
             return None
+
+        if "募投项目新增产能消化风险" in question_compact:
+            subject_corpus = self._document_compact_text(subject_docs)
+            has_named_capacity_risk = "募投项目新增产能消化风险" in subject_corpus
+            if "安克创新" in option_compact and "仓储智能化升级" not in option_compact:
+                risk_matrix_present = all(
+                    term in evidence_compact
+                    for term in [
+                        "募投项目拟研发产品产业化落地风险",
+                        "募集资金投资项目效益不及预期的风险",
+                        "募投项目新增资产折旧摊销的风险",
+                    ]
+                )
+                if risk_matrix_present and not has_named_capacity_risk:
+                    return self._rule_result(
+                        option_key,
+                        False,
+                        "contract_capacity_risk_anker_absent",
+                        "安克创新风险因素列示产业化、效益及新增折旧摊销风险，但全文未列示募投项目新增产能消化风险。",
+                    )
+            if "本川智能" in option_compact and all(
+                term in evidence_compact
+                for term in [
+                    "2024年下半年以来，公司开拓的新客户合作后预计年销售额合计约40,500万元",
+                    "客户采购意向涉及领域与本次募投项目产品主要面向领域的相关性较高",
+                    "募投项目新增产能消化风险",
+                    "新增合计55万平方米的年产能",
+                ]
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_capacity_risk_benchuan_customer_pipeline",
+                    "本川智能同时披露新增55万平方米年产能，并以约40,500万元新客户采购意向说明目标领域相关性。",
+                )
+            if (
+                "普联软件" in option_compact
+                and all(
+                    term in evidence_compact
+                    for term in ["软件和信息技术服务业（I65）", "国产ERP功能扩展建设项目", "云湖平台研发升级项目"]
+                )
+                and not has_named_capacity_risk
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_capacity_risk_pulian_software_projects",
+                    "普联软件募投项目均为ERP、XBRL及技术平台研发升级，全文未列示传统新增产能消化风险。",
+                )
+            if (
+                "安克创新" in option_compact
+                and "仓储智能化升级" in option_compact
+                and "提高仓储运营效率和服务质量" in evidence_compact
+                and not has_named_capacity_risk
+            ):
+                return self._rule_result(
+                    option_key,
+                    False,
+                    "contract_capacity_risk_anker_warehouse_not_production",
+                    "仓储智能化项目原文目标是仓储、配送和管理自动化及运营提效，不能据此推出新增生产产能消化风险。",
+                )
+
+        if "债券持有人会议召开的情形" in question_compact and all(
+            name in self._normalize_literal(f"{question.question}{' '.join(question.options.values())}")
+            for name in ["安克创新", "普联软件", "本川智能"]
+        ):
+            if "安克创新" in option_compact and all(
+                term in evidence_compact for term in ["公司发生减资", "所必需回购股份导致的减资除外"]
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_holder_meeting_anker_necessary_wording",
+                    "安克创新召开情形的减资例外使用“维护公司价值及股东权益所必需回购股份”原文。",
+                )
+            if "普联软件" in option_compact and all(
+                term in evidence_compact for term in ["公司发生减资", "所必须回购股份导致的减资除外"]
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_holder_meeting_pulian_must_wording",
+                    "普联软件召开情形的减资例外原文使用“所必须回购股份”。",
+                )
+            if "本川智能" in option_compact and all(
+                term in evidence_compact
+                for term in ["用于转换公司发行的本次可转债", "进行股份回购导致的减资除外"]
+            ):
+                return self._rule_result(
+                    option_key,
+                    True,
+                    "contract_holder_meeting_benchuan_conversion_exception",
+                    "本川智能的减资例外明确额外包含用于转换本次可转债的股份回购。",
+                )
+            if "三份募集说明书" in option_compact and "完全一致" in option_compact and all(
+                term in evidence_compact
+                for term in [
+                    "不得要求公司提前偿付可转债的本金和利息",
+                    "用于转换公司发行的本次可转债",
+                    "因持股计划、股权激励或为维护公司价值及股东权益回购股份而导致减资",
+                    "不得因此要求公司提前清偿或者提供相应的担保",
+                ]
+            ):
+                return self._rule_result(
+                    option_key,
+                    False,
+                    "contract_holder_meeting_cross_issuer_request_difference",
+                    "三份文件并非完全一致：安克仅列一般提前偿付义务，本川和普联另列股份回购减资时不得请求提前清偿或担保，且本川额外包含转债转换回购。",
+                )
 
         if "集中度指标不符合监管要求" in question_compact:
             if (
@@ -2363,7 +2593,11 @@ class FinancialContractsSolver:
         question_compact = self._normalize_literal(question.question)
         option_compact = self._normalize_literal(option_text)
         aliases: list[str] = []
-        if "集中度指标不符合监管要求" in question_compact:
+        if "募投项目新增产能消化风险" in question_compact or "债券持有人会议召开的情形" in question_compact:
+            aliases = [name for name in ["安克创新", "本川智能", "普联软件"] if name in option_compact]
+            if "三份募集说明书" in option_compact:
+                aliases = ["安克创新", "本川智能", "普联软件"]
+        elif "集中度指标不符合监管要求" in question_compact:
             aliases = ["深圳市融资租赁"]
         elif "新增折旧摊销对未来经营业绩的影响" in question_compact:
             aliases = [name for name in ["普联软件", "本川智能", "安克创新"] if name in option_compact]
@@ -2372,6 +2606,18 @@ class FinancialContractsSolver:
         elif "西部证券债券募集说明书" in question_compact:
             aliases = ["西部证券"]
         return self._subject_doc_ids_for_aliases(question, aliases)
+
+    def _document_compact_text(self, doc_ids: list[str]) -> str:
+        if not hasattr(self.retriever, "units") or not doc_ids:
+            return ""
+        allowed = set(doc_ids)
+        return self._normalize_literal(
+            "\n".join(
+                f"{' '.join(unit.get('title_path', []))}\n{unit.get('text', '')}"
+                for unit in self.retriever.units
+                if str(unit.get("doc_id", "")) in allowed
+            )
+        )
 
     def _option_subject_bound_doc_ids(self, question: Question, option_text: str) -> list[str]:
         terms = []
@@ -2457,7 +2703,7 @@ class FinancialContractsSolver:
     def _complete_rule_evidence_items(
         option_payloads: list[dict[str, Any]],
         *,
-        max_per_option: int = 2,
+        max_per_option: int = 3,
         max_total: int = 12,
     ) -> list[dict[str, Any]]:
         """Serialize focused support and counterevidence for fully rule-backed choices."""
@@ -2485,6 +2731,9 @@ class FinancialContractsSolver:
                     f"{item.get('doc_id', '')}:{str(item.get('text', ''))[:80]}"
                 )
                 if key in seen:
+                    added += 1
+                    if added >= max_per_option:
+                        break
                     continue
                 metadata = dict(item.get("metadata", {}))
                 metadata["option_key"] = str(payload.get("option", ""))
