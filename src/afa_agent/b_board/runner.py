@@ -62,11 +62,15 @@ format 仅 raw,decimal0,decimal1,decimal2,percent2,date_cn,text。中间过程�
 格式优先级为：题干具体要求 > README通用规则 > 提交模板占位。题干未规定时，README要求百分数答案带%并保留两位小数，其他数值不带单位并保留两位小数。
 证据 ID 必须原样使用给定 evidence_id。题目本身给出的数值可引用 question:<qid>。只输出 JSON。"""
 
-SUBMISSION_REASONING_PROMPT_VERSION = "b_submission_reasoning_v1"
+SUBMISSION_REASONING_PROMPT_VERSION = "b_submission_reasoning_v2_explicit_structure"
 SUBMISSION_REASONING_SYSTEM_PROMPT = f"""你是金融长文问答的提交摘要生成器。只使用给定题目、答案、已有求解摘要和证据，不补充外部事实，也不得改变答案。
 输出一个 JSON 对象，字段仅为 answer_parts 和 reasoning。answer_parts 必须逐字复制给定答案。
-reasoning 是可审计但不暴露冗长思维链的推理摘要，使用中文，建议 60-220 字；必须具体说明定位到的主体/条款/指标，给出关键证据事实或计算关系，再说明这些依据如何支持答案。不得只复述题目或答案，不得写空泛模板，不得声称未提供的页码、条款号或事实。
-即使已有求解摘要很短，也要依据给定证据形成自洽摘要。只输出 JSON。prompt_version={SUBMISSION_REASONING_PROMPT_VERSION}。"""
+reasoning 是可审计但不暴露冗长思维链的中文短摘要，建议 120-220 字，并按“定位—关键事实—推导—结论”形成完整闭环：
+1. 定位主体、产品、条款、指标或期间；
+2. 给出支持判断或计算的具体证据事实；选择题要覆盖每个选中项，并说明至少一个最关键排除项；
+3. 明确事实到判断的因果关系；计算题写出必要公式、代入关系和最终格式；
+4. 结论必须显式写出与 answer_parts 完全一致的最终答案。
+不得只复述题目或答案，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。即使已有求解摘要很短，也要依据给定证据形成自洽摘要。只输出 JSON。prompt_version={SUBMISSION_REASONING_PROMPT_VERSION}。"""
 
 RUNNER_VERSION = "b_actual_v10_reasoning_audit"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"

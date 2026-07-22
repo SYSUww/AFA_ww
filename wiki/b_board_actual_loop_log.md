@@ -16394,3 +16394,715 @@
   ]
 }
 ```
+
+## b-loop-reasoning-lowtail-explicit-structure-a2-online-target19
+
+- recorded_at: `2026-07-22T20:51:30+00:00`
+
+```json
+{
+  "approach": "将定位-关键事实-推导-结论、选中项覆盖、关键排除项和显式最终答案写入在线reasoning finalizer；对同一19个低尾题重新走真实答题链，并与其余81题组成usage真实的100题研究候选复评。",
+  "artifact_path": "artifacts/b_board_score_loop/reasoning_lowtail_integrated_a2_target19",
+  "base_commit": "39ace456e70c623207522702d28388f6e1fe0a57",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "39ace456e70c623207522702d28388f6e1fe0a57",
+        "code_hash": "b21230dc8eb9517ad803f22716bb667a4ebad8f67e1f24d76bd6b6d85b316e09",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "answer_freeze_gate": true,
+          "prompt_version": "b_submission_reasoning_v2_explicit_structure",
+          "selection": "same_19_lowtail_for_causal_validation",
+          "variant": "a2"
+        },
+        "domains": [],
+        "hypothesis": "把a1四步摘要结构前移到统一reasoning生成prompt后，19个低尾题的真实全链reasoning可在答案不变、token满分下提高整体总分",
+        "pipeline_stage": "reasoning",
+        "question_types": [],
+        "root_cause_cluster": "reasoning_completeness_lowtail",
+        "target_qids": [
+          "fc_b_004",
+          "fc_b_007",
+          "fc_b_008",
+          "fc_b_017",
+          "fin_b_002",
+          "fin_b_010",
+          "ins_b_004",
+          "ins_b_020",
+          "reg_b_008",
+          "reg_b_025",
+          "res_b_001",
+          "res_b_003",
+          "res_b_004",
+          "res_b_006",
+          "res_b_008",
+          "res_b_010",
+          "res_b_014",
+          "res_b_016",
+          "res_b_019"
+        ]
+      }
+    },
+    "context_sha256": "4616daee75f78f996bcc8946c6b7279bd1e48e2bca13c50bb54f23b9f960e662",
+    "direction_sha256": "ed36fc899bb076b9f900041ca785207ed74a6a0737bfa73f352bb6795a638080",
+    "schema_version": 1,
+    "semantic_sha256": "0014104602ac4b4f33eff27c7ceeca60e90cf5f08774005a69e01cc91797f4dd",
+    "sha256": "b3b7a5a3ee354361c603b8f948b7d4b35756805e769b3927451b0251fae7d6fe"
+  },
+  "change_vector": {
+    "answer_freeze_gate": true,
+    "prompt_version": "b_submission_reasoning_v2_explicit_structure",
+    "selection": "same_19_lowtail_for_causal_validation",
+    "variant": "a2"
+  },
+  "code_hash": "b21230dc8eb9517ad803f22716bb667a4ebad8f67e1f24d76bd6b6d85b316e09",
+  "direction_id": "reasoning_lowtail_explicit_structure",
+  "domains": [],
+  "effect": "reasoning 93.330→94.640（+1.310），p10 88.333→91.667，代理总分 98.666→98.928（+0.262），答案变化1。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+  "failure_analysis": "未通过在线门槛：target_status=complete, answer_changes=1, total_delta=+0.262, p10_delta=+3.333。",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "39ace456e70c623207522702d28388f6e1fe0a57",
+          "code_hash": "b21230dc8eb9517ad803f22716bb667a4ebad8f67e1f24d76bd6b6d85b316e09",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "answer_freeze_gate": true,
+            "prompt_version": "b_submission_reasoning_v2_explicit_structure",
+            "selection": "same_19_lowtail_for_causal_validation",
+            "variant": "a2"
+          },
+          "domains": [],
+          "hypothesis": "把a1四步摘要结构前移到统一reasoning生成prompt后，19个低尾题的真实全链reasoning可在答案不变、token满分下提高整体总分",
+          "pipeline_stage": "reasoning",
+          "question_types": [],
+          "root_cause_cluster": "reasoning_completeness_lowtail",
+          "target_qids": [
+            "fc_b_004",
+            "fc_b_007",
+            "fc_b_008",
+            "fc_b_017",
+            "fin_b_002",
+            "fin_b_010",
+            "ins_b_004",
+            "ins_b_020",
+            "reg_b_008",
+            "reg_b_025",
+            "res_b_001",
+            "res_b_003",
+            "res_b_004",
+            "res_b_006",
+            "res_b_008",
+            "res_b_010",
+            "res_b_014",
+            "res_b_016",
+            "res_b_019"
+          ]
+        }
+      },
+      "context_sha256": "4616daee75f78f996bcc8946c6b7279bd1e48e2bca13c50bb54f23b9f960e662",
+      "direction_sha256": "ed36fc899bb076b9f900041ca785207ed74a6a0737bfa73f352bb6795a638080",
+      "schema_version": 1,
+      "semantic_sha256": "0014104602ac4b4f33eff27c7ceeca60e90cf5f08774005a69e01cc91797f4dd",
+      "sha256": "b3b7a5a3ee354361c603b8f948b7d4b35756805e769b3927451b0251fae7d6fe"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "39ace456e70c623207522702d28388f6e1fe0a57",
+            "code_hash": "b21230dc8eb9517ad803f22716bb667a4ebad8f67e1f24d76bd6b6d85b316e09",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "answer_freeze_gate": true,
+              "prompt_version": "b_submission_reasoning_v2_explicit_structure",
+              "selection": "same_19_lowtail_for_causal_validation",
+              "variant": "a2"
+            },
+            "domains": [],
+            "hypothesis": "把a1四步摘要结构前移到统一reasoning生成prompt后，19个低尾题的真实全链reasoning可在答案不变、token满分下提高整体总分",
+            "pipeline_stage": "reasoning",
+            "question_types": [],
+            "root_cause_cluster": "reasoning_completeness_lowtail",
+            "target_qids": [
+              "fc_b_004",
+              "fc_b_007",
+              "fc_b_008",
+              "fc_b_017",
+              "fin_b_002",
+              "fin_b_010",
+              "ins_b_004",
+              "ins_b_020",
+              "reg_b_008",
+              "reg_b_025",
+              "res_b_001",
+              "res_b_003",
+              "res_b_004",
+              "res_b_006",
+              "res_b_008",
+              "res_b_010",
+              "res_b_014",
+              "res_b_016",
+              "res_b_019"
+            ]
+          }
+        },
+        "context_sha256": "4616daee75f78f996bcc8946c6b7279bd1e48e2bca13c50bb54f23b9f960e662",
+        "direction_sha256": "ed36fc899bb076b9f900041ca785207ed74a6a0737bfa73f352bb6795a638080",
+        "schema_version": 1,
+        "semantic_sha256": "0014104602ac4b4f33eff27c7ceeca60e90cf5f08774005a69e01cc91797f4dd",
+        "sha256": "b3b7a5a3ee354361c603b8f948b7d4b35756805e769b3927451b0251fae7d6fe"
+      },
+      "comparable_attempt_count": 1,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-reasoning-lowtail-explicit-structure-a1-lt90"
+      ],
+      "similarity": 0.735385
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "831e0dad24c80b97c6b52f78b757984903965492bc03e7382d468c3eef24e886",
+      "size": 563080
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "67fb9ea0e6481408b29de9987573e6b79bbca5b2da2736d994d2fd9d1c8f5353",
+      "size": 455184
+    },
+    "related_log_sections": [
+      "b-loop-i023-gpt56-answer-error-audit-v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-b1",
+      "b-loop-research-structural-cost-reduction-res-b-009-a1",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-suspect-case-optimization-v3",
+      "b-loop-reasoning-shadow-baseline-v1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-full-chain-reproduction-baseline-v10",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-full-chain-b15966e-research-v1",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-full-chain-476fc31-research-v1",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90"
+    ],
+    "reviewed_at": "2026-07-22T20:47:21+00:00"
+  },
+  "hypothesis": "把A1四步摘要结构前移到统一reasoning生成Prompt后，19个低尾题的真实全链reasoning可在答案不变、Token满分下提高整体总分",
+  "material_delta": {
+    "structure_moved_into_online_finalizer": true
+  },
+  "metrics": {
+    "answer_change_count": 1,
+    "answer_changes": {
+      "ins_b_004": {
+        "candidate": [
+          "BC"
+        ],
+        "source": [
+          "BCD"
+        ]
+      }
+    },
+    "baseline_reasoning_aggregate": {
+      "dimension_means": {
+        "clarity": 94.34,
+        "completeness": 91.28,
+        "logical": 94.37
+      },
+      "p10": 88.33333333333333,
+      "question_count": 100,
+      "reasoning_score": 93.33,
+      "status_counts": {
+        "scored": 100
+      },
+      "zero_score_count": 0
+    },
+    "baseline_scorecard": {
+      "accuracy_score": 100.0,
+      "accuracy_source": "full100_pseudo_match_to_official97_incumbent_not_ground_truth",
+      "judge_tokens_included_in_submission": false,
+      "reasoning_judge_model": "gpt-5.6",
+      "reasoning_prompt_version": "b_reasoning_judge_v1_new_md",
+      "reasoning_score": 93.33,
+      "token_efficiency_score": 100.0,
+      "token_total": 1233221,
+      "total_score": 98.666
+    },
+    "candidate_reasoning_aggregate": {
+      "dimension_means": {
+        "clarity": 95.43,
+        "completeness": 93.11,
+        "logical": 95.38
+      },
+      "p10": 91.66666666666667,
+      "question_count": 100,
+      "reasoning_score": 94.64,
+      "status_counts": {
+        "scored": 100
+      },
+      "zero_score_count": 0
+    },
+    "candidate_scorecard": {
+      "accuracy_score": 100.0,
+      "accuracy_source": "full100_pseudo_match_to_official97_incumbent_not_ground_truth_answer_change_gated",
+      "judge_tokens_included_in_submission": false,
+      "reasoning_judge_model": "gpt-5.6",
+      "reasoning_prompt_version": "b_reasoning_judge_v1_new_md",
+      "reasoning_score": 94.64,
+      "token_efficiency_score": 100.0,
+      "token_total": 1236768,
+      "total_score": 98.928
+    },
+    "composite_token_total": 1236768,
+    "judge_token_usage": {
+      "completion_tokens": 8107,
+      "prompt_tokens": 67051,
+      "total_tokens": 75158
+    },
+    "p10_delta": 3.333333333333343,
+    "reasoning_score_delta": 1.3100000000000023,
+    "target_count": 19,
+    "target_failed_qids": [],
+    "target_run_status": "complete",
+    "target_run_token_usage": {
+      "completion_tokens": 13010,
+      "prompt_tokens": 171236,
+      "total_tokens": 184246
+    },
+    "total_score_delta": 0.26200000000000045
+  },
+  "next_step": "本方向剩1轮，仅针对实际退化维度做最后修正。",
+  "pipeline_stage": "reasoning",
+  "question_types": [],
+  "recorded_at": "2026-07-22T20:51:30+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "reasoning_completeness_lowtail",
+  "status": "completed",
+  "submission_effect": "not_submitted",
+  "target_qids": [
+    "fc_b_004",
+    "fc_b_007",
+    "fc_b_008",
+    "fc_b_017",
+    "fin_b_002",
+    "fin_b_010",
+    "ins_b_004",
+    "ins_b_020",
+    "reg_b_008",
+    "reg_b_025",
+    "res_b_001",
+    "res_b_003",
+    "res_b_004",
+    "res_b_006",
+    "res_b_008",
+    "res_b_010",
+    "res_b_014",
+    "res_b_016",
+    "res_b_019"
+  ]
+}
+```
+
+## b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100
+
+- recorded_at: `2026-07-22T20:57:06+00:00`
+
+```json
+{
+  "approach": "冻结476fc31全100题答案，逐题扣除旧finalizer原始usage，再调用在线v2四步reasoning finalizer并计入新usage；随后以固定gpt-5.6重评全部摘要，隔离答题随机性。",
+  "artifact_path": "artifacts/b_board_score_loop/reasoning_finalizer_v2_a3_all100_frozen",
+  "base_commit": "39ace456e70c623207522702d28388f6e1fe0a57",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "39ace456e70c623207522702d28388f6e1fe0a57",
+        "code_hash": "b21230dc8eb9517ad803f22716bb667a4ebad8f67e1f24d76bd6b6d85b316e09",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "prompt_version": "b_submission_reasoning_v2_explicit_structure",
+          "usage_accounting": "subtract_old_finalizer_add_new_raw_usage",
+          "validation_scope": "all100_frozen_answers",
+          "variant": "a3"
+        },
+        "domains": [],
+        "hypothesis": "在冻结答案并以替换方式核算旧/新finalizer usage后，对100题统一应用v2四步结构可独立验证reasoning增益且避免答题随机性混杂",
+        "pipeline_stage": "reasoning",
+        "question_types": [],
+        "root_cause_cluster": "reasoning_completeness_lowtail",
+        "target_qids": [
+          "fc_b_004",
+          "fc_b_007",
+          "fc_b_008",
+          "fc_b_017",
+          "fin_b_002",
+          "fin_b_010",
+          "ins_b_004",
+          "ins_b_020",
+          "reg_b_008",
+          "reg_b_025",
+          "res_b_001",
+          "res_b_003",
+          "res_b_004",
+          "res_b_006",
+          "res_b_008",
+          "res_b_010",
+          "res_b_014",
+          "res_b_016",
+          "res_b_019"
+        ]
+      }
+    },
+    "context_sha256": "4616daee75f78f996bcc8946c6b7279bd1e48e2bca13c50bb54f23b9f960e662",
+    "direction_sha256": "99e63f5fb1d6c7bd49442a2d70b6d9c7bf50c743c2e458e3f901cd226c99b487",
+    "schema_version": 1,
+    "semantic_sha256": "230ac82dab36f2f2a4fd9cd234369a6cb65916b0fb165670cdd065b5b5296e52",
+    "sha256": "021f7dcb23aed52fb97a89b8beb147764573b0e3b8f1776cf9471e2a47fae985"
+  },
+  "change_vector": {
+    "prompt_version": "b_submission_reasoning_v2_explicit_structure",
+    "usage_accounting": "subtract_old_finalizer_add_new_raw_usage",
+    "validation_scope": "all100_frozen_answers",
+    "variant": "a3"
+  },
+  "code_hash": "b21230dc8eb9517ad803f22716bb667a4ebad8f67e1f24d76bd6b6d85b316e09",
+  "direction_id": "reasoning_lowtail_explicit_structure",
+  "domains": [],
+  "effect": "reasoning 93.330→95.780（+2.450），p10 88.333→92.333，代理总分 98.666→99.156（+0.490），答案变化0。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100",
+  "failure_analysis": "最终轮在答案冻结、usage替换和Token满分约束下通过；本方向达到3轮上限并封盘。仍需用完整100题新运行验证答题稳定性，但不再修改reasoning结构。",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "39ace456e70c623207522702d28388f6e1fe0a57",
+          "code_hash": "b21230dc8eb9517ad803f22716bb667a4ebad8f67e1f24d76bd6b6d85b316e09",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "prompt_version": "b_submission_reasoning_v2_explicit_structure",
+            "usage_accounting": "subtract_old_finalizer_add_new_raw_usage",
+            "validation_scope": "all100_frozen_answers",
+            "variant": "a3"
+          },
+          "domains": [],
+          "hypothesis": "在冻结答案并以替换方式核算旧/新finalizer usage后，对100题统一应用v2四步结构可独立验证reasoning增益且避免答题随机性混杂",
+          "pipeline_stage": "reasoning",
+          "question_types": [],
+          "root_cause_cluster": "reasoning_completeness_lowtail",
+          "target_qids": [
+            "fc_b_004",
+            "fc_b_007",
+            "fc_b_008",
+            "fc_b_017",
+            "fin_b_002",
+            "fin_b_010",
+            "ins_b_004",
+            "ins_b_020",
+            "reg_b_008",
+            "reg_b_025",
+            "res_b_001",
+            "res_b_003",
+            "res_b_004",
+            "res_b_006",
+            "res_b_008",
+            "res_b_010",
+            "res_b_014",
+            "res_b_016",
+            "res_b_019"
+          ]
+        }
+      },
+      "context_sha256": "4616daee75f78f996bcc8946c6b7279bd1e48e2bca13c50bb54f23b9f960e662",
+      "direction_sha256": "99e63f5fb1d6c7bd49442a2d70b6d9c7bf50c743c2e458e3f901cd226c99b487",
+      "schema_version": 1,
+      "semantic_sha256": "230ac82dab36f2f2a4fd9cd234369a6cb65916b0fb165670cdd065b5b5296e52",
+      "sha256": "021f7dcb23aed52fb97a89b8beb147764573b0e3b8f1776cf9471e2a47fae985"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "39ace456e70c623207522702d28388f6e1fe0a57",
+            "code_hash": "b21230dc8eb9517ad803f22716bb667a4ebad8f67e1f24d76bd6b6d85b316e09",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "prompt_version": "b_submission_reasoning_v2_explicit_structure",
+              "usage_accounting": "subtract_old_finalizer_add_new_raw_usage",
+              "validation_scope": "all100_frozen_answers",
+              "variant": "a3"
+            },
+            "domains": [],
+            "hypothesis": "在冻结答案并以替换方式核算旧/新finalizer usage后，对100题统一应用v2四步结构可独立验证reasoning增益且避免答题随机性混杂",
+            "pipeline_stage": "reasoning",
+            "question_types": [],
+            "root_cause_cluster": "reasoning_completeness_lowtail",
+            "target_qids": [
+              "fc_b_004",
+              "fc_b_007",
+              "fc_b_008",
+              "fc_b_017",
+              "fin_b_002",
+              "fin_b_010",
+              "ins_b_004",
+              "ins_b_020",
+              "reg_b_008",
+              "reg_b_025",
+              "res_b_001",
+              "res_b_003",
+              "res_b_004",
+              "res_b_006",
+              "res_b_008",
+              "res_b_010",
+              "res_b_014",
+              "res_b_016",
+              "res_b_019"
+            ]
+          }
+        },
+        "context_sha256": "4616daee75f78f996bcc8946c6b7279bd1e48e2bca13c50bb54f23b9f960e662",
+        "direction_sha256": "99e63f5fb1d6c7bd49442a2d70b6d9c7bf50c743c2e458e3f901cd226c99b487",
+        "schema_version": 1,
+        "semantic_sha256": "230ac82dab36f2f2a4fd9cd234369a6cb65916b0fb165670cdd065b5b5296e52",
+        "sha256": "021f7dcb23aed52fb97a89b8beb147764573b0e3b8f1776cf9471e2a47fae985"
+      },
+      "comparable_attempt_count": 2,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+        "b-loop-reasoning-lowtail-explicit-structure-a1-lt90"
+      ],
+      "similarity": 0.727897
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "f8d0fcd2469c75b48f3f24902ebfa057ce5453ed1412e2c35df5dd692afc5f8c",
+      "size": 577283
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "d7aed4089e270fc816db0f32c91cbb0e349a5799e144f15680891f6a6863ea56",
+      "size": 466675
+    },
+    "related_log_sections": [
+      "b-loop-i023-gpt56-answer-error-audit-v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-b1",
+      "b-loop-research-structural-cost-reduction-res-b-009-a1",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-suspect-case-optimization-v3",
+      "b-loop-reasoning-shadow-baseline-v1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-full-chain-reproduction-baseline-v10",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-full-chain-b15966e-research-v1",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-full-chain-476fc31-research-v1",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90",
+      "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19"
+    ],
+    "reviewed_at": "2026-07-22T20:52:41+00:00"
+  },
+  "hypothesis": "在冻结答案并以替换方式核算旧/新finalizer usage后，对100题统一应用v2四步结构可独立验证reasoning增益且避免答题随机性混杂",
+  "material_delta": {
+    "causal_finalizer_isolation": true
+  },
+  "metrics": {
+    "answer_change_count": 0,
+    "answer_changes": {},
+    "baseline_reasoning_aggregate": {
+      "dimension_means": {
+        "clarity": 94.34,
+        "completeness": 91.28,
+        "logical": 94.37
+      },
+      "p10": 88.33333333333333,
+      "question_count": 100,
+      "reasoning_score": 93.33,
+      "status_counts": {
+        "scored": 100
+      },
+      "zero_score_count": 0
+    },
+    "baseline_scorecard": {
+      "accuracy_score": 100.0,
+      "accuracy_source": "full100_pseudo_match_to_official97_incumbent_not_ground_truth",
+      "judge_tokens_included_in_submission": false,
+      "reasoning_judge_model": "gpt-5.6",
+      "reasoning_prompt_version": "b_reasoning_judge_v1_new_md",
+      "reasoning_score": 93.33,
+      "token_efficiency_score": 100.0,
+      "token_total": 1233221,
+      "total_score": 98.666
+    },
+    "candidate_reasoning_aggregate": {
+      "dimension_means": {
+        "clarity": 96.4,
+        "completeness": 94.9,
+        "logical": 96.04
+      },
+      "p10": 92.33333333333333,
+      "question_count": 100,
+      "reasoning_score": 95.78,
+      "status_counts": {
+        "scored": 100
+      },
+      "zero_score_count": 0
+    },
+    "candidate_scorecard": {
+      "accuracy_score": 100.0,
+      "accuracy_source": "full100_pseudo_match_to_official97_incumbent_not_ground_truth_answers_frozen",
+      "judge_tokens_included_in_submission": false,
+      "reasoning_judge_model": "gpt-5.6",
+      "reasoning_prompt_version": "b_reasoning_judge_v1_new_md",
+      "reasoning_score": 95.78,
+      "token_efficiency_score": 100.0,
+      "token_total": 1249222,
+      "total_score": 99.156
+    },
+    "candidate_token_total": 1249222,
+    "judge_token_usage": {
+      "completion_tokens": 8510,
+      "prompt_tokens": 71630,
+      "total_tokens": 80140
+    },
+    "old_finalizer_token_total": 417243,
+    "p10_delta": 4.0,
+    "reasoning_score_delta": 2.450000000000003,
+    "refresh_failure_count": 0,
+    "refresh_success_count": 100,
+    "scope": "all100_frozen_answers",
+    "token_delta": 16001,
+    "total_score_delta": 0.4900000000000091
+  },
+  "next_step": "运行全量测试、提交并推送v2 Prompt；随后100题全链复验accuracy/reasoning/Token总分。",
+  "pipeline_stage": "reasoning",
+  "question_types": [],
+  "recorded_at": "2026-07-22T20:57:06+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "reasoning_completeness_lowtail",
+  "status": "effective",
+  "submission_effect": "not_submitted",
+  "target_qids": [
+    "fc_b_004",
+    "fc_b_007",
+    "fc_b_008",
+    "fc_b_017",
+    "fin_b_002",
+    "fin_b_010",
+    "ins_b_004",
+    "ins_b_020",
+    "reg_b_008",
+    "reg_b_025",
+    "res_b_001",
+    "res_b_003",
+    "res_b_004",
+    "res_b_006",
+    "res_b_008",
+    "res_b_010",
+    "res_b_014",
+    "res_b_016",
+    "res_b_019"
+  ]
+}
+```

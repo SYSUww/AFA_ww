@@ -11,6 +11,8 @@ from afa_agent.b_board.io import BQuestion
 from afa_agent.b_board.runner import (
     RUN_MODE_RESEARCH,
     RUN_MODE_SUBMISSION,
+    SUBMISSION_REASONING_PROMPT_VERSION,
+    SUBMISSION_REASONING_SYSTEM_PROMPT,
     BAnswerArtifact,
     BBoardActualRunner,
 )
@@ -60,6 +62,14 @@ def _model(model_name: str) -> ModelConfig:
 
 
 class BBoardRunnerModeTests(unittest.TestCase):
+    def test_reasoning_prompt_requires_explicit_auditable_structure(self) -> None:
+        self.assertEqual(
+            SUBMISSION_REASONING_PROMPT_VERSION,
+            "b_submission_reasoning_v2_explicit_structure",
+        )
+        self.assertIn("定位—关键事实—推导—结论", SUBMISSION_REASONING_SYSTEM_PROMPT)
+        self.assertIn("与 answer_parts 完全一致", SUBMISSION_REASONING_SYSTEM_PROMPT)
+
     def test_cli_defaults_to_submission_and_accepts_research(self) -> None:
         with mock.patch.object(sys, "argv", ["run_b_board_actual.py"]):
             self.assertEqual(run_b_board_actual.parse_args().run_mode, RUN_MODE_SUBMISSION)
