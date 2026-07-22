@@ -2662,7 +2662,7 @@ class FinancialContractsSolver:
     def _question_subject_terms(cls, question_text: str) -> list[str]:
         terms = list(cls._company_terms(question_text))
         patterns = [
-            r"关于([^，。？?《》]{2,30}?)(?:可转债|重大资产重组)",
+            r"关于([^，。？?《》]{2,30}?)(?:可转换公司债券|可转债|重大资产重组)",
             r"《([^》]{2,100})》",
         ]
         for pattern in patterns:

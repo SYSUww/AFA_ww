@@ -437,8 +437,12 @@ class FinancialContractSubjectClauseTests(unittest.TestCase):
     def test_convertible_rights_bundle_covers_price_vote_redemption_and_put(self) -> None:
         units = [
             make_unit(
+                "text06::identity", "text06",
+                "公司、本公司、发行人、鼎捷数智，均指鼎捷数智股份有限公司。",
+            ),
+            make_unit(
                 "text06::conversion", "text06",
-                "鼎捷数智。本次发行可转换公司债券的初始转股价格不低于募集说明书公告日前二十个交易日公司股票交易均价和前一个交易日公司股票交易均价。"
+                "本次发行可转换公司债券的初始转股价格不低于募集说明书公告日前二十个交易日公司股票交易均价和前一个交易日公司股票交易均价。"
                 "向下修正方案须经出席会议的股东所持表决权的三分之二以上通过。",
             ),
             make_unit(
@@ -446,7 +450,13 @@ class FinancialContractSubjectClauseTests(unittest.TestCase):
                 "到期赎回条款：具体赎回价格将提请股东大会授权董事会根据市场情况与保荐机构（主承销商）协商确定。"
                 "本次发行的可转债最后两个计息年度，可转债持有人在每年回售条件首次满足后可行使回售权一次，不能多次行使部分回售权。",
             ),
-            make_unit("text11::other", "text11", "其他发行人的可转换公司债券发行条款。"),
+            make_unit(
+                "text11::other", "text11",
+                "普联软件。初始转股价格不低于募集说明书公告日前二十个交易日公司股票交易均价和前一个交易日公司股票交易均价。"
+                "向下修正方案须经出席会议的股东所持表决权的三分之二以上通过。"
+                "到期赎回条款：具体赎回价格将提请股东大会授权董事会根据市场情况与保荐机构协商确定。"
+                "最后两个计息年度内，每年回售条件首次满足后可行使回售权一次，不能多次行使部分回售权。",
+            ),
         ]
         solver = self.make_solver(units)
         options = {
@@ -460,6 +470,8 @@ class FinancialContractSubjectClauseTests(unittest.TestCase):
             question="关于鼎捷数智可转换公司债券的发行条款。",
             options=options, answer_format="multi", type="多选题", doc_ids=["text11", "text06"],
         )
+        self.assertEqual(solver._question_subject_terms(question.question), ["鼎捷数智"])
+        self.assertEqual(solver._subject_bound_doc_ids(question), ["text06"])
         self.assert_bundle_labels(solver, question, {"A": True, "B": True, "C": False, "D": True}, "text06")
 
     def test_concentration_bundle_covers_table_rating_eligibility_and_transition(self) -> None:

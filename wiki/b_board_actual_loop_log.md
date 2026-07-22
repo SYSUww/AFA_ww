@@ -12986,3 +12986,437 @@
   }
 }
 ```
+
+## b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1
+
+- recorded_at: `2026-07-22T07:40:57+00:00`
+
+```json
+{
+  "answered_qids": [
+    "fc_b_018"
+  ],
+  "attempt_index": 1,
+  "base_commit": "e00a82cd050d5d1aebb6a6312f7cfea623b8c2a0",
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contract_full_convertible_subject_extraction_fc_b_018/convertible_subject_bundle_a1_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "e00a82cd050d5d1aebb6a6312f7cfea623b8c2a0",
+        "code_hash": "bde9ba5ebf7d7de0da2bd72102e82220bbdb7122df8dbfa64019e5a54a495d95",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "b09ce453602c45ef34ad0b1315178787bcfb5c13e31dfffa40c07f8679ffe028",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "competing_generic_clause_docs": true,
+          "corpus_subject_score_binding": true,
+          "issuer_specific_targeted_retrieval": true,
+          "question_full_convertible_phrase_extraction": true,
+          "zero_token_bundle": true
+        },
+        "domains": [
+          "financial_contracts"
+        ],
+        "hypothesis": "extract issuer names before the full 可转换公司债券 phrase, bind clause retrieval to the corpus-identified issuer document, and reject same-clause distractor issuers.",
+        "pipeline_stage": "retrieval",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "full_convertible_phrase_subject_extraction",
+        "target_qids": [
+          "fc_b_018"
+        ]
+      }
+    },
+    "context_sha256": "d73d52480008d8bba71f64ad5545d718c544ad86ff5cda0ace22cc2fc25f9b63",
+    "direction_sha256": "e2e38f3746ec4f07cda97b9424f3eb3b7e88ad41ce2b29405cfd5bd86103f487",
+    "schema_version": 1,
+    "semantic_sha256": "07fcb59f9a77bd3bbe7cd0b6312bca654b61174c7e24a1202003eacb0bb0aba6",
+    "sha256": "beb9f2040cde903e7612b7daee18ccf0a30bd716290afd0f5570b595616f1d6d"
+  },
+  "candidate_full_evaluation_token_usage": {
+    "completion_tokens": 72544,
+    "prompt_tokens": 476203,
+    "total_tokens": 548747
+  },
+  "causal_financial_contract_lowtail": {
+    "after": 1,
+    "before": 2
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 2,
+    "high": 62,
+    "low": 3,
+    "medium": 33
+  },
+  "causal_lowtail": {
+    "after": 4,
+    "before": 5
+  },
+  "causal_promoted_tiers": {
+    "blocked": 2,
+    "high": 63,
+    "low": 2,
+    "medium": 33
+  },
+  "change_vector": {
+    "competing_generic_clause_docs": true,
+    "corpus_subject_score_binding": true,
+    "issuer_specific_targeted_retrieval": true,
+    "question_full_convertible_phrase_extraction": true,
+    "zero_token_bundle": true
+  },
+  "changed_answer_qids": [],
+  "changed_artifact_qids": [
+    "fc_b_018"
+  ],
+  "code_hash": "bde9ba5ebf7d7de0da2bd72102e82220bbdb7122df8dbfa64019e5a54a495d95",
+  "comparable_attempt_count_after": 1,
+  "comparable_attempt_count_before": 0,
+  "confidence_after": {
+    "fc_b_018": 95
+  },
+  "confidence_before": {
+    "fc_b_018": 40
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "dimension_changes": {
+    "alternative_exclusion": 56,
+    "answer_entailment": 37,
+    "citation_alignment": 51,
+    "document_relevance": 38,
+    "evidence_sufficiency": 41,
+    "format_compliance": -5,
+    "internal_consistency": -3,
+    "overall_confidence": 41
+  },
+  "direction_id": "financial_contract_full_convertible_subject_extraction_fc_b_018",
+  "direction_status": "active",
+  "domains": [
+    "financial_contracts"
+  ],
+  "effective_branch": "codex/b榜-loop-i033-financial-contract-subject",
+  "evaluator_failed_attempts_not_in_usage": 0,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 72544,
+    "prompt_tokens": 476203,
+    "total_tokens": 548747
+  },
+  "generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "generator_fingerprint": "b09ce453602c45ef34ad0b1315178787bcfb5c13e31dfffa40c07f8679ffe028",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_related_experiment_ids": [],
+  "history_similarity": null,
+  "hypothesis": "Extract issuer names before the full 可转换公司债券 phrase, bind clause retrieval to the corpus-identified issuer document, and reject same-clause distractor issuers.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "evaluator_failed_attempts_not_in_usage": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 162,
+    "tests_passed": true,
+    "token_accounting_complete": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contract_full_convertible_subject_extraction_fc_b_018/convertible_subject_bundle_a1_promoted1_composite",
+  "lessons": [
+    "The prior option-subject experiment already touched fc_b_018 but its synthetic test co-located the issuer name with clauses and gave distractor documents no matching clauses, masking the production tie.",
+    "The question subject parser recognized X可转债 but not the full X可转换公司债券 phrase, so 鼎捷数智 was never extracted as a subject.",
+    "When several prospectuses share boilerplate conversion and put clauses, clause text alone cannot identify the issuer; full-corpus subject scoring must constrain every option to the issuer document first.",
+    "Issuer identity may live in a definitions unit while the decisive clauses live in later chunks, so the regression test must separate identity from clause evidence.",
+    "After subject binding, all nine focused evidence units came from text06 and the fixed judge found direct support for A, B, D plus direct counterevidence for C."
+  ],
+  "manual_history_relations": [
+    "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects"
+  ],
+  "material_delta": {
+    "full_phrase_parser_extension": true,
+    "identity_and_clauses_in_separate_units": true,
+    "realistic_same_clause_distractor_regression": true
+  },
+  "next_root_causes": [
+    "financial_contract_subscription_cross_issuer_exclusion_fc_b_006",
+    "insurance_calculation_identity_citation_alignment_ins_b_001",
+    "reg_b_001_reference_date_vs_future_effective_obligation",
+    "deprioritized_res_b_008_requires_new_explicit_causal_corpus"
+  ],
+  "pipeline_stage": "retrieval",
+  "preflight_attempts": [
+    {
+      "integrity": {
+        "final_evidence_complete": true,
+        "format_forced": false,
+        "fully_rule_backed": true,
+        "no_supported_fallback": false,
+        "submission_valid": true
+      },
+      "observed_answer": {
+        "fc_b_018": "ABD"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contract_full_convertible_subject_extraction_fc_b_018/convertible_subject_bundle_a1",
+      "status": "accepted_for_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      },
+      "used_evidence_ids": [
+        "text06::sec_5::chunk_4",
+        "text06::element_344",
+        "text06::sec_5::chunk_6",
+        "text06::sec_5::chunk_7",
+        "text06::element_369",
+        "text06::element_370",
+        "text06::sec_5::chunk_8",
+        "text06::element_383",
+        "text06::element_385"
+      ]
+    }
+  ],
+  "promoted_qids": [
+    "fc_b_018"
+  ],
+  "promoted_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contract_full_convertible_subject_extraction_fc_b_018/convertible_subject_bundle_a1_promoted1_composite",
+  "promotion_decisions": {
+    "fc_b_018": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 55,
+      "tier_after": "high",
+      "tier_before": "low"
+    }
+  },
+  "promotion_gate_path": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contract_full_convertible_subject_extraction_fc_b_018/convertible_subject_bundle_a1_composite/promotion_gate.json",
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "multi"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 2,
+    "high": 64,
+    "low": 6,
+    "medium": 28
+  },
+  "reason": "Extending subject extraction to the full 可转换公司债券 phrase bound every option to 鼎捷数智 text06, removed cross-issuer boilerplate, preserved ABD, and raised fixed confidence from 40 low to 95 high with no hard failures.",
+  "recorded_at": "2026-07-22T07:40:57+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [],
+  "root_cause_cluster": "full_convertible_phrase_subject_extraction",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failed_attempts_not_in_usage": 0,
+      "failures": 0,
+      "sentinels_passed": true,
+      "successful_token_usage": {
+        "completion_tokens": 72544,
+        "prompt_tokens": 476203,
+        "total_tokens": 548747
+      },
+      "token_accounting_complete": true
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "fc_b_018"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 2,
+          "low_tier_improved_qids": [
+            "fc_b_018"
+          ],
+          "p10_after": 62,
+          "p10_before": 40,
+          "p10_delta": 22
+        },
+        "financial_reports": {
+          "blocked_low_after": 0,
+          "blocked_low_before": 0,
+          "low_tier_improved_qids": [],
+          "p10_after": 85,
+          "p10_before": 85,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 3,
+          "blocked_low_before": 3,
+          "low_tier_improved_qids": [],
+          "p10_after": 35,
+          "p10_before": 35,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 68,
+          "p10_before": 68,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 0,
+          "blocked_low_before": 0,
+          "low_tier_improved_qids": [],
+          "p10_after": 64,
+          "p10_before": 64,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": true,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_002": -4,
+        "fc_b_003": -5,
+        "fc_b_004": 4,
+        "fc_b_007": -4,
+        "fc_b_008": -2,
+        "fc_b_009": 10,
+        "fc_b_011": -5,
+        "fc_b_012": -4,
+        "fc_b_013": 12,
+        "fc_b_014": -10,
+        "fc_b_016": -5,
+        "fc_b_017": -5,
+        "fc_b_019": 6,
+        "fin_b_001": -7,
+        "fin_b_002": -2,
+        "fin_b_003": 5,
+        "fin_b_004": 5,
+        "fin_b_005": 8,
+        "fin_b_007": 3,
+        "fin_b_009": 2,
+        "fin_b_010": -5,
+        "fin_b_011": 2,
+        "fin_b_012": -7,
+        "fin_b_014": -3,
+        "fin_b_015": 4,
+        "fin_b_016": 3,
+        "fin_b_017": -3,
+        "ins_b_002": -5,
+        "ins_b_003": -4,
+        "ins_b_004": -17,
+        "ins_b_005": 9,
+        "ins_b_006": 10,
+        "ins_b_007": -30,
+        "ins_b_008": -3,
+        "ins_b_009": 2,
+        "ins_b_010": 15,
+        "ins_b_012": 7,
+        "ins_b_014": -4,
+        "ins_b_016": 14,
+        "ins_b_017": -5,
+        "ins_b_019": 20,
+        "ins_b_020": -1,
+        "reg_b_001": -5,
+        "reg_b_003": -5,
+        "reg_b_004": -5,
+        "reg_b_005": 10,
+        "reg_b_008": -8,
+        "reg_b_009": 2,
+        "reg_b_014": -5,
+        "reg_b_015": 6,
+        "reg_b_016": -2,
+        "reg_b_020": 5,
+        "reg_b_021": 12,
+        "reg_b_023": -6,
+        "reg_b_024": -6,
+        "reg_b_025": -2,
+        "reg_b_026": -7,
+        "res_b_001": -9,
+        "res_b_002": -6,
+        "res_b_003": -2,
+        "res_b_004": 2,
+        "res_b_005": 5,
+        "res_b_006": -10,
+        "res_b_008": -13,
+        "res_b_009": 4,
+        "res_b_010": -2,
+        "res_b_011": -2,
+        "res_b_013": 2,
+        "res_b_014": 2,
+        "res_b_015": -5,
+        "res_b_017": 10,
+        "res_b_018": 1,
+        "res_b_019": -4,
+        "res_b_020": 2
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_003",
+        "fc_b_013",
+        "fin_b_001",
+        "fin_b_015",
+        "ins_b_004",
+        "ins_b_005",
+        "ins_b_006",
+        "ins_b_007",
+        "ins_b_010",
+        "ins_b_019",
+        "reg_b_005",
+        "reg_b_021",
+        "reg_b_026",
+        "res_b_001",
+        "res_b_003",
+        "res_b_006",
+        "res_b_008",
+        "res_b_017"
+      ]
+    },
+    "reasons": [],
+    "tests": {
+      "count": 162,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_contract_full_convertible_subject_extraction_fc_b_018/convertible_subject_bundle_a1",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "fc_b_018"
+  ],
+  "token_accounting_complete": true,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 72544,
+    "prompt_tokens": 476203,
+    "total_tokens": 548747
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 72544,
+    "prompt_tokens": 476203,
+    "total_tokens": 548747
+  }
+}
+```
