@@ -8517,3 +8517,525 @@
   }
 }
 ```
+
+## b-loop-insurance-product-identity-evidence-binding-a1
+
+- recorded_at: `2026-07-22T02:34:06+00:00`
+
+```json
+{
+  "answered_qids": [
+    "ins_b_001",
+    "ins_b_008",
+    "ins_b_013",
+    "ins_b_015"
+  ],
+  "attempt_index": 1,
+  "base_commit": "3f7069d0c1cef8cf8a43288debdd9ab755faa975",
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 270,
+    "prompt_tokens": 8243,
+    "total_tokens": 8513
+  },
+  "blind_pairs": {
+    "ins_b_013": {
+      "candidate_blind_label": "A",
+      "candidate_preferred": true,
+      "evaluation": {
+        "confidence": 98,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "A选择BD，且其证据中选项B的平安家庭财产保险第八条明确列明“（五）行政行为或司法行为”，选项D的平安食品安全责任保险第八条也明确列明“（五）行政行为或司法行为”，与题干完全匹配。A同时提供了A、C相关责任免除条款，未见该表述，因此排除有依据。B答案为AB，但其证据仅支持B；其决策轨迹也标明A为false_selected_option且supported_only_answer为B，未纳入其证据中可支持D的条款，存在错误选择和漏选。",
+        "winner": "A"
+      },
+      "incumbent_blind_label": "B",
+      "model_name": "gpt-5.5",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "qid": "ins_b_013",
+      "temperature": 0.0,
+      "token_usage": {
+        "completion_tokens": 270,
+        "prompt_tokens": 8243,
+        "total_tokens": 8513
+      }
+    }
+  },
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/insurance_product_identity_evidence_binding/product_identity_clause_bundle_a1_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "3f7069d0c1cef8cf8a43288debdd9ab755faa975",
+        "code_hash": "a2d8f63121d8334d66ca27a285aadc3d6edc00e890797e87b4505494ebd00cfd",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "answer_preserving_calculation_identity_context": true,
+          "complete_option_matrix": true,
+          "corpus_wide_identity_resolution": true,
+          "group_by": [
+            "insurer",
+            "standard_product_name",
+            "clause_role"
+          ],
+          "strategy": "product_identity_clause_bundle_a1",
+          "strict_subject_binding": true
+        },
+        "domains": [
+          "insurance"
+        ],
+        "hypothesis": "binding every insurance clause to an explicit insurer and product identity before complete positive and negative option composition eliminates forced answers and cross-product subject leakage.",
+        "pipeline_stage": "context",
+        "question_types": [
+          "calculation",
+          "multi"
+        ],
+        "root_cause_cluster": "product_subject_alignment",
+        "target_qids": [
+          "ins_b_001",
+          "ins_b_008",
+          "ins_b_013",
+          "ins_b_015"
+        ]
+      }
+    },
+    "context_sha256": "2c219ef33b681f5d43f56a3fd10990194e84abef80016b9bf5de67f95545bfe6",
+    "direction_sha256": "a6a39904641d337292f4c57eb868f914f5148d0447aadfda02df58b15efe2a0e",
+    "schema_version": 1,
+    "semantic_sha256": "e668f78b96fe9769606baccdd4bf29fec8593017e66f802bb2778b391fb0d464",
+    "sha256": "1103feaab129d028ad4c1421275dd9c4989c515c11204d16fb77c2d0120fee50"
+  },
+  "candidate_full_evaluation_token_usage": {
+    "completion_tokens": 75819,
+    "prompt_tokens": 491169,
+    "total_tokens": 566988
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 16,
+    "high": 53,
+    "low": 3,
+    "medium": 28
+  },
+  "causal_insurance_lowtail": {
+    "after": 1,
+    "before": 4
+  },
+  "causal_lowtail": {
+    "after": [
+      "fc_b_006",
+      "fc_b_018",
+      "fin_b_010",
+      "ins_b_001",
+      "reg_b_001",
+      "res_b_002",
+      "res_b_003",
+      "res_b_004",
+      "res_b_006",
+      "res_b_008",
+      "res_b_009",
+      "res_b_012",
+      "res_b_014",
+      "res_b_017",
+      "res_b_018",
+      "res_b_020"
+    ],
+    "before": [
+      "fc_b_006",
+      "fc_b_018",
+      "fin_b_010",
+      "ins_b_001",
+      "ins_b_008",
+      "ins_b_013",
+      "ins_b_015",
+      "reg_b_001",
+      "res_b_002",
+      "res_b_003",
+      "res_b_004",
+      "res_b_006",
+      "res_b_008",
+      "res_b_009",
+      "res_b_012",
+      "res_b_014",
+      "res_b_017",
+      "res_b_018",
+      "res_b_020"
+    ],
+    "count_after": 16,
+    "count_before": 19
+  },
+  "causal_promoted_tiers": {
+    "blocked": 13,
+    "high": 56,
+    "low": 3,
+    "medium": 28
+  },
+  "change_vector": {
+    "answer_preserving_calculation_identity_context": true,
+    "complete_option_matrix": true,
+    "corpus_wide_identity_resolution": true,
+    "group_by": [
+      "insurer",
+      "standard_product_name",
+      "clause_role"
+    ],
+    "strategy": "product_identity_clause_bundle_a1",
+    "strict_subject_binding": true
+  },
+  "changed_answer_qids": [
+    "ins_b_013"
+  ],
+  "changed_artifact_qids": [
+    "ins_b_001",
+    "ins_b_008",
+    "ins_b_013",
+    "ins_b_015"
+  ],
+  "code_hash": "a2d8f63121d8334d66ca27a285aadc3d6edc00e890797e87b4505494ebd00cfd",
+  "comparable_attempt_count_after": 1,
+  "comparable_attempt_count_before": 0,
+  "confidence_after": {
+    "ins_b_001": 90,
+    "ins_b_008": 95,
+    "ins_b_013": 95,
+    "ins_b_015": 100
+  },
+  "confidence_before": {
+    "ins_b_001": 0,
+    "ins_b_008": 30,
+    "ins_b_013": 0,
+    "ins_b_015": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "insurance_product_identity_evidence_binding",
+  "direction_status": "active",
+  "domains": [
+    "insurance"
+  ],
+  "effective_branch": "codex/b榜-loop-i020-insurance-product-identity",
+  "evaluator_failed_attempts_not_in_usage": 1,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-insurance-product-identity-evidence-binding-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 75819,
+    "prompt_tokens": 491169,
+    "total_tokens": 566988
+  },
+  "generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_related_experiment_ids": [],
+  "history_similarity": null,
+  "hypothesis": "Binding every insurance clause to an explicit insurer and product identity before complete positive and negative option composition eliminates forced answers and cross-product subject leakage.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 149,
+    "tests_passed": true,
+    "token_accounting_complete": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/insurance_product_identity_evidence_binding/product_identity_clause_bundle_a1_promoted3_composite",
+  "lessons": [
+    "For same-name insurance clauses, bind company and standard product name before retrieving the clause; document title_path alone can misidentify food-safety products.",
+    "Every selected and rejected option should carry product identity plus direct support, complete-list absence evidence, or explicit counterevidence.",
+    "A format-valid incumbent answer can be accidentally correct while its trace admits forced options; replacing the force with complete option evidence can materially raise confidence.",
+    "A changed answer requires both fixed tier gain and blind preference, even when the old decision trace is internally self-contradictory.",
+    "Additional identity evidence can improve a calculation candidate while still failing strict non-regression against an old hard-failed artifact; retain the old artifact and log the result."
+  ],
+  "material_delta": {
+    "complete_positive_negative_composition": true,
+    "cross_answer_format": true,
+    "new_root_cause": true,
+    "product_identity_anchors": true
+  },
+  "next_root_causes": [
+    "insurance_calculation_identity_citation_alignment_ins_b_001",
+    "research_remaining_choice_evidence_coverage",
+    "research_calculation_grounding_res_b_012",
+    "remaining_fin_b_010_evidence_sufficiency",
+    "remaining_reg_b_001_evidence_sufficiency"
+  ],
+  "pipeline_stage": "context",
+  "preflight_attempts": [
+    {
+      "integrity": {
+        "format_forced": false,
+        "fully_rule_backed": true,
+        "generation_tokens": 0
+      },
+      "observed_answer": {
+        "ins_b_008": "ABCD",
+        "ins_b_013": "BD",
+        "ins_b_015": "AC"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/insurance_product_identity_evidence_binding/product_identity_clause_bundle_a1_choice",
+      "status": "accepted_for_full_evaluation"
+    },
+    {
+      "integrity": {
+        "answer_preserved": true,
+        "generation_tokens": 0,
+        "grounding_verified": true,
+        "replay_verified": true
+      },
+      "observed_answer": {
+        "ins_b_001": "333.20"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/insurance_product_identity_evidence_binding/product_identity_clause_bundle_a1_ins001",
+      "status": "accepted_for_full_evaluation"
+    }
+  ],
+  "promoted_qids": [
+    "ins_b_008",
+    "ins_b_013",
+    "ins_b_015"
+  ],
+  "promoted_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/insurance_product_identity_evidence_binding/product_identity_clause_bundle_a1_promoted3",
+  "promotion_decisions": {
+    "ins_b_001": {
+      "blind_required": false,
+      "promote": false,
+      "reasons": [
+        "dimension_regressed:citation_alignment"
+      ],
+      "score_delta": 90,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "ins_b_008": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 65,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "ins_b_013": {
+      "blind_required": true,
+      "blind_winner": "A",
+      "candidate_blind_label": "A",
+      "promote": true,
+      "reasons": [],
+      "score_delta": 95,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "ins_b_015": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 100,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_result": "partial_promotion",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "calculation",
+    "multi"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 13,
+    "high": 61,
+    "low": 2,
+    "medium": 24
+  },
+  "reason": "Product-scoped identity and clause bundles lifted ins_b_008 from 30 blocked to 95 high, corrected ins_b_013 from forced AB to evidence-complete BD at 95 high, and lifted ins_b_015 from blocked to 100 high. The changed ins_b_013 answer won blind review at 98 confidence. ins_b_001 reached 90 high but was rejected because citation_alignment regressed by 10 points against its unusually high hard-failed incumbent dimensions.",
+  "recorded_at": "2026-07-22T02:34:06+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [
+    "ins_b_001"
+  ],
+  "root_cause_cluster": "product_subject_alignment",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failures": 0,
+      "sentinels_passed": true,
+      "token_accounting_complete": true
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "ins_b_001",
+        "ins_b_008",
+        "ins_b_013",
+        "ins_b_015"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 2,
+          "blocked_low_before": 2,
+          "low_tier_improved_qids": [],
+          "p10_after": 35,
+          "p10_before": 35,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 82,
+          "p10_before": 82,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 5,
+          "low_tier_improved_qids": [
+            "ins_b_001",
+            "ins_b_008",
+            "ins_b_013",
+            "ins_b_015"
+          ],
+          "p10_after": 62,
+          "p10_before": 0,
+          "p10_delta": 62
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 60,
+          "p10_before": 60,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 11,
+          "blocked_low_before": 11,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": true,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_002": -10,
+        "fc_b_003": 2,
+        "fc_b_004": 4,
+        "fc_b_006": -10,
+        "fc_b_007": -10,
+        "fc_b_009": -1,
+        "fc_b_010": 10,
+        "fc_b_011": 5,
+        "fc_b_013": 5,
+        "fc_b_014": -5,
+        "fc_b_016": -5,
+        "fc_b_017": 8,
+        "fc_b_018": -15,
+        "fc_b_019": -20,
+        "fin_b_001": -2,
+        "fin_b_003": -4,
+        "fin_b_004": 3,
+        "fin_b_005": 3,
+        "fin_b_007": 3,
+        "fin_b_008": 6,
+        "fin_b_010": 5,
+        "fin_b_011": -2,
+        "fin_b_012": -1,
+        "fin_b_019": 2,
+        "ins_b_002": -5,
+        "ins_b_003": -4,
+        "ins_b_004": 3,
+        "ins_b_005": -2,
+        "ins_b_006": 37,
+        "ins_b_007": -16,
+        "ins_b_009": 6,
+        "ins_b_010": -7,
+        "ins_b_012": 8,
+        "ins_b_014": 8,
+        "ins_b_016": 16,
+        "ins_b_019": -8,
+        "reg_b_003": -25,
+        "reg_b_004": 5,
+        "reg_b_005": 6,
+        "reg_b_007": 5,
+        "reg_b_008": -2,
+        "reg_b_009": -6,
+        "reg_b_013": -3,
+        "reg_b_014": -5,
+        "reg_b_015": 7,
+        "reg_b_017": -8,
+        "reg_b_018": -5,
+        "reg_b_020": 5,
+        "reg_b_023": 2,
+        "reg_b_024": 18,
+        "reg_b_025": 6,
+        "reg_b_026": 2,
+        "reg_b_027": -6,
+        "res_b_005": 5,
+        "res_b_007": -5,
+        "res_b_013": 7,
+        "res_b_015": -6,
+        "res_b_017": 4,
+        "res_b_019": -6
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_002",
+        "fc_b_007",
+        "fc_b_017",
+        "fc_b_019",
+        "ins_b_006",
+        "ins_b_007",
+        "ins_b_016",
+        "reg_b_003",
+        "reg_b_025",
+        "res_b_017"
+      ]
+    },
+    "reasons": [],
+    "tests": {
+      "unittest_discover": {
+        "passed": true,
+        "test_count": 149
+      }
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/insurance_product_identity_evidence_binding/product_identity_clause_bundle_a1_choice",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "ins_b_001",
+    "ins_b_008",
+    "ins_b_013",
+    "ins_b_015"
+  ],
+  "token_accounting_complete": true,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 76089,
+    "prompt_tokens": 499412,
+    "total_tokens": 575501
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 76089,
+    "prompt_tokens": 499412,
+    "total_tokens": 575501
+  }
+}
+```

@@ -121,6 +121,140 @@ class InsuranceTargetedClauseTests(unittest.TestCase):
         self.assertIn("交通肇事逃逸", solver._focus_terms(question.question))
 
 
+class InsuranceProductIdentityClauseBundleTests(unittest.TestCase):
+    @staticmethod
+    def make_solver(units: list[dict[str, object]]) -> InsuranceSolver:
+        solver = InsuranceSolver.__new__(InsuranceSolver)
+        solver.retriever = GenericBM25Retriever(units)
+        solver.answering_settings = {
+            "prompt_template_id": "test",
+            "max_hits": 5,
+            "max_hit_chars": 600,
+        }
+        return solver
+
+    def test_mental_damage_bundle_keeps_four_insurer_product_pairs(self) -> None:
+        units = [
+            make_unit("9::identity", "9", "中国平安财产保险股份有限公司 特种车商业保险示范条款"),
+            make_unit(
+                "9::clause", "9",
+                "附加精神损害抚慰金责任险：投保特种车主险的特种车可投保本附加险，保险人依据法院判决负责赔偿精神损害抚慰金。",
+            ),
+            make_unit("10::identity", "10", "众安在线财产保险股份有限公司 特种车商业保险示范条款"),
+            make_unit(
+                "10::clause", "10",
+                "附加精神损害抚慰金责任险：投保特种车主险的特种车可投保本附加险，保险人依据法院判决负责赔偿精神损害抚慰金。",
+            ),
+            make_unit("13::identity", "13", "众安在线财产保险股份有限公司 食品安全责任保险"),
+            make_unit(
+                "13::clause", "13",
+                "依照人民法院判决应承担的精神损害赔偿责任属于可选责任。",
+            ),
+            make_unit("14::identity", "14", "中国平安财产保险股份有限公司 平安产险食品安全责任保险"),
+            make_unit(
+                "14::clause", "14",
+                "依照人民法院判决应由被保险人承担的精神损害赔偿责任，保险人负责赔偿。",
+            ),
+        ]
+        solver = self.make_solver(units)
+        question = Question(
+            qid="unseen_mental_damage",
+            domain="insurance",
+            split="B",
+            question="关于精神损害赔偿或精神损害抚慰金，下列说法正确的是？",
+            options={
+                "A": "平安特种车商业保险可通过附加险承担",
+                "B": "众安特种车商业保险可通过附加险承担",
+                "C": "众安食品安全责任保险纳入法院判决责任",
+                "D": "平安食品安全责任保险纳入法院判决责任",
+            },
+            answer_format="multi",
+            type="多选题",
+            doc_ids=["9", "10", "13"],
+        )
+
+        answer = solver._solve_product_identity_clause_bundle(question)
+
+        self.assertIsNotNone(answer)
+        assert answer is not None
+        self.assertEqual(answer.pred_answer, "ABCD")
+        self.assertEqual(answer.token_usage.total_tokens, 0)
+        self.assertEqual({item["doc_id"] for item in answer.evidence_items}, {"9", "10", "13", "14"})
+        self.assertFalse(answer.debug_meta["answer_finalization"]["format_forced"])
+
+    def test_administrative_exclusion_bundle_requires_literal_product_scoped_clause(self) -> None:
+        units = [
+            make_unit("2::identity", "2", "中国人寿保险股份有限公司 国寿增益宝终身寿险"),
+            make_unit(
+                "2::exclusion-a", "2",
+                "第七条责任免除：被保险人故意犯罪或者抗拒依法采取的刑事强制措施。",
+            ),
+            make_unit(
+                "2::exclusion-b", "2",
+                "被保险人自合同成立之日起2年内自杀、酒后驾驶，或因战争、核爆炸导致身故。",
+            ),
+            make_unit("11::identity", "11", "中国平安财产保险股份有限公司 家庭财产保险 家庭版"),
+            make_unit("11::clause", "11", "下列原因造成的损失不负责赔偿：行政行为或司法行为。"),
+            make_unit("8::identity", "8", "众安在线财产保险股份有限公司 营运交通工具团体意外伤害保险"),
+            make_unit(
+                "8::clause", "8",
+                "第七条责任免除：保险人不承担保险金给付责任，包括被保险人被依法拘留、服刑期间。",
+            ),
+            make_unit("14::identity", "14", "中国平安财产保险股份有限公司 平安产险食品安全责任保险"),
+            make_unit("14::clause", "14", "下列原因造成的损失不负责赔偿：行政行为或司法行为。"),
+        ]
+        solver = self.make_solver(units)
+        question = Question(
+            qid="unseen_administrative_exclusion",
+            domain="insurance",
+            split="B",
+            question="关于行政行为或司法行为导致损失的免责，下列产品明确列明的是？",
+            options={"A": "国寿增益宝", "B": "平安家庭财产保险", "C": "众安营运交通工具团体意外", "D": "平安食品安全"},
+            answer_format="multi",
+            type="多选题",
+            doc_ids=["2", "8", "11", "14"],
+        )
+
+        answer = solver._solve_product_identity_clause_bundle(question)
+
+        self.assertIsNotNone(answer)
+        assert answer is not None
+        self.assertEqual(answer.pred_answer, "BD")
+        self.assertEqual(answer.option_labels, {"A": False, "B": True, "C": False, "D": True})
+        self.assertEqual(answer.debug_meta["final_consistency_check"], {"issues": []})
+
+    def test_limitation_period_bundle_uses_two_year_support_and_counterevidence(self) -> None:
+        units = [
+            make_unit("3::identity", "3", "众安在线财产保险股份有限公司 个人急性白血病复发医疗保险"),
+            make_unit("3::clause", "3", "保险金申请人请求给付保险金的诉讼时效期间为二年。"),
+            make_unit("5::identity", "5", "平安健康保险股份有限公司 平安e生保住院医疗保险"),
+            make_unit("5::clause", "5", "诉讼时效适用现行有效法律规定。"),
+            make_unit("6::identity", "6", "太平洋健康保险股份有限公司 太保团体百万医疗保险"),
+            make_unit("6::clause", "6", "受益人请求给付保险金的诉讼时效期间为2年。"),
+            make_unit("16::identity", "16", "平安养老保险股份有限公司 平安富鸿金生养老年金保险"),
+            make_unit("16::clause", "16", "受益人请求给付保险金的诉讼时效期间为5年。"),
+        ]
+        solver = self.make_solver(units)
+        question = Question(
+            qid="unseen_limitation_period",
+            domain="insurance",
+            split="B",
+            question="关于诉讼时效期间，下列产品明确约定保险金请求权诉讼时效期间为2年的是？",
+            options={"A": "众安白血病", "B": "平安e生保", "C": "太保团体百万医疗", "D": "平安富鸿金生"},
+            answer_format="multi",
+            type="多选题",
+            doc_ids=["3", "5", "6", "16"],
+        )
+
+        answer = solver._solve_product_identity_clause_bundle(question)
+
+        self.assertIsNotNone(answer)
+        assert answer is not None
+        self.assertEqual(answer.pred_answer, "AC")
+        self.assertEqual(answer.token_usage.total_tokens, 0)
+        self.assertIn("5年", answer.reasoning_summary)
+
+
 class FinancialContractSubjectClauseTests(unittest.TestCase):
     @staticmethod
     def make_solver(units: list[dict[str, object]]) -> FinancialContractsSolver:

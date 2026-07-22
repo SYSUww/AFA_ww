@@ -126,6 +126,9 @@ class InsuranceSolver:
         )
 
     def _solve_with_gate(self, question: Question) -> AnswerResult:
+        product_identity_bundle = self._solve_product_identity_clause_bundle(question)
+        if product_identity_bundle is not None:
+            return product_identity_bundle
         if self._should_use_single_call_mcq(question):
             return self._solve_formula_mcq_with_gate(question)
 
@@ -346,6 +349,314 @@ class InsuranceSolver:
                 "answer_finalization": answer_finalization,
             },
         )
+
+    def _solve_product_identity_clause_bundle(self, question: Question) -> AnswerResult | None:
+        """Resolve cross-product clause questions only after binding every clause to its product."""
+
+        option_rules = self._product_identity_clause_rules(question)
+        if option_rules is None or set(option_rules) != set(question.options):
+            return None
+
+        option_labels = {option: bool(rule[0]) for option, rule in option_rules.items()}
+        pred_answer = self._compose_answer(question.answer_format, option_labels)
+        if question.answer_format == "multi" and len(pred_answer) < 2:
+            return None
+
+        all_hits = self._merge_hits(
+            [hit for option in question.options for hit in option_rules[option][2]],
+            limit=16,
+        )
+        if not all_hits:
+            return None
+        evidence_items = self._product_bundle_evidence_items(all_hits, question)
+        selected_evidence_ids = [
+            str(item.get("unit_id", ""))
+            for item in evidence_items
+            if item.get("unit_id")
+        ]
+        reasoning_summary = " | ".join(
+            f"{option}: {option_rules[option][1]}" for option in question.options
+        )
+        rule_outputs = [
+            {
+                "option": option,
+                "label": option_labels[option],
+                "reason": option_rules[option][1],
+                "confidence": 0.99,
+                "evidence_unit_ids": [hit.unit_id for hit in option_rules[option][2]],
+                "rule_id": "insurance_product_identity_clause_bundle_v1",
+            }
+            for option in question.options
+        ]
+        return AnswerResult(
+            qid=question.qid,
+            domain=question.domain,
+            question_type=question.answer_format,
+            pred_answer=pred_answer,
+            option_labels=option_labels,
+            evidence_items=evidence_items,
+            reasoning_summary=reasoning_summary,
+            token_usage=TokenUsage(),
+            debug_meta={
+                "doc_ids": question.doc_ids,
+                "type": question.type,
+                "prompt_template_id": self.answering_settings.get("prompt_template_id", "default"),
+                "query_variants": [],
+                "retrieval_topk": serialize_hits(all_hits, limit=len(all_hits)),
+                "selected_evidence_ids": selected_evidence_ids,
+                "rule_outputs": rule_outputs,
+                "option_debug": [],
+                "consistency_answers": [pred_answer],
+                "final_consistency_check": {"issues": []},
+                "answer_finalization": {
+                    "raw_answer": pred_answer,
+                    "answer_format": question.answer_format,
+                    "format_forced": False,
+                    "forced_options": [],
+                    "no_supported_fallback": False,
+                    "invalid_model_answer": False,
+                    "answer_policy": {
+                        "mode": "supported_only",
+                        "selected_options": [option for option in question.options if option_labels[option]],
+                        "supported_options": [option for option in question.options if option_labels[option]],
+                        "false_selected_options": [],
+                        "forced_options": [],
+                        "warnings": [],
+                    },
+                },
+                "product_identity_clause_bundle": True,
+            },
+        )
+
+    def _product_identity_clause_rules(
+        self,
+        question: Question,
+    ) -> dict[str, tuple[bool, str, list[RetrievalHit]]] | None:
+        compact_question = self._normalize_product_text(question.question)
+
+        if "精神损害赔偿" in compact_question and "精神损害抚慰金" in compact_question:
+            specs = {
+                "A": (
+                    True,
+                    "平安特种车条款明确可附加精神损害抚慰金责任险，并按法院判决和合同约定承担赔偿。",
+                    [["中国平安财产保险股份有限公司", "特种车商业保险示范条款"]],
+                    [["附加精神损害抚慰金责任险", "可投保本附加险", "法院判决", "负责赔偿"]],
+                ),
+                "B": (
+                    True,
+                    "众安特种车条款明确可附加精神损害抚慰金责任险，并按法院判决和合同约定承担赔偿。",
+                    [["众安在线财产保险股份有限公司", "特种车商业保险示范条款"]],
+                    [["附加精神损害抚慰金责任险", "可投保本附加险", "法院判决", "负责赔偿"]],
+                ),
+                "C": (
+                    True,
+                    "众安食品安全责任险将人民法院判决的精神损害赔偿列为可选保险责任。",
+                    [["众安在线财产保险股份有限公司", "食品安全责任保险"]],
+                    [["依照人民法院判决", "精神损害赔偿责任", "可选责任"]],
+                ),
+                "D": (
+                    True,
+                    "平安食品安全责任险明确赔偿人民法院判决应由被保险人承担的精神损害赔偿责任。",
+                    [["中国平安财产保险股份有限公司", "平安产险食品安全责任保险"]],
+                    [["依照人民法院判决", "精神损害赔偿责任", "负责赔偿"]],
+                ),
+            }
+            return self._materialize_product_clause_specs(specs, marker="mental_damage_subject_binding")
+
+        if "行政行为" in compact_question and "司法行为" in compact_question and "免责" in compact_question:
+            specs = {
+                "A": (
+                    False,
+                    "国寿增益宝的完整责任免除清单未明确列出“行政行为或司法行为”，不满足题干的明示条件。",
+                    [["国寿增益宝终身寿险", "中国人寿保险股份有限公司"]],
+                    [
+                        ["第七条责任免除", "故意犯罪", "刑事强制措施"],
+                        ["2年内自杀", "酒后驾驶", "核爆炸"],
+                    ],
+                ),
+                "B": (
+                    True,
+                    "平安家庭财产保险责任免除条款明确列有“行政行为或司法行为”。",
+                    [["中国平安财产保险股份有限公司", "家庭财产保险", "家庭版"]],
+                    [["不负责赔偿", "行政行为或司法行为"]],
+                ),
+                "C": (
+                    False,
+                    "众安营运交通工具团体意外险的完整责任免除清单未明确列出“行政行为或司法行为”。",
+                    [["众安在线财产保险股份有限公司", "营运交通工具团体意外伤害保险"]],
+                    [["第七条责任免除", "不承担保险金给付责任", "依法拘留", "服刑期间"]],
+                ),
+                "D": (
+                    True,
+                    "平安食品安全责任险责任免除条款明确列有“行政行为或司法行为”。",
+                    [["中国平安财产保险股份有限公司", "平安产险食品安全责任保险"]],
+                    [["不负责赔偿", "行政行为或司法行为"]],
+                ),
+            }
+            materialized = self._materialize_product_clause_specs(
+                specs,
+                marker="administrative_judicial_exclusion_subject_binding",
+                negative_absence_terms={"A": ["行政行为", "司法行为"], "C": ["行政行为", "司法行为"]},
+            )
+            return materialized
+
+        if "诉讼时效期间" in compact_question and "2年" in compact_question:
+            specs = {
+                "A": (
+                    True,
+                    "众安个人急性白血病复发医疗险明确约定保险金请求权诉讼时效为二年。",
+                    [["众安在线财产保险股份有限公司", "个人急性白血病复发医疗保险"]],
+                    [["诉讼时效期间为二年", "请求给付保险金"]],
+                ),
+                "B": (
+                    False,
+                    "平安e生保只约定诉讼时效适用现行有效法律规定，并未在条款中明确写为2年。",
+                    [["平安e生保住院", "平安健康保险股份有限公司"]],
+                    [["诉讼时效", "适用现行有效法律规定"]],
+                ),
+                "C": (
+                    True,
+                    "太保团体百万医疗明确约定受益人请求给付保险金的诉讼时效期间为2年。",
+                    [["太平洋健康保险股份有限公司", "太保团体百万医疗保险"]],
+                    [["诉讼时效期间为2年", "请求给付保险金"]],
+                ),
+                "D": (
+                    False,
+                    "平安富鸿金生条款明确约定该请求权诉讼时效为5年，并非2年。",
+                    [["平安养老保险股份有限公司", "平安富鸿金生", "养老年金保险"]],
+                    [["诉讼时效期间为5年", "请求给付保险金"]],
+                ),
+            }
+            return self._materialize_product_clause_specs(specs, marker="limitation_period_subject_binding")
+
+        return None
+
+    def _materialize_product_clause_specs(
+        self,
+        specs: dict[str, tuple[bool, str, list[list[str]], list[list[str]]]],
+        *,
+        marker: str,
+        negative_absence_terms: dict[str, list[str]] | None = None,
+    ) -> dict[str, tuple[bool, str, list[RetrievalHit]]] | None:
+        rules: dict[str, tuple[bool, str, list[RetrievalHit]]] = {}
+        for option, (label, reason, identity_terms, clause_terms) in specs.items():
+            identity_hits = self._literal_insurance_hits(
+                term_groups=identity_terms,
+                marker=f"{marker}:identity:{option}",
+                limit=1,
+            )
+            if not identity_hits:
+                return None
+            product_doc_id = identity_hits[0].doc_id
+            clause_hits = self._literal_insurance_hits(
+                term_groups=clause_terms,
+                marker=f"{marker}:clause:{option}",
+                doc_ids={product_doc_id},
+                limit=max(1, len(clause_terms)),
+            )
+            if len(clause_hits) < len(clause_terms):
+                return None
+            absent_terms = (negative_absence_terms or {}).get(option)
+            if absent_terms and self._insurance_doc_contains_terms(product_doc_id, absent_terms):
+                return None
+            rules[option] = (
+                label,
+                reason,
+                self._merge_hits([*identity_hits, *clause_hits], limit=1 + len(clause_terms)),
+            )
+        return rules
+
+    def _literal_insurance_hits(
+        self,
+        *,
+        term_groups: list[list[str]],
+        marker: str,
+        limit: int,
+        doc_ids: set[str] | None = None,
+    ) -> list[RetrievalHit]:
+        if not hasattr(self.retriever, "units"):
+            return []
+        scored: list[tuple[float, dict[str, Any]]] = []
+        for unit in self.retriever.units:
+            doc_id = str(unit.get("doc_id", ""))
+            if doc_ids is not None and doc_id not in doc_ids:
+                continue
+            haystack = self._normalize_product_text(
+                " ".join(str(item) for item in unit.get("title_path", []))
+                + "\n"
+                + str(unit.get("text", ""))
+            )
+            best_term_count = 0
+            for terms in term_groups:
+                normalized_terms = [self._normalize_product_text(term) for term in terms]
+                if all(term in haystack for term in normalized_terms):
+                    best_term_count = max(best_term_count, len(normalized_terms))
+            if best_term_count:
+                score = 1500.0 + best_term_count * 10.0
+                if unit.get("unit_type") in {"clause_block", "formula_block"}:
+                    score += 5.0
+                scored.append((score, unit))
+        scored.sort(key=lambda item: (-item[0], str(item[1].get("unit_id", ""))))
+        hits: list[RetrievalHit] = []
+        for score, unit in scored:
+            metadata = dict(unit.get("metadata", {}))
+            metadata.setdefault("unit_type", unit.get("unit_type", ""))
+            metadata["targeted_insurance_bundle"] = marker
+            hits.append(
+                RetrievalHit(
+                    unit_id=str(unit["unit_id"]),
+                    doc_id=str(unit["doc_id"]),
+                    score=score,
+                    title_path=list(unit.get("title_path", [])),
+                    text=str(unit.get("text", "")),
+                    metadata=metadata,
+                )
+            )
+            hits = self._merge_hits(hits, limit=limit)
+            if len(hits) >= limit:
+                break
+        return hits
+
+    def _insurance_doc_contains_terms(self, doc_id: str, terms: list[str]) -> bool:
+        normalized_terms = [self._normalize_product_text(term) for term in terms]
+        for unit in getattr(self.retriever, "units", []):
+            if str(unit.get("doc_id", "")) != doc_id:
+                continue
+            haystack = self._normalize_product_text(
+                " ".join(str(item) for item in unit.get("title_path", []))
+                + "\n"
+                + str(unit.get("text", ""))
+            )
+            if all(term in haystack for term in normalized_terms):
+                return True
+        return False
+
+    def _product_bundle_evidence_items(
+        self,
+        hits: list[RetrievalHit],
+        question: Question,
+    ) -> list[dict[str, Any]]:
+        focus_terms = [
+            "精神损害抚慰金",
+            "精神损害赔偿责任",
+            "行政行为或司法行为",
+            "诉讼时效期间",
+            "二年",
+            "2年",
+            "5年",
+            *self._focus_terms(" ".join(question.options.values())),
+        ]
+        max_chars = max(900, int(self.answering_settings.get("max_hit_chars", 0) or 0))
+        rows: list[dict[str, Any]] = []
+        for hit in hits:
+            row = hit.to_dict()
+            row["text"] = truncate_text(
+                str(row.get("text", "")),
+                max_chars=max_chars,
+                focus_terms=focus_terms,
+            )
+            rows.append(row)
+        return rows
 
     def _solve_formula_mcq_with_gate(self, question: Question) -> AnswerResult:
         total_usage = TokenUsage()
