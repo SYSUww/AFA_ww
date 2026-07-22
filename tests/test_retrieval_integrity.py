@@ -1294,6 +1294,81 @@ class ResearchFinancialClauseBundleTests(unittest.TestCase):
             expected={"A": True, "B": False, "C": True, "D": False},
         )
 
+    def test_structural_cost_bundle_binds_cost_quality_and_durable_barriers_by_industry(self) -> None:
+        units = [
+            make_unit(
+                "breeding::cost_quality", "breeding",
+                "料肉比下降0.05，每年可节约饲料成本约3亿元；成活率提升并带来防疫成本下降。",
+            ),
+            make_unit(
+                "breeding::control", "breeding",
+                "育种、饲料、养殖到加工的产业链各环节均为自有，实现全产业链价值内部留存，"
+                "并依托自主育种技术优势降低养殖成本。",
+            ),
+            make_unit(
+                "breeding::quality", "breeding",
+                "种源性能指标达到全球领先水平，并以自主育种技术优势降低上游养殖成本，"
+                "以规模化养殖提升中游生产效率。",
+            ),
+            make_unit(
+                "breeding::barrier", "breeding",
+                "公司培育出拥有完全自主知识产权的种源，一举打破国外的垄断，成为世界第三大白羽肉鸡育种企业。",
+            ),
+            make_unit(
+                "consumer::cost_quality", "consumer",
+                "钛金属3D打印让表壳减少一半的原物料使用量，接口组件更轻薄、更坚固，"
+                "比传统锻造制程节省33%的材料用量并大大降低了成本。",
+            ),
+            make_unit(
+                "consumer::process", "consumer",
+                "3D打印无需模具、节约原材料、制造周期短，因而具有显著的成本和效率优势。",
+            ),
+            make_unit(
+                "consumer::quality", "consumer",
+                "设备支持一体化成型，提高了结构强度和可靠性，并通过六振镜让吞吐量数倍提升。",
+            ),
+            make_unit(
+                "consumer::barrier", "consumer",
+                "企业在激光焊接关键工艺上形成不可复制、不可替代的优势，并满足材料机械性能提升要求。",
+            ),
+            make_unit(
+                "optical::cost_quality", "optical",
+                "全光交换架构的省电与省钱来自MEMS反射镜，功耗仅约100瓦，较传统交换机耗电量大幅减少约95%，并用于高速互连。",
+            ),
+            make_unit(
+                "optical::upgrade", "optical",
+                "若将带宽从800G提升至1.6T，只需更换高速光模块，升级成本将更具竞争力。",
+            ),
+            make_unit(
+                "optical::quality", "optical",
+                "硅光子具有低功耗、低延迟、高带宽、高集成度，可使产能提升，且性能和可靠性的提升也是优势。",
+            ),
+            make_unit(
+                "optical::barrier", "optical",
+                "关键的EML与CW-LD等光电芯片供应紧张，光学对准等高精度制程能力也是限制产能放大的因素。",
+            ),
+        ]
+        question = Question(
+            qid="res_b_009",
+            domain="research",
+            split="B",
+            question="在养殖、消费电子制造和光通信领域，都出现了通过核心技术突破实现结构性降本的案例。以下关于这些案例的分析中，哪些是正确的？",
+            options={
+                "A": "都说明在产业链的关键环节进行技术突破能够带来显著的成本优势",
+                "B": "都是通过掌控核心环节实现结构性降本，而非单纯压缩费用",
+                "C": "降本的同时都带来了产品性能的提升，从而形成“降本+提质”双重优势",
+                "D": "这些降本路径均可被竞争对手快速模仿，因此无法形成持续壁垒",
+            },
+            answer_format="multi",
+            type="多选题",
+            doc_ids=["breeding", "consumer", "optical"],
+        )
+        self.assert_labels(
+            solver=self.make_solver(units),
+            question=question,
+            expected={"A": True, "B": True, "C": True, "D": False},
+        )
+
 
 class FinancialReportMetricBundleTests(unittest.TestCase):
     @staticmethod

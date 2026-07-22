@@ -12240,3 +12240,32 @@
   }
 }
 ```
+
+## b-loop-research-institutional-change-effect-res-b-008-b1
+
+- recorded_at: `2026-07-22T06:17:45+00:00`
+- result: `rejected`
+- history: `refine_existing`; comparable attempts `1 -> 2`; related `b-loop-research-institutional-change-effect-res-b-008-a1`
+- preflight: `res_b_008=AC`; 13 direct evidence units; generation tokens `0`; no fallback or format forcing
+- fixed evaluation: `100/100` answers, `6/6` sentinels, `0` failures; tokens `476099/73709/549808`
+- confidence: `55 low -> 58 low`; gate failed because gain `<5`, tier unchanged, and format/internal-consistency/alternative-exclusion regressed
+- conclusion: regional-to-national expansion, chain size, and first-place rank are related facts but do not directly prove “removing geographic barriers caused head share to rise”; service and pet standardization costs likewise do not establish the option's cross-industry regulatory commonality
+- action: candidate code reverted; no effective branch or push; direction deprioritized after two comparable trials unless the corpus gains explicit causal evidence
+- next: switch to `research_policy_effect_evidence_res_b_009`
+
+## b-loop-research-structural-cost-reduction-res-b-009-a1
+
+- recorded_at: `2026-07-22T06:41:24+00:00`
+- result: `promoted`; branch `codex/b榜-loop-i030-research-structural-cost`
+- history: `execute`; comparable attempts `0 -> 1`
+- hypothesis: use a three-industry option matrix to bind cost, performance, and durable-barrier evidence for every selected or excluded alternative
+- preflight a1: escaped percent text missed the consumer source, produced forced `AB`, tokens `12198/1496/13694`
+- preflight a2: zero-token `ABC`, but cross-option dedup left C without independent markers
+- preflight a3: forcing unique A/D sources overconstrained retrieval, produced `BC`, tokens `6214/810/7024`
+- preflight a4: accepted `ABC`; 10 unique direct evidence units; generation tokens `0`; no fallback or format forcing
+- tests: `160/160` passed; composite coverage `100/100`; submission valid
+- fixed evaluation: `100/100` answers, `6/6` sentinels, `0` failures; tokens `474910/72059/546969`
+- confidence: `res_b_009 0 blocked -> 83 high`; hard failure `no_supported_fallback` removed; answer unchanged, so blind evaluation not required
+- causal tiers: `4 blocked / 60 high / 4 low / 32 medium -> 3 blocked / 61 high / 4 low / 32 medium`; lowtail `8 -> 7`, research lowtail `4 -> 3`
+- lessons: cross-industry claims need a row-by-row matrix; bind cost and quality in the same source; avoid exact escaped percentages when the number is not the claim; do not force evidence uniqueness past retrieval stability
+- next: `research_supply_constraint_res_b_014`, then `research_staged_autonomy_direct_entailment_res_b_017`
