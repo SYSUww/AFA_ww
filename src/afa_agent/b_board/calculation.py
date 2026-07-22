@@ -50,6 +50,7 @@ class CalculationExecutor:
         expected_slots: int,
         evidence_text_by_id: Mapping[str, str] | None = None,
         expected_slot_templates: Sequence[str] | None = None,
+        expected_numeric_decimal_places: int | None = None,
     ) -> CalculationResult:
         variables: dict[str, Any] = {}
         value_kinds: dict[str, str] = {}
@@ -146,15 +147,31 @@ class CalculationExecutor:
             value_kind = _resolve_kind(source, value_kinds)
             requested_format = str(output.get("format", "raw"))
             format_name = requested_format
+            rendered_value = value
+            question_rounded_value: str | None = None
             if expected_slot_templates is not None:
                 if len(expected_slot_templates) != expected_slots:
                     raise CalculationPlanError("expected_slot_templates count mismatch")
+                slot_template = str(expected_slot_templates[position - 1])
+                if (
+                    expected_numeric_decimal_places is not None
+                    and re.fullmatch(r"9+\.99", slot_template)
+                    and not isinstance(value, date)
+                ):
+                    if expected_numeric_decimal_places not in {0, 1, 2}:
+                        raise CalculationPlanError(
+                            "Unsupported question numeric precision: "
+                            f"{expected_numeric_decimal_places}"
+                        )
+                    quantum = Decimal("1").scaleb(-expected_numeric_decimal_places)
+                    rendered_value = _decimal(value).quantize(quantum, rounding=ROUND_HALF_UP)
+                    question_rounded_value = _serialize_value(rendered_value)
                 format_name = _format_for_slot_template(
-                    str(expected_slot_templates[position - 1]),
-                    value,
+                    slot_template,
+                    rendered_value,
                     requested_format=requested_format,
                 )
-            rendered = _format_value(value, format_name, value_kind=value_kind)
+            rendered = _format_value(rendered_value, format_name, value_kind=value_kind)
             if not rendered:
                 raise CalculationPlanError(f"Output slot {position} rendered empty")
             if expected_slot_templates is not None:
@@ -175,6 +192,8 @@ class CalculationExecutor:
                     "format": format_name,
                     "value_kind": value_kind,
                     "value": rendered,
+                    "question_decimal_places": expected_numeric_decimal_places,
+                    "question_rounded_value": question_rounded_value,
                 }
             )
 

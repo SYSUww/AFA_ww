@@ -53,6 +53,14 @@ def make_question(
 
 
 class ActualBQuestionLoadingTests(unittest.TestCase):
+    def test_explicit_question_precision_is_enforced_over_generic_slot(self) -> None:
+        question = make_question(answer_format="calculation")
+        question.question = "计算普通用户人数，保留一位小数。"
+
+        validate_b_answer(question, BAnswer("q1", ("67.10",)))
+        with self.assertRaisesRegex(ValueError, "requires two-decimal"):
+            validate_b_answer(question, BAnswer("q1", ("67.1",)))
+
     def test_loads_real_json_jsonl_and_bom_in_official_order(self) -> None:
         questions = load_b_questions(UPLOAD_B)
 

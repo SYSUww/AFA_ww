@@ -44,6 +44,10 @@ _QUESTION_TYPE_ALIASES = {
 _DATE_RE = re.compile(r"(\d{4})年(\d{1,2})月(\d{1,2})日")
 _DECIMAL_RE = re.compile(r"-?(?:0|[1-9]\d*)\.\d{2}")
 _PERCENT_RE = re.compile(r"-?(?:0|[1-9]\d*)\.\d{2}%")
+_EXPLICIT_DECIMAL_PLACES_RE = re.compile(
+    r"(?:保留|精确到|四舍五入到|四舍五入至)(?:小数点后)?\s*([零一二两012])\s*位小数"
+)
+_DECIMAL_PLACE_VALUES = {"零": 0, "0": 0, "一": 1, "1": 1, "二": 2, "两": 2, "2": 2}
 
 
 @dataclass(slots=True)
@@ -128,6 +132,13 @@ def normalize_question_type(raw_type: str) -> str:
         return _QUESTION_TYPE_ALIASES[value]
     except KeyError as exc:
         raise ValueError(f"unsupported B-board question type: {raw_type!r}") from exc
+
+
+def infer_requested_decimal_places(question_text: str) -> int | None:
+    """Return an explicit 0-2 decimal-place instruction from a question."""
+
+    match = _EXPLICIT_DECIMAL_PLACES_RE.search(str(question_text))
+    return _DECIMAL_PLACE_VALUES[match.group(1)] if match else None
 
 
 def read_b_question_file(path: Path | str) -> list[dict[str, Any]]:

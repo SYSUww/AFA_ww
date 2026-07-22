@@ -9039,3 +9039,489 @@
   }
 }
 ```
+
+## b-loop-research-question-precision-override-a1
+
+- recorded_at: `2026-07-22T03:28:59+00:00`
+
+```json
+{
+  "answered_qids": [
+    "res_b_012"
+  ],
+  "attempt_index": 1,
+  "base_commit": "5e2a1b4c8527176860a4affaa89e2e8069de7619",
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 711,
+    "prompt_tokens": 4389,
+    "total_tokens": 5100
+  },
+  "blind_pairs": {
+    "res_b_012": {
+      "candidate_blind_label": "A",
+      "candidate_preferred": true,
+      "evaluation": {
+        "confidence": 78,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "两者计算路径本质一致，均由题目数据推出APP自营GMV=100×60%×35%=21亿元，扣除会员商品GMV后得到普通用户约67.051万人，按题目要求保留一位小数应为67.1万人。A的计算轨迹更完整，所有变量均直接锚定题目证据且标注了应四舍五入为67.1；虽然最终answer_parts写成67.10存在小数位格式瑕疵，但数值等同于67.1。B最终给出67.05，未按“保留一位小数”处理，且引用了额外无必要证据。综合证据支持和可验证性，A更优。",
+        "winner": "A"
+      },
+      "incumbent_blind_label": "B",
+      "model_name": "gpt-5.5",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "qid": "res_b_012",
+      "temperature": 0.0,
+      "token_usage": {
+        "completion_tokens": 711,
+        "prompt_tokens": 4389,
+        "total_tokens": 5100
+      }
+    }
+  },
+  "blind_pairs_path": [
+    "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_question_precision_override/question_precision_a2_composite/evaluation/blind_res_b_012.json"
+  ],
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_question_precision_override/question_precision_a2_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "5e2a1b4c8527176860a4affaa89e2e8069de7619",
+        "code_hash": "16224db5ef18c9b4f8382e40aac9ede4dc2d2d19fd4a27f02d5e2f2f3c01613a",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "139e0240cb91b8f0b6cec008770ab0f7e0020f2fb0a89ecaf3f02d7a0bcc2170",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "official_slot_padding": 2,
+          "question_text_precision_parser": true,
+          "rounding": "half_up",
+          "strategy": "question_precision_slot_padding_a2",
+          "two_layer_precision": true
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "round the numeric value at the precision explicitly requested by the question, then pad it to the official numeric slot width so both semantic rounding and submission validity hold.",
+        "pipeline_stage": "postprocess",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "question_specific_numeric_precision",
+        "target_qids": [
+          "res_b_012"
+        ]
+      }
+    },
+    "context_sha256": "71b7298089d1e2d11e8a67073ff50456e9d58985c8f59284ae243a9f39615dfb",
+    "direction_sha256": "428fe5cc1757d896c392a2261cafaa58d572d9bf3961c7b9d02afcea47596f90",
+    "schema_version": 1,
+    "semantic_sha256": "64cc54785453b83153a5aaba2aa10bcc8933a9c113afd74d031840c1e8aea023",
+    "sha256": "2e03a8c3c33f633ab9a361a21d56ef3adbb6ee1231e6e0948f1a2f20397ce69d"
+  },
+  "candidate_full_evaluation_token_usage": {
+    "completion_tokens": 73973,
+    "prompt_tokens": 487524,
+    "total_tokens": 561497
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 13,
+    "high": 56,
+    "low": 3,
+    "medium": 28
+  },
+  "causal_lowtail": {
+    "after": [
+      "fc_b_006",
+      "fc_b_018",
+      "fin_b_010",
+      "ins_b_001",
+      "reg_b_001",
+      "res_b_002",
+      "res_b_003",
+      "res_b_004",
+      "res_b_006",
+      "res_b_008",
+      "res_b_009",
+      "res_b_014",
+      "res_b_017",
+      "res_b_018",
+      "res_b_020"
+    ],
+    "before": [
+      "fc_b_006",
+      "fc_b_018",
+      "fin_b_010",
+      "ins_b_001",
+      "reg_b_001",
+      "res_b_002",
+      "res_b_003",
+      "res_b_004",
+      "res_b_006",
+      "res_b_008",
+      "res_b_009",
+      "res_b_012",
+      "res_b_014",
+      "res_b_017",
+      "res_b_018",
+      "res_b_020"
+    ],
+    "count_after": 15,
+    "count_before": 16
+  },
+  "causal_promoted_tiers": {
+    "blocked": 12,
+    "high": 56,
+    "low": 3,
+    "medium": 29
+  },
+  "causal_research_lowtail": {
+    "after": 10,
+    "before": 11
+  },
+  "change_vector": {
+    "official_slot_padding": 2,
+    "question_text_precision_parser": true,
+    "rounding": "half_up",
+    "strategy": "question_precision_slot_padding_a2",
+    "two_layer_precision": true
+  },
+  "changed_answer_qids": [
+    "res_b_012"
+  ],
+  "changed_artifact_qids": [
+    "res_b_012"
+  ],
+  "code_hash": "16224db5ef18c9b4f8382e40aac9ede4dc2d2d19fd4a27f02d5e2f2f3c01613a",
+  "comparable_attempt_count_after": 1,
+  "comparable_attempt_count_before": 0,
+  "confidence_after": {
+    "res_b_012": 70
+  },
+  "confidence_before": {
+    "res_b_012": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "diagnostic_candidate_generation_token_usage": {
+    "completion_tokens": 4576,
+    "prompt_tokens": 38152,
+    "total_tokens": 42728
+  },
+  "diagnostic_full_evaluation_token_usage": {
+    "completion_tokens": 73352,
+    "prompt_tokens": 487318,
+    "total_tokens": 560670
+  },
+  "direction_id": "research_question_precision_override_res_b_012",
+  "direction_status": "active",
+  "domains": [
+    "research"
+  ],
+  "effective_branch": "codex/b榜-loop-i021-research-question-precision",
+  "evaluator_failed_attempts_not_in_usage": 0,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-research-question-precision-override-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 73973,
+    "prompt_tokens": 487524,
+    "total_tokens": 561497
+  },
+  "generation_token_usage": {
+    "completion_tokens": 9504,
+    "prompt_tokens": 76578,
+    "total_tokens": 86082
+  },
+  "generator_fingerprint": "139e0240cb91b8f0b6cec008770ab0f7e0020f2fb0a89ecaf3f02d7a0bcc2170",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_related_experiment_ids": [],
+  "history_similarity": null,
+  "hypothesis": "Round the numeric value at the precision explicitly requested by the question, then pad it to the official numeric slot width so both semantic rounding and submission validity hold.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 151,
+    "tests_passed": true,
+    "token_accounting_complete": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_question_precision_override/question_precision_a2_promoted1_composite",
+  "lessons": [
+    "Question-level numeric precision and official slot width are separate contracts: round at the former, serialize at the latter.",
+    "A semantically correct 67.1 artifact still fails the fixed hard gate when the official numeric slot requires two decimals; preflight must include the evaluator hard gate, not only the writer.",
+    "Preserve the semantic rounded value in the trace so a padded output such as 67.10 remains auditable.",
+    "Changed calculations require both fixed tier gain and blind preference even when the arithmetic path is unchanged."
+  ],
+  "material_delta": {
+    "a1_invalid_slot_resolved": true,
+    "question_round_then_slot_pad": true
+  },
+  "next_root_causes": [
+    "research_remaining_choice_evidence_coverage",
+    "remaining_fin_b_010_evidence_sufficiency",
+    "remaining_reg_b_001_evidence_sufficiency",
+    "insurance_calculation_identity_citation_alignment_ins_b_001",
+    "remaining_financial_contract_lowtail_fc_b_006_018"
+  ],
+  "pipeline_stage": "postprocess",
+  "preflight_attempts": [
+    {
+      "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_question_precision_override/question_precision_a1_composite",
+      "confidence_after": {
+        "res_b_012": 0
+      },
+      "fixed_evaluation_token_usage": {
+        "completion_tokens": 73352,
+        "prompt_tokens": 487318,
+        "total_tokens": 560670
+      },
+      "generation_token_usage": {
+        "completion_tokens": 4576,
+        "prompt_tokens": 38152,
+        "total_tokens": 42728
+      },
+      "observed_answer": {
+        "res_b_012": "67.1"
+      },
+      "root_cause": "Question-level one-decimal rendering violated the fixed official two-decimal slot hard gate.",
+      "root_cause_resolution": "Round to one decimal semantically, then pad to two decimals for the official slot.",
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_question_precision_override/question_precision_a1_res_b_012",
+      "status": "rejected_after_fixed_evaluation",
+      "tier_after": {
+        "res_b_012": "blocked"
+      }
+    },
+    {
+      "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_question_precision_override/question_precision_a2_composite",
+      "fixed_evaluation_token_usage": {
+        "completion_tokens": 73973,
+        "prompt_tokens": 487524,
+        "total_tokens": 561497
+      },
+      "generation_token_usage": {
+        "completion_tokens": 4928,
+        "prompt_tokens": 38426,
+        "total_tokens": 43354
+      },
+      "integrity": {
+        "grounding_verified": true,
+        "official_slot_value": "67.10",
+        "question_rounded_value": "67.1",
+        "replay_verified": true,
+        "submission_valid": true
+      },
+      "observed_answer": {
+        "res_b_012": "67.10"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_question_precision_override/question_precision_a2_res_b_012",
+      "status": "accepted_for_promotion"
+    }
+  ],
+  "promoted_qids": [
+    "res_b_012"
+  ],
+  "promoted_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_question_precision_override/question_precision_a2_promoted1_composite",
+  "promotion_decisions": {
+    "res_b_012": {
+      "promote": true,
+      "reasons": [],
+      "score_delta": 70,
+      "tier_after": "medium",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_gate_path": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_question_precision_override/question_precision_a2_composite/promotion_gate.json",
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "calculation"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 13,
+    "high": 54,
+    "low": 4,
+    "medium": 29
+  },
+  "reason": "Two-layer precision rendering corrected res_b_012 from 67.05 to 67.10: the value is rounded to the requested one decimal and then padded to the official two-decimal slot. Fixed confidence rose from blocked 0 to medium 70 with no dimension regression, and blind review preferred the candidate at confidence 78.",
+  "recorded_at": "2026-07-22T03:28:59+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [],
+  "root_cause_cluster": "question_specific_numeric_precision",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failures": 0,
+      "sentinels_passed": true,
+      "token_accounting_complete": true
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "res_b_012"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 3,
+          "blocked_low_before": 3,
+          "low_tier_improved_qids": [],
+          "p10_after": 20,
+          "p10_before": 20,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 80,
+          "p10_before": 80,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 65,
+          "p10_before": 65,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 60,
+          "p10_before": 60,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 9,
+          "blocked_low_before": 10,
+          "low_tier_improved_qids": [
+            "res_b_012"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_001": -1,
+        "fc_b_002": 10,
+        "fc_b_003": -2,
+        "fc_b_004": -4,
+        "fc_b_006": 10,
+        "fc_b_008": 2,
+        "fc_b_009": -2,
+        "fc_b_010": -3,
+        "fc_b_013": -5,
+        "fc_b_014": 5,
+        "fc_b_016": 15,
+        "fc_b_017": 2,
+        "fc_b_018": 15,
+        "fc_b_019": 3,
+        "fin_b_002": 5,
+        "fin_b_003": 3,
+        "fin_b_004": 5,
+        "fin_b_006": 3,
+        "fin_b_007": -5,
+        "fin_b_008": -3,
+        "fin_b_011": -1,
+        "fin_b_012": 3,
+        "fin_b_015": 3,
+        "fin_b_016": 6,
+        "fin_b_017": 1,
+        "ins_b_002": 2,
+        "ins_b_003": 4,
+        "ins_b_004": -5,
+        "ins_b_005": -8,
+        "ins_b_006": -20,
+        "ins_b_007": 6,
+        "ins_b_009": -10,
+        "ins_b_012": 8,
+        "ins_b_013": -5,
+        "ins_b_014": -23,
+        "ins_b_015": -5,
+        "ins_b_016": -8,
+        "ins_b_017": -17,
+        "ins_b_019": 8,
+        "ins_b_020": 2,
+        "reg_b_003": 15,
+        "reg_b_004": -5,
+        "reg_b_005": 2,
+        "reg_b_007": -5,
+        "reg_b_008": -6,
+        "reg_b_013": 3,
+        "reg_b_015": -17,
+        "reg_b_017": 5,
+        "reg_b_018": -5,
+        "reg_b_020": -15,
+        "reg_b_021": -6,
+        "reg_b_023": -6,
+        "reg_b_025": 6,
+        "reg_b_026": -12,
+        "reg_b_027": -4,
+        "res_b_001": -6,
+        "res_b_005": -3,
+        "res_b_007": 5,
+        "res_b_011": 6,
+        "res_b_013": 6,
+        "res_b_017": 8,
+        "res_b_019": -8
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_002",
+        "ins_b_005",
+        "ins_b_006",
+        "ins_b_009",
+        "ins_b_014",
+        "ins_b_016",
+        "ins_b_017",
+        "reg_b_015",
+        "reg_b_026",
+        "reg_b_027"
+      ]
+    },
+    "reasons": [],
+    "tests": {
+      "unittest_discover": {
+        "passed": true,
+        "test_count": 151
+      }
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_question_precision_override/question_precision_a2_res_b_012",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 4928,
+    "prompt_tokens": 38426,
+    "total_tokens": 43354
+  },
+  "target_qids": [
+    "res_b_012"
+  ],
+  "token_accounting_complete": true,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 148036,
+    "prompt_tokens": 979231,
+    "total_tokens": 1127267
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 157540,
+    "prompt_tokens": 1055809,
+    "total_tokens": 1213349
+  }
+}
+```

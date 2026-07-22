@@ -18,6 +18,32 @@ from afa_agent.b_board.runner import (
 
 
 class BBoardCalculationTests(unittest.TestCase):
+    def test_explicit_question_precision_overrides_generic_numeric_slot(self):
+        result = CalculationExecutor().execute(
+            {
+                "variables": [
+                    {
+                        "name": "ordinary_users",
+                        "value": "67.051351",
+                        "value_type": "decimal",
+                        "unit": "万人",
+                        "evidence_ids": ["question"],
+                    }
+                ],
+                "steps": [],
+                "outputs": [{"source": {"ref": "ordinary_users"}, "format": "decimal2"}],
+            },
+            expected_slots=1,
+            evidence_text_by_id={"question": "普通用户人数为67.051351万人"},
+            expected_slot_templates=("999999.99",),
+            expected_numeric_decimal_places=1,
+        )
+
+        self.assertEqual(result.answer_parts, ("67.10",))
+        self.assertEqual(result.trace["outputs"][0]["format"], "decimal2")
+        self.assertEqual(result.trace["outputs"][0]["question_decimal_places"], 1)
+        self.assertEqual(result.trace["outputs"][0]["question_rounded_value"], "67.1")
+
     def test_legacy_trace_revalidation_prunes_helpers_and_converts_percent_ratio(self):
         result = CalculationExecutor().replay_legacy_trace(
             {

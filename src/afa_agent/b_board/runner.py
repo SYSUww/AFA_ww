@@ -11,7 +11,13 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from afa_agent.b_board.calculation import CalculationExecutor, CalculationPlanError
-from afa_agent.b_board.io import BAnswer, BQuestion, validate_b_answer, write_b_submission
+from afa_agent.b_board.io import (
+    BAnswer,
+    BQuestion,
+    infer_requested_decimal_places,
+    validate_b_answer,
+    write_b_submission,
+)
 from afa_agent.client import OpenAICompatibleClient, extract_json_object
 from afa_agent.config import build_run_config
 from afa_agent.domains.generic_retriever import GenericBM25Retriever
@@ -46,6 +52,7 @@ next_workday 的 args 写 {"date":{"ref":"日期变量"}}；days_between 的 arg
 允许 op: add,sub,mul,div,mean,abs,max,min,pct_change,pct_point_delta,count_gte,count_gt,sort_desc,date_add_days,next_workday,days_between。
 sort_desc 使用 items:[{label,source}]。outputs 数量必须等于答案槽数；每项为 {source,format}。
 format 仅 raw,decimal0,decimal1,decimal2,percent2,date_cn,text。中间过程不得舍入，最终才按格式四舍五入。
+题干明确要求保留的小数位决定计算舍入精度；随后按官方提交模板补足答案槽的小数位。
 证据 ID 必须原样使用给定 evidence_id。题目本身给出的数值可引用 question:<qid>。只输出 JSON。"""
 
 RUNNER_VERSION = "b_actual_v6"
@@ -326,6 +333,9 @@ class BBoardActualRunner:
                         for item in evidence_items
                     },
                     expected_slot_templates=question.answer_slot_templates,
+                    expected_numeric_decimal_places=infer_requested_decimal_places(
+                        question.question
+                    ),
                 )
                 available = {str(item["unit_id"]) for item in evidence_items}
                 missing = sorted(set(result.used_evidence_ids) - available)
