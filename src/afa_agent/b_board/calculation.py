@@ -106,6 +106,8 @@ class CalculationExecutor:
                 "Variables are not grounded in cited evidence: " + ",".join(failed)
             )
 
+        _validate_amount_unit_scales(plan)
+
         values = dict(variables)
         normalized_steps: list[dict[str, Any]] = []
         for step in _require_list(plan, "steps", allow_missing=True):
@@ -463,6 +465,182 @@ def _require_list(plan: Mapping[str, Any], key: str, *, allow_missing: bool = Fa
     if not isinstance(value, list):
         raise CalculationPlanError(f"{key} must be a list")
     return value
+
+
+_CURRENCY_UNIT_FACTORS = {
+    "元": Decimal("1"),
+    "万元": Decimal("10000"),
+    "百万元": Decimal("1000000"),
+    "亿元": Decimal("100000000"),
+}
+_COUNT_UNIT_FACTORS = {
+    "人": Decimal("1"),
+    "万人": Decimal("10000"),
+}
+_DIMENSIONLESS_UNITS = {"", "%", "百分比", "比例", "倍", "ratio", "百分点"}
+
+
+def _validate_amount_unit_scales(plan: Mapping[str, Any]) -> None:
+    """Reject direct addition/subtraction across known currency scales.
+
+    This is intentionally a validation-only unit pass. It recognizes explicit
+    powers-of-ten conversion steps and the common ``万人 * 元 = 万元`` relation,
+    then lets the normal Decimal executor replay the model's arithmetic.
+    """
+
+    units: dict[str, str] = {}
+    scalar_values: dict[str, Decimal] = {}
+    for item in _require_list(plan, "variables"):
+        if not isinstance(item, Mapping):
+            continue
+        name = str(item.get("name", "")).strip()
+        unit = _normalize_amount_unit(item.get("unit", ""))
+        if name:
+            units[name] = unit
+            if not unit:
+                try:
+                    scalar_values[name] = _decimal(item.get("value"))
+                except CalculationPlanError:
+                    pass
+
+    for step in _require_list(plan, "steps", allow_missing=True):
+        if not isinstance(step, Mapping):
+            continue
+        step_id = str(step.get("id", "")).strip()
+        op = str(step.get("op", "")).strip()
+        if not step_id:
+            continue
+        result_unit = ""
+        if op in {"add", "sub", "mean", "abs", "max", "min", "mul", "div"}:
+            arg_specs = _operation_arg_specs(op, step)
+            arg_units = [_unit_for_spec(spec, units) for spec in arg_specs]
+            if op in {"add", "sub"}:
+                currency_units = [unit for unit in arg_units if unit in _CURRENCY_UNIT_FACTORS]
+                if len(set(currency_units)) > 1:
+                    raise CalculationPlanError(
+                        f"{op} amount unit mismatch: {' vs '.join(currency_units)}; "
+                        "convert explicitly before add/sub (1亿元=10000万元)"
+                    )
+                result_unit = currency_units[0] if currency_units else _first_known_unit(arg_units)
+            elif op == "mul":
+                result_unit = _infer_multiplication_unit(
+                    arg_specs,
+                    arg_units,
+                    scalar_values,
+                )
+            elif op == "div":
+                result_unit = _infer_division_unit(
+                    arg_specs,
+                    arg_units,
+                    scalar_values,
+                )
+            else:
+                result_unit = _first_known_unit(arg_units)
+        elif op in {"pct_change", "pct_point_delta"}:
+            result_unit = "%"
+        units[step_id] = result_unit
+
+
+def _normalize_amount_unit(value: Any) -> str:
+    unit = re.sub(r"\s+", "", str(value or "")).replace("％", "%").lower()
+    return "" if unit in _DIMENSIONLESS_UNITS else unit
+
+
+def _unit_for_spec(spec: Any, units: Mapping[str, str]) -> str:
+    if isinstance(spec, Mapping) and "ref" in spec:
+        return units.get(str(spec["ref"]), "")
+    return ""
+
+
+def _first_known_unit(units: Sequence[str]) -> str:
+    return next((unit for unit in units if unit), "")
+
+
+def _infer_multiplication_unit(
+    arg_specs: Sequence[Any],
+    arg_units: Sequence[str],
+    scalar_values: Mapping[str, Decimal],
+) -> str:
+    currency_units = [unit for unit in arg_units if unit in _CURRENCY_UNIT_FACTORS]
+    count_units = [unit for unit in arg_units if unit in _COUNT_UNIT_FACTORS]
+    if len(currency_units) == 1 and len(count_units) == 1:
+        factor = (
+            _CURRENCY_UNIT_FACTORS[currency_units[0]]
+            * _COUNT_UNIT_FACTORS[count_units[0]]
+        )
+        return _currency_unit_for_factor(factor)
+    if len(currency_units) == 1:
+        scalar = _explicit_scalar_product(arg_specs, arg_units, scalar_values)
+        if scalar is not None and scalar != 0:
+            converted = _currency_unit_for_factor(
+                _CURRENCY_UNIT_FACTORS[currency_units[0]] / scalar
+            )
+            if converted:
+                return converted
+        return currency_units[0]
+    return _first_known_unit(arg_units) if len([unit for unit in arg_units if unit]) == 1 else ""
+
+
+def _infer_division_unit(
+    arg_specs: Sequence[Any],
+    arg_units: Sequence[str],
+    scalar_values: Mapping[str, Decimal],
+) -> str:
+    numerator_unit = arg_units[0] if arg_units else ""
+    denominator_unit = arg_units[1] if len(arg_units) > 1 else ""
+    if numerator_unit in _CURRENCY_UNIT_FACTORS and not denominator_unit:
+        scalar = _scalar_decimal(arg_specs[1], scalar_values) if len(arg_specs) > 1 else None
+        if scalar is not None and scalar != 0:
+            converted = _currency_unit_for_factor(
+                _CURRENCY_UNIT_FACTORS[numerator_unit] * scalar
+            )
+            if converted:
+                return converted
+        return numerator_unit
+    if numerator_unit in _CURRENCY_UNIT_FACTORS and denominator_unit in _CURRENCY_UNIT_FACTORS:
+        return ""
+    return numerator_unit
+
+
+def _explicit_scalar_product(
+    arg_specs: Sequence[Any],
+    arg_units: Sequence[str],
+    scalar_values: Mapping[str, Decimal],
+) -> Decimal | None:
+    scalar = Decimal("1")
+    found = False
+    for spec, unit in zip(arg_specs, arg_units):
+        if unit:
+            continue
+        value = _scalar_decimal(spec, scalar_values)
+        if value is None:
+            continue
+        scalar *= value
+        found = True
+    return scalar if found else None
+
+
+def _scalar_decimal(spec: Any, scalar_values: Mapping[str, Decimal]) -> Decimal | None:
+    if isinstance(spec, Mapping):
+        if "ref" in spec:
+            return scalar_values.get(str(spec["ref"]))
+        if "literal" in spec:
+            spec = spec["literal"]
+        else:
+            return None
+    if isinstance(spec, bool):
+        return None
+    try:
+        return _decimal(spec)
+    except CalculationPlanError:
+        return None
+
+
+def _currency_unit_for_factor(factor: Decimal) -> str:
+    return next(
+        (unit for unit, candidate in _CURRENCY_UNIT_FACTORS.items() if candidate == factor),
+        "",
+    )
 
 
 def _legacy_trace_replay_plan(

@@ -18069,3 +18069,588 @@
   ]
 }
 ```
+
+## b-loop-calculation-amount-unit-scale-consistency-a1-res-b-012
+
+- recorded_at: `2026-07-22T21:43:03+00:00`
+
+```json
+{
+  "approach": "增加通用金额尺度静态传播门禁：识别亿元/百万元/万元/元及万人×元=万元，拒绝跨尺度直接加减；Prompt要求显式乘除换算。真实运行res_b_012后，用full_chain_82d4492的99题冻结结果做单题因果替换，并由固定GPT-5.6评新reasoning。",
+  "artifact_path": "artifacts/b_board_score_loop/amount_scale_a1_res_b012",
+  "base_commit": "7b89aed62aca1d4fb9f2b9ca0becee6a3d4cabd3",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "7b89aed62aca1d4fb9f2b9ca0becee6a3d4cabd3",
+        "code_hash": "26eaa84b05485bcec5b07f4bb9a6324ea9eb8b4bd98032e2cb34fc283a445154",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "answer_hardcode": false,
+          "explicit_conversions": [
+            "1亿元=10000万元",
+            "1万人*1元=1万元"
+          ],
+          "strategy": "reject_cross_scale_add_sub_and_retry",
+          "variant": "a1"
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "在执行前传播金额尺度并拒绝亿元与万元直接加减，可触发模型显式换算重试，稳定恢复67.1且不改变百分数执行语义",
+        "pipeline_stage": "calculation",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "mixed_amount_scale",
+        "target_qids": [
+          "res_b_012"
+        ]
+      }
+    },
+    "context_sha256": "e834c1e0c5aa44a724c36844871b514839947bce82036ed62d6e0be613ec6105",
+    "direction_sha256": "ab84ac22e982972608b368413c21a13e26e242c84d51ad1cdae17f04e5bd628b",
+    "schema_version": 1,
+    "semantic_sha256": "bbf07b373e485dda142fcf43ce83c8267d01adcd10c129f30549e696703c5407",
+    "sha256": "0b1b5be2006e90ca7d9004bb0078b6ef60270c55c10e9b0be75baace1898cafa"
+  },
+  "change_vector": {
+    "answer_hardcode": false,
+    "explicit_conversions": [
+      "1亿元=10000万元",
+      "1万人*1元=1万元"
+    ],
+    "strategy": "reject_cross_scale_add_sub_and_retry",
+    "variant": "a1"
+  },
+  "code_hash": "26eaa84b05485bcec5b07f4bb9a6324ea9eb8b4bd98032e2cb34fc283a445154",
+  "direction_id": "calculation_amount_unit_scale_consistency",
+  "domains": [
+    "research"
+  ],
+  "effect": "目标题输出67.1，与97% incumbent伪标签67.1一致=True；target reasoning 59.67→96.33；因果复合总分99.197。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-calculation-amount-unit-scale-consistency-a1-res-b-012",
+  "failure_analysis": "本轮通过；复合100题仍以97% incumbent作伪标签而非逐题真值，尚未官网提交。",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "7b89aed62aca1d4fb9f2b9ca0becee6a3d4cabd3",
+          "code_hash": "26eaa84b05485bcec5b07f4bb9a6324ea9eb8b4bd98032e2cb34fc283a445154",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "answer_hardcode": false,
+            "explicit_conversions": [
+              "1亿元=10000万元",
+              "1万人*1元=1万元"
+            ],
+            "strategy": "reject_cross_scale_add_sub_and_retry",
+            "variant": "a1"
+          },
+          "domains": [
+            "research"
+          ],
+          "hypothesis": "在执行前传播金额尺度并拒绝亿元与万元直接加减，可触发模型显式换算重试，稳定恢复67.1且不改变百分数执行语义",
+          "pipeline_stage": "calculation",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "mixed_amount_scale",
+          "target_qids": [
+            "res_b_012"
+          ]
+        }
+      },
+      "context_sha256": "e834c1e0c5aa44a724c36844871b514839947bce82036ed62d6e0be613ec6105",
+      "direction_sha256": "ab84ac22e982972608b368413c21a13e26e242c84d51ad1cdae17f04e5bd628b",
+      "schema_version": 1,
+      "semantic_sha256": "bbf07b373e485dda142fcf43ce83c8267d01adcd10c129f30549e696703c5407",
+      "sha256": "0b1b5be2006e90ca7d9004bb0078b6ef60270c55c10e9b0be75baace1898cafa"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "7b89aed62aca1d4fb9f2b9ca0becee6a3d4cabd3",
+            "code_hash": "26eaa84b05485bcec5b07f4bb9a6324ea9eb8b4bd98032e2cb34fc283a445154",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "answer_hardcode": false,
+              "explicit_conversions": [
+                "1亿元=10000万元",
+                "1万人*1元=1万元"
+              ],
+              "strategy": "reject_cross_scale_add_sub_and_retry",
+              "variant": "a1"
+            },
+            "domains": [
+              "research"
+            ],
+            "hypothesis": "在执行前传播金额尺度并拒绝亿元与万元直接加减，可触发模型显式换算重试，稳定恢复67.1且不改变百分数执行语义",
+            "pipeline_stage": "calculation",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "mixed_amount_scale",
+            "target_qids": [
+              "res_b_012"
+            ]
+          }
+        },
+        "context_sha256": "e834c1e0c5aa44a724c36844871b514839947bce82036ed62d6e0be613ec6105",
+        "direction_sha256": "ab84ac22e982972608b368413c21a13e26e242c84d51ad1cdae17f04e5bd628b",
+        "schema_version": 1,
+        "semantic_sha256": "bbf07b373e485dda142fcf43ce83c8267d01adcd10c129f30549e696703c5407",
+        "sha256": "0b1b5be2006e90ca7d9004bb0078b6ef60270c55c10e9b0be75baace1898cafa"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "0be32d32ec134a9233023d991c79c4baef689a70795e2337cb47df855edf0b2f",
+      "size": 634439
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "c7bf7eb39278271ec750d86a7fe325ee96b141f802acd15a3f82d5dd48868d02",
+      "size": 514510
+    },
+    "related_log_sections": [
+      "b-loop-i023-gpt56-answer-error-audit-v2",
+      "b0-run-integrity-reg016-v2",
+      "b0-run-integrity-reg016-v3",
+      "b0-run-integrity-reg016-v4",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "B0-actual-evaluation",
+      "B0-actual-root-cause-analysis",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_executor-a3-directional-operands-v3-history-correction",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-suspect-case-optimization-v3",
+      "b-loop-reasoning-shadow-baseline-v1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-full-chain-b15966e-research-v1",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-full-chain-476fc31-research-v1",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90",
+      "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+      "b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100",
+      "b-loop-insurance-conditional-policy-loan-eligibility-a1",
+      "b-loop-metric-scope-correction-ins-b-004-a1",
+      "b-loop-insurance-policy-loan-a1-full100-validation-82d4492"
+    ],
+    "reviewed_at": "2026-07-22T21:41:50+00:00"
+  },
+  "hypothesis": "在执行前传播金额尺度并拒绝亿元与万元直接加减，可触发模型显式换算重试，稳定恢复67.1且不改变百分数执行语义",
+  "material_delta": {
+    "amount_scale_static_validation": true
+  },
+  "metrics": {
+    "calculation_retrieval_rounds": [],
+    "calculation_trace": {
+      "grounding_checks": [
+        {
+          "matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "name": "fy2026_total_gmv",
+          "reason": "matched_literal_value_and_unit",
+          "unit_matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "value_matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "verified": true
+        },
+        {
+          "matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "name": "self_operated_share",
+          "reason": "matched_literal_value_and_unit",
+          "unit_matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "value_matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "verified": true
+        },
+        {
+          "matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "name": "app_self_operated_share_of_self_gmv",
+          "reason": "matched_literal_value_and_unit",
+          "unit_matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "value_matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "verified": true
+        },
+        {
+          "matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "name": "member_annual_goods_consumption",
+          "reason": "matched_literal_value_and_unit",
+          "unit_matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "value_matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "verified": true
+        },
+        {
+          "matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "name": "ordinary_user_consumption_ratio_to_member",
+          "reason": "matched_literal_value_and_unit",
+          "unit_matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "value_matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "verified": true
+        },
+        {
+          "matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "name": "member_count",
+          "reason": "matched_literal_value_and_unit",
+          "unit_matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "value_matched_evidence_ids": [
+            "question:res_b_012"
+          ],
+          "verified": true
+        }
+      ],
+      "grounding_verified": true,
+      "outputs": [
+        {
+          "format": "decimal1",
+          "question_decimal_places": 1,
+          "question_rounded_value": "67.1",
+          "requested_format": "decimal1",
+          "slot": 1,
+          "source": {
+            "ref": "ordinary_user_count_wan"
+          },
+          "value": "67.1",
+          "value_kind": "ratio"
+        }
+      ],
+      "replay_verified": true,
+      "schema_version": 2,
+      "steps": [
+        {
+          "args": [
+            {
+              "ref": "fy2026_total_gmv"
+            },
+            {
+              "ref": "self_operated_share"
+            }
+          ],
+          "id": "self_operated_gmv_yi",
+          "op": "mul",
+          "operand_roles": {},
+          "result": "60.0",
+          "unit_conversions": [
+            {
+              "argument": "argument_2",
+              "from": "percent_points",
+              "to": "ratio"
+            }
+          ],
+          "value_kind": "amount"
+        },
+        {
+          "args": [
+            {
+              "ref": "self_operated_gmv_yi"
+            },
+            {
+              "ref": "app_self_operated_share_of_self_gmv"
+            }
+          ],
+          "id": "app_self_operated_gmv_yi",
+          "op": "mul",
+          "operand_roles": {},
+          "result": "21.000",
+          "unit_conversions": [
+            {
+              "argument": "argument_2",
+              "from": "percent_points",
+              "to": "ratio"
+            }
+          ],
+          "value_kind": "amount"
+        },
+        {
+          "args": [
+            {
+              "ref": "app_self_operated_gmv_yi"
+            },
+            10000
+          ],
+          "id": "app_self_operated_gmv_wan",
+          "op": "mul",
+          "operand_roles": {},
+          "result": "210000.000",
+          "unit_conversions": [],
+          "value_kind": "amount"
+        },
+        {
+          "args": [
+            {
+              "ref": "member_count"
+            },
+            {
+              "ref": "member_annual_goods_consumption"
+            }
+          ],
+          "id": "member_goods_gmv_wan",
+          "op": "mul",
+          "operand_roles": {},
+          "result": "71069.60",
+          "unit_conversions": [],
+          "value_kind": "amount"
+        },
+        {
+          "args": [
+            {
+              "ref": "member_annual_goods_consumption"
+            },
+            {
+              "ref": "ordinary_user_consumption_ratio_to_member"
+            }
+          ],
+          "id": "ordinary_user_annual_consumption",
+          "op": "mul",
+          "operand_roles": {},
+          "result": "2072.0",
+          "unit_conversions": [
+            {
+              "argument": "argument_2",
+              "from": "percent_points",
+              "to": "ratio"
+            }
+          ],
+          "value_kind": "amount"
+        },
+        {
+          "args": [
+            {
+              "ref": "app_self_operated_gmv_wan"
+            },
+            {
+              "ref": "member_goods_gmv_wan"
+            }
+          ],
+          "id": "ordinary_user_gmv_wan",
+          "op": "sub",
+          "operand_roles": {},
+          "result": "138930.400",
+          "unit_conversions": [],
+          "value_kind": "amount"
+        },
+        {
+          "args": [
+            {
+              "ref": "ordinary_user_gmv_wan"
+            },
+            {
+              "ref": "ordinary_user_annual_consumption"
+            }
+          ],
+          "id": "ordinary_user_count_wan",
+          "op": "div",
+          "operand_roles": {},
+          "result": "67.05135135135135135135135135",
+          "unit_conversions": [],
+          "value_kind": "ratio"
+        }
+      ],
+      "variables": [
+        {
+          "evidence_ids": [
+            "question:res_b_012"
+          ],
+          "name": "fy2026_total_gmv",
+          "unit": "亿元",
+          "value": "100",
+          "value_type": "decimal"
+        },
+        {
+          "evidence_ids": [
+            "question:res_b_012"
+          ],
+          "name": "self_operated_share",
+          "unit": "%",
+          "value": "60",
+          "value_type": "decimal"
+        },
+        {
+          "evidence_ids": [
+            "question:res_b_012"
+          ],
+          "name": "app_self_operated_share_of_self_gmv",
+          "unit": "%",
+          "value": "35",
+          "value_type": "decimal"
+        },
+        {
+          "evidence_ids": [
+            "question:res_b_012"
+          ],
+          "name": "member_annual_goods_consumption",
+          "unit": "元",
+          "value": "2960",
+          "value_type": "decimal"
+        },
+        {
+          "evidence_ids": [
+            "question:res_b_012"
+          ],
+          "name": "ordinary_user_consumption_ratio_to_member",
+          "unit": "%",
+          "value": "70",
+          "value_type": "decimal"
+        },
+        {
+          "evidence_ids": [
+            "question:res_b_012"
+          ],
+          "name": "member_count",
+          "unit": "万人",
+          "value": "24.01",
+          "value_type": "decimal"
+        }
+      ]
+    },
+    "candidate_answer": "67.1",
+    "causal_composite": {
+      "answer_after": "67.1",
+      "answer_before": "-34.3",
+      "base_run": "artifacts/b_board_score_loop/full_chain_82d4492_research_v1",
+      "incumbent_official_aggregate_accuracy": 97.0,
+      "incumbent_per_qid_truth_available": false,
+      "reasoning_after": 96.33333333333333,
+      "reasoning_before": 59.666666666666664,
+      "replaced_qid": "res_b_012",
+      "scope": "full100_causal_composite_99_frozen_plus_res_b_012_a1",
+      "scorecard": {
+        "accuracy_score": 100.0,
+        "reasoning_score": 95.98333333333333,
+        "token_efficiency_score": 100.0,
+        "token_total": 1222611,
+        "total_score": 99.19666666666667
+      },
+      "token_total_after": 1222611,
+      "token_total_before": 1222669
+    },
+    "incumbent_answer": "67.1",
+    "previous_best_proxy_total": 99.156,
+    "pseudo_match": true,
+    "run_manifest_status": "complete",
+    "scope": "target1_full_chain_plus_full100_causal_composite",
+    "target_reasoning_aggregate": {
+      "dimension_means": {
+        "clarity": 96.0,
+        "completeness": 97.0,
+        "logical": 96.0
+      },
+      "p10": 96.33333333333333,
+      "question_count": 1,
+      "reasoning_score": 96.33333333333333,
+      "status_counts": {
+        "scored": 1
+      },
+      "zero_score_count": 0
+    },
+    "target_reasoning_judge_usage": {
+      "completion_tokens": 111,
+      "prompt_tokens": 716,
+      "total_tokens": 827
+    },
+    "target_token_usage": {
+      "completion_tokens": 1821,
+      "prompt_tokens": 16257,
+      "total_tokens": 18078
+    },
+    "total_score_delta_vs_previous_best": 0.04066666666666663
+  },
+  "next_step": "运行全量单测，提交并推送有效分支；随后做全100题验证时采用冻结/替换策略控制随机漂移。",
+  "pipeline_stage": "calculation",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-22T21:43:03+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "mixed_amount_scale",
+  "status": "effective",
+  "submission_effect": "not_submitted",
+  "target_qids": [
+    "res_b_012"
+  ]
+}
+```

@@ -365,6 +365,97 @@ class BBoardCalculationTests(unittest.TestCase):
         self.assertTrue(result.trace["replay_verified"])
         self.assertTrue(result.trace["grounding_verified"])
 
+    def test_cross_scale_currency_subtraction_requires_explicit_conversion(self):
+        plan = {
+            "variables": [
+                {"name": "total_gmv", "value": "100", "unit": "亿元", "evidence_ids": ["q"]},
+                {"name": "self_share", "value": "60", "unit": "%", "evidence_ids": ["q"]},
+                {"name": "app_share", "value": "35", "unit": "%", "evidence_ids": ["q"]},
+                {"name": "members", "value": "24.01", "unit": "万人", "evidence_ids": ["q"]},
+                {"name": "member_spend", "value": "2960", "unit": "元", "evidence_ids": ["q"]},
+            ],
+            "steps": [
+                {
+                    "id": "app_gmv",
+                    "op": "mul",
+                    "args": [{"ref": "total_gmv"}, {"ref": "self_share"}, {"ref": "app_share"}],
+                },
+                {
+                    "id": "member_gmv",
+                    "op": "mul",
+                    "args": [{"ref": "members"}, {"ref": "member_spend"}],
+                },
+                {
+                    "id": "ordinary_gmv",
+                    "op": "sub",
+                    "args": [{"ref": "app_gmv"}, {"ref": "member_gmv"}],
+                },
+            ],
+            "outputs": [{"source": {"ref": "ordinary_gmv"}, "format": "decimal1"}],
+        }
+
+        with self.assertRaisesRegex(CalculationPlanError, "sub amount unit mismatch: 亿元 vs 万元"):
+            CalculationExecutor().execute(
+                plan,
+                expected_slots=1,
+                evidence_text_by_id={
+                    "q": "总GMV为100亿元，自营占60%，APP占35%，会员24.01万人，人均2960元"
+                },
+            )
+
+    def test_explicit_currency_scale_conversion_replays_res_b_012(self):
+        result = CalculationExecutor().execute(
+            {
+                "variables": [
+                    {"name": "total_gmv", "value": "100", "unit": "亿元", "evidence_ids": ["q"]},
+                    {"name": "self_share", "value": "60", "unit": "%", "evidence_ids": ["q"]},
+                    {"name": "app_share", "value": "35", "unit": "%", "evidence_ids": ["q"]},
+                    {"name": "members", "value": "24.01", "unit": "万人", "evidence_ids": ["q"]},
+                    {"name": "member_spend", "value": "2960", "unit": "元", "evidence_ids": ["q"]},
+                    {"name": "ordinary_ratio", "value": "70", "unit": "%", "evidence_ids": ["q"]},
+                ],
+                "steps": [
+                    {
+                        "id": "app_gmv_yi",
+                        "op": "mul",
+                        "args": [{"ref": "total_gmv"}, {"ref": "self_share"}, {"ref": "app_share"}],
+                    },
+                    {"id": "app_gmv_wan", "op": "mul", "args": [{"ref": "app_gmv_yi"}, 10000]},
+                    {
+                        "id": "member_gmv_wan",
+                        "op": "mul",
+                        "args": [{"ref": "members"}, {"ref": "member_spend"}],
+                    },
+                    {
+                        "id": "ordinary_gmv_wan",
+                        "op": "sub",
+                        "args": [{"ref": "app_gmv_wan"}, {"ref": "member_gmv_wan"}],
+                    },
+                    {
+                        "id": "ordinary_spend",
+                        "op": "mul",
+                        "args": [{"ref": "member_spend"}, {"ref": "ordinary_ratio"}],
+                    },
+                    {
+                        "id": "ordinary_users",
+                        "op": "div",
+                        "args": [{"ref": "ordinary_gmv_wan"}, {"ref": "ordinary_spend"}],
+                    },
+                ],
+                "outputs": [{"source": {"ref": "ordinary_users"}, "format": "decimal1"}],
+            },
+            expected_slots=1,
+            evidence_text_by_id={
+                "q": "总GMV为100亿元，自营占60%，APP占35%，会员24.01万人，人均2960元，普通用户为70%"
+            },
+        )
+
+        self.assertEqual(result.answer_parts, ("67.1",))
+
+    def test_calculation_prompt_requires_explicit_amount_scale_conversion(self):
+        self.assertIn("1亿元=10000万元", CALCULATION_SYSTEM_PROMPT)
+        self.assertIn("1万人×1元=1万元", CALCULATION_SYSTEM_PROMPT)
+
     def test_percentage_and_sorting(self):
         result = CalculationExecutor().execute(
             {
