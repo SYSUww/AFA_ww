@@ -17798,3 +17798,274 @@
   "target_qids": []
 }
 ```
+
+## b-loop-insurance-policy-loan-a1-full100-validation-82d4492
+
+- recorded_at: `2026-07-22T21:37:14+00:00`
+
+```json
+{
+  "approach": "将已通过单题门禁的A1在82d4492干净提交上做100题回归：gpt-5.5从头执行定位、作答和v2 reasoning finalizer；生成后才与97% incumbent做伪标签比较，并由固定gpt-5.6仅评reasoning。本轮仅验证，不构成新material variant。",
+  "artifact_path": "artifacts/b_board_score_loop/full_chain_82d4492_research_v1",
+  "base_commit": "82d44922bd2721c4eb5b70019cbabba66415bfdc",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "82d44922bd2721c4eb5b70019cbabba66415bfdc",
+        "code_hash": "82d44922bd2721c4eb5b70019cbabba66415bfdc",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "no_new_material_variant": true,
+          "scope": "full100_research",
+          "validated_commit": "82d44922bd2721c4eb5b70019cbabba66415bfdc",
+          "validation_of": "b-loop-insurance-conditional-policy-loan-eligibility-a1"
+        },
+        "domains": [
+          "insurance"
+        ],
+        "hypothesis": "对已完成的保险条件条款a1执行100题回归验证，应恢复ins_b_004为bcd且其余99题无回退；本记录是验证而非新的material variant",
+        "pipeline_stage": "validation",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "conditional_clause_entailment_validation",
+        "target_qids": [
+          "ins_b_004"
+        ]
+      }
+    },
+    "context_sha256": "22375ae95a11b3ad8151d781064c580b0175fc50a29301b6eded73c8a72eb0f6",
+    "direction_sha256": "9253cbab534aef9a4cacb9f1de53aa7744654ef92a3faa60ff54793ba01755c2",
+    "schema_version": 1,
+    "semantic_sha256": "6e3f933c7e42087c5474efca251d23f23ea8e039e89760c7b0b933f8b3587947",
+    "sha256": "23a8ea1697e7ed32a67d17096aad508595b4200011fff268f9a54c66614835a9"
+  },
+  "change_vector": {
+    "no_new_material_variant": true,
+    "scope": "full100_research",
+    "validated_commit": "82d44922bd2721c4eb5b70019cbabba66415bfdc",
+    "validation_of": "b-loop-insurance-conditional-policy-loan-eligibility-a1"
+  },
+  "code_hash": "82d44922bd2721c4eb5b70019cbabba66415bfdc",
+  "direction_id": "insurance_conditional_policy_loan_eligibility_a1_validation",
+  "domains": [
+    "insurance"
+  ],
+  "effect": "完成100/100；伪标签一致99/100；reasoning=95.62；Token分=100.00；代理总分=98.523。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-insurance-policy-loan-a1-full100-validation-82d4492",
+  "failure_analysis": "未达到全量晋级门槛：manifest=complete, pseudo=99.00, reasoning=95.62, total=98.523, diffs=['res_b_012']。",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "82d44922bd2721c4eb5b70019cbabba66415bfdc",
+          "code_hash": "82d44922bd2721c4eb5b70019cbabba66415bfdc",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "no_new_material_variant": true,
+            "scope": "full100_research",
+            "validated_commit": "82d44922bd2721c4eb5b70019cbabba66415bfdc",
+            "validation_of": "b-loop-insurance-conditional-policy-loan-eligibility-a1"
+          },
+          "domains": [
+            "insurance"
+          ],
+          "hypothesis": "对已完成的保险条件条款a1执行100题回归验证，应恢复ins_b_004为bcd且其余99题无回退；本记录是验证而非新的material variant",
+          "pipeline_stage": "validation",
+          "question_types": [
+            "multi"
+          ],
+          "root_cause_cluster": "conditional_clause_entailment_validation",
+          "target_qids": [
+            "ins_b_004"
+          ]
+        }
+      },
+      "context_sha256": "22375ae95a11b3ad8151d781064c580b0175fc50a29301b6eded73c8a72eb0f6",
+      "direction_sha256": "9253cbab534aef9a4cacb9f1de53aa7744654ef92a3faa60ff54793ba01755c2",
+      "schema_version": 1,
+      "semantic_sha256": "6e3f933c7e42087c5474efca251d23f23ea8e039e89760c7b0b933f8b3587947",
+      "sha256": "23a8ea1697e7ed32a67d17096aad508595b4200011fff268f9a54c66614835a9"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "82d44922bd2721c4eb5b70019cbabba66415bfdc",
+            "code_hash": "82d44922bd2721c4eb5b70019cbabba66415bfdc",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "no_new_material_variant": true,
+              "scope": "full100_research",
+              "validated_commit": "82d44922bd2721c4eb5b70019cbabba66415bfdc",
+              "validation_of": "b-loop-insurance-conditional-policy-loan-eligibility-a1"
+            },
+            "domains": [
+              "insurance"
+            ],
+            "hypothesis": "对已完成的保险条件条款a1执行100题回归验证，应恢复ins_b_004为bcd且其余99题无回退；本记录是验证而非新的material variant",
+            "pipeline_stage": "validation",
+            "question_types": [
+              "multi"
+            ],
+            "root_cause_cluster": "conditional_clause_entailment_validation",
+            "target_qids": [
+              "ins_b_004"
+            ]
+          }
+        },
+        "context_sha256": "22375ae95a11b3ad8151d781064c580b0175fc50a29301b6eded73c8a72eb0f6",
+        "direction_sha256": "9253cbab534aef9a4cacb9f1de53aa7744654ef92a3faa60ff54793ba01755c2",
+        "schema_version": 1,
+        "semantic_sha256": "6e3f933c7e42087c5474efca251d23f23ea8e039e89760c7b0b933f8b3587947",
+        "sha256": "23a8ea1697e7ed32a67d17096aad508595b4200011fff268f9a54c66614835a9"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "859af7f12ccf90aa39ed1e3497221d1104a71c2da2589bbb47318cfdd408ec13",
+      "size": 622568
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "101615c0d6022e3e7fe83a92104800bb04f444efceccc96e52070f195d5afb76",
+      "size": 504547
+    },
+    "related_log_sections": [
+      "B0-actual-integrity",
+      "B0-actual-evaluation",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-readme-percent-format-priority-v6",
+      "b-loop-reasoning-shadow-baseline-v1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-full-chain-b15966e-research-v1",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-full-chain-476fc31-research-v1",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90",
+      "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+      "b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100",
+      "b-loop-full-chain-737675b-reasoning-v2-research-v1",
+      "b-loop-insurance-conditional-policy-loan-eligibility-a1",
+      "b-loop-metric-scope-correction-ins-b-004-a1"
+    ],
+    "reviewed_at": "2026-07-22T21:22:43+00:00"
+  },
+  "hypothesis": "对已完成的保险条件条款A1执行100题回归验证，应恢复ins_b_004为BCD且其余99题无回退；本记录是验证而非新的material variant",
+  "material_delta": {
+    "validation_only": true
+  },
+  "metrics": {
+    "answered_question_count": 100,
+    "expected_question_count": 100,
+    "failed_qids": [],
+    "incumbent_official_aggregate_accuracy": 97.0,
+    "incumbent_per_qid_truth_available": false,
+    "ins_b_004_answer": "BCD",
+    "new_material_variant": false,
+    "previous_best_proxy_total": 99.156,
+    "pseudo_differences": {
+      "res_b_012": {
+        "candidate": "-34.3",
+        "incumbent": "67.1"
+      }
+    },
+    "pseudo_match_rate": 99.0,
+    "pseudo_matches": 99,
+    "reasoning_aggregate": {
+      "dimension_means": {
+        "clarity": 96.31,
+        "completeness": 94.9,
+        "logical": 95.64
+      },
+      "p10": 93.33333333333333,
+      "question_count": 100,
+      "reasoning_score": 95.61666666666666,
+      "status_counts": {
+        "scored": 100
+      },
+      "zero_score_count": 0
+    },
+    "reasoning_judge_token_usage": {
+      "completion_tokens": 8221,
+      "prompt_tokens": 71979,
+      "total_tokens": 80200
+    },
+    "scorecard": {
+      "accuracy_score": 99.0,
+      "accuracy_source": "full100_pseudo_match_to_official97_incumbent_not_ground_truth",
+      "judge_tokens_included_in_submission": false,
+      "reasoning_judge_model": "gpt-5.6",
+      "reasoning_prompt_version": "b_reasoning_judge_v1_new_md",
+      "reasoning_score": 95.61666666666666,
+      "token_efficiency_score": 100.0,
+      "token_total": 1222669,
+      "total_score": 98.52333333333333
+    },
+    "submission_token_total": 1222669,
+    "total_score_delta_vs_previous_best": -0.6326666666666796,
+    "validation_of": "b-loop-insurance-conditional-policy-loan-eligibility-a1"
+  },
+  "next_step": "审阅差异与reasoning低分，参考日志后设计A2，方向最多3轮。",
+  "pipeline_stage": "validation",
+  "question_types": [
+    "multi"
+  ],
+  "recorded_at": "2026-07-22T21:37:14+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "conditional_clause_entailment_validation",
+  "status": "completed",
+  "submission_effect": "not_submitted",
+  "target_qids": [
+    "ins_b_004"
+  ]
+}
+```
