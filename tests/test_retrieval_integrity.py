@@ -1553,6 +1553,64 @@ class RegulatoryCompositeClauseTests(unittest.TestCase):
             labels[key] = solver._targeted_rule_payload(option, hits)["label"]
         self.assertEqual(labels, {"A": False, "B": True, "C": False, "D": True})
 
+    def test_reference_date_matrix_binds_commencement_and_transition_clauses(self) -> None:
+        solver = self.make_solver(
+            [
+                make_unit(
+                    "bo::39",
+                    "beneficial-owner",
+                    "第三十九条 存量非自然人客户应当自本办法施行之日起6个月内完成较高风险以上存量客户受益所有人识别核实工作，自施行之日起2年内完成全部存量客户。",
+                ),
+                make_unit(
+                    "bo::preamble",
+                    "beneficial-owner",
+                    "金融机构客户受益所有人识别管理办法现予公布，自2026年1月20日起施行。2025年12月19日。",
+                ),
+                make_unit(
+                    "cdd::preamble",
+                    "customer-diligence",
+                    "金融机构客户尽职调查和客户身份资料及交易记录保存管理办法现予公布，自2026年1月1日起施行。2025年10月31日。",
+                ),
+                make_unit(
+                    "cdd::7",
+                    "customer-diligence",
+                    "第七条 开展客户尽职调查应当采取下列尽职调查措施：（五）对于客户为法人或者非法人组织的，识别并采取合理措施核实客户的受益所有人。",
+                ),
+                make_unit(
+                    "aml::34",
+                    "anti-money-laundering-law",
+                    "第三十四条 客户身份资料在业务关系结束后、客户交易信息在交易结束后，应当至少保存十年。",
+                ),
+            ]
+        )
+        options = {
+            "A": "较高风险以上存量客户应在半年内完成尽调",
+            "B": "受益所有人识别新办法已于2026年1月15日生效",
+            "C": "客户尽调新办法已于2026年1月15日生效",
+            "D": "反洗钱法下客户身份资料至少保存十年",
+        }
+        question = Question(
+            qid="reg_b_001",
+            domain="regulatory",
+            split="B",
+            question="2026年1月15日，机构同时处理存量高风险客户尽调、受益所有人识别和客户资料保存。",
+            options=options,
+            answer_format="multi",
+            type="多选题",
+            doc_ids=["beneficial-owner", "customer-diligence", "anti-money-laundering-law"],
+        )
+        labels = {}
+        evidence_ids = {}
+        for key, option in options.items():
+            hits = solver._targeted_literal_hits(question, option)
+            evidence_ids[key] = {hit.unit_id for hit in hits}
+            labels[key] = solver._targeted_rule_payload(option, hits)["label"]
+        self.assertEqual(labels, {"A": True, "B": False, "C": False, "D": True})
+        self.assertEqual(evidence_ids["A"], {"bo::39", "cdd::7"})
+        self.assertEqual(evidence_ids["B"], {"bo::preamble"})
+        self.assertEqual(evidence_ids["C"], {"cdd::preamble"})
+        self.assertEqual(evidence_ids["D"], {"aml::34"})
+
 
 class PluginParseUnitTests(unittest.TestCase):
     def _parse_with_sections(self, plugin, sections: list[dict[str, object]]) -> list[dict[str, object]]:

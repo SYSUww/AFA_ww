@@ -10450,3 +10450,353 @@
   }
 }
 ```
+
+## b-loop-regulatory-temporal-transition-evidence-matrix-a1
+
+- recorded_at: `2026-07-22T04:50:55+00:00`
+
+```json
+{
+  "answered_qids": [
+    "reg_b_001"
+  ],
+  "attempt_index": 1,
+  "base_commit": "92f9e888c80266173450eaaa5936e4f97084880f",
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "blind_pairs": {},
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/regulatory_temporal_transition_evidence_matrix/reference_date_matrix_a3_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "92f9e888c80266173450eaaa5936e4f97084880f",
+        "code_hash": "3a97a327dace4d9b5c848345160c9d1adf9fb9f85340a7c820e800afe3e9d0d1",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "33c5ec6d55813069ca46ba92d0decb675c66655a12c654f862e41d097811c5c1",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "counterevidence_for_rejected_options": true,
+          "due_diligence_definition_bridge": true,
+          "option_specific_evidence": true,
+          "point_in_time_dates": true,
+          "transition_deadline": true
+        },
+        "domains": [
+          "regulatory"
+        ],
+        "hypothesis": "bind commencement dates and transitional deadlines to the question reference date, while requiring a direct bridge between beneficial-owner identification and customer due diligence.",
+        "pipeline_stage": "reasoning",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "regulatory_temporal_scope_alignment",
+        "target_qids": [
+          "reg_b_001"
+        ]
+      }
+    },
+    "context_sha256": "9e27d5b3d328c8ef598e4a1a24fd73a606109d62223ae5cd7820468be3558ede",
+    "direction_sha256": "3a59192a49385abf80ff88654a1e3b20d01d1600195cf8c10bf478fa02e5345a",
+    "schema_version": 1,
+    "semantic_sha256": "e0e2bddad37f23ed76ac8a23cf1a8e0a4758939b4059dff4266c6bddf5729853",
+    "sha256": "1f1216d3c20e11017eb5b95f5555c543115e58d0bf69ec34efe6ab227f2ee7fc"
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 9,
+    "high": 59,
+    "low": 2,
+    "medium": 30
+  },
+  "causal_lowtail": {
+    "after": 11,
+    "before": 11
+  },
+  "causal_promoted_tiers": {
+    "blocked": 8,
+    "high": 59,
+    "low": 3,
+    "medium": 30
+  },
+  "causal_regulatory_lowtail": {
+    "after": 1,
+    "before": 1
+  },
+  "change_vector": {
+    "counterevidence_for_rejected_options": true,
+    "due_diligence_definition_bridge": true,
+    "option_specific_evidence": true,
+    "point_in_time_dates": true,
+    "transition_deadline": true
+  },
+  "changed_answer_qids": [],
+  "changed_artifact_qids": [
+    "reg_b_001"
+  ],
+  "code_hash": "3a97a327dace4d9b5c848345160c9d1adf9fb9f85340a7c820e800afe3e9d0d1",
+  "comparable_attempt_count_after": 1,
+  "comparable_attempt_count_before": 0,
+  "confidence_after": {
+    "reg_b_001": 55
+  },
+  "confidence_before": {
+    "reg_b_001": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "regulatory_temporal_transition_evidence_matrix",
+  "direction_status": "active",
+  "domains": [
+    "regulatory"
+  ],
+  "effective_branch": "codex/b榜-loop-i024-regulatory-temporal-evidence",
+  "evaluator_failed_attempts_not_in_usage": 1,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 75900,
+    "prompt_tokens": 479857,
+    "total_tokens": 555757
+  },
+  "generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "generator_fingerprint": "33c5ec6d55813069ca46ba92d0decb675c66655a12c654f862e41d097811c5c1",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_related_experiment_ids": [],
+  "history_similarity": null,
+  "hypothesis": "Bind commencement dates and transitional deadlines to the question reference date, while requiring a direct bridge between beneficial-owner identification and customer due diligence.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 155,
+    "tests_passed": true,
+    "token_accounting_complete": false
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/regulatory_temporal_transition_evidence_matrix/reference_date_matrix_a3_promoted1_composite",
+  "lessons": [
+    "Treat wording of the form effective on a date as an exact date claim when direct commencement evidence names a different date.",
+    "A broad customer-due-diligence option needs both the transition clause and a definition clause proving beneficial-owner identification is a due-diligence measure.",
+    "Final evidence for multi-choice questions should include direct counterevidence for rejected options, not only support for selected options.",
+    "A blocked-to-low tier gain with no answer change is useful evidence repair, but it does not resolve temporal applicability and must remain scheduled for further work.",
+    "A resumed sealed evaluation is valid after 100 answers and six sentinels pass; the failed API attempt remains explicitly unmetered."
+  ],
+  "material_delta": {
+    "due_diligence_definition_bridge": true,
+    "exact_effective_date_semantics": true,
+    "refuted_option_evidence_in_final_bundle": true
+  },
+  "next_root_causes": [
+    "reg_b_001_reference_date_vs_future_effective_obligation",
+    "remaining_financial_contract_lowtail_fc_b_006_018",
+    "insurance_calculation_identity_citation_alignment_ins_b_001",
+    "remaining_research_supply_constraint_evidence_res_b_003",
+    "remaining_research_market_fund_flow_evidence_res_b_004",
+    "remaining_research_policy_cost_and_risk_evidence_res_b_006_008_009_014",
+    "research_staged_autonomy_direct_entailment_res_b_017"
+  ],
+  "pipeline_stage": "reasoning",
+  "preflight_attempts": [
+    {
+      "observed_answer": {
+        "reg_b_001": "ACD"
+      },
+      "root_cause": "Final evidence contained broad locator backfill and did not distinguish exact effective-date wording.",
+      "root_cause_resolution": "Restrict final evidence to rule-backed option units and include direct commencement counterevidence.",
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/regulatory_temporal_transition_evidence_matrix/reference_date_matrix_a1",
+      "status": "refined_before_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      }
+    },
+    {
+      "confidence": {
+        "reg_b_001": 0
+      },
+      "full_evaluation_token_usage": {
+        "completion_tokens": 75398,
+        "prompt_tokens": 479699,
+        "total_tokens": 555097
+      },
+      "observed_answer": {
+        "reg_b_001": "ACD"
+      },
+      "reason": "The fixed judge interpreted option C as an exact effective-date claim and found option A lacked a direct bridge from beneficial-owner identification to customer due diligence.",
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/regulatory_temporal_transition_evidence_matrix/reference_date_matrix_a2",
+      "status": "rejected_by_fixed_evaluator",
+      "tier": {
+        "reg_b_001": "blocked"
+      }
+    },
+    {
+      "integrity": {
+        "format_forced": false,
+        "fully_rule_backed": true,
+        "submission_valid": true
+      },
+      "observed_answer": {
+        "reg_b_001": "AD"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/regulatory_temporal_transition_evidence_matrix/reference_date_matrix_a3",
+      "status": "accepted_for_promotion",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      },
+      "used_evidence_count": 6
+    }
+  ],
+  "prior_rejected_full_evaluation_token_usage": {
+    "completion_tokens": 75398,
+    "prompt_tokens": 479699,
+    "total_tokens": 555097
+  },
+  "promoted_qids": [
+    "reg_b_001"
+  ],
+  "promoted_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/regulatory_temporal_transition_evidence_matrix/reference_date_matrix_a3_promoted1_composite",
+  "promotion_decisions": {
+    "reg_b_001": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 55,
+      "tier_after": "low",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_gate_path": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/regulatory_temporal_transition_evidence_matrix/reference_date_matrix_a3_composite/promotion_gate.json",
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "multi"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 9,
+    "high": 60,
+    "low": 6,
+    "medium": 25
+  },
+  "reason": "An option-specific temporal evidence matrix preserved answer AD, removed format forcing, added direct support and counterevidence, and raised reg_b_001 from 0 blocked to 55 low. The fixed judge still questions whether the future-effective transition obligation applies at the 2026-01-15 reference date, so the item remains in the low tail.",
+  "recorded_at": "2026-07-22T04:50:55+00:00",
+  "rejected_qids": [],
+  "root_cause_cluster": "regulatory_temporal_scope_alignment",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failed_attempts_not_in_usage": 1,
+      "failures": 0,
+      "sentinels_passed": true,
+      "successful_token_usage": {
+        "completion_tokens": 75900,
+        "prompt_tokens": 479857,
+        "total_tokens": 555757
+      },
+      "token_accounting_complete": false
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "reg_b_001"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 2,
+          "blocked_low_before": 2,
+          "low_tier_improved_qids": [],
+          "p10_after": 30,
+          "p10_before": 30,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 0,
+          "blocked_low_before": 0,
+          "low_tier_improved_qids": [],
+          "p10_after": 85,
+          "p10_before": 85,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [
+            "reg_b_001"
+          ],
+          "p10_after": 65,
+          "p10_before": 65,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 7,
+          "blocked_low_before": 7,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {},
+      "unchanged_raw_tier_drift": []
+    },
+    "reasons": [],
+    "tests": {
+      "count": 155,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/regulatory_temporal_transition_evidence_matrix/reference_date_matrix_a3",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "reg_b_001"
+  ],
+  "token_accounting_complete": false,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 151298,
+    "prompt_tokens": 959556,
+    "total_tokens": 1110854
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 151298,
+    "prompt_tokens": 959556,
+    "total_tokens": 1110854
+  }
+}
+```
