@@ -1,5 +1,5 @@
 {
-  "version": "b_actual_open_loop_gpt56_error_audit_v9",
+  "version": "b_actual_open_loop_reasoning_judge_v10",
   "execution": {
     "runner": "b_actual_open_loop",
     "compatible_with_run_loop_engine": true
@@ -10,7 +10,7 @@
     "expected_question_count": 100
   },
   "output_root": "artifacts/b_board_actual",
-  "loop_state_path": "artifacts/b_board_actual/loop_state_gpt56_error_audit_v9.json",
+  "loop_state_path": "artifacts/b_board_actual/loop_state_reasoning_judge_v10.json",
   "experiment_registry_path": "experiments/b_board_actual/experiment_registry.jsonl",
   "markdown_log_path": "wiki/b_board_actual_loop_log.md",
   "history_import": {
@@ -40,6 +40,15 @@
     "schema_version": 2,
     "output_name": "evaluation_gpt56_error_audit_v9",
     "workers": 4
+  },
+  "reasoning_evaluation": {
+    "model_name": "gpt-5.6",
+    "temperature": 0.0,
+    "prompt_version": "b_reasoning_judge_v1_new_md",
+    "schema_version": 1,
+    "output_name": "reasoning_evaluation_gpt56_new_md_v1",
+    "workers": 4,
+    "accuracy_source": "official_accuracy_not_bound_to_this_generated_baseline"
   },
   "scheduler": {
     "mode": "history_aware_open_ended",

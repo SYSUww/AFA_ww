@@ -17,9 +17,16 @@ from afa_agent.b_board.evaluator import (
 from afa_agent.b_board.evaluation_run import run_fixed_evaluation
 from afa_agent.b_board.io import BQuestion, load_b_questions
 from afa_agent.b_board.loop import OpenEndedLoopScheduler, append_markdown_log
+from afa_agent.b_board.reasoning_evaluation import (
+    PROMPT_VERSION as REASONING_PROMPT_VERSION,
+    REASONING_JUDGE_MODEL,
+    SCHEMA_VERSION as REASONING_SCHEMA_VERSION,
+    reasoning_prompt_fingerprint,
+    run_reasoning_evaluation,
+)
 from afa_agent.b_board.runner import BBoardActualRunner
-from afa_agent.experiment_registry import ExperimentRegistry
 from afa_agent.config import build_run_config
+from afa_agent.experiment_registry import ExperimentRegistry
 from afa_agent.io_utils import ensure_dir, read_json, write_json
 
 
@@ -30,6 +37,9 @@ RUNNER_NAME = "b_actual_open_loop"
 QuestionLoader = Callable[[Path, Path], Sequence[BQuestion]]
 AnswerRunner = Callable[[Sequence[BQuestion], Path, Mapping[str, Any]], Mapping[str, Any]]
 EvaluationRunner = Callable[[Path, Mapping[str, Any]], Mapping[str, Any]]
+ReasoningEvaluationRunner = Callable[
+    [Path, Sequence[BQuestion], Mapping[str, Any]], Mapping[str, Any]
+]
 
 
 class BBoardLoopStateError(RuntimeError):
@@ -48,6 +58,7 @@ class BBoardLoopOrchestrator:
         question_loader: QuestionLoader = load_b_questions,
         answer_runner: AnswerRunner | None = None,
         evaluation_runner: EvaluationRunner | None = None,
+        reasoning_evaluation_runner: ReasoningEvaluationRunner | None = None,
     ) -> None:
         self.root = Path(root).resolve()
         self.plan = dict(plan)
@@ -55,8 +66,14 @@ class BBoardLoopOrchestrator:
         self.question_loader = question_loader
         self.answer_runner = answer_runner or self._run_answers
         self.evaluation_runner = evaluation_runner or self._run_evaluation
+        self.reasoning_evaluation_runner = (
+            reasoning_evaluation_runner or self._run_reasoning_evaluation
+        )
         self._uses_default_answer_runner = answer_runner is None
         self._uses_default_evaluation_runner = evaluation_runner is None
+        self._uses_default_reasoning_evaluation_runner = (
+            reasoning_evaluation_runner is None
+        )
 
         execution = dict(self.plan.get("execution") or {})
         if execution.get("runner") != RUNNER_NAME:
@@ -64,6 +81,9 @@ class BBoardLoopOrchestrator:
         self.dataset = dict(self.plan.get("dataset") or {})
         self.baseline = dict(self.plan.get("baseline") or {})
         self.evaluation = dict(self.plan.get("evaluation") or {})
+        self.reasoning_evaluation = dict(
+            self.plan.get("reasoning_evaluation") or {}
+        )
         self.scheduler_config = dict(self.plan.get("scheduler") or {})
         self.history_import = dict(self.plan.get("history_import") or {})
 
@@ -98,6 +118,8 @@ class BBoardLoopOrchestrator:
         if float(self.evaluation.get("temperature", 0.0)) != 0.0:
             raise ValueError("B loop evaluation.temperature must be 0")
         self._evaluation_output_dir()
+        self._validate_reasoning_evaluation_config()
+        self._reasoning_evaluation_output_dir()
 
     def run(self) -> dict[str, Any]:
         ensure_dir(self.output_root)
@@ -186,6 +208,85 @@ class BBoardLoopOrchestrator:
             return self._public_result(state)
 
         evaluations = self._load_confidence_audit(len(questions))
+        confidence_summary = _confidence_summary(evaluations)
+
+        state["status"] = "running_reasoning_evaluation"
+        state["confidence"] = confidence_summary
+        self._save_state(state)
+        reasoning_manifest = self._completed_reasoning_evaluation_manifest(questions)
+        if reasoning_manifest is None:
+            reasoning_manifest = dict(
+                self.reasoning_evaluation_runner(
+                    self._submission_path(run_manifest),
+                    questions,
+                    self.reasoning_evaluation,
+                )
+            )
+            if _reasoning_evaluation_is_complete(reasoning_manifest, len(questions)):
+                persisted_manifest = self._completed_reasoning_evaluation_manifest(
+                    questions
+                )
+                if persisted_manifest is None:
+                    raise BBoardLoopStateError(
+                        "Reasoning evaluator returned complete without recoverable artifacts"
+                    )
+                reasoning_manifest = persisted_manifest
+        state["reasoning_evaluation"] = _manifest_summary(reasoning_manifest)
+        if not _reasoning_evaluation_is_complete(reasoning_manifest, len(questions)):
+            state["status"] = "reasoning_evaluation_invalid"
+            state["updated_at"] = _now()
+            self._log_once(
+                state,
+                "reasoning_evaluation_invalid",
+                {
+                    "experiment_id": "B0-actual-reasoning-evaluation",
+                    "status": reasoning_manifest.get("status", "invalid"),
+                    "expected_reasoning_count": reasoning_manifest.get(
+                        "expected_reasoning_count"
+                    ),
+                    "evaluated_reasoning_count": reasoning_manifest.get(
+                        "evaluated_reasoning_count"
+                    ),
+                    "failure_count": reasoning_manifest.get("failure_count"),
+                },
+            )
+            self._save_state(state)
+            return self._public_result(state)
+
+        reasoning_aggregate = dict(reasoning_manifest["reasoning_aggregate"])
+        reasoning_scorecard = reasoning_manifest.get("scorecard")
+        state["reasoning"] = reasoning_aggregate
+        state["scorecard"] = reasoning_scorecard
+        self._log_once(
+            state,
+            "reasoning_evaluation_complete",
+            {
+                "experiment_id": "B0-actual-reasoning-evaluation",
+                "status": "complete",
+                "reasoning": reasoning_aggregate,
+                "scorecard": reasoning_scorecard,
+                "artifact_paths": {
+                    "reasoning_scores": str(
+                        self._reasoning_evaluation_output_dir()
+                        / "reasoning_scores.json"
+                    ),
+                    "reasoning_aggregate": str(
+                        self._reasoning_evaluation_output_dir()
+                        / "reasoning_aggregate.json"
+                    ),
+                    "scorecard": (
+                        str(self._reasoning_evaluation_output_dir() / "scorecard.json")
+                        if reasoning_scorecard is not None
+                        else None
+                    ),
+                    "reasoning_evaluator_manifest": str(
+                        self._reasoning_evaluation_output_dir()
+                        / "reasoning_evaluator_manifest.json"
+                    ),
+                },
+            },
+        )
+
         max_attempts = int(self.scheduler_config.get("max_comparable_attempts", 3))
         scheduler = OpenEndedLoopScheduler(
             self.registry,
@@ -195,7 +296,6 @@ class BBoardLoopOrchestrator:
             evaluations,
             qid_domains=qid_domains,
         )
-        confidence_summary = _confidence_summary(evaluations)
         registry_summary = self.history_summary()
         state.update(
             {
@@ -218,6 +318,8 @@ class BBoardLoopOrchestrator:
                 "experiment_id": "B0-actual-evaluation",
                 "status": "complete",
                 "confidence": confidence_summary,
+                "reasoning": reasoning_aggregate,
+                "scorecard": reasoning_scorecard,
                 "dynamic_direction_ids": [item.direction_id for item in dynamic_directions],
                 "registry": registry_summary,
                 "artifact_paths": {
@@ -303,6 +405,59 @@ class BBoardLoopOrchestrator:
                 )
         return manifest if _evaluation_is_complete(manifest, expected_count) else None
 
+    def _completed_reasoning_evaluation_manifest(
+        self, questions: Sequence[BQuestion]
+    ) -> dict[str, Any] | None:
+        output_dir = self._reasoning_evaluation_output_dir()
+        path = output_dir / "reasoning_evaluator_manifest.json"
+        if not path.exists():
+            return None
+        manifest = read_json(path)
+        if self._uses_default_reasoning_evaluation_runner:
+            expected_identity = self._expected_reasoning_evaluator_identity()
+            if manifest.get("evaluator_identity") != expected_identity:
+                raise BBoardLoopStateError(
+                    "Frozen reasoning evaluator identity changed; use a new reasoning evaluation version"
+                )
+        if not _reasoning_evaluation_is_complete(manifest, len(questions)):
+            return None
+
+        scores_path = output_dir / "reasoning_scores.json"
+        if not scores_path.exists():
+            raise BBoardLoopStateError("Completed reasoning evaluation has no score rows")
+        rows = read_json(scores_path)
+        if not isinstance(rows, list):
+            raise BBoardLoopStateError("Reasoning evaluation score rows must be an array")
+        expected_qids = {str(question.qid) for question in questions}
+        actual_qids = [
+            str(row.get("qid", "")) for row in rows if isinstance(row, Mapping)
+        ]
+        if (
+            len(actual_qids) != len(rows)
+            or set(actual_qids) != expected_qids
+            or len(set(actual_qids)) != len(actual_qids)
+        ):
+            raise BBoardLoopStateError(
+                "Completed reasoning evaluation qid coverage does not match B0"
+            )
+
+        aggregate_path = output_dir / "reasoning_aggregate.json"
+        if not aggregate_path.exists() or read_json(aggregate_path) != manifest.get(
+            "reasoning_aggregate"
+        ):
+            raise BBoardLoopStateError(
+                "Completed reasoning evaluation aggregate does not match its manifest"
+            )
+        if manifest.get("scorecard") is not None:
+            scorecard_path = output_dir / "scorecard.json"
+            if not scorecard_path.exists() or read_json(scorecard_path) != manifest.get(
+                "scorecard"
+            ):
+                raise BBoardLoopStateError(
+                    "Completed reasoning evaluation scorecard does not match its manifest"
+                )
+        return manifest
+
     def _initialize_registry(self) -> None:
         ensure_dir(self.registry_path.parent)
         if not self.registry_path.exists():
@@ -333,6 +488,22 @@ class BBoardLoopOrchestrator:
             "prompt_version": PROMPT_VERSION,
             "schema_version": SCHEMA_VERSION,
             "prompt_sha256": prompt_fingerprint(),
+            "model_name": model.model_name,
+            "temperature": model.temperature,
+            "api_base_sha256": hashlib.sha256(
+                model.api_base.encode("utf-8")
+            ).hexdigest(),
+        }
+
+    def _expected_reasoning_evaluator_identity(self) -> dict[str, Any]:
+        config = build_run_config(self.root)
+        if config.model is None:
+            raise BBoardLoopStateError("Missing model config for fixed B reasoning evaluator")
+        model = self._reasoning_evaluator_model_config(config.model)
+        return {
+            "prompt_version": REASONING_PROMPT_VERSION,
+            "schema_version": REASONING_SCHEMA_VERSION,
+            "prompt_sha256": reasoning_prompt_fingerprint(),
             "model_name": model.model_name,
             "temperature": model.temperature,
             "api_base_sha256": hashlib.sha256(
@@ -411,6 +582,27 @@ class BBoardLoopOrchestrator:
         )
         return result.manifest
 
+    def _run_reasoning_evaluation(
+        self,
+        submission_path: Path,
+        questions: Sequence[BQuestion],
+        config: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        run_config = build_run_config(self.root)
+        if run_config.model is None:
+            raise BBoardLoopStateError("Missing model config for fixed B reasoning evaluator")
+        model = self._reasoning_evaluator_model_config(run_config.model)
+        result = run_reasoning_evaluation(
+            submission_path=submission_path,
+            questions=questions,
+            model_config=model,
+            output_dir=self._reasoning_evaluation_output_dir(),
+            workers=int(config.get("workers", 4)),
+            accuracy_score=self._reasoning_accuracy_score(),
+            accuracy_source=str(config.get("accuracy_source") or ""),
+        )
+        return result.manifest
+
     def _evaluator_model_config(self, base_model: Any) -> Any:
         model_name = str(self.evaluation.get("model_name") or "").strip()
         if not model_name:
@@ -418,13 +610,96 @@ class BBoardLoopOrchestrator:
         temperature = float(self.evaluation.get("temperature", 0.0))
         if temperature != 0.0:
             raise BBoardLoopStateError("B loop evaluator temperature must be 0")
-        return replace(base_model, model_name=model_name, temperature=temperature)
+        return replace(
+            base_model,
+            model_name=model_name,
+            temperature=temperature,
+        )
+
+    def _reasoning_evaluator_model_config(self, base_model: Any) -> Any:
+        model_name = str(self.reasoning_evaluation.get("model_name") or "").strip()
+        if model_name.lower() != REASONING_JUDGE_MODEL:
+            raise BBoardLoopStateError(
+                f"B loop reasoning evaluator model must be {REASONING_JUDGE_MODEL}"
+            )
+        temperature = float(self.reasoning_evaluation.get("temperature", 0.0))
+        if temperature != 0.0:
+            raise BBoardLoopStateError("B loop reasoning evaluator temperature must be 0")
+        return replace(
+            base_model,
+            model_name=REASONING_JUDGE_MODEL,
+            temperature=temperature,
+        )
 
     def _evaluation_output_dir(self) -> Path:
         output_name = str(self.evaluation.get("output_name") or "evaluation").strip()
         if not output_name or Path(output_name).name != output_name or output_name in {".", ".."}:
             raise BBoardLoopStateError("B loop evaluation.output_name must be a directory name")
         return self.run_dir / output_name
+
+    def _reasoning_evaluation_output_dir(self) -> Path:
+        output_name = str(
+            self.reasoning_evaluation.get("output_name") or "reasoning_evaluation"
+        ).strip()
+        if not output_name or Path(output_name).name != output_name or output_name in {".", ".."}:
+            raise BBoardLoopStateError(
+                "B loop reasoning_evaluation.output_name must be a directory name"
+            )
+        return self.run_dir / output_name
+
+    def _validate_reasoning_evaluation_config(self) -> None:
+        if (
+            self.reasoning_evaluation.get("prompt_version", REASONING_PROMPT_VERSION)
+            != REASONING_PROMPT_VERSION
+        ):
+            raise ValueError(
+                "B loop reasoning_evaluation.prompt_version does not match the frozen evaluator"
+            )
+        if (
+            int(
+                self.reasoning_evaluation.get(
+                    "schema_version", REASONING_SCHEMA_VERSION
+                )
+            )
+            != REASONING_SCHEMA_VERSION
+        ):
+            raise ValueError(
+                "B loop reasoning_evaluation.schema_version does not match the frozen evaluator"
+            )
+        model_name = str(self.reasoning_evaluation.get("model_name") or "").strip()
+        if model_name.lower() != REASONING_JUDGE_MODEL:
+            raise ValueError(
+                f"B loop reasoning_evaluation.model_name must be {REASONING_JUDGE_MODEL}"
+            )
+        if float(self.reasoning_evaluation.get("temperature", 0.0)) != 0.0:
+            raise ValueError("B loop reasoning_evaluation.temperature must be 0")
+        self._reasoning_accuracy_score()
+
+    def _reasoning_accuracy_score(self) -> float | None:
+        value = self.reasoning_evaluation.get("accuracy_score")
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            raise ValueError("B loop reasoning_evaluation.accuracy_score must be in 0..100")
+        try:
+            score = float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "B loop reasoning_evaluation.accuracy_score must be in 0..100"
+            ) from exc
+        if not 0.0 <= score <= 100.0:
+            raise ValueError("B loop reasoning_evaluation.accuracy_score must be in 0..100")
+        return score
+
+    def _submission_path(self, run_manifest: Mapping[str, Any]) -> Path:
+        value = run_manifest.get("research_submission_path") or run_manifest.get(
+            "submission_path"
+        )
+        if not str(value or "").strip():
+            raise BBoardLoopStateError(
+                "Completed B0 manifest has neither research_submission_path nor submission_path"
+            )
+        return self._resolve(value)
 
     def _log_once(
         self,
@@ -455,6 +730,9 @@ class BBoardLoopOrchestrator:
             "b0": state.get("b0"),
             "evaluation": state.get("evaluation"),
             "confidence": state.get("confidence"),
+            "reasoning_evaluation": state.get("reasoning_evaluation"),
+            "reasoning": state.get("reasoning"),
+            "scorecard": state.get("scorecard"),
             "registry": state.get("registry"),
             "scheduler": state.get("scheduler"),
         }
@@ -489,6 +767,23 @@ def _evaluation_is_complete(manifest: Mapping[str, Any], expected_count: int) ->
         and int(manifest.get("evaluated_answer_count", -1)) == expected_count
         and int(manifest.get("failure_count", -1)) == 0
         and sentinels.get("passed") is True
+    )
+
+
+def _reasoning_evaluation_is_complete(
+    manifest: Mapping[str, Any], expected_count: int
+) -> bool:
+    aggregate = manifest.get("reasoning_aggregate") or {}
+    failure_count = manifest.get("failure_count")
+    return (
+        manifest.get("status") == "complete"
+        and int(manifest.get("expected_reasoning_count", -1)) == expected_count
+        and int(manifest.get("evaluated_reasoning_count", -1)) == expected_count
+        and isinstance(failure_count, int)
+        and not isinstance(failure_count, bool)
+        and failure_count >= 0
+        and isinstance(aggregate, Mapping)
+        and int(aggregate.get("question_count", -1)) == expected_count
     )
 
 
@@ -592,8 +887,15 @@ def _manifest_summary(manifest: Mapping[str, Any]) -> dict[str, Any]:
         "token_usage",
         "aggregate_metrics",
         "submission_path",
+        "research_submission_path",
         "submission_valid",
         "submission_validation_failures",
+        "expected_reasoning_count",
+        "evaluated_reasoning_count",
+        "reasoning_aggregate",
+        "judge_token_usage",
+        "submission_token_total",
+        "scorecard",
     }
     return {key: manifest[key] for key in allowed if key in manifest}
 
