@@ -53,10 +53,10 @@ next_workday 的 args 写 {"date":{"ref":"日期变量"}}；days_between 的 arg
 允许 op: add,sub,mul,div,mean,abs,max,min,pct_change,pct_point_delta,count_gte,count_gt,sort_desc,date_add_days,next_workday,days_between。
 sort_desc 使用 items:[{label,source}]。outputs 数量必须等于答案槽数；每项为 {source,format}。
 format 仅 raw,decimal0,decimal1,decimal2,percent2,date_cn,text。中间过程不得舍入，最终才按格式四舍五入。
-题干对小数位、百分号和单位的具体要求优先于README通用规则及提交模板占位；题干没有具体要求时才按模板格式化。
+格式优先级为：题干具体要求 > README通用规则 > 提交模板占位。题干未规定时，README要求百分数答案带%并保留两位小数，其他数值不带单位并保留两位小数。
 证据 ID 必须原样使用给定 evidence_id。题目本身给出的数值可引用 question:<qid>。只输出 JSON。"""
 
-RUNNER_VERSION = "b_actual_v7_question_specific_format"
+RUNNER_VERSION = "b_actual_v9_expanded_readme_semantics"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 
 

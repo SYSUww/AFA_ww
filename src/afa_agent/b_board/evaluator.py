@@ -14,11 +14,11 @@ from afa_agent.b_board.io import (
 )
 
 
-PROMPT_VERSION = "b_answer_error_judge_v2"
-INDEPENDENT_PROMPT_VERSION = "b_independent_solve_v1"
-BLIND_PROMPT_VERSION = "b_blind_pair_v1"
+PROMPT_VERSION = "b_answer_error_judge_v4_readme_format"
+INDEPENDENT_PROMPT_VERSION = "b_independent_solve_v3_readme_format"
+BLIND_PROMPT_VERSION = "b_blind_pair_v3_readme_format"
 SCHEMA_VERSION = 2
-HARD_GATE_VERSION = "b_hard_gate_v3_question_specific_format"
+HARD_GATE_VERSION = "b_hard_gate_v5_expanded_readme_semantics"
 
 COMMON_DIMENSIONS = (
     "document_relevance",
@@ -69,6 +69,7 @@ _FORBIDDEN_SUBJECT_KEYS = {
 INDEPENDENT_SYSTEM_PROMPT = f"""你是金融长文问答的独立解题员。你看不到现有答案，也不得猜测现有答案。
 只根据题目、选项和给定证据独立求解；不得补充外部事实。逐项区分 supported、contradicted、insufficient。
 严格检查主体、文件、年份或日期、定义口径、单位、方向、公式和多选完整性。计算题必须重算，不能照抄证据中的结论。
+答案格式严格按“题目明确要求 > README通用规则 > 提交模板占位”裁决。“不带单位”不等于“不带%”；只有题目明确写“不带%”或“不带百分号”才禁止%。题目未明确禁止时，百分数答案按README必须带%并保留两位小数；“提高若干个百分点”的数值不加%。
 证据不足时仍按题目要求给出最佳候选答案，但 status 必须为 insufficient_evidence，并明确缺少什么证据。
 只输出一个 JSON 对象，不输出 Markdown。prompt_version={INDEPENDENT_PROMPT_VERSION}, schema_version={SCHEMA_VERSION}。
 JSON 字段：schema_version, prompt_version, status, answer_parts, used_evidence_ids,
@@ -82,6 +83,7 @@ JUDGE_SYSTEM_PROMPT = f"""你是金融长文问答的错题发现审计员。目
 你会收到一份在看不到封存答案时产生的独立解题结果，以及封存答案、证据引用和计算轨迹。
 比较二者时只使用给定材料，不补充外部事实。独立答案不同只是风险信号，不自动等于封存答案错误；必须依据证据裁决。
 严格区分相关性与蕴含，检查错文件、错主体、错年份或日期、错口径、错单位、错公式、错计算、漏选或错选、引用不符和格式错误。
+格式裁决必须遵守“题目明确要求 > README通用规则 > 提交模板占位”。“不带单位”不禁止%；只有明确的“不带%”或“不带百分号”才禁止%。题目未明确禁止时，百分数答案按README必须带%并保留两位小数；百分点变化值不加%。
 选择题逐项核对选中项与未选项；计算题复核变量、公式、单位和重放结果。证据缺失应标记 uncertain，不得伪造确定结论。
 只输出一个 JSON 对象，不输出 Markdown。prompt_version={PROMPT_VERSION}, schema_version={SCHEMA_VERSION}。
 JSON 字段：schema_version, prompt_version, document_relevance, evidence_sufficiency,
@@ -100,6 +102,7 @@ citation_mismatch、format_error、insufficient_evidence、other；correction_ca
 BLIND_SYSTEM_PROMPT = f"""你是金融长文问答的盲审裁判。A/B 的来源和新旧身份已隐藏。
 只根据各自封存的答案、证据、引用和可重放计算轨迹，选择更受证据支持且更可验证的一方。
 出现主体、年份、单位、公式、方向或格式错误时必须拒绝；不得使用外部知识。
+格式按“题目明确要求 > README通用规则 > 提交模板占位”；“不带单位”不等于“不带%”，题目未明确禁止时百分数必须带%并保留两位小数，百分点数值不加%。
 只输出 JSON：{{"prompt_version":"{BLIND_PROMPT_VERSION}","winner":"A|B|tie","confidence":0-100,"reason":"..."}}。"""
 
 

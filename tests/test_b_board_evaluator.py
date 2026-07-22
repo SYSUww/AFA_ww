@@ -4,7 +4,11 @@ import json
 import unittest
 
 from afa_agent.b_board.evaluator import (
+    BLIND_PROMPT_VERSION,
+    BLIND_SYSTEM_PROMPT,
     INDEPENDENT_PROMPT_VERSION,
+    INDEPENDENT_SYSTEM_PROMPT,
+    JUDGE_SYSTEM_PROMPT,
     PROMPT_VERSION,
     SCHEMA_VERSION,
     ConfidenceEvaluation,
@@ -103,6 +107,17 @@ class FakeClient:
 
 
 class BBoardEvaluatorTests(unittest.TestCase):
+    def test_all_fixed_evaluator_prompts_share_format_priority_rule(self):
+        for prompt in (
+            INDEPENDENT_SYSTEM_PROMPT,
+            JUDGE_SYSTEM_PROMPT,
+            BLIND_SYSTEM_PROMPT,
+        ):
+            self.assertIn("题目明确要求 > README通用规则 > 提交模板占位", prompt)
+            self.assertIn("不带单位", prompt)
+            self.assertIn("不带%", prompt)
+            self.assertIn("保留两位小数", prompt)
+
     def test_subject_rejects_optimizer_metadata(self):
         with self.assertRaisesRegex(ValueError, "optimizer metadata"):
             build_independent_messages(subject(candidate_id="candidate"))
@@ -278,7 +293,7 @@ class BBoardEvaluatorTests(unittest.TestCase):
         )
         client = FakeClient(
             {
-                "prompt_version": "b_blind_pair_v1",
+                "prompt_version": BLIND_PROMPT_VERSION,
                 "winner": pair.candidate_label,
                 "confidence": 91,
                 "reason": "candidate is better supported",

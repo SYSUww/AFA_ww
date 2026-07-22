@@ -31,6 +31,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--qid", action="append", required=True)
     parser.add_argument(
+        "--allow-format-change",
+        action="store_true",
+        help="Allow deterministic answer changes caused only by the current format contract",
+    )
+    parser.add_argument(
         "--supporting-evidence",
         action="append",
         default=[],
@@ -88,6 +93,7 @@ def main() -> None:
                 artifact=source_by_qid[qid],
                 index_units=index_by_domain[question.domain],
                 supporting_evidence_ids=support_by_qid.get(qid, []),
+                allow_format_change=args.allow_format_change,
             )
         )
 
@@ -95,7 +101,7 @@ def main() -> None:
     write_json(destination / "answers.json", [item.to_dict() for item in results])
     manifest = {
         "run_id": destination.name,
-        "runner": "b_actual_incumbent_trace_literal_revalidation_a3",
+        "runner": "b_actual_incumbent_trace_literal_revalidation_a5",
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "status": "complete",
         "source_run_dir": str(source_dir),
@@ -105,7 +111,10 @@ def main() -> None:
         "failed_qids": [],
         "token_usage": _sum_tokens(results),
         "generation_token_usage": _sum_tokens(results),
-        "answer_preserved": True,
+        "answer_preserved": all(
+            source_by_qid[item.qid].answer_parts == item.answer_parts for item in results
+        ),
+        "format_change_allowed": args.allow_format_change,
         "supporting_evidence_ids": support_by_qid,
     }
     write_json(destination / "run_manifest.json", manifest)

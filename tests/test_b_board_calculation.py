@@ -7,6 +7,7 @@ from afa_agent.b_board.calculation import (
     BusinessCalendar,
     CalculationExecutor,
     CalculationPlanError,
+    _answers_differ_only_in_format,
 )
 from afa_agent.b_board.io import BQuestion
 from afa_agent.b_board.runner import (
@@ -18,6 +19,10 @@ from afa_agent.b_board.runner import (
 
 
 class BBoardCalculationTests(unittest.TestCase):
+    def test_format_migration_guard_rejects_value_changes(self):
+        self.assertTrue(_answers_differ_only_in_format(["40.05", "67.10"], ["40.05%", "67.1"]))
+        self.assertFalse(_answers_differ_only_in_format(["0.08"], ["8.00%"]))
+
     def test_explicit_question_precision_overrides_generic_numeric_slot(self):
         result = CalculationExecutor().execute(
             {
@@ -161,6 +166,70 @@ class BBoardCalculationTests(unittest.TestCase):
                 expected_slots=1,
                 evidence_text_by_id={"rule": "条款未披露具体比例"},
                 expected_slot_templates=("999999.99",),
+            )
+
+    def test_legacy_trace_can_apply_current_percent_contract_deterministically(self):
+        result = CalculationExecutor().replay_legacy_trace(
+            {
+                "schema_version": 2,
+                "variables": [
+                    {
+                        "name": "growth",
+                        "value": "40.0461",
+                        "value_type": "decimal",
+                        "unit": "%",
+                        "evidence_ids": ["report"],
+                    }
+                ],
+                "steps": [],
+                "outputs": [
+                    {
+                        "source": {"ref": "growth"},
+                        "format": "decimal2",
+                        "value": "40.05",
+                    }
+                ],
+            },
+            expected_slots=1,
+            evidence_text_by_id={"report": "同比增幅为40.0461%"},
+            expected_slot_templates=("999999.99",),
+            expected_numeric_decimal_places=2,
+            expected_percent_suffixes=(True,),
+            preserve_incumbent_answer=False,
+        )
+
+        self.assertEqual(result.answer_parts, ("40.05%",))
+        self.assertFalse(result.trace["revalidation"]["answer_preserved"])
+        self.assertTrue(result.trace["revalidation"]["format_change_allowed"])
+
+    def test_legacy_format_migration_rejects_numeric_value_change(self):
+        with self.assertRaisesRegex(CalculationPlanError, "changed the incumbent value"):
+            CalculationExecutor().replay_legacy_trace(
+                {
+                    "schema_version": 2,
+                    "variables": [
+                        {
+                            "name": "growth",
+                            "value": "22.27",
+                            "value_type": "decimal",
+                            "unit": "%",
+                            "evidence_ids": ["report"],
+                        }
+                    ],
+                    "steps": [],
+                    "outputs": [
+                        {
+                            "source": {"ref": "growth"},
+                            "format": "decimal2",
+                            "value": "8.00",
+                        }
+                    ],
+                },
+                expected_slots=1,
+                evidence_text_by_id={"report": "同比增幅为22.27%"},
+                expected_slot_templates=("999999.99",),
+                expected_percent_suffixes=(True,),
+                preserve_incumbent_answer=False,
             )
 
     def test_bare_table_amount_requires_blank_declared_unit(self):
@@ -550,6 +619,51 @@ class BBoardCalculationTests(unittest.TestCase):
             result.trace["steps"][0]["unit_conversions"],
             [{"argument": "denominator", "from": "percent_points", "to": "ratio"}],
         )
+
+    def test_readme_percent_suffix_formats_ratio_and_percent_points_correctly(self):
+        ratio_result = CalculationExecutor().execute(
+            {
+                "variables": [
+                    {"name": "gap", "value": "0.00082368", "evidence_ids": ["e"]},
+                    {"name": "whole", "value": "1", "evidence_ids": ["e"]},
+                ],
+                "steps": [
+                    {
+                        "id": "relative",
+                        "op": "div",
+                        "args": [{"ref": "gap"}, {"ref": "whole"}],
+                    }
+                ],
+                "outputs": [{"source": {"ref": "relative"}, "format": "percent2"}],
+            },
+            expected_slots=1,
+            evidence_text_by_id={"e": "绝对相对偏差分子为0.00082368，整体为1"},
+            expected_slot_templates=("999999.99",),
+            expected_numeric_decimal_places=2,
+            expected_percent_suffixes=(True,),
+        )
+        points_result = CalculationExecutor().execute(
+            {
+                "variables": [
+                    {
+                        "name": "growth",
+                        "value": "40.0461",
+                        "unit": "%",
+                        "evidence_ids": ["e"],
+                    },
+                ],
+                "steps": [],
+                "outputs": [{"source": {"ref": "growth"}, "format": "decimal2"}],
+            },
+            expected_slots=1,
+            evidence_text_by_id={"e": "同比增幅为40.0461%"},
+            expected_slot_templates=("999999.99",),
+            expected_numeric_decimal_places=2,
+            expected_percent_suffixes=(True,),
+        )
+
+        self.assertEqual(ratio_result.answer_parts, ("0.08%",))
+        self.assertEqual(points_result.answer_parts, ("40.05%",))
 
 
 if __name__ == "__main__":

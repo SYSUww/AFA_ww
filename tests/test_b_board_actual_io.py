@@ -88,6 +88,94 @@ class ActualBQuestionLoadingTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "answer_1"):
             validate_b_answer(question, BAnswer("q1", ("2.58%", "7.65%")))
 
+    def test_answer_descriptors_apply_readme_percent_rule_per_slot(self) -> None:
+        question = make_question(
+            answer_format="calculation",
+            slots=2,
+            slot_templates=("999999.99", "999999.99"),
+        )
+        question.question = (
+            "计算同比增幅和占比提高百分点。"
+            "答案格式为“同比增幅；占比提高百分点”，均保留两位小数、不带单位。"
+        )
+
+        validate_b_answer(question, BAnswer("q1", ("40.05%", "10.10")))
+        with self.assertRaisesRegex(ValueError, "answer_1"):
+            validate_b_answer(question, BAnswer("q1", ("40.05", "10.10")))
+        with self.assertRaisesRegex(ValueError, "answer_2"):
+            validate_b_answer(question, BAnswer("q1", ("40.05%", "10.10%")))
+
+    def test_percent_semantics_override_no_unit_but_not_explicit_no_percent(self) -> None:
+        question = make_question(
+            answer_format="calculation",
+            slots=2,
+            slot_templates=("999999.99", "999999.99"),
+        )
+        question.question = (
+            "答案格式为“隐含营业收入；绝对相对偏差”，"
+            "前者以百万元计，后者以百分数计，均不带单位。"
+        )
+
+        validate_b_answer(question, BAnswer("q1", ("1049321.98", "0.08%")))
+        with self.assertRaisesRegex(ValueError, "answer_2"):
+            validate_b_answer(question, BAnswer("q1", ("1049321.98", "0.08")))
+
+    def test_single_slot_rate_uses_readme_percent_suffix(self) -> None:
+        question = make_question(answer_format="calculation")
+        question.question = "全年动力电池需求同比增速最接近多少？"
+
+        validate_b_answer(question, BAnswer("q1", ("22.27%",)))
+        with self.assertRaisesRegex(ValueError, "answer_1"):
+            validate_b_answer(question, BAnswer("q1", ("22.27",)))
+
+    def test_single_slot_percent_input_does_not_make_amount_answer_percent(self) -> None:
+        question = make_question(answer_format="calculation")
+        question.question = "已知投资收益率为10%。求对应收益金额，保留两位小数。"
+
+        validate_b_answer(question, BAnswer("q1", ("100.00",)))
+
+    def test_generic_explicit_no_percent_overrides_percent_template(self) -> None:
+        question = make_question(
+            answer_format="calculation",
+            slot_templates=("999999.99%",),
+        )
+        question.question = "计算投资收益率，答案不带百分号，保留两位小数。"
+
+        validate_b_answer(question, BAnswer("q1", ("7.65",)))
+        with self.assertRaisesRegex(ValueError, "without '%' suffix"):
+            validate_b_answer(question, BAnswer("q1", ("7.65%",)))
+
+    def test_readme_percent_semantics_cover_ratio_and_margin_terms(self) -> None:
+        for label in ("利润占比", "销售比例", "毛利率"):
+            with self.subTest(label=label):
+                question = make_question(answer_format="calculation")
+                question.question = f"计算{label}是多少？"
+                validate_b_answer(question, BAnswer("q1", ("12.34%",)))
+                with self.assertRaisesRegex(ValueError, "'%' suffix"):
+                    validate_b_answer(question, BAnswer("q1", ("12.34",)))
+
+    def test_percentage_point_declines_remain_bare_by_answer_slot(self) -> None:
+        question = make_question(
+            answer_format="calculation",
+            slots=3,
+            slot_templates=("999999.99", "999999.99", "999999.99"),
+        )
+        question.question = (
+            "分别计算净利率下降的百分点、现金流率下降的百分点，并计算两者差额。"
+            "答案格式为“净利率降幅；现金流率降幅；两者差额”，均不带单位。"
+        )
+
+        validate_b_answer(question, BAnswer("q1", ("1.20", "2.30", "1.10")))
+
+    def test_single_slot_percent_inputs_do_not_override_final_amount_question(self) -> None:
+        question = make_question(answer_format="calculation")
+        question.question = (
+            "2025年订单增速超过100%，若2026年增速为30%，AI订单占比为80%，"
+            "则2026年AI新签订单约为多少亿元？"
+        )
+
+        validate_b_answer(question, BAnswer("q1", ("18.72",)))
+
     def test_no_unit_instruction_does_not_turn_ordering_slot_into_numeric_slot(self) -> None:
         question = make_question(
             answer_format="calculation",

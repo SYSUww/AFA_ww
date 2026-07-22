@@ -13512,3 +13512,180 @@
 ### 下一轮候选
 
 - v3 仍标记 `fc_b_018`（error likelihood `76`）和 `res_b_006`（`97`）为疑似错误；本轮不继续扩改，后续应先做主体绑定和独立证据审计，再决定是否改变答案。
+
+## b-loop-i023-readme-percent-format-priority-v6
+
+- recorded_at: `2026-07-22T13:24:13+00:00`
+
+```json
+{
+  "answer_changes": {
+    "fin_b_013": {
+      "after": [
+        "40.05%",
+        "10.10"
+      ],
+      "before": [
+        "40.05",
+        "10.10"
+      ],
+      "kind": "percent suffix only"
+    },
+    "fin_b_017": {
+      "after": [
+        "1049321.98",
+        "0.08%"
+      ],
+      "before": [
+        "1049321.98",
+        "0.08"
+      ],
+      "kind": "percent suffix only"
+    },
+    "res_b_005": {
+      "after": [
+        "22.27%"
+      ],
+      "before": [
+        "22.27"
+      ],
+      "kind": "percent suffix only"
+    }
+  },
+  "baseline_run_dir": "artifacts/b_board_actual/candidates/i023_gpt56_suspect_case_optimization/suspect_bundle_v7_a4_composite",
+  "blind_pair": {
+    "artifact": "artifacts/b_board_actual/candidates/i023_gpt56_suspect_case_optimization/readme_percent_format_v9_a8_composite/blind_format_cases_v3.json",
+    "candidate_wins": [
+      "fin_b_013",
+      "fin_b_017",
+      "res_b_005"
+    ],
+    "confidence_by_qid": {
+      "fin_b_013": 99,
+      "fin_b_017": 99,
+      "res_b_005": 99
+    },
+    "token_usage": 13699
+  },
+  "candidate_run_dir": "artifacts/b_board_actual/candidates/i023_gpt56_suspect_case_optimization/readme_percent_format_v9_a8_composite",
+  "candidate_submission": "artifacts/b_board_actual/candidates/i023_gpt56_suspect_case_optimization/readme_percent_format_v9_a8_composite/submit.csv",
+  "candidate_submission_sha256": "09707c1865793f79886053de0cf017c10732adcd5c5868412572761266b45516",
+  "deterministic_migration": {
+    "composite_coverage": "100/100",
+    "coverage": "3/3",
+    "generation_tokens": 0,
+    "numeric_equivalence_guard": true,
+    "runner": "b_actual_incumbent_trace_literal_revalidation_a5",
+    "submission_valid": true
+  },
+  "direction_id": "question_then_readme_percent_format_contract",
+  "effective_branch": "codex/b榜-i023-suspect-case-optimization",
+  "experiment_id": "b-loop-i023-readme-percent-format-priority-v6",
+  "external_baseline": {
+    "accuracy_percent": 92,
+    "note": "仅作为整体准确率基线，不反推单题标签。",
+    "source": "官网当前候选"
+  },
+  "fixed_evaluator": {
+    "aggregate_after": {
+      "answer_disagreements": 4,
+      "blocked": 15,
+      "high": 76,
+      "low": 9,
+      "median": 96,
+      "medium": 0,
+      "p10": 20,
+      "review_candidates": 17,
+      "suspected_errors": 2
+    },
+    "aggregate_before": {
+      "answer_disagreements": 9,
+      "blocked": 20,
+      "high": 71,
+      "low": 7,
+      "median": 95,
+      "medium": 2,
+      "p10": 18,
+      "review_candidates": 22,
+      "suspected_errors": 7
+    },
+    "baseline_output": "evaluation_gpt56_error_audit_v6",
+    "candidate_output": "evaluation_gpt56_error_audit_v6",
+    "coverage": "100/100 answers + 6/6 sentinels on both",
+    "failures": 0,
+    "hard_gate_version": "b_hard_gate_v5_expanded_readme_semantics",
+    "model": "gpt-5.6",
+    "prompt_sha256": "3e68c78b5a5a0072dd6868f28797184339fc68557218a73f39ad23e9524c2453",
+    "prompt_version": "b_answer_error_judge_v4_readme_format",
+    "sentinels_passed": true,
+    "successful_token_usage": {
+      "baseline": 1143977,
+      "candidate": 1141228,
+      "total": 2285205
+    },
+    "target_scores": {
+      "fin_b_013": "0/blocked -> 96/high",
+      "fin_b_017": "0/blocked -> 99/high",
+      "res_b_005": "0/blocked -> 97/high"
+    },
+    "temperature": 0.0
+  },
+  "format_precedence": [
+    "题目明确要求",
+    "upload_b/readme.md 通用规则",
+    "submit.csv 占位模板"
+  ],
+  "recorded_at": "2026-07-22T13:24:13+00:00",
+  "rejected_attempts": [
+    {
+      "attempt": "readme_percent_format_v8_a5 model replanning",
+      "known_tokens": 95272,
+      "reason": "fin_b_013/res_b_005 produced invalid operation schemas; fin_b_017 incorrectly multiplied the implicit revenue by 100",
+      "result": "rejected"
+    },
+    {
+      "attempt": "evaluator v4 before format-priority prompt alignment",
+      "reason": "judge incorrectly treated 不带单位 as forbidding %; results excluded",
+      "result": "aborted"
+    },
+    {
+      "attempt": "evaluator v5 before expanded README semantics",
+      "reason": "format vocabulary and README two-decimal prompt were incomplete; results excluded",
+      "result": "aborted"
+    }
+  ],
+  "remaining_risk": "Only an official submission can confirm leaderboard scoring of the three suffix changes; no submission chance was consumed in this iteration.",
+  "root_cause_cluster": "percent_suffix_precedence_and_evaluator_alignment",
+  "round_gate": {
+    "financial_reports_p10": "0 -> 84",
+    "new_hard_failures": {},
+    "path": "artifacts/b_board_actual/candidates/i023_gpt56_suspect_case_optimization/readme_percent_format_v9_a8_composite/promotion_gate.json",
+    "promoted_qids": [
+      "fin_b_013",
+      "fin_b_017",
+      "res_b_005"
+    ],
+    "reasons": [],
+    "valid": true
+  },
+  "semantic_rules": {
+    "explicit_no_percent_overrides_readme": true,
+    "no_unit_does_not_forbid_percent_sign": true,
+    "percentage_answers_use_percent_sign_and_two_decimals": true,
+    "percentage_point_values_do_not_use_percent_sign": true
+  },
+  "status": "accepted_internal",
+  "submission_effect": "not_submitted",
+  "tests": {
+    "b_board": "94/94",
+    "git_diff_check": true,
+    "retrieval_integrity": "54/54",
+    "total": "148/148"
+  },
+  "token_accounting": {
+    "complete": false,
+    "known_successful_lower_bound": 4105082,
+    "reason": "aborted evaluator calls and schema-invalid retries do not expose token usage through the current runner; retained final v6 successful usage is complete."
+  }
+}
+```

@@ -148,7 +148,6 @@ class CalculationExecutor:
             value_kind = _resolve_kind(source, value_kinds)
             requested_format = str(output.get("format", "raw"))
             format_name = requested_format
-            rendered_value = value
             question_rounded_value: str | None = None
             if expected_slot_templates is not None:
                 if len(expected_slot_templates) != expected_slots:
@@ -164,30 +163,20 @@ class CalculationExecutor:
                     if expected_percent_suffixes is not None
                     else None
                 )
-                if (
-                    expected_numeric_decimal_places is not None
-                    and (
-                        re.fullmatch(r"9+\.99", slot_template)
-                        or slot_template.endswith("%")
-                    )
-                    and not isinstance(value, date)
-                ):
-                    if expected_numeric_decimal_places not in {0, 1, 2}:
-                        raise CalculationPlanError(
-                            "Unsupported question numeric precision: "
-                            f"{expected_numeric_decimal_places}"
-                        )
-                    quantum = Decimal("1").scaleb(-expected_numeric_decimal_places)
-                    rendered_value = _decimal(value).quantize(quantum, rounding=ROUND_HALF_UP)
-                    question_rounded_value = _serialize_value(rendered_value)
                 format_name = _format_for_slot_contract(
                     slot_template,
-                    rendered_value,
+                    value,
                     requested_format=requested_format,
                     numeric_decimal_places=expected_numeric_decimal_places,
                     percent_suffix=percent_suffix,
                 )
-            rendered = _format_value(rendered_value, format_name, value_kind=value_kind)
+            rendered = _format_value(value, format_name, value_kind=value_kind)
+            if (
+                expected_slot_templates is not None
+                and expected_numeric_decimal_places is not None
+                and re.fullmatch(r"-?\d+(?:\.\d+)?%?", rendered)
+            ):
+                question_rounded_value = rendered.removesuffix("%")
             if not rendered:
                 raise CalculationPlanError(f"Output slot {position} rendered empty")
             if expected_slot_templates is not None:
@@ -238,6 +227,9 @@ class CalculationExecutor:
         expected_slots: int,
         evidence_text_by_id: Mapping[str, str],
         expected_slot_templates: Sequence[str] | None = None,
+        expected_numeric_decimal_places: int | None = None,
+        expected_percent_suffixes: Sequence[bool | None] | None = None,
+        preserve_incumbent_answer: bool = True,
     ) -> CalculationResult:
         """Revalidate an old normalized trace without asking a model to replan it.
 
@@ -255,18 +247,29 @@ class CalculationExecutor:
             expected_slots=expected_slots,
             evidence_text_by_id=evidence_text_by_id,
             expected_slot_templates=expected_slot_templates,
+            expected_numeric_decimal_places=expected_numeric_decimal_places,
+            expected_percent_suffixes=expected_percent_suffixes,
         )
         expected_parts = tuple(replay_meta["expected_answer_parts"])
-        if expected_parts and result.answer_parts != expected_parts:
+        answer_preserved = not expected_parts or result.answer_parts == expected_parts
+        if preserve_incumbent_answer and not answer_preserved:
             raise CalculationPlanError(
                 "Legacy replay changed the incumbent answer: "
+                f"expected {expected_parts}, got {result.answer_parts}"
+            )
+        if not preserve_incumbent_answer and not _answers_differ_only_in_format(
+            expected_parts, result.answer_parts
+        ):
+            raise CalculationPlanError(
+                "Legacy format migration changed the incumbent value: "
                 f"expected {expected_parts}, got {result.answer_parts}"
             )
         replayed_trace = {
             **result.trace,
             "revalidated_from_schema_version": replay_meta["source_schema_version"],
             "revalidation": {
-                "answer_preserved": True,
+                "answer_preserved": answer_preserved,
+                "format_change_allowed": not preserve_incumbent_answer,
                 "converted_percent_ratio_variables": replay_meta[
                     "converted_percent_ratio_variables"
                 ],
@@ -725,6 +728,24 @@ def _serialize_value(value: Any) -> str:
     if isinstance(value, date):
         return value.isoformat()
     return str(value)
+
+
+def _answers_differ_only_in_format(
+    before: Sequence[str], after: Sequence[str]
+) -> bool:
+    if len(before) != len(after):
+        return False
+    for old, new in zip(before, after):
+        if old == new:
+            continue
+        try:
+            old_number = Decimal(str(old).strip().removesuffix("%"))
+            new_number = Decimal(str(new).strip().removesuffix("%"))
+        except InvalidOperation:
+            return False
+        if old_number != new_number:
+            return False
+    return True
 
 
 def _require_arg_count(op: str, args: Sequence[Any], count: int) -> None:

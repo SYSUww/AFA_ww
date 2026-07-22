@@ -145,26 +145,41 @@ def infer_percent_suffix_requirement(
     slot_index: int,
     slot_count: int,
 ) -> bool | None:
-    """Return a question-specific percent-sign requirement for one answer slot.
+    """Return the percent-sign requirement for one answer slot.
 
-    ``None`` means the question is silent and the submission template/README
-    contract should be used.  A concrete instruction in the question is more
-    specific and therefore takes precedence over that generic contract.
+    Explicit question instructions take precedence.  Otherwise, percentage
+    semantics in the requested answer are interpreted according to README:
+    percentage answers carry ``%`` while percentage-point answers do not.
+    ``None`` means no percentage semantics were identified, so the submission
+    template remains the fallback.
     """
 
     text = re.sub(r"\s+", "", str(question_text)).replace("％", "%")
-    if "均不带单位" in text or "均不带%" in text or "均不带百分号" in text:
+    if "均不带%" in text or "均不带百分号" in text:
         return False
-    if slot_index == 1 and re.search(r"前者不带(?:单位|%|百分号)", text):
+    scoped_negative = False
+    if slot_index == 1 and re.search(r"前者不带(?:%|百分号)", text):
         return False
-    if slot_index == slot_count and re.search(r"后者不带(?:单位|%|百分号)", text):
+    if re.search(r"前者不带(?:%|百分号)", text):
+        scoped_negative = True
+    if slot_index == slot_count and re.search(r"后者不带(?:%|百分号)", text):
+        return False
+    if re.search(r"后者不带(?:%|百分号)", text):
+        scoped_negative = True
+    if not scoped_negative and re.search(r"(?:答案|结果)?不带(?:%|百分号)", text):
         return False
     scoped_positive = False
-    if re.search(r"前者(?:须|需|必须)?(?:填写|带|添加)(?:百分号|%)", text):
+    if re.search(
+        r"前者(?:(?:须|需|必须)?(?:填写|带|添加)(?:百分号|%)|以百分数计)",
+        text,
+    ):
         scoped_positive = True
         if slot_index == 1:
             return True
-    if re.search(r"后者(?:须|需|必须)?(?:填写|带|添加)(?:百分号|%)", text):
+    if re.search(
+        r"后者(?:(?:须|需|必须)?(?:填写|带|添加)(?:百分号|%)|以百分数计)",
+        text,
+    ):
         scoped_positive = True
         if slot_index == slot_count:
             return True
@@ -172,6 +187,31 @@ def infer_percent_suffix_requirement(
         return None
     if re.search(r"(?:须|需|必须)(?:填写|带|添加)(?:百分号|%)", text):
         return True
+
+    format_match = re.search(r"答案格式为[‘“\"]([^’”\"]+)[’”\"]", text)
+    if format_match:
+        descriptors = re.split(r"[；;]", format_match.group(1))
+        if len(descriptors) == slot_count:
+            descriptor = descriptors[slot_index - 1]
+            if "百分点" in descriptor:
+                return False
+            if "降幅" in descriptor and "百分点" in text and "同比" not in descriptor:
+                return False
+            if re.search(
+                r"(?:百分数|同比增幅|同比增速|增长率|相对偏差|收益率|毛利率|净利率|现金流率|负债率|比例|占比)",
+                descriptor,
+            ):
+                return True
+
+    if slot_count == 1:
+        request_clause = re.split(r"[。；;]|则", text.rstrip("。？！?!"))[-1]
+        if "百分点" in request_clause:
+            return False
+        if re.search(
+            r"(?:百分数|同比增幅|同比增速|增长率|相对偏差|收益率|毛利率|净利率|现金流率|负债率|比例|占比)",
+            request_clause,
+        ):
+            return True
     return None
 
 
