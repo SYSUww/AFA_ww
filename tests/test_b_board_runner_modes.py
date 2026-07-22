@@ -11,12 +11,19 @@ from afa_agent.b_board.io import BQuestion
 from afa_agent.b_board.runner import (
     RUN_MODE_RESEARCH,
     RUN_MODE_SUBMISSION,
+    SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
+    SUBMISSION_REASONING_FEEDBACK_SYSTEM_PROMPT,
     SUBMISSION_REASONING_PROMPT_VERSION,
+    SUBMISSION_REASONING_REFINE_PROMPT_VERSION,
+    SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT,
     SUBMISSION_REASONING_SYSTEM_PROMPT,
     BAnswerArtifact,
+    BAnswerGenerationError,
     BBoardActualRunner,
 )
+from afa_agent.client import LLMResponse
 from afa_agent.config import ModelConfig, RunConfig
+from afa_agent.models import TokenUsage
 from afa_agent.run_metadata import RunFingerprintError, validate_resume_fingerprint
 from scripts import run_b_board_actual
 
@@ -61,6 +68,28 @@ def _model(model_name: str) -> ModelConfig:
     )
 
 
+class _QueuedClient:
+    def __init__(self, responses: list[LLMResponse]) -> None:
+        self.responses = list(responses)
+        self.messages: list[list[dict[str, str]]] = []
+
+    def chat_json(self, messages: list[dict[str, str]]) -> LLMResponse:
+        self.messages.append(messages)
+        return self.responses.pop(0)
+
+
+def _response(content: str, prompt: int, completion: int) -> LLMResponse:
+    return LLMResponse(
+        content=content,
+        token_usage=TokenUsage(
+            prompt_tokens=prompt,
+            completion_tokens=completion,
+            total_tokens=prompt + completion,
+        ),
+        raw_payload={},
+    )
+
+
 class BBoardRunnerModeTests(unittest.TestCase):
     def test_reasoning_prompt_requires_explicit_auditable_structure(self) -> None:
         self.assertEqual(
@@ -69,6 +98,83 @@ class BBoardRunnerModeTests(unittest.TestCase):
         )
         self.assertIn("定位—关键事实—推导—结论", SUBMISSION_REASONING_SYSTEM_PROMPT)
         self.assertIn("与 answer_parts 完全一致", SUBMISSION_REASONING_SYSTEM_PROMPT)
+
+    def test_reasoning_refinement_prompts_match_new_md_dimensions_and_freeze_answer(self) -> None:
+        self.assertEqual(
+            SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
+            "b_submission_reasoning_feedback_v1_new_md",
+        )
+        for dimension in ("logical", "completeness", "clarity"):
+            self.assertIn(dimension, SUBMISSION_REASONING_FEEDBACK_SYSTEM_PROMPT)
+        self.assertEqual(
+            SUBMISSION_REASONING_REFINE_PROMPT_VERSION,
+            "b_submission_reasoning_refine_v1_verified",
+        )
+        self.assertIn("冻结答案", SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT)
+        self.assertIn("定位—关键事实—推导—结论", SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT)
+
+    def test_reasoning_refinement_preserves_answer_and_sums_both_raw_usages(self) -> None:
+        runner = object.__new__(BBoardActualRunner)
+        runner.config = SimpleNamespace(model=SimpleNamespace(model_name="gpt-5.5"))
+        runner.client = _QueuedClient(
+            [
+                _response(
+                    '{"logical_issues":[],"completeness_issues":["缺关键排除项"],'
+                    '"clarity_issues":[],"verification_questions":["为何排除B"],'
+                    '"must_preserve_facts":["证据支持A"]}',
+                    10,
+                    2,
+                ),
+                _response(
+                    '{"answer_parts":["A"],"reasoning":"定位题干中的监管要求；关键证据直接支持该要求成立，与错误选项B的表述不符；因此从事实可推得判断为正确，最终答案为A。"}',
+                    12,
+                    3,
+                ),
+            ]
+        )
+
+        result = runner.refine_submission_reasoning(_question(), _artifact())
+
+        self.assertEqual(result.answer_parts, ["A"])
+        self.assertIn("最终答案为A", result.decision_summary)
+        self.assertEqual(
+            result.token_usage,
+            {"prompt_tokens": 32, "completion_tokens": 10, "total_tokens": 42},
+        )
+        trace = result.decision_trace["submission_reasoning_refinement"]
+        self.assertTrue(trace["answer_parts_preserved"])
+        self.assertEqual(
+            trace["feedback_prompt_version"], SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION
+        )
+        self.assertEqual(trace["refine_prompt_version"], SUBMISSION_REASONING_REFINE_PROMPT_VERSION)
+        self.assertEqual(len(runner.client.messages), 2)
+
+    def test_reasoning_refinement_rejects_answer_change_and_reports_all_usage(self) -> None:
+        runner = object.__new__(BBoardActualRunner)
+        runner.config = SimpleNamespace(model=SimpleNamespace(model_name="gpt-5.5"))
+        runner.client = _QueuedClient(
+            [
+                _response(
+                    '{"logical_issues":[],"completeness_issues":[],"clarity_issues":[],'
+                    '"verification_questions":[],"must_preserve_facts":["证据支持A"]}',
+                    10,
+                    2,
+                ),
+                _response(
+                    '{"answer_parts":["B"],"reasoning":"这是一段长度足够但错误改变冻结答案的推理摘要，必须被硬门禁拒绝。"}',
+                    12,
+                    3,
+                ),
+            ]
+        )
+
+        with self.assertRaisesRegex(BAnswerGenerationError, "changed answer_parts") as raised:
+            runner.refine_submission_reasoning(_question(), _artifact())
+
+        self.assertEqual(
+            raised.exception.token_usage,
+            {"prompt_tokens": 32, "completion_tokens": 10, "total_tokens": 42},
+        )
 
     def test_cli_defaults_to_submission_and_accepts_research(self) -> None:
         with mock.patch.object(sys, "argv", ["run_b_board_actual.py"]):

@@ -73,6 +73,21 @@ reasoning 是可审计但不暴露冗长思维链的中文短摘要，建议 120
 4. 结论必须显式写出与 answer_parts 完全一致的最终答案。
 不得只复述题目或答案，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。即使已有求解摘要很短，也要依据给定证据形成自洽摘要。只输出 JSON。prompt_version={SUBMISSION_REASONING_PROMPT_VERSION}。"""
 
+SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION = "b_submission_reasoning_feedback_v1_new_md"
+SUBMISSION_REASONING_FEEDBACK_SYSTEM_PROMPT = f"""你是金融长文问答的推理摘要质检器。只使用给定题目、冻结答案、摘要草稿和证据，不补充外部事实，不得建议改变答案。
+严格按评分规则的三个维度诊断：logical 检查步骤间因果关系和自洽性；completeness 检查定位、提取、推导和结论是否完整；clarity 检查结构、条理和表达准确性。
+选择题还要检查每个选中项的支持事实、至少一个关键排除项及显式最终答案；计算题还要检查必要公式、代入、单位和结果格式。
+只输出 JSON，字段严格为 logical_issues、completeness_issues、clarity_issues、verification_questions、must_preserve_facts，每个字段的值都是字符串数组。问题必须具体可修正；无问题时输出空数组。prompt_version={SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION}。"""
+
+SUBMISSION_REASONING_REFINE_PROMPT_VERSION = "b_submission_reasoning_refine_v1_verified"
+SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推理摘要修订器。只使用给定题目、冻结答案、原摘要、质检结果和证据，不补充外部事实，不得改变答案。
+输出字段仅为 answer_parts 和 reasoning 的 JSON；answer_parts 必须逐字复制冻结答案。reasoning 用中文完成“定位—关键事实—推导—结论”闭环，通常为 120-220 字：
+1. 明确主体、产品、条款、指标或期间；
+2. 只写证据可支持的具体事实；选择题覆盖每个选中项并说明至少一个关键排除项；
+3. 补齐事实到判断的因果联系；计算题写必要公式、代入、单位换算和结果格式；
+4. 显式写出与 answer_parts 完全一致的最终答案。
+不得提及“质检”、“反馈”、“草稿”或修订过程，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。只输出 JSON。prompt_version={SUBMISSION_REASONING_REFINE_PROMPT_VERSION}。"""
+
 RUNNER_VERSION = "b_actual_v10_reasoning_audit"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 RUN_MODE_SUBMISSION = "submission"
@@ -582,6 +597,133 @@ class BBoardActualRunner:
                 "prompt_version": SUBMISSION_REASONING_PROMPT_VERSION,
                 "model_name": self.config.model.model_name,
                 "token_usage": response.token_usage.to_dict(),
+                "answer_parts_preserved": True,
+            },
+        }
+        return artifact
+
+    def refine_submission_reasoning(
+        self,
+        question: BQuestion,
+        artifact: BAnswerArtifact,
+    ) -> BAnswerArtifact:
+        """Run one evidence-grounded feedback/refine pass while freezing the answer."""
+
+        evidence_payload = [
+            {
+                "unit_id": str(item.get("unit_id", "")),
+                "doc_id": str(item.get("doc_id", "")),
+                "title": " > ".join(str(value) for value in item.get("title_path", [])),
+                "text": str(item.get("text", ""))[:1800],
+            }
+            for item in artifact.evidence_items[:12]
+        ]
+        shared_payload = {
+            "qid": question.qid,
+            "question": question.question,
+            "options": question.options,
+            "frozen_answer_parts": artifact.answer_parts,
+            "reasoning": artifact.decision_summary,
+            "evidence": evidence_payload,
+        }
+        feedback_response = self.client.chat_json(
+            [
+                {"role": "system", "content": SUBMISSION_REASONING_FEEDBACK_SYSTEM_PROMPT},
+                {
+                    "role": "user",
+                    "content": json.dumps(shared_payload, ensure_ascii=False, sort_keys=True),
+                },
+            ]
+        )
+        combined_usage = _add_token_usage(
+            artifact.token_usage, feedback_response.token_usage.to_dict()
+        )
+        diagnostics: list[dict[str, Any]] = [
+            {
+                "stage": "submission_reasoning_feedback",
+                "prompt_version": SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
+                "response_preview": feedback_response.content[:1000],
+            }
+        ]
+        feedback_keys = (
+            "logical_issues",
+            "completeness_issues",
+            "clarity_issues",
+            "verification_questions",
+            "must_preserve_facts",
+        )
+        try:
+            feedback = extract_json_object(feedback_response.content)
+            if any(not isinstance(feedback.get(key), list) for key in feedback_keys):
+                raise ValueError("reasoning feedback is missing required list fields")
+            if (
+                feedback_response.token_usage.prompt_tokens <= 0
+                or feedback_response.token_usage.completion_tokens <= 0
+            ):
+                raise ValueError("reasoning feedback API response is missing positive raw usage")
+        except Exception as exc:
+            diagnostics[0]["error_type"] = exc.__class__.__name__
+            diagnostics[0]["error"] = str(exc)[:1000]
+            raise BAnswerGenerationError(
+                f"Submission reasoning feedback failed: {exc}",
+                token_usage=combined_usage,
+                diagnostics=diagnostics,
+            ) from exc
+
+        refine_payload = {
+            **shared_payload,
+            "feedback": {key: feedback[key] for key in feedback_keys},
+        }
+        refine_response = self.client.chat_json(
+            [
+                {"role": "system", "content": SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT},
+                {
+                    "role": "user",
+                    "content": json.dumps(refine_payload, ensure_ascii=False, sort_keys=True),
+                },
+            ]
+        )
+        combined_usage = _add_token_usage(combined_usage, refine_response.token_usage.to_dict())
+        diagnostics.append(
+            {
+                "stage": "submission_reasoning_refine",
+                "prompt_version": SUBMISSION_REASONING_REFINE_PROMPT_VERSION,
+                "response_preview": refine_response.content[:1000],
+            }
+        )
+        try:
+            payload = extract_json_object(refine_response.content)
+            answer_parts = payload.get("answer_parts")
+            if not isinstance(answer_parts, list) or [str(item) for item in answer_parts] != artifact.answer_parts:
+                raise ValueError("submission reasoning refinement changed answer_parts")
+            reasoning = str(payload.get("reasoning", "")).strip()
+            if len(re.sub(r"\s+", "", reasoning)) < 20:
+                raise ValueError("refined submission reasoning is shorter than 20 non-whitespace characters")
+            if (
+                refine_response.token_usage.prompt_tokens <= 0
+                or refine_response.token_usage.completion_tokens <= 0
+            ):
+                raise ValueError("reasoning refinement API response is missing positive raw usage")
+        except Exception as exc:
+            diagnostics[-1]["error_type"] = exc.__class__.__name__
+            diagnostics[-1]["error"] = str(exc)[:1000]
+            raise BAnswerGenerationError(
+                f"Submission reasoning refinement failed: {exc}",
+                token_usage=combined_usage,
+                diagnostics=diagnostics,
+            ) from exc
+
+        artifact.decision_summary = reasoning
+        artifact.token_usage = combined_usage
+        artifact.decision_trace = {
+            **artifact.decision_trace,
+            "submission_reasoning_refinement": {
+                "feedback_prompt_version": SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
+                "refine_prompt_version": SUBMISSION_REASONING_REFINE_PROMPT_VERSION,
+                "model_name": self.config.model.model_name,
+                "feedback": {key: feedback[key] for key in feedback_keys},
+                "feedback_token_usage": feedback_response.token_usage.to_dict(),
+                "refine_token_usage": refine_response.token_usage.to_dict(),
                 "answer_parts_preserved": True,
             },
         }

@@ -18896,3 +18896,295 @@
   "target_qids": []
 }
 ```
+
+## b-loop-reasoning-self-refine-verification-a1-lowtail6
+
+- recorded_at: `2026-07-22T21:58:19+00:00`
+
+```json
+{
+  "approach": "冻结6个reasoning低尾题的答案；gpt-5.5先按new.md的logical/completeness/clarity及题型检查项生成反馈，再使用同一模型依据原证据重写一次，完整累加两次API原始usage。",
+  "artifact_path": "artifacts/b_board_score_loop/reasoning_self_refine_a1_lowtail6",
+  "base_commit": "22b28897fd006d8d8fa83b69e7b6fec580010574",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "22b28897fd006d8d8fa83b69e7b6fec580010574",
+        "code_hash": "0e786db85b55c25d8a13e20ab2ee449cb29175f24aeec613f82cd20e9907fb99",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "answer_freeze_gate": true,
+          "feedback_prompt_version": "b_submission_reasoning_feedback_v1_new_md",
+          "refine_prompt_version": "b_submission_reasoning_refine_v1_verified",
+          "strategy": "two_call_feedback_then_refine",
+          "variant": "a1"
+        },
+        "domains": [],
+        "hypothesis": "对低尾reasoning先生成三维具体反馈再做一次证据约束重写，可在冻结答案且token仍满分时提升最终加权总分",
+        "pipeline_stage": "reasoning",
+        "question_types": [],
+        "root_cause_cluster": "reasoning_verification_lowtail",
+        "target_qids": [
+          "fc_b_007",
+          "fin_b_014",
+          "reg_b_003",
+          "reg_b_024",
+          "res_b_008",
+          "res_b_014"
+        ]
+      }
+    },
+    "context_sha256": "f0c0dc22cbfc0f8fb40bc0a3c032c22840a4f743289dd9da30d0a7435fe5c9e4",
+    "direction_sha256": "c0a2e6946bc818c88b495136331ffad53b7bdd7db45d620cc2c53d1fc17a7c5c",
+    "schema_version": 1,
+    "semantic_sha256": "4ca09f74c8401478d3ab69e37d60040d611ac18a9b5accecf75ff9d05934d596",
+    "sha256": "f1de5021b15ad2bb4b37d212151ba1bcd73cf3581954999e085e57cefbeefdb8"
+  },
+  "change_vector": {
+    "answer_freeze_gate": true,
+    "feedback_prompt_version": "b_submission_reasoning_feedback_v1_new_md",
+    "refine_prompt_version": "b_submission_reasoning_refine_v1_verified",
+    "strategy": "two_call_feedback_then_refine",
+    "variant": "a1"
+  },
+  "code_hash": "0e786db85b55c25d8a13e20ab2ee449cb29175f24aeec613f82cd20e9907fb99",
+  "direction_id": "reasoning_self_refine_verification",
+  "domains": [],
+  "effect": "目标6题reasoning均值 90.611→93.389（+2.778）；全100题因果代理总分 99.196667→99.230000（+0.033333），答案变化0。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-reasoning-self-refine-verification-a1-lowtail6",
+  "failure_analysis": "通过答案硬冻结、仅reasoning judge和完整usage记账约束；仍是基于97%提交构造的伪标签代理，不能证明逐题真实正确。",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "22b28897fd006d8d8fa83b69e7b6fec580010574",
+          "code_hash": "0e786db85b55c25d8a13e20ab2ee449cb29175f24aeec613f82cd20e9907fb99",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "answer_freeze_gate": true,
+            "feedback_prompt_version": "b_submission_reasoning_feedback_v1_new_md",
+            "refine_prompt_version": "b_submission_reasoning_refine_v1_verified",
+            "strategy": "two_call_feedback_then_refine",
+            "variant": "a1"
+          },
+          "domains": [],
+          "hypothesis": "对低尾reasoning先生成三维具体反馈再做一次证据约束重写，可在冻结答案且token仍满分时提升最终加权总分",
+          "pipeline_stage": "reasoning",
+          "question_types": [],
+          "root_cause_cluster": "reasoning_verification_lowtail",
+          "target_qids": [
+            "fc_b_007",
+            "fin_b_014",
+            "reg_b_003",
+            "reg_b_024",
+            "res_b_008",
+            "res_b_014"
+          ]
+        }
+      },
+      "context_sha256": "f0c0dc22cbfc0f8fb40bc0a3c032c22840a4f743289dd9da30d0a7435fe5c9e4",
+      "direction_sha256": "c0a2e6946bc818c88b495136331ffad53b7bdd7db45d620cc2c53d1fc17a7c5c",
+      "schema_version": 1,
+      "semantic_sha256": "4ca09f74c8401478d3ab69e37d60040d611ac18a9b5accecf75ff9d05934d596",
+      "sha256": "f1de5021b15ad2bb4b37d212151ba1bcd73cf3581954999e085e57cefbeefdb8"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "22b28897fd006d8d8fa83b69e7b6fec580010574",
+            "code_hash": "0e786db85b55c25d8a13e20ab2ee449cb29175f24aeec613f82cd20e9907fb99",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "answer_freeze_gate": true,
+              "feedback_prompt_version": "b_submission_reasoning_feedback_v1_new_md",
+              "refine_prompt_version": "b_submission_reasoning_refine_v1_verified",
+              "strategy": "two_call_feedback_then_refine",
+              "variant": "a1"
+            },
+            "domains": [],
+            "hypothesis": "对低尾reasoning先生成三维具体反馈再做一次证据约束重写，可在冻结答案且token仍满分时提升最终加权总分",
+            "pipeline_stage": "reasoning",
+            "question_types": [],
+            "root_cause_cluster": "reasoning_verification_lowtail",
+            "target_qids": [
+              "fc_b_007",
+              "fin_b_014",
+              "reg_b_003",
+              "reg_b_024",
+              "res_b_008",
+              "res_b_014"
+            ]
+          }
+        },
+        "context_sha256": "f0c0dc22cbfc0f8fb40bc0a3c032c22840a4f743289dd9da30d0a7435fe5c9e4",
+        "direction_sha256": "c0a2e6946bc818c88b495136331ffad53b7bdd7db45d620cc2c53d1fc17a7c5c",
+        "schema_version": 1,
+        "semantic_sha256": "4ca09f74c8401478d3ab69e37d60040d611ac18a9b5accecf75ff9d05934d596",
+        "sha256": "f1de5021b15ad2bb4b37d212151ba1bcd73cf3581954999e085e57cefbeefdb8"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "9e4b347fe6c3372e596ee5507eb9a1d3c190131e25eecef83850c6cdc5e80cbe",
+      "size": 666511
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "011fe89e84fbe6f039e9b0fdb49fc6a9413cc266aec4a8a16bff2c8d2799f4d1",
+      "size": 539648
+    },
+    "related_log_sections": [
+      "b-loop-i023-gpt56-answer-error-audit-v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-b1",
+      "b-loop-research-structural-cost-reduction-res-b-009-a1",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-suspect-case-optimization-v3",
+      "b-loop-reasoning-shadow-baseline-v1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-full-chain-reproduction-baseline-v10",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-full-chain-b15966e-research-v1",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-full-chain-476fc31-research-v1",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90",
+      "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+      "b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100",
+      "b-loop-full-chain-737675b-reasoning-v2-research-v1",
+      "b-loop-insurance-conditional-policy-loan-eligibility-a1",
+      "b-loop-metric-scope-correction-ins-b-004-a1",
+      "b-loop-insurance-policy-loan-a1-full100-validation-82d4492",
+      "b-loop-calculation-amount-unit-scale-consistency-a1-res-b-012",
+      "b-loop-online-research-post-local-exhaustion-v1"
+    ],
+    "reviewed_at": "2026-07-22T21:54:56+00:00"
+  },
+  "hypothesis": "对低尾reasoning先生成三维具体反馈再做一次证据约束重写，可在冻结答案且Token仍满分时提升最终加权总分",
+  "material_delta": {
+    "feedback_then_refine": true
+  },
+  "metrics": {
+    "amount_scale_replacement_run": "artifacts/b_board_score_loop/amount_scale_a1_res_b012",
+    "answer_changes": {},
+    "base_run": "artifacts/b_board_score_loop/full_chain_82d4492_research_v1",
+    "baseline_scorecard": {
+      "accuracy_score": 100.0,
+      "reasoning_score": 95.98333333333333,
+      "token_efficiency_score": 100.0,
+      "token_total": 1222611,
+      "total_score": 99.19666666666667
+    },
+    "candidate_scorecard": {
+      "accuracy_score": 100.0,
+      "reasoning_score": 96.15,
+      "token_efficiency_score": 100.0,
+      "token_total": 1295227,
+      "total_score": 99.23
+    },
+    "incumbent_official_aggregate_accuracy": 97.0,
+    "incumbent_per_qid_truth_available": false,
+    "judge_token_usage": {
+      "completion_tokens": 572,
+      "prompt_tokens": 4354,
+      "total_tokens": 4926
+    },
+    "judge_tokens_included_in_submission": false,
+    "scope": "full100_causal_composite_res_b_012_fixed_plus_6_refined",
+    "target_qids": [
+      "fc_b_007",
+      "fin_b_014",
+      "reg_b_003",
+      "reg_b_024",
+      "res_b_008",
+      "res_b_014"
+    ],
+    "target_reasoning_after": 93.3888888888889,
+    "target_reasoning_aggregate": {
+      "dimension_means": {
+        "clarity": 93.66666666666667,
+        "completeness": 92.66666666666667,
+        "logical": 93.83333333333333
+      },
+      "p10": 88.0,
+      "question_count": 6,
+      "reasoning_score": 93.3888888888889,
+      "status_counts": {
+        "scored": 6
+      },
+      "zero_score_count": 0
+    },
+    "target_reasoning_before": 90.6111111111111,
+    "target_reasoning_delta": 2.7777777777778,
+    "total_score_delta": 0.03333333333333144
+  },
+  "next_step": "运行全量单测并提交推送有效分支；随后先复查日志，再决定是否以更严格选择门扩到更多低尾题。",
+  "pipeline_stage": "reasoning",
+  "question_types": [],
+  "recorded_at": "2026-07-22T21:58:19+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "reasoning_verification_lowtail",
+  "sources": [
+    "https://arxiv.org/abs/2303.17651",
+    "https://arxiv.org/abs/2309.11495"
+  ],
+  "status": "effective",
+  "submission_effect": "not_submitted",
+  "target_qids": [
+    "fc_b_007",
+    "fin_b_014",
+    "reg_b_003",
+    "reg_b_024",
+    "res_b_008",
+    "res_b_014"
+  ]
+}
+```
