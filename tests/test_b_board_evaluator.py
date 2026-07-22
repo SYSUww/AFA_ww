@@ -117,6 +117,7 @@ class BBoardEvaluatorTests(unittest.TestCase):
             self.assertIn("不带单位", prompt)
             self.assertIn("不带%", prompt)
             self.assertIn("保留两位小数", prompt)
+            self.assertRegex(prompt, r"至少(?:包含)?两个")
 
     def test_subject_rejects_optimizer_metadata(self):
         with self.assertRaisesRegex(ValueError, "optimizer metadata"):
@@ -164,6 +165,45 @@ class BBoardEvaluatorTests(unittest.TestCase):
             subject=subject(),
         )
         self.assertEqual(result.status, "resolved")
+
+    def test_multi_choice_independent_answer_requires_at_least_two_options(self):
+        multi_subject = subject(
+            type="多选题",
+            answer_format="multi",
+            options={"A": "甲", "B": "乙", "C": "丙"},
+            answer_parts=["AB"],
+        )
+        with self.assertRaisesRegex(ValueError, "at least two"):
+            parse_independent_payload(
+                independent_payload(
+                    answer_parts=["A"],
+                    option_assessments={
+                        "A": "supported",
+                        "B": "contradicted",
+                        "C": "insufficient",
+                    },
+                ),
+                subject=multi_subject,
+            )
+
+    def test_multi_choice_correction_candidate_requires_at_least_two_options(self):
+        with self.assertRaisesRegex(ValueError, "at least two"):
+            parse_evaluation_payload(
+                qid="q1",
+                question_type="multi",
+                payload=evaluation_payload(correction_candidate_parts=["A"]),
+            )
+
+    def test_multi_choice_sealed_answer_contract_is_a_hard_failure(self):
+        failures = detect_hard_failures(
+            subject(
+                type="多选题",
+                answer_format="multi",
+                options={"A": "甲", "B": "乙"},
+                answer_parts=["A"],
+            )
+        )
+        self.assertIn("invalid_choice_answer_contract", failures)
 
     def test_choice_answer_comparison_ignores_display_separators(self):
         independent = parse_independent_payload(

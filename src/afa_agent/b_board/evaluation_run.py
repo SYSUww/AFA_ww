@@ -59,6 +59,7 @@ def run_fixed_evaluation(
     workers: int = 4,
     output_name: str = "evaluation",
     evaluator_factory: EvaluatorFactory | None = None,
+    allow_extra_answers: bool = False,
 ) -> EvaluationRunResult:
     """Evaluate or safely resume evaluation of a sealed B-board answer run.
 
@@ -78,7 +79,9 @@ def run_fixed_evaluation(
 
     question_by_qid = _index_questions(questions)
     source_answers = _load_complete_answer_artifacts(
-        resolved_run_dir / "answers.json", question_by_qid
+        resolved_run_dir / "answers.json",
+        question_by_qid,
+        allow_extra_answers=allow_extra_answers,
     )
     sentinel_subjects = {item["qid"]: item for item in build_calibration_subjects()}
     if len(sentinel_subjects) != 6:
@@ -351,7 +354,10 @@ def _validate_existing_manifest(
 
 
 def _load_complete_answer_artifacts(
-    path: Path, question_by_qid: Mapping[str, BQuestion]
+    path: Path,
+    question_by_qid: Mapping[str, BQuestion],
+    *,
+    allow_extra_answers: bool = False,
 ) -> list[dict[str, Any]]:
     if not path.exists():
         raise FileNotFoundError(f"sealed answer source does not exist: {path}")
@@ -368,10 +374,12 @@ def _load_complete_answer_artifacts(
         by_qid[qid] = item
     expected = set(question_by_qid)
     actual = set(by_qid)
-    if expected != actual:
+    missing = expected - actual
+    extra = actual - expected
+    if missing or (extra and not allow_extra_answers):
         raise ValueError(
-            f"answer/question qid mismatch: missing={sorted(expected - actual)}, "
-            f"extra={sorted(actual - expected)}"
+            f"answer/question qid mismatch: missing={sorted(missing)}, "
+            f"extra={sorted(extra)}"
         )
     return [by_qid[qid] for qid in question_by_qid]
 

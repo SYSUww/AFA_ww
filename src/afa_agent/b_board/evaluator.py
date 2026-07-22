@@ -14,11 +14,11 @@ from afa_agent.b_board.io import (
 )
 
 
-PROMPT_VERSION = "b_answer_error_judge_v4_readme_format"
-INDEPENDENT_PROMPT_VERSION = "b_independent_solve_v3_readme_format"
-BLIND_PROMPT_VERSION = "b_blind_pair_v3_readme_format"
+PROMPT_VERSION = "b_answer_error_judge_v5_multi_min_two"
+INDEPENDENT_PROMPT_VERSION = "b_independent_solve_v4_multi_min_two"
+BLIND_PROMPT_VERSION = "b_blind_pair_v4_multi_min_two"
 SCHEMA_VERSION = 2
-HARD_GATE_VERSION = "b_hard_gate_v5_expanded_readme_semantics"
+HARD_GATE_VERSION = "b_hard_gate_v6_choice_contract"
 
 COMMON_DIMENSIONS = (
     "document_relevance",
@@ -69,6 +69,7 @@ _FORBIDDEN_SUBJECT_KEYS = {
 INDEPENDENT_SYSTEM_PROMPT = f"""你是金融长文问答的独立解题员。你看不到现有答案，也不得猜测现有答案。
 只根据题目、选项和给定证据独立求解；不得补充外部事实。逐项区分 supported、contradicted、insufficient。
 严格检查主体、文件、年份或日期、定义口径、单位、方向、公式和多选完整性。计算题必须重算，不能照抄证据中的结论。
+题型为多选题时，最终答案必须包含至少两个不同选项字母；即使只有一个选项证据充分，也不得输出单字母多选答案，应将 status 标为 insufficient_evidence 并给出最合理的合法候选。
 答案格式严格按“题目明确要求 > README通用规则 > 提交模板占位”裁决。“不带单位”不等于“不带%”；只有题目明确写“不带%”或“不带百分号”才禁止%。题目未明确禁止时，百分数答案按README必须带%并保留两位小数；“提高若干个百分点”的数值不加%。
 证据不足时仍按题目要求给出最佳候选答案，但 status 必须为 insufficient_evidence，并明确缺少什么证据。
 只输出一个 JSON 对象，不输出 Markdown。prompt_version={INDEPENDENT_PROMPT_VERSION}, schema_version={SCHEMA_VERSION}。
@@ -85,6 +86,7 @@ JUDGE_SYSTEM_PROMPT = f"""你是金融长文问答的错题发现审计员。目
 严格区分相关性与蕴含，检查错文件、错主体、错年份或日期、错口径、错单位、错公式、错计算、漏选或错选、引用不符和格式错误。
 格式裁决必须遵守“题目明确要求 > README通用规则 > 提交模板占位”。“不带单位”不禁止%；只有明确的“不带%”或“不带百分号”才禁止%。题目未明确禁止时，百分数答案按README必须带%并保留两位小数；百分点变化值不加%。
 选择题逐项核对选中项与未选项；计算题复核变量、公式、单位和重放结果。证据缺失应标记 uncertain，不得伪造确定结论。
+题型为多选题时，封存答案、独立答案及非空 correction_candidate_parts 都必须包含至少两个不同选项字母；单字母候选属于非法答案，不能据此判定封存答案错误。
 只输出一个 JSON 对象，不输出 Markdown。prompt_version={PROMPT_VERSION}, schema_version={SCHEMA_VERSION}。
 JSON 字段：schema_version, prompt_version, document_relevance, evidence_sufficiency,
 citation_alignment, answer_entailment, alternative_exclusion, calculation_reproducibility,
@@ -102,6 +104,7 @@ citation_mismatch、format_error、insufficient_evidence、other；correction_ca
 BLIND_SYSTEM_PROMPT = f"""你是金融长文问答的盲审裁判。A/B 的来源和新旧身份已隐藏。
 只根据各自封存的答案、证据、引用和可重放计算轨迹，选择更受证据支持且更可验证的一方。
 出现主体、年份、单位、公式、方向或格式错误时必须拒绝；不得使用外部知识。
+题型为多选题时，A/B 答案均必须至少包含两个不同选项字母；单字母多选答案必须拒绝。
 格式按“题目明确要求 > README通用规则 > 提交模板占位”；“不带单位”不等于“不带%”，题目未明确禁止时百分数必须带%并保留两位小数，百分点数值不加%。
 只输出 JSON：{{"prompt_version":"{BLIND_PROMPT_VERSION}","winner":"A|B|tie","confidence":0-100,"reason":"..."}}。"""
 
@@ -311,6 +314,15 @@ def detect_hard_failures(subject: Mapping[str, Any]) -> list[str]:
     templates = subject.get("answer_slot_templates")
     question_type = str(subject.get("answer_format") or subject.get("type") or "")
     question_text = str(subject.get("question") or "")
+    if isinstance(parts, list):
+        try:
+            _validate_choice_answer_parts(
+                tuple(str(item) for item in parts),
+                question_type=question_type,
+                field_name="sealed answer_parts",
+            )
+        except ValueError:
+            failures.append("invalid_choice_answer_contract")
     if question_type in {"calculation", "freeform", "extraction", "计算题", "抽取题"}:
         if not isinstance(templates, list) or len(templates) != expected_slots:
             failures.append("answer_slot_templates_missing_or_mismatched")
@@ -415,6 +427,12 @@ def parse_evaluation_payload(
         field_name="correction_candidate_parts",
         allow_empty=True,
     )
+    if correction_candidate_parts:
+        _validate_choice_answer_parts(
+            correction_candidate_parts,
+            question_type=question_type,
+            field_name="correction_candidate_parts",
+        )
 
     relevant = [int(dimensions[key]) for key in COMMON_DIMENSIONS]
     if question_type in {"calculation", "freeform", "计算题"}:
@@ -512,6 +530,11 @@ def parse_independent_payload(
         raise ValueError(
             f"Independent answer slot count mismatch: expected {expected_slots}, got {len(answer_parts)}"
         )
+    _validate_choice_answer_parts(
+        answer_parts,
+        question_type=str(subject.get("answer_format") or subject.get("type") or ""),
+        field_name="independent answer_parts",
+    )
     evidence_items = subject.get("evidence_items") or []
     available_evidence_ids = {
         str(item.get("unit_id"))
@@ -808,6 +831,24 @@ def _answer_parts_tuple(
     if any(not item for item in parts):
         raise ValueError(f"{field_name} contains an empty answer slot")
     return parts
+
+
+def _validate_choice_answer_parts(
+    parts: Sequence[str], *, question_type: str, field_name: str
+) -> None:
+    if question_type not in {"multi", "多选题", "多选"}:
+        return
+    if len(parts) != 1:
+        raise ValueError(f"{field_name}: multi-choice answer must use one slot")
+    answer = str(parts[0])
+    if not 2 <= len(answer) <= 4 or not answer.isalpha() or answer != answer.upper():
+        raise ValueError(
+            f"{field_name}: multi-choice answer must contain at least two uppercase letters"
+        )
+    if len(set(answer)) != len(answer) or answer != "".join(sorted(answer)):
+        raise ValueError(
+            f"{field_name}: multi-choice answer letters must be unique and sorted"
+        )
 
 
 def _bounded_integer(value: Any, field_name: str) -> int:

@@ -216,6 +216,24 @@ class FixedEvaluationRunTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "temperature=0"):
             self.execute(FakeEvaluationController(), model=model)
 
+    def test_subset_evaluation_can_filter_a_superset_answer_run(self) -> None:
+        controller = FakeEvaluationController()
+        result = run_fixed_evaluation(
+            run_dir=self.run_dir,
+            questions=[self.questions[0]],
+            model_config=self.model,
+            workers=1,
+            output_name="evaluation_subset",
+            evaluator_factory=controller.factory,
+            allow_extra_answers=True,
+        )
+
+        self.assertEqual(result.manifest["status"], "complete")
+        self.assertEqual(result.manifest["expected_answer_count"], 1)
+        self.assertEqual(set(result.evaluations), {"q1"})
+        sealed = read_json(self.run_dir / "evaluation_subset" / "sealed_answers.json")
+        self.assertEqual([row["qid"] for row in sealed], ["q1"])
+
     def test_versioned_output_namespace_preserves_legacy_evaluation(self) -> None:
         legacy = self.run_dir / "evaluation"
         legacy.mkdir()

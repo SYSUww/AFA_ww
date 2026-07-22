@@ -24,7 +24,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--submission-template", default="upload_b/submit.csv")
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--model", default="gpt-5.6")
-    parser.add_argument("--output-name", default="evaluation_gpt56_error_audit_v6")
+    parser.add_argument("--output-name", default="evaluation_gpt56_error_audit_v7")
+    parser.add_argument("--qid", action="append", default=[])
+    parser.add_argument("--qid-file", default="")
     return parser.parse_args()
 
 
@@ -34,12 +36,29 @@ def main() -> None:
     if config.model is None:
         raise RuntimeError("Missing model config in .env")
     model = replace(config.model, model_name=args.model, temperature=0.0)
+    questions = load_b_questions(ROOT / args.question_root, ROOT / args.submission_template)
+    qids = list(args.qid)
+    if args.qid_file:
+        qids.extend(
+            line.strip()
+            for line in (ROOT / args.qid_file).read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        )
+    qids = list(dict.fromkeys(qids))
+    if qids:
+        known = {question.qid for question in questions}
+        unknown = sorted(set(qids) - known)
+        if unknown:
+            raise ValueError(f"Unknown B qids: {unknown}")
+        selected = set(qids)
+        questions = [question for question in questions if question.qid in selected]
     result = run_fixed_evaluation(
         run_dir=(ROOT / args.run_dir).resolve(),
-        questions=load_b_questions(ROOT / args.question_root, ROOT / args.submission_template),
+        questions=questions,
         model_config=model,
         workers=args.workers,
         output_name=args.output_name,
+        allow_extra_answers=bool(qids),
     )
     print(json.dumps(result.manifest, ensure_ascii=False, indent=2))
 

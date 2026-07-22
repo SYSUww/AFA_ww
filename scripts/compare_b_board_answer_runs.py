@@ -109,7 +109,7 @@ def validate_answer(answer: str, answer_format: str, context: str) -> None:
     elif answer_format == "mcq":
         require(len(answer) == 1, f"{context} mcq answer must contain exactly one label")
     elif answer_format == "multi":
-        require(1 <= len(answer) <= 4, f"{context} multi answer must contain one to four labels")
+        require(2 <= len(answer) <= 4, f"{context} multi answer must contain two to four labels")
     else:
         raise IntegrityError(f"{context} has unknown answer_format {answer_format!r}")
 
