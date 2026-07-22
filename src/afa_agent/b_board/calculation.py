@@ -299,7 +299,34 @@ class CalculationExecutor:
             return sum((_decimal(item) for item in args), Decimal("0")), _first_kind(arg_kinds), conversions
         if op == "sub":
             _require_arg_count(op, args, 2)
-            return _decimal(args[0]) - _decimal(args[1]), _first_kind(arg_kinds), conversions
+            left = _decimal(args[0])
+            right = _decimal(args[1])
+            result_kind = _first_kind(arg_kinds)
+            if arg_kinds[0] == "percent_points" and _is_ratio_operand(
+                right, arg_kinds[1]
+            ):
+                left /= Decimal("100")
+                conversions.append(
+                    {
+                        "argument": "left",
+                        "from": "percent_points",
+                        "to": "ratio",
+                    }
+                )
+                result_kind = "ratio"
+            elif arg_kinds[1] == "percent_points" and _is_ratio_operand(
+                left, arg_kinds[0]
+            ):
+                right /= Decimal("100")
+                conversions.append(
+                    {
+                        "argument": "right",
+                        "from": "percent_points",
+                        "to": "ratio",
+                    }
+                )
+                result_kind = "ratio"
+            return left - right, result_kind, conversions
         if op == "mul":
             result = Decimal("1")
             for index, (item, kind) in enumerate(zip(args, arg_kinds), start=1):
@@ -380,9 +407,22 @@ class CalculationExecutor:
             )
         if op == "pct_point_delta":
             new_spec, old_spec = _require_named_directional_operands(op, step)
+            new = _decimal(_resolve(new_spec, values))
+            old = _decimal(_resolve(old_spec, values))
+            new_kind = _resolve_kind(new_spec, value_kinds)
+            old_kind = _resolve_kind(old_spec, value_kinds)
+            if new_kind == "ratio":
+                new *= Decimal("100")
+                conversions.append(
+                    {"argument": "new", "from": "ratio", "to": "percent_points"}
+                )
+            if old_kind == "ratio":
+                old *= Decimal("100")
+                conversions.append(
+                    {"argument": "old", "from": "ratio", "to": "percent_points"}
+                )
             return (
-                _decimal(_resolve(new_spec, values))
-                - _decimal(_resolve(old_spec, values)),
+                new - old,
                 "percent_points",
                 conversions,
             )
@@ -840,6 +880,10 @@ def _multiplication_kind(kinds: Sequence[str]) -> str:
     if kinds and all(kind in {"ratio", "percent_points"} for kind in kinds):
         return "ratio"
     return "decimal"
+
+
+def _is_ratio_operand(value: Decimal, kind: str) -> bool:
+    return kind == "ratio" or (kind == "decimal" and abs(value) == Decimal("1"))
 
 
 def _format_for_slot_contract(

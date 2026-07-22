@@ -262,7 +262,7 @@ class BBoardCalculationTests(unittest.TestCase):
         self.assertEqual(result.answer_parts, ("310740988000.00",))
         self.assertTrue(result.trace["grounding_verified"])
         self.assertIn("表格只有裸金额", CALCULATION_SYSTEM_PROMPT)
-        self.assertIn("不得再创建 100% 基数", CALCULATION_SYSTEM_PROMPT)
+        self.assertIn("百分点差必须使用 pct_point_delta", CALCULATION_SYSTEM_PROMPT)
 
     def test_diagnostic_retry_query_and_evidence_merge(self):
         question = BQuestion(
@@ -730,6 +730,72 @@ class BBoardCalculationTests(unittest.TestCase):
         )
 
         self.assertEqual(result.answer_parts, ("1049321.98", "0.08"))
+
+    def test_pct_point_delta_converts_ratio_inputs_to_percentage_points(self):
+        result = CalculationExecutor().execute(
+            {
+                "variables": [
+                    {"name": "catl_cash", "value": "133219982", "evidence_ids": ["e"]},
+                    {"name": "catl_revenue", "value": "423701834", "evidence_ids": ["e"]},
+                    {"name": "midea_cash", "value": "53345930", "evidence_ids": ["e"]},
+                    {"name": "midea_revenue", "value": "456451731", "evidence_ids": ["e"]},
+                ],
+                "steps": [
+                    {"id": "catl_rate", "op": "div", "args": [{"ref": "catl_cash"}, {"ref": "catl_revenue"}]},
+                    {"id": "midea_rate", "op": "div", "args": [{"ref": "midea_cash"}, {"ref": "midea_revenue"}]},
+                    {
+                        "id": "delta_pp",
+                        "op": "pct_point_delta",
+                        "new": {"ref": "catl_rate"},
+                        "old": {"ref": "midea_rate"},
+                    },
+                ],
+                "outputs": [{"source": {"ref": "delta_pp"}, "format": "decimal2"}],
+            },
+            expected_slots=1,
+            evidence_text_by_id={
+                "e": "宁德时代现金流133219982、收入423701834；美的现金流53345930、收入456451731"
+            },
+            expected_slot_templates=("999999.99",),
+        )
+
+        self.assertEqual(result.answer_parts, ("19.75",))
+        self.assertEqual(
+            result.trace["steps"][2]["unit_conversions"],
+            [
+                {"argument": "new", "from": "ratio", "to": "percent_points"},
+                {"argument": "old", "from": "ratio", "to": "percent_points"},
+            ],
+        )
+
+    def test_dimensionless_one_minus_percent_points_uses_ratio_units(self):
+        result = CalculationExecutor().execute(
+            {
+                "variables": [
+                    {"name": "one", "value": "1", "evidence_ids": ["q"]},
+                    {"name": "debt_rate", "value": "61.17", "unit": "%", "evidence_ids": ["e"]},
+                    {"name": "roe", "value": "19.70", "unit": "%", "evidence_ids": ["e"]},
+                ],
+                "steps": [
+                    {"id": "equity_ratio", "op": "sub", "args": [{"ref": "one"}, {"ref": "debt_rate"}]},
+                    {"id": "equity_multiplier", "op": "div", "args": [{"ref": "one"}, {"ref": "equity_ratio"}]},
+                    {"id": "approx_roa", "op": "div", "args": [{"ref": "roe"}, {"ref": "equity_multiplier"}]},
+                ],
+                "outputs": [
+                    {"source": {"ref": "equity_multiplier"}, "format": "decimal2"},
+                    {"source": {"ref": "approx_roa"}, "format": "decimal2"},
+                ],
+            },
+            expected_slots=2,
+            evidence_text_by_id={"q": "公式为1÷(1-资产负债率)", "e": "资产负债率61.17%，净资产收益率19.70%"},
+            expected_slot_templates=("999999.99", "999999.99"),
+        )
+
+        self.assertEqual(result.answer_parts, ("2.58", "7.65"))
+        self.assertEqual(
+            result.trace["steps"][0]["unit_conversions"],
+            [{"argument": "right", "from": "percent_points", "to": "ratio"}],
+        )
 
     def test_readme_percent_suffix_formats_ratio_and_percent_points_correctly(self):
         ratio_result = CalculationExecutor().execute(
