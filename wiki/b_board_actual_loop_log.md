@@ -11119,3 +11119,348 @@
   }
 }
 ```
+
+## b-loop-research-market-fund-flow-evidence-res-b-004-a1
+
+- recorded_at: `2026-07-22T05:23:54+00:00`
+
+```json
+{
+  "answered_qids": [
+    "res_b_004"
+  ],
+  "attempt_index": 1,
+  "base_commit": "3d074bfd68ce5fa1771c575a9ec021782da9ee6c",
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 419,
+    "prompt_tokens": 12703,
+    "total_tokens": 13122
+  },
+  "blind_pairs": {
+    "res_b_004": {
+      "candidate_label": "A",
+      "candidate_preferred": true,
+      "evaluation": {
+        "confidence": 98,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "A选择BCD，均有封存证据直接支持；旧答案AD误选与资金行为分化相冲突的A，并漏选有精确分位和机构约束证据支持的B、C。",
+        "winner": "A"
+      },
+      "incumbent_label": "B",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "token_usage": {
+        "completion_tokens": 419,
+        "prompt_tokens": 12703,
+        "total_tokens": 13122
+      }
+    }
+  },
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_market_fund_flow_evidence_res_b_004/market_fund_flow_bundle_a1_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "3d074bfd68ce5fa1771c575a9ec021782da9ee6c",
+        "code_hash": "809ebac8eb97974812d290307e8dd64660848fe5",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "f4c1d39c54968a8cda2cb00591d4f1e4fcfada6cfa93d812e52f6a0a8139762d",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "counterevidence_for_rejected_options": true,
+          "fund_flow_percentiles": true,
+          "insurer_alm_and_equity_balance": true,
+          "retail_margin_participation": true,
+          "wealth_management_risk_appetite": true
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "bind exact margin-financing and etf flow percentiles to retail participation, wealth-management risk appetite, and insurer asset-liability management so every option has direct support or counterevidence.",
+        "pipeline_stage": "reasoning",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "cross_investor_behavior_alignment",
+        "target_qids": [
+          "res_b_004"
+        ]
+      }
+    },
+    "context_sha256": "a8010949e71908c6343f0aae691d4a1bf76cc26ce3e0ba84f1246dea893f1b75",
+    "direction_sha256": "37a9816f02d4c0ed9fbb45d983fd8c22b5cd284f303a7960d54c17cb6110af0f",
+    "schema_version": 1,
+    "semantic_sha256": "7d5398678eaa2895ee0d692dfd47ee83280f57f6ef27e728473626dd9b2f4925",
+    "sha256": "46ba9ce9c0ead368cbe8d38060e4c824c1b0e86709387edbb84516b25524ab72"
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 7,
+    "high": 59,
+    "low": 3,
+    "medium": 31
+  },
+  "causal_lowtail": {
+    "after": 9,
+    "before": 10
+  },
+  "causal_promoted_tiers": {
+    "blocked": 6,
+    "high": 60,
+    "low": 3,
+    "medium": 31
+  },
+  "causal_research_lowtail": {
+    "after": 5,
+    "before": 6
+  },
+  "change_vector": {
+    "counterevidence_for_rejected_options": true,
+    "fund_flow_percentiles": true,
+    "insurer_alm_and_equity_balance": true,
+    "retail_margin_participation": true,
+    "wealth_management_risk_appetite": true
+  },
+  "changed_answer_qids": [
+    "res_b_004"
+  ],
+  "changed_artifact_qids": [
+    "res_b_004"
+  ],
+  "code_hash": "809ebac8eb97974812d290307e8dd64660848fe5",
+  "comparable_attempt_count_after": 1,
+  "comparable_attempt_count_before": 0,
+  "confidence_after": {
+    "res_b_004": 88
+  },
+  "confidence_before": {
+    "res_b_004": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "research_market_fund_flow_evidence_res_b_004",
+  "direction_status": "active",
+  "domains": [
+    "research"
+  ],
+  "effective_branch": "codex/b榜-loop-i026-research-market-fund-flow",
+  "evaluator_failed_attempts_not_in_usage": 0,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 73703,
+    "prompt_tokens": 474912,
+    "total_tokens": 548615
+  },
+  "generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "generator_fingerprint": "f4c1d39c54968a8cda2cb00591d4f1e4fcfada6cfa93d812e52f6a0a8139762d",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_related_experiment_ids": [],
+  "history_similarity": null,
+  "hypothesis": "Bind exact margin-financing and ETF flow percentiles to retail participation, wealth-management risk appetite, and insurer asset-liability management so every option has direct support or counterevidence.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 157,
+    "tests_passed": true,
+    "token_accounting_complete": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_market_fund_flow_evidence_res_b_004/market_fund_flow_bundle_a1_promoted1_composite",
+  "lessons": [
+    "A market-flow question needs separate evidence for flow magnitude, participant identity, and each institution specific liability constraint.",
+    "The 95% margin-financing percentile and 2.6% to 3% ETF percentile directly establish extreme divergence; generic high or low wording was insufficient.",
+    "Retail margin participation must be tied to personal investor counts and daily participation, not inferred from aggregate leverage inflow alone.",
+    "Wealth-management stability and insurer ALM are different risk constraints and should not be collapsed into a single regulatory explanation.",
+    "Changed multiple-choice answers require both a frozen-confidence tier gain and a blind pair win; this iteration passed both gates.",
+    "A deterministic six-evidence bundle can remove format_forced and produce a zero-generation-token answer correction."
+  ],
+  "material_delta": {
+    "blind_validated_answer_correction": true,
+    "exact_cross_flow_percentile_binding": true,
+    "institution_specific_risk_constraints": true,
+    "retail_participation_evidence": true,
+    "zero_token_rule_closure": true
+  },
+  "next_root_causes": [
+    "remaining_financial_contract_lowtail_fc_b_006_018",
+    "insurance_calculation_identity_citation_alignment_ins_b_001",
+    "reg_b_001_reference_date_vs_future_effective_obligation",
+    "remaining_research_policy_cost_and_risk_evidence_res_b_006_008_009_014",
+    "research_staged_autonomy_direct_entailment_res_b_017",
+    "res_b_003_petrochemical_downstream_cost_and_margin_evidence"
+  ],
+  "pipeline_stage": "reasoning",
+  "preflight_attempts": [
+    {
+      "integrity": {
+        "format_forced": false,
+        "fully_rule_backed": true,
+        "no_supported_fallback": false,
+        "submission_valid": true
+      },
+      "observed_answer": {
+        "res_b_004": "BCD"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_market_fund_flow_evidence_res_b_004/market_fund_flow_bundle_a1",
+      "status": "accepted_for_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      },
+      "used_evidence_ids": [
+        "pack2_text08::sec_2::chunk_1",
+        "pack2_text08::sec_2::chunk_2",
+        "pack2_text14::sec_1::chunk_1",
+        "pack2_text08::sec_3::chunk_1",
+        "pack2_text08::sec_3::chunk_2",
+        "pack2_text15::sec_5::chunk_3"
+      ]
+    }
+  ],
+  "promoted_qids": [
+    "res_b_004"
+  ],
+  "promoted_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_market_fund_flow_evidence_res_b_004/market_fund_flow_bundle_a1_promoted1_composite",
+  "promotion_decisions": {
+    "res_b_004": {
+      "blind_required": true,
+      "blind_winner": "A",
+      "candidate_blind_label": "A",
+      "promote": true,
+      "reasons": [],
+      "score_delta": 88,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_gate_path": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_market_fund_flow_evidence_res_b_004/market_fund_flow_bundle_a1_composite/promotion_gate.json",
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "multi"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 7,
+    "high": 63,
+    "low": 4,
+    "medium": 26
+  },
+  "reason": "Exact fund-flow percentiles and institution-specific constraints corrected res_b_004 from AD to BCD. Fixed confidence rose from 0 blocked to 88 high, all dimensions improved, format_forced disappeared, and the blind judge preferred the candidate at 98 confidence.",
+  "recorded_at": "2026-07-22T05:23:54+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [],
+  "root_cause_cluster": "cross_investor_behavior_alignment",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failed_attempts_not_in_usage": 0,
+      "failures": 0,
+      "sentinels_passed": true,
+      "successful_token_usage": {
+        "completion_tokens": 73703,
+        "prompt_tokens": 474912,
+        "total_tokens": 548615
+      },
+      "token_accounting_complete": true
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "res_b_004"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 2,
+          "blocked_low_before": 2,
+          "low_tier_improved_qids": [],
+          "p10_after": 30,
+          "p10_before": 30,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 0,
+          "blocked_low_before": 0,
+          "low_tier_improved_qids": [],
+          "p10_after": 85,
+          "p10_before": 85,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 65,
+          "p10_before": 65,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 5,
+          "blocked_low_before": 6,
+          "low_tier_improved_qids": [
+            "res_b_004"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {},
+      "unchanged_raw_tier_drift": []
+    },
+    "reasons": [],
+    "tests": {
+      "count": 157,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_market_fund_flow_evidence_res_b_004/market_fund_flow_bundle_a1",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "res_b_004"
+  ],
+  "token_accounting_complete": true,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 74122,
+    "prompt_tokens": 487615,
+    "total_tokens": 561737
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 74122,
+    "prompt_tokens": 487615,
+    "total_tokens": 561737
+  }
+}
+```

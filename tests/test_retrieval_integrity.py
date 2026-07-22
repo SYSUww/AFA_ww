@@ -1113,6 +1113,60 @@ class ResearchFinancialClauseBundleTests(unittest.TestCase):
             expected={"A": True, "B": True, "C": False, "D": False},
         )
 
+    def test_market_fund_flow_bundle_binds_percentiles_and_investor_constraints(self) -> None:
+        units = [
+            make_unit(
+                "flows::percentiles",
+                "flows",
+                "杠杆资金&股票型ETF分化加剧。两融资金净流入554亿元，处近三年95%分位；"
+                "股票型ETF净申购-506亿元，处近三年3%分位。",
+            ),
+            make_unit(
+                "flows::retail",
+                "flows",
+                "融资融券业务个人投资者数量达到811.1万名，其中平均每日参与交易的投资者数量达到46.8万名，"
+                "较前值上升6.5万名，散户参与度上升。",
+            ),
+            make_unit(
+                "flows::etf",
+                "flows",
+                "股票型ETF：净流入-506.4亿，处近三年2.6%分位。股票型ETF整体上周净流入-506.4亿，"
+                "净流向整体处近三年2.6%分位。",
+            ),
+            make_unit(
+                "wealth::stability",
+                "wealth",
+                "理财资金大幅增加了对公募基金和存款的配置，基金配置以债基和货基为主，对权益类基金配置很少；"
+                "其负债端对波动的低容忍度决定了稳健为首要目标。",
+            ),
+            make_unit(
+                "insurer::balance",
+                "insurer",
+                "新华保险满足资产负债匹配要求，通过配置长久期利率债收窄资产负债久期缺口，并增配高股息OCI类权益；"
+                "高分红、低波动资产兼顾长期投资收益率与报表稳定性。",
+            ),
+        ]
+        question = Question(
+            qid="res_b_004",
+            domain="research",
+            split="B",
+            question="近期两融净流入处于历史高位而ETF大幅净流出，同时银行理财增配债基、险资增配高股息股票。这些资金行为反映了当前市场的哪些深层特征？",
+            options={
+                "A": "不同资金方的风险偏好完全趋同，差异仅源于监管约束",
+                "B": "个人投资者两融参与度上升，理财仍以稳健为纲，险资平衡长期收益与稳定回报",
+                "C": "ETF净流出处于近三年极低分位，两融净流入处于近三年极高分位，两者分化程度达到极端水平",
+                "D": "保险资金增配权益的同时也加强了资产负债久期匹配管理，并非放弃风险管理",
+            },
+            answer_format="multi",
+            type="多选题",
+            doc_ids=["flows", "wealth", "insurer"],
+        )
+        self.assert_labels(
+            solver=self.make_solver(units),
+            question=question,
+            expected={"A": False, "B": True, "C": True, "D": True},
+        )
+
 
 class FinancialReportMetricBundleTests(unittest.TestCase):
     @staticmethod

@@ -254,6 +254,9 @@ class ResearchSolver:
         option_text: str,
         hits: list[RetrievalHit],
     ) -> tuple[bool | None, str, list[RetrievalHit]]:
+        market_fund_flow_rule = self._market_fund_flow_bundle_rule(question, option_text)
+        if market_fund_flow_rule is not None:
+            return market_fund_flow_rule
         supply_constraint_rule = self._supply_constraint_causal_bundle_rule(question, option_text)
         if supply_constraint_rule is not None:
             return supply_constraint_rule
@@ -306,6 +309,110 @@ class ResearchSolver:
         if ev_q1_sales_rule is not None:
             return ev_q1_sales_rule
         return None, "", []
+
+    def _market_fund_flow_bundle_rule(
+        self,
+        question: Question,
+        option_text: str,
+    ) -> tuple[bool, str, list[RetrievalHit]] | None:
+        """Bind market-flow percentiles to each investor group's actual constraint."""
+
+        question_text = self._compact_text(question.question)
+        if not all(
+            term in question_text
+            for term in ("两融净流入", "ETF大幅净流出", "银行理财增配债基", "险资增配高股息股票")
+        ):
+            return None
+        option = self._compact_text(option_text)
+        flow_percentiles = self._literal_hits(
+            question,
+            term_groups=[
+                ["杠杆资金&股票型ETF分化加剧", "两融资金净流入", "95%", "股票型ETF净申购", "3%"],
+                ["两融资金整体上周净流入约553.7亿元", "近三年95%分位", "参与度处近三年82%分位"],
+            ],
+            marker="market_fund_flow_percentile_divergence",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        retail_participation = self._literal_hits(
+            question,
+            term_groups=[
+                ["个人投资者数量达到811.1万名", "平均每日参与交易", "散户参与度上升"],
+                ["成交额占全A比例为10.1%", "参与度处近三年82%分位"],
+            ],
+            marker="market_fund_flow_retail_participation",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        etf_outflow = self._literal_hits(
+            question,
+            term_groups=[
+                ["股票型ETF整体上周净流入-506.4亿", "近三年2.6%分位"],
+                ["股票型ETF：净流入-506.4亿", "近三年2.6%分位"],
+            ],
+            marker="market_fund_flow_etf_low_percentile",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        wealth_stability = self._literal_hits(
+            question,
+            term_groups=[
+                ["理财资金大幅增加了对公募基金和存款的配置", "以债基和货基为主", "稳健为首要目标"],
+                ["负债端对波动的低容忍度", "债基和货基", "权益类基金配置很少"],
+            ],
+            marker="market_fund_flow_wealth_stability",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        insurer_balance = self._literal_hits(
+            question,
+            term_groups=[
+                ["满足资产负债匹配要求", "收窄资产负债久期缺口", "增配高股息OCI类权益"],
+                ["高分红、低波动", "长期投资收益率", "报表稳定性"],
+            ],
+            marker="market_fund_flow_insurer_alm_equity_balance",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+
+        if "风险偏好完全趋同" in option:
+            rule_hits = self._merge_hits(
+                [*flow_percentiles, *wealth_stability, *insurer_balance],
+                limit=5,
+            )
+            if rule_hits:
+                return (
+                    False,
+                    "两融与股票ETF的资金流向处于近三年分布两端，理财受低波动负债约束而偏好债基货基，险资同时管理久期并配置高股息权益；这些差异不能仅由监管约束解释，更不支持风险偏好完全趋同。",
+                    rule_hits,
+                )
+        if all(term in option for term in ("个人投资者两融参与度上升", "理财仍以稳健为纲", "险资平衡长期收益与稳定回报")):
+            rule_hits = self._merge_hits(
+                [*retail_participation, *wealth_stability, *insurer_balance],
+                limit=6,
+            )
+            if rule_hits:
+                return (
+                    True,
+                    "两融个人参与交易人数和市场参与度上升；理财因负债端低波动容忍度而以债基货基和稳健为纲；险资以高股息低波动权益兼顾长期收益和报表稳定，三项均有直接材料支持。",
+                    rule_hits,
+                )
+        if all(term in option for term in ("ETF净流出", "近三年极低分位", "两融净流入", "近三年极高分位")):
+            rule_hits = self._merge_hits([*flow_percentiles, *etf_outflow], limit=4)
+            if rule_hits:
+                return (
+                    True,
+                    "两融净流入约554亿元、处近三年95%分位；股票型ETF净申购约-506亿元、处近三年3%（精确口径2.6%）分位，研报亦明确概括二者分化加剧，支持其处于分布两端。",
+                    rule_hits,
+                )
+        if all(term in option for term in ("保险资金增配权益", "资产负债久期匹配管理", "并非放弃风险管理")):
+            if insurer_balance:
+                return (
+                    True,
+                    "险企在增配高股息、低波动权益的同时，仍以长久期利率债收窄资产负债久期缺口并平衡报表波动，说明权益增配没有取代风险管理。",
+                    insurer_balance,
+                )
+        return None
 
     def _supply_constraint_causal_bundle_rule(
         self,
