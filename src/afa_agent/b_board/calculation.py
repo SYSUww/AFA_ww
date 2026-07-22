@@ -190,6 +190,55 @@ class CalculationExecutor:
         }
         return CalculationResult(tuple(answer_parts), deduped_evidence, trace)
 
+    def replay_legacy_trace(
+        self,
+        trace: Mapping[str, Any],
+        *,
+        expected_slots: int,
+        evidence_text_by_id: Mapping[str, str],
+        expected_slot_templates: Sequence[str] | None = None,
+    ) -> CalculationResult:
+        """Revalidate an old normalized trace without asking a model to replan it.
+
+        Legacy traces stored ratios such as ``0.75`` while citing clauses that
+        literally state ``75%``.  This method keeps the original dependency
+        graph and output fixed, but makes that conversion explicit as a replayed
+        division by 100.  Variables and steps that do not contribute to an
+        output are discarded before grounding so narrative helper fields cannot
+        masquerade as calculation inputs.
+        """
+
+        plan, replay_meta = _legacy_trace_replay_plan(trace, evidence_text_by_id)
+        result = self.execute(
+            plan,
+            expected_slots=expected_slots,
+            evidence_text_by_id=evidence_text_by_id,
+            expected_slot_templates=expected_slot_templates,
+        )
+        expected_parts = tuple(replay_meta["expected_answer_parts"])
+        if expected_parts and result.answer_parts != expected_parts:
+            raise CalculationPlanError(
+                "Legacy replay changed the incumbent answer: "
+                f"expected {expected_parts}, got {result.answer_parts}"
+            )
+        replayed_trace = {
+            **result.trace,
+            "revalidated_from_schema_version": replay_meta["source_schema_version"],
+            "revalidation": {
+                "answer_preserved": True,
+                "converted_percent_ratio_variables": replay_meta[
+                    "converted_percent_ratio_variables"
+                ],
+                "pruned_variable_names": replay_meta["pruned_variable_names"],
+                "pruned_step_ids": replay_meta["pruned_step_ids"],
+            },
+        }
+        return CalculationResult(
+            result.answer_parts,
+            result.used_evidence_ids,
+            replayed_trace,
+        )
+
     def _run_operation(
         self,
         op: str,
@@ -298,6 +347,226 @@ def _require_list(plan: Mapping[str, Any], key: str, *, allow_missing: bool = Fa
     if not isinstance(value, list):
         raise CalculationPlanError(f"{key} must be a list")
     return value
+
+
+def _legacy_trace_replay_plan(
+    trace: Mapping[str, Any],
+    evidence_text_by_id: Mapping[str, str],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    raw_variables = _require_list(trace, "variables")
+    raw_steps = _require_list(trace, "steps", allow_missing=True)
+    raw_outputs = _require_list(trace, "outputs")
+    variables_by_name: dict[str, dict[str, Any]] = {}
+    for raw in raw_variables:
+        if not isinstance(raw, Mapping):
+            raise CalculationPlanError("Legacy trace variable must be an object")
+        name = str(raw.get("name", "")).strip()
+        if not name or name in variables_by_name:
+            raise CalculationPlanError(f"Invalid legacy variable name: {name!r}")
+        variables_by_name[name] = dict(raw)
+
+    steps_by_id: dict[str, dict[str, Any]] = {}
+    ordered_step_ids: list[str] = []
+    for raw in raw_steps:
+        if not isinstance(raw, Mapping):
+            raise CalculationPlanError("Legacy trace step must be an object")
+        step_id = str(raw.get("id", "")).strip()
+        if not step_id or step_id in steps_by_id or step_id in variables_by_name:
+            raise CalculationPlanError(f"Invalid legacy step id: {step_id!r}")
+        step = dict(raw)
+        operand_roles = step.get("operand_roles")
+        if isinstance(operand_roles, Mapping):
+            for role in ("new", "old"):
+                if role in operand_roles:
+                    step.setdefault(role, operand_roles[role])
+        steps_by_id[step_id] = step
+        ordered_step_ids.append(step_id)
+
+    needed_variables: set[str] = set()
+    needed_steps: set[str] = set()
+    visiting: set[str] = set()
+
+    def visit_reference(ref: str) -> None:
+        if ref in variables_by_name:
+            needed_variables.add(ref)
+            return
+        if ref not in steps_by_id:
+            raise CalculationPlanError(f"Legacy trace has unknown reference: {ref}")
+        if ref in needed_steps:
+            return
+        if ref in visiting:
+            raise CalculationPlanError(f"Legacy trace has a dependency cycle at: {ref}")
+        visiting.add(ref)
+        for dependency in _reference_names(steps_by_id[ref]):
+            visit_reference(dependency)
+        visiting.remove(ref)
+        needed_steps.add(ref)
+
+    for output in raw_outputs:
+        if not isinstance(output, Mapping):
+            raise CalculationPlanError("Legacy trace output must be an object")
+        for ref in _reference_names(output.get("source")):
+            visit_reference(ref)
+
+    evidence_ids = [str(value) for value in evidence_text_by_id]
+    normalized_variables: list[dict[str, Any]] = []
+    conversion_steps: list[dict[str, Any]] = []
+    converted: list[dict[str, Any]] = []
+    for name in (str(item.get("name", "")) for item in raw_variables if isinstance(item, Mapping)):
+        if name not in needed_variables:
+            continue
+        variable = dict(variables_by_name[name])
+        value_type = str(variable.get("value_type", "decimal"))
+        value = _parse_value(variable.get("value"), value_type)
+        unit = str(variable.get("unit", ""))
+        declared_ids = [
+            str(value)
+            for value in variable.get("evidence_ids", [])
+            if str(value) in evidence_text_by_id
+        ]
+        direct = _grounding_check(
+            name=name,
+            value=value,
+            value_type=value_type,
+            unit=unit,
+            evidence_ids=declared_ids,
+            evidence_text_by_id=evidence_text_by_id,
+        )
+        if not direct["verified"]:
+            direct = _grounding_check(
+                name=name,
+                value=value,
+                value_type=value_type,
+                unit=unit,
+                evidence_ids=evidence_ids,
+                evidence_text_by_id=evidence_text_by_id,
+            )
+        if direct["verified"]:
+            variable["evidence_ids"] = list(direct["matched_evidence_ids"])
+            normalized_variables.append(variable)
+            continue
+
+        percent = _legacy_ratio_as_percent(
+            name=name,
+            value=value,
+            value_type=value_type,
+            unit=unit,
+            preferred_evidence_ids=declared_ids,
+            evidence_ids=evidence_ids,
+            evidence_text_by_id=evidence_text_by_id,
+        )
+        if percent is None:
+            raise CalculationPlanError(
+                f"Legacy variable {name} cannot be grounded literally or as an explicit percentage"
+            )
+        percent_name = f"{name}__percent_points"
+        if percent_name in variables_by_name or percent_name in steps_by_id:
+            raise CalculationPlanError(f"Legacy percentage conversion id collision: {percent_name}")
+        normalized_variables.append(
+            {
+                "name": percent_name,
+                "value": percent["value"],
+                "value_type": "decimal",
+                "unit": "%",
+                "evidence_ids": percent["evidence_ids"],
+            }
+        )
+        conversion_steps.append(
+            {
+                "id": name,
+                "op": "div",
+                "args": [
+                    {"ref": percent_name},
+                    {"literal": "100", "value_type": "decimal"},
+                ],
+            }
+        )
+        converted.append(
+            {
+                "name": name,
+                "source_value": _serialize_value(value),
+                "literal_percent_value": percent["value"],
+                "evidence_ids": percent["evidence_ids"],
+            }
+        )
+
+    normalized_steps = [
+        steps_by_id[step_id] for step_id in ordered_step_ids if step_id in needed_steps
+    ]
+    expected_parts = [
+        str(output.get("value", "")).strip()
+        for output in raw_outputs
+        if isinstance(output, Mapping) and str(output.get("value", "")).strip()
+    ]
+    return (
+        {
+            "variables": normalized_variables,
+            "steps": [*conversion_steps, *normalized_steps],
+            "outputs": [dict(output) for output in raw_outputs],
+        },
+        {
+            "source_schema_version": int(trace.get("schema_version", 1)),
+            "expected_answer_parts": expected_parts,
+            "converted_percent_ratio_variables": converted,
+            "pruned_variable_names": sorted(set(variables_by_name) - needed_variables),
+            "pruned_step_ids": sorted(set(steps_by_id) - needed_steps),
+        },
+    )
+
+
+def _reference_names(value: Any) -> set[str]:
+    if isinstance(value, Mapping):
+        names = {str(value["ref"])} if "ref" in value else set()
+        for nested in value.values():
+            names.update(_reference_names(nested))
+        return names
+    if isinstance(value, list):
+        names: set[str] = set()
+        for nested in value:
+            names.update(_reference_names(nested))
+        return names
+    return set()
+
+
+def _legacy_ratio_as_percent(
+    *,
+    name: str,
+    value: Any,
+    value_type: str,
+    unit: str,
+    preferred_evidence_ids: Sequence[str],
+    evidence_ids: Sequence[str],
+    evidence_text_by_id: Mapping[str, str],
+) -> dict[str, Any] | None:
+    if value_type != "decimal":
+        return None
+    normalized_unit = "".join(unit.split()).lower()
+    if normalized_unit not in {"比例", "倍", "ratio"}:
+        return None
+    percent_value = _decimal(value) * Decimal("100")
+    check = _grounding_check(
+        name=f"{name}__percent_points",
+        value=percent_value,
+        value_type="decimal",
+        unit="%",
+        evidence_ids=preferred_evidence_ids,
+        evidence_text_by_id=evidence_text_by_id,
+    )
+    if not check["verified"]:
+        check = _grounding_check(
+            name=f"{name}__percent_points",
+            value=percent_value,
+            value_type="decimal",
+            unit="%",
+            evidence_ids=evidence_ids,
+            evidence_text_by_id=evidence_text_by_id,
+        )
+    if not check["verified"]:
+        return None
+    return {
+        "value": _serialize_value(percent_value),
+        "evidence_ids": list(check["matched_evidence_ids"]),
+    }
 
 
 def _require_named_directional_operands(

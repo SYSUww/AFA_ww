@@ -8053,3 +8053,467 @@
   }
 }
 ```
+
+## b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation
+
+- recorded_at: `2026-07-22T01:57:54+00:00`
+
+```json
+{
+  "answered_qids": [
+    "ins_b_001",
+    "ins_b_003",
+    "ins_b_011",
+    "ins_b_019"
+  ],
+  "attempt_index": 3,
+  "base_commit": "8a3d747895ca4583f68b7daac85b3ac097a47a0a",
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "blind_pairs": {},
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/calculation_failure_recovery/incumbent_trace_revalidation_a3_v2_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "8a3d747895ca4583f68b7daac85b3ac097a47a0a",
+        "code_hash": "ca39b81ef01ea6e3c0f53c3a84c9dca0f17c2615c2701b4657c7be2e83870b7a",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "group_by": [
+            "product_identity",
+            "formula_period",
+            "variable_role"
+          ],
+          "literal_variable_grounding": true,
+          "preserve_incumbent_answer": true,
+          "replay_existing_trace": true,
+          "selection": "correct_answer_grounding_failure_first",
+          "strategy": "incumbent_trace_literal_revalidation_a3"
+        },
+        "domains": [
+          "insurance"
+        ],
+        "hypothesis": "revalidating already-correct incumbent insurance calculations against literal product-rule evidence and replaying their existing steps can remove grounding hard failures without model replanning or answer changes.",
+        "pipeline_stage": "calculation",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "legacy_calculation_fallback",
+        "target_qids": [
+          "ins_b_001",
+          "ins_b_003",
+          "ins_b_011",
+          "ins_b_019"
+        ]
+      }
+    },
+    "context_sha256": "ab8083c5fbd78301111eaf286a6ae95ae2f9e2f8bd49518e2f32bb8259986655",
+    "direction_sha256": "e8526d41788914469a95f840f6f3f1fe527303059482dd58f33c6b9206810190",
+    "schema_version": 1,
+    "semantic_sha256": "50b8eaa5a2e1d96908474c62e7ef8016e35f3eb74d2b974abcb397941248cf2a",
+    "sha256": "25ca5cfcd326dd3a850b7d5f7008a330cb8aedcee135171e41aebb3a2c6559f8"
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 19,
+    "high": 51,
+    "low": 3,
+    "medium": 27
+  },
+  "causal_insurance_lowtail": {
+    "after": 4,
+    "before": 7
+  },
+  "causal_lowtail": {
+    "after": 19,
+    "before": 22
+  },
+  "causal_promoted_tiers": {
+    "blocked": 16,
+    "high": 53,
+    "low": 3,
+    "medium": 28
+  },
+  "change_vector": {
+    "group_by": [
+      "product_identity",
+      "formula_period",
+      "variable_role"
+    ],
+    "literal_variable_grounding": true,
+    "preserve_incumbent_answer": true,
+    "replay_existing_trace": true,
+    "selection": "correct_answer_grounding_failure_first",
+    "strategy": "incumbent_trace_literal_revalidation_a3"
+  },
+  "changed_answer_qids": [],
+  "code_hash": "ca39b81ef01ea6e3c0f53c3a84c9dca0f17c2615c2701b4657c7be2e83870b7a",
+  "comparable_attempt_count_after": 3,
+  "comparable_attempt_count_before": 2,
+  "confidence_after": {
+    "ins_b_001": 82,
+    "ins_b_003": 78,
+    "ins_b_011": 100,
+    "ins_b_019": 90
+  },
+  "confidence_before": {
+    "ins_b_001": 0,
+    "ins_b_003": 0,
+    "ins_b_011": 0,
+    "ins_b_019": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "calculation_failure_recovery",
+  "direction_status": "exhausted",
+  "domains": [
+    "insurance"
+  ],
+  "effective_branch": "codex/b榜-loop-i019-insurance-calc-grounding",
+  "evaluator_failed_attempts_not_in_usage": 1,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 77236,
+    "prompt_tokens": 488616,
+    "total_tokens": 565852
+  },
+  "generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+  "generator_model": "gpt-5.5",
+  "history_decision": "refine_existing",
+  "history_reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+  "history_related_experiment_ids": [
+    "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+    "b-loop-calculation_failure_recovery-a2-named-date-args"
+  ],
+  "history_similarity": 0.7,
+  "hypothesis": "Revalidating already-correct incumbent insurance calculations against literal product-rule evidence and replaying their existing steps can remove grounding hard failures without model replanning or answer changes.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 146,
+    "tests_passed": true,
+    "token_accounting_complete": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/calculation_failure_recovery/incumbent_trace_revalidation_a3_v2_promoted3_composite",
+  "lessons": [
+    "Do not rerun a model when the incumbent arithmetic is already correct; revalidate its dependency graph and preserve the answer.",
+    "Legacy decimal ratios must cite literal percentages and include an explicit divide-by-100 step instead of claiming scaled values are directly grounded.",
+    "Formula evidence for every product is required for cross-product insurance calculations; a single matching product clause is insufficient.",
+    "A high tier gain is not enough when evidence dimensions regress; partial promotion keeps the causal incumbent safe.",
+    "A malformed evaluator JSON response is a technical failure, not an experiment result; resume the sealed run and exclude the failed attempt from token accounting."
+  ],
+  "material_delta": {
+    "missing_formula_unit_recovery": true,
+    "no_llm_replanning": true,
+    "posthoc_trace_revalidation": true,
+    "unchanged_answer_trace_repair": true
+  },
+  "next_root_causes": [
+    "insurance_product_identity_evidence_binding_for_ins_b_001",
+    "insurance_remaining_choice_coverage_ins_b_008_013_015",
+    "research_remaining_choice_evidence_coverage",
+    "research_calculation_grounding_res_b_012",
+    "remaining_fin_b_010_evidence_sufficiency",
+    "remaining_reg_b_001_evidence_sufficiency"
+  ],
+  "pipeline_stage": "calculation",
+  "preflight_attempts": [
+    {
+      "root_cause": "Percentage-equivalent grounding searched all selected evidence and could attach incidental numeric matches from an unrelated rule unit.",
+      "root_cause_resolution": "Prefer each legacy variable original cited unit; search added evidence only when that exact unit cannot ground the literal percentage.",
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/calculation_failure_recovery/incumbent_trace_revalidation_a3",
+      "status": "refined_before_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      }
+    },
+    {
+      "integrity": {
+        "answer_preserved": true,
+        "grounding_verified": true,
+        "replay_verified": true
+      },
+      "observed_answer": {
+        "ins_b_001": "333.20",
+        "ins_b_003": "366.00",
+        "ins_b_011": "16.00",
+        "ins_b_019": "211.50"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/calculation_failure_recovery/incumbent_trace_revalidation_a3_v2",
+      "status": "accepted_for_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      }
+    }
+  ],
+  "promoted_qids": [
+    "ins_b_003",
+    "ins_b_011",
+    "ins_b_019"
+  ],
+  "promoted_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/calculation_failure_recovery/incumbent_trace_revalidation_a3_v2_promoted3",
+  "promotion_decisions": {
+    "ins_b_001": {
+      "blind_required": false,
+      "promote": false,
+      "reasons": [
+        "dimension_regressed:answer_entailment",
+        "dimension_regressed:citation_alignment",
+        "dimension_regressed:document_relevance",
+        "dimension_regressed:evidence_sufficiency",
+        "dimension_regressed:overall_confidence"
+      ],
+      "score_delta": 82,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "ins_b_003": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 78,
+      "tier_after": "medium",
+      "tier_before": "blocked"
+    },
+    "ins_b_011": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 100,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "ins_b_019": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 90,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_result": "partial_promotion",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "calculation"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 15,
+    "high": 56,
+    "low": 4,
+    "medium": 25
+  },
+  "reason": "Three correct incumbent insurance calculations were upgraded from blocked to medium/high by literal variable grounding and deterministic trace replay without changing answers. ins_b_001 also reached high, but was excluded because strict per-dimension non-regression failed.",
+  "recorded_at": "2026-07-22T01:57:54+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [
+    "ins_b_001"
+  ],
+  "root_cause_cluster": "legacy_calculation_fallback",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failures": 0,
+      "sentinels_passed": true,
+      "token_accounting_complete": true
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "ins_b_001",
+        "ins_b_003",
+        "ins_b_011",
+        "ins_b_019"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 2,
+          "blocked_low_before": 2,
+          "low_tier_improved_qids": [],
+          "p10_after": 35,
+          "p10_before": 35,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 82,
+          "p10_before": 82,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 4,
+          "blocked_low_before": 8,
+          "low_tier_improved_qids": [
+            "ins_b_001",
+            "ins_b_003",
+            "ins_b_011",
+            "ins_b_019"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 60,
+          "p10_before": 60,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 11,
+          "blocked_low_before": 11,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_001": -5,
+        "fc_b_002": -8,
+        "fc_b_003": 5,
+        "fc_b_004": 2,
+        "fc_b_006": 25,
+        "fc_b_007": -18,
+        "fc_b_008": 2,
+        "fc_b_009": 1,
+        "fc_b_010": 7,
+        "fc_b_011": 5,
+        "fc_b_012": 6,
+        "fc_b_014": -15,
+        "fc_b_016": 5,
+        "fc_b_017": 10,
+        "fc_b_018": -10,
+        "fc_b_019": -5,
+        "fin_b_001": 6,
+        "fin_b_002": 5,
+        "fin_b_003": -1,
+        "fin_b_004": 6,
+        "fin_b_005": 3,
+        "fin_b_007": -2,
+        "fin_b_008": 3,
+        "fin_b_009": 2,
+        "fin_b_011": -7,
+        "fin_b_012": -1,
+        "fin_b_014": 5,
+        "fin_b_015": 3,
+        "fin_b_016": 3,
+        "fin_b_017": -3,
+        "fin_b_019": -3,
+        "ins_b_002": 5,
+        "ins_b_004": -7,
+        "ins_b_005": -6,
+        "ins_b_006": 23,
+        "ins_b_007": -43,
+        "ins_b_008": -5,
+        "ins_b_009": 4,
+        "ins_b_010": -10,
+        "ins_b_012": -12,
+        "ins_b_014": -8,
+        "ins_b_016": 8,
+        "ins_b_017": -6,
+        "ins_b_020": -3,
+        "reg_b_003": -15,
+        "reg_b_005": 6,
+        "reg_b_009": -8,
+        "reg_b_015": 7,
+        "reg_b_016": -5,
+        "reg_b_018": -5,
+        "reg_b_020": 5,
+        "reg_b_021": -6,
+        "reg_b_023": 6,
+        "reg_b_024": 18,
+        "reg_b_025": 6,
+        "reg_b_026": -5,
+        "reg_b_027": -13,
+        "res_b_001": -8,
+        "res_b_005": 5,
+        "res_b_010": -2,
+        "res_b_011": 4,
+        "res_b_015": 4,
+        "res_b_017": 10,
+        "res_b_019": -2
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_006",
+        "fc_b_007",
+        "fc_b_017",
+        "ins_b_006",
+        "ins_b_007",
+        "ins_b_012",
+        "ins_b_017",
+        "reg_b_003",
+        "reg_b_023",
+        "reg_b_025",
+        "reg_b_026",
+        "reg_b_027",
+        "res_b_015",
+        "res_b_017"
+      ]
+    },
+    "reasons": [],
+    "tests": {
+      "count": 146,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/calculation_failure_recovery/incumbent_trace_revalidation_a3_v2",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "ins_b_001",
+    "ins_b_003",
+    "ins_b_011",
+    "ins_b_019"
+  ],
+  "token_accounting_complete": true,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 77236,
+    "prompt_tokens": 488616,
+    "total_tokens": 565852
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 77236,
+    "prompt_tokens": 488616,
+    "total_tokens": 565852
+  }
+}
+```

@@ -18,6 +18,100 @@ from afa_agent.b_board.runner import (
 
 
 class BBoardCalculationTests(unittest.TestCase):
+    def test_legacy_trace_revalidation_prunes_helpers_and_converts_percent_ratio(self):
+        result = CalculationExecutor().replay_legacy_trace(
+            {
+                "schema_version": 1,
+                "variables": [
+                    {
+                        "name": "premium",
+                        "value": "80",
+                        "value_type": "decimal",
+                        "unit": "万元",
+                        "evidence_ids": ["question"],
+                    },
+                    {
+                        "name": "refund_ratio",
+                        "value": "0.75",
+                        "value_type": "decimal",
+                        "unit": "比例",
+                        "evidence_ids": ["rule"],
+                    },
+                    {
+                        "name": "narrative_helper",
+                        "value": "旧版描述无需参与计算",
+                        "value_type": "text",
+                        "unit": "",
+                        "evidence_ids": ["missing"],
+                    },
+                ],
+                "steps": [
+                    {
+                        "id": "refund",
+                        "op": "mul",
+                        "args": [{"ref": "premium"}, {"ref": "refund_ratio"}],
+                        "result": "60.00",
+                    }
+                ],
+                "outputs": [
+                    {
+                        "slot": 1,
+                        "source": {"ref": "refund"},
+                        "format": "decimal2",
+                        "value": "60.00",
+                    }
+                ],
+                "replay_verified": True,
+            },
+            expected_slots=1,
+            evidence_text_by_id={
+                "question": "累计所交保险费80万元",
+                "rule": "保单账户累计收益的75%",
+            },
+            expected_slot_templates=("999999.99",),
+        )
+        self.assertEqual(result.answer_parts, ("60.00",))
+        self.assertTrue(result.trace["grounding_verified"])
+        self.assertTrue(result.trace["revalidation"]["answer_preserved"])
+        self.assertEqual(
+            result.trace["revalidation"]["pruned_variable_names"],
+            ["narrative_helper"],
+        )
+        self.assertEqual(
+            result.trace["revalidation"]["converted_percent_ratio_variables"][0][
+                "literal_percent_value"
+            ],
+            "75.00",
+        )
+
+    def test_legacy_trace_revalidation_rejects_ungrounded_ratio(self):
+        with self.assertRaisesRegex(CalculationPlanError, "cannot be grounded"):
+            CalculationExecutor().replay_legacy_trace(
+                {
+                    "schema_version": 1,
+                    "variables": [
+                        {
+                            "name": "ratio",
+                            "value": "0.75",
+                            "value_type": "decimal",
+                            "unit": "比例",
+                            "evidence_ids": ["rule"],
+                        }
+                    ],
+                    "steps": [],
+                    "outputs": [
+                        {
+                            "source": {"ref": "ratio"},
+                            "format": "decimal2",
+                            "value": "0.75",
+                        }
+                    ],
+                },
+                expected_slots=1,
+                evidence_text_by_id={"rule": "条款未披露具体比例"},
+                expected_slot_templates=("999999.99",),
+            )
+
     def test_bare_table_amount_requires_blank_declared_unit(self):
         plan = {
             "variables": [
