@@ -15834,3 +15834,211 @@
   ]
 }
 ```
+
+## b-loop-full-chain-476fc31-research-v1
+
+- recorded_at: `2026-07-22T20:41:43+00:00`
+
+```json
+{
+  "approach": "在封盘A3干净提交476fc31上以gpt-5.5 research模式执行100题完整链；生成后才与97% incumbent伪标签比较，固定gpt-5.6仅评reasoning，并以新公式计算代理总分。",
+  "artifact_path": "artifacts/b_board_score_loop/full_chain_476fc31_research_v1",
+  "base_commit": "476fc310c5847fae17076194f3e09885efd128ef",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "476fc310c5847fae17076194f3e09885efd128ef",
+        "code_hash": "476fc310c5847fae17076194f3e09885efd128ef",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "answers_not_exposed_to_solver": true,
+          "calculation_variant": "percent_unit_a3_final",
+          "run_mode": "research",
+          "runner": "b_actual_v10_reasoning_audit"
+        },
+        "domains": [],
+        "hypothesis": "476fc31的a3单位语义应让100题research链完整运行，伪标签一致率至少99%，reasoning至少90且token效率满分",
+        "pipeline_stage": "runtime",
+        "question_types": [],
+        "root_cause_cluster": "end_to_end_reproducibility",
+        "target_qids": []
+      }
+    },
+    "context_sha256": "d4486e26914336072d6ef9e3dcbab39c3289247ac65f0783b8ca678ffbf72b09",
+    "direction_sha256": "d9e752102edede4a42c1ac1ec2f1008cc7a180f21f95a1200d8f9ab48070e3e2",
+    "schema_version": 1,
+    "semantic_sha256": "564d706dd53ef536859ba4424bc30b2b5b51fee2abe98d067f50de7c92f7c863",
+    "sha256": "594788c5d5242a6493ab66a3f2496c693b208585ce7ae43171e05cb1e24724b8"
+  },
+  "change_vector": {
+    "answers_not_exposed_to_solver": true,
+    "calculation_variant": "percent_unit_a3_final",
+    "run_mode": "research",
+    "runner": "b_actual_v10_reasoning_audit"
+  },
+  "code_hash": "476fc310c5847fae17076194f3e09885efd128ef",
+  "direction_id": "full_chain_validation_post_calculation_a3",
+  "domains": [],
+  "effect": "完整100/100，伪标签一致100/100，reasoning均分93.33，Token分100.00，代理总分98.666。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-full-chain-476fc31-research-v1",
+  "failure_analysis": "达到完整性和三维晋级门槛；剩余差异作为独立选择题badcase，97%聚合结果不能证明逐题真值。",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "476fc310c5847fae17076194f3e09885efd128ef",
+          "code_hash": "476fc310c5847fae17076194f3e09885efd128ef",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "answers_not_exposed_to_solver": true,
+            "calculation_variant": "percent_unit_a3_final",
+            "run_mode": "research",
+            "runner": "b_actual_v10_reasoning_audit"
+          },
+          "domains": [],
+          "hypothesis": "476fc31的a3单位语义应让100题research链完整运行，伪标签一致率至少99%，reasoning至少90且token效率满分",
+          "pipeline_stage": "runtime",
+          "question_types": [],
+          "root_cause_cluster": "end_to_end_reproducibility",
+          "target_qids": []
+        }
+      },
+      "context_sha256": "d4486e26914336072d6ef9e3dcbab39c3289247ac65f0783b8ca678ffbf72b09",
+      "direction_sha256": "d9e752102edede4a42c1ac1ec2f1008cc7a180f21f95a1200d8f9ab48070e3e2",
+      "schema_version": 1,
+      "semantic_sha256": "564d706dd53ef536859ba4424bc30b2b5b51fee2abe98d067f50de7c92f7c863",
+      "sha256": "594788c5d5242a6493ab66a3f2496c693b208585ce7ae43171e05cb1e24724b8"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "476fc310c5847fae17076194f3e09885efd128ef",
+            "code_hash": "476fc310c5847fae17076194f3e09885efd128ef",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "answers_not_exposed_to_solver": true,
+              "calculation_variant": "percent_unit_a3_final",
+              "run_mode": "research",
+              "runner": "b_actual_v10_reasoning_audit"
+            },
+            "domains": [],
+            "hypothesis": "476fc31的a3单位语义应让100题research链完整运行，伪标签一致率至少99%，reasoning至少90且token效率满分",
+            "pipeline_stage": "runtime",
+            "question_types": [],
+            "root_cause_cluster": "end_to_end_reproducibility",
+            "target_qids": []
+          }
+        },
+        "context_sha256": "d4486e26914336072d6ef9e3dcbab39c3289247ac65f0783b8ca678ffbf72b09",
+        "direction_sha256": "d9e752102edede4a42c1ac1ec2f1008cc7a180f21f95a1200d8f9ab48070e3e2",
+        "schema_version": 1,
+        "semantic_sha256": "564d706dd53ef536859ba4424bc30b2b5b51fee2abe98d067f50de7c92f7c863",
+        "sha256": "594788c5d5242a6493ab66a3f2496c693b208585ce7ae43171e05cb1e24724b8"
+      },
+      "comparable_attempt_count": 1,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-full-chain-b15966e-research-v1",
+        "b-loop-full-chain-reproduction-baseline-v10"
+      ],
+      "similarity": 0.915833
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "2fb5d250cacaf9b1880fb09aa2a94361a216136ee4235c531defa9bdc605bb4a",
+      "size": 540474
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "89935bbf2ea860b737ce2a2ffd5f317a259b1a4a814cfde9fa5a8bb5d256d3f2",
+      "size": 436618
+    },
+    "related_log_sections": [
+      "b0-run-integrity-reg016-v2",
+      "b0-run-integrity-reg016-v3",
+      "b0-run-integrity-reg016-v4",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-full-chain-reproduction-baseline-v10",
+      "b-loop-full-chain-b15966e-research-v1"
+    ],
+    "reviewed_at": "2026-07-22T20:26:28+00:00"
+  },
+  "hypothesis": "476fc31的A3单位语义应让100题research链完整运行，伪标签一致率至少99%，reasoning至少90且Token效率满分",
+  "material_delta": {
+    "validated_commit": "476fc310c5847fae17076194f3e09885efd128ef"
+  },
+  "metrics": {
+    "answered_question_count": 100,
+    "comparable_scope": "full100_research",
+    "expected_question_count": 100,
+    "failed_qids": [],
+    "incumbent_official_aggregate_accuracy": 97.0,
+    "incumbent_per_qid_truth_available": false,
+    "incumbent_reference_sha256": "497658e3e76c0df3bb28134a4d1b2d442bb5b5602ea4654d7d0ce019aecb400d",
+    "pseudo_differences": {},
+    "pseudo_match_rate": 100.0,
+    "pseudo_matches": 100,
+    "reasoning_aggregate": {
+      "dimension_means": {
+        "clarity": 94.34,
+        "completeness": 91.28,
+        "logical": 94.37
+      },
+      "p10": 88.33333333333333,
+      "question_count": 100,
+      "reasoning_score": 93.33,
+      "status_counts": {
+        "scored": 100
+      },
+      "zero_score_count": 0
+    },
+    "reasoning_judge_token_usage": {
+      "completion_tokens": 8667,
+      "prompt_tokens": 65678,
+      "total_tokens": 74345
+    },
+    "scorecard": {
+      "accuracy_score": 100.0,
+      "accuracy_source": "full100_pseudo_match_to_official97_incumbent_not_ground_truth",
+      "judge_tokens_included_in_submission": false,
+      "reasoning_judge_model": "gpt-5.6",
+      "reasoning_prompt_version": "b_reasoning_judge_v1_new_md",
+      "reasoning_score": 93.33,
+      "token_efficiency_score": 100.0,
+      "token_total": 1233221,
+      "total_score": 98.666
+    },
+    "submission_token_total": 1233221,
+    "token_efficiency_score": 100.0
+  },
+  "next_step": "围绕剩余ins_b_004选项D证据覆盖开启独立方向，最多3轮；不再修改百分比方向。",
+  "pipeline_stage": "runtime",
+  "question_types": [],
+  "recorded_at": "2026-07-22T20:41:43+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "end_to_end_reproducibility",
+  "status": "effective",
+  "submission_effect": "not_submitted",
+  "target_qids": []
+}
+```
