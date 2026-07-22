@@ -100,6 +100,99 @@ class InsuranceOfficialClauseRegressionTests(unittest.TestCase):
             raise AssertionError("deterministic clause bundle unexpectedly used model tokens")
         return answer.pred_answer
 
+    @staticmethod
+    def policy_loan_units(*, include_general_fuhong_clause: bool = True) -> list[dict[str, object]]:
+        units = [
+            make_unit(
+                "1::identity",
+                "1",
+                "中国平安人寿保险股份有限公司 平安智盈金生专属商业养老保险条款。",
+            ),
+            make_unit(
+                "1::cash-value",
+                "1",
+                "本合同现金价值按约定计算，养老保险金开始领取日及之后为零。",
+            ),
+            make_unit(
+                "2::identity",
+                "2",
+                "中国人寿保险股份有限公司 国寿增益宝终身寿险（万能型）条款。",
+            ),
+            make_unit(
+                "2::loan",
+                "2",
+                "最高借款金额不得超过本合同当时的现金价值扣除借款及借款利息后余额的80%。",
+            ),
+            make_unit(
+                "15::identity",
+                "15",
+                "中国人寿保险股份有限公司 国寿鑫享添盈养老年金保险条款。",
+            ),
+            make_unit(
+                "15::loan",
+                "15",
+                "最高借款金额不得超过现金价值扣除欠交保险费、借款及利息后余额的百分之八十。",
+            ),
+            make_unit(
+                "16::identity",
+                "16",
+                "平安养老保险股份有限公司 平安富鸿金生养老年金保险条款。",
+            ),
+            make_unit(
+                "16::exception",
+                "16",
+                "若按照个人养老金制度投保并订立本合同，我们不接受保单贷款申请。",
+            ),
+        ]
+        if include_general_fuhong_clause:
+            units.append(
+                make_unit(
+                    "16::general",
+                    "16",
+                    "第6.2条 保单贷款：经被保险人书面同意，您可申请保单贷款功能。",
+                )
+            )
+        return units
+
+    @staticmethod
+    def policy_loan_question() -> tuple[str, dict[str, str]]:
+        return (
+            "关于保单贷款或借款，下列说法正确的是？",
+            {
+                "A": "平安智盈金生明确约定可按现金价值80%申请保单贷款",
+                "B": "国寿增益宝在无未偿还借款及利息时，最高借款金额不超过当时现金价值的80%",
+                "C": "国寿鑫享添盈在无欠交保费、借款及利息时，最高借款金额不超过相关余额的80%",
+                "D": "平安富鸿金生非按个人养老金制度投保时可申请保单贷款；按个人养老金制度投保时不接受保单贷款申请",
+            },
+        )
+
+    def test_policy_loan_bundle_is_bcd_with_general_permission_and_exception(self) -> None:
+        question, options = self.policy_loan_question()
+
+        answer = self.solve(question, options, self.policy_loan_units())
+
+        self.assertEqual(answer, "BCD")
+
+    def test_policy_loan_bundle_rejects_exception_only_evidence(self) -> None:
+        question_text, options = self.policy_loan_question()
+        units = self.policy_loan_units(include_general_fuhong_clause=False)
+        solver = InsuranceSolver.__new__(InsuranceSolver)
+        solver.retriever = GenericBM25Retriever(units)
+        question = Question(
+            qid="regression",
+            domain="insurance",
+            split="B",
+            question=question_text,
+            options=options,
+            answer_format="multi",
+            type="多选题",
+            doc_ids=["1", "2", "15", "16"],
+        )
+
+        rules = solver._product_identity_clause_rules(question)
+
+        self.assertIsNone(rules)
+
     def test_terrorism_exclusion_is_bcd(self) -> None:
         units = [
             make_unit(

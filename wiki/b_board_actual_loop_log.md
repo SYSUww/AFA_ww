@@ -17337,3 +17337,464 @@
   "target_qids": []
 }
 ```
+
+## b-loop-insurance-conditional-policy-loan-eligibility-a1
+
+- recorded_at: `2026-07-22T21:20:19+00:00`
+
+```json
+{
+  "approach": "以产品身份条款束绑定四个选项；D仅在同一富鸿金生文档同时检出一般保单贷款申请权与个人养老金投保例外时判真；A以整份条款缺少保单贷款明示为否定门禁。随后执行真实单题链路和固定GPT-5.6 reasoning评估。",
+  "artifact_path": "artifacts/b_board_score_loop/insurance_loan_condition_a1_target1",
+  "base_commit": "66877bb2740fb86087644de319075a6fe68cd528",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "66877bb2740fb86087644de319075a6fe68cd528",
+        "code_hash": "98a575c691193f8f7d5c0bf5aa6088fb8561862d6b06b78ecd4c32491cef62e3",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "negative_guard": "exception_only_is_insufficient",
+          "same_document_evidence": true,
+          "strategy": "product_identity_cross_chunk_clause_bundle",
+          "variant": "a1"
+        },
+        "domains": [
+          "insurance"
+        ],
+        "hypothesis": "将各产品贷款陈述绑定到同一产品文档，并要求通用贷款许可与个人养老金例外成对出现，可稳定恢复d且避免仅凭例外做逆否推断",
+        "pipeline_stage": "answering",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "conditional_clause_entailment",
+        "target_qids": [
+          "ins_b_004"
+        ]
+      }
+    },
+    "context_sha256": "d1d01b5e6bcf18d3ec80f5b5dbc865c0afdd794c7f9c2cd9993afc7e98c96ca2",
+    "direction_sha256": "402bacd4b61f10e5a774947dea15b234769b13d4ea1f2526e4d16bd6817f9be8",
+    "schema_version": 1,
+    "semantic_sha256": "b9443b26e58feed052f7c1bbe9168a75f2f9de018a8bbd81de6794c7b842be1c",
+    "sha256": "8a23ab3ece166f6790749ac9666dd5b2b74ce3970d2367dc4b19f838f1c9f2f7"
+  },
+  "change_vector": {
+    "negative_guard": "exception_only_is_insufficient",
+    "same_document_evidence": true,
+    "strategy": "product_identity_cross_chunk_clause_bundle",
+    "variant": "a1"
+  },
+  "code_hash": "98a575c691193f8f7d5c0bf5aa6088fb8561862d6b06b78ecd4c32491cef62e3",
+  "direction_id": "insurance_conditional_policy_loan_eligibility",
+  "domains": [
+    "insurance"
+  ],
+  "effect": "真实单题链路输出BCD，与97% incumbent伪标签BCD一致=True；reasoning=94.00，目标代理总分=79.064。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-insurance-conditional-policy-loan-eligibility-a1",
+  "failure_analysis": "未发现本轮失败；逐题真值仍未知，BCD只表示与97% incumbent一致且条款证据闭合，不等同官网确认真值。",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "66877bb2740fb86087644de319075a6fe68cd528",
+          "code_hash": "98a575c691193f8f7d5c0bf5aa6088fb8561862d6b06b78ecd4c32491cef62e3",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "negative_guard": "exception_only_is_insufficient",
+            "same_document_evidence": true,
+            "strategy": "product_identity_cross_chunk_clause_bundle",
+            "variant": "a1"
+          },
+          "domains": [
+            "insurance"
+          ],
+          "hypothesis": "将各产品贷款陈述绑定到同一产品文档，并要求通用贷款许可与个人养老金例外成对出现，可稳定恢复d且避免仅凭例外做逆否推断",
+          "pipeline_stage": "answering",
+          "question_types": [
+            "multi"
+          ],
+          "root_cause_cluster": "conditional_clause_entailment",
+          "target_qids": [
+            "ins_b_004"
+          ]
+        }
+      },
+      "context_sha256": "d1d01b5e6bcf18d3ec80f5b5dbc865c0afdd794c7f9c2cd9993afc7e98c96ca2",
+      "direction_sha256": "402bacd4b61f10e5a774947dea15b234769b13d4ea1f2526e4d16bd6817f9be8",
+      "schema_version": 1,
+      "semantic_sha256": "b9443b26e58feed052f7c1bbe9168a75f2f9de018a8bbd81de6794c7b842be1c",
+      "sha256": "8a23ab3ece166f6790749ac9666dd5b2b74ce3970d2367dc4b19f838f1c9f2f7"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "66877bb2740fb86087644de319075a6fe68cd528",
+            "code_hash": "98a575c691193f8f7d5c0bf5aa6088fb8561862d6b06b78ecd4c32491cef62e3",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "negative_guard": "exception_only_is_insufficient",
+              "same_document_evidence": true,
+              "strategy": "product_identity_cross_chunk_clause_bundle",
+              "variant": "a1"
+            },
+            "domains": [
+              "insurance"
+            ],
+            "hypothesis": "将各产品贷款陈述绑定到同一产品文档，并要求通用贷款许可与个人养老金例外成对出现，可稳定恢复d且避免仅凭例外做逆否推断",
+            "pipeline_stage": "answering",
+            "question_types": [
+              "multi"
+            ],
+            "root_cause_cluster": "conditional_clause_entailment",
+            "target_qids": [
+              "ins_b_004"
+            ]
+          }
+        },
+        "context_sha256": "d1d01b5e6bcf18d3ec80f5b5dbc865c0afdd794c7f9c2cd9993afc7e98c96ca2",
+        "direction_sha256": "402bacd4b61f10e5a774947dea15b234769b13d4ea1f2526e4d16bd6817f9be8",
+        "schema_version": 1,
+        "semantic_sha256": "b9443b26e58feed052f7c1bbe9168a75f2f9de018a8bbd81de6794c7b842be1c",
+        "sha256": "8a23ab3ece166f6790749ac9666dd5b2b74ce3970d2367dc4b19f838f1c9f2f7"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "87b636df3be61dedc7c893178485659bb9d57930c317ea2607638fe3c2a4f646",
+      "size": 601278
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "2fc22b42a5191443ea8d80248d869410e87d1fdcc07a31d57de1f8c799b1dff6",
+      "size": 486451
+    },
+    "related_log_sections": [
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-full-chain-b15966e-research-v1",
+      "b-loop-full-chain-476fc31-research-v1",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90",
+      "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+      "b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100",
+      "b-loop-full-chain-737675b-reasoning-v2-research-v1"
+    ],
+    "reviewed_at": "2026-07-22T21:19:36+00:00"
+  },
+  "hypothesis": "将各产品贷款陈述绑定到同一产品文档，并要求通用贷款许可与个人养老金例外成对出现，可稳定恢复D且避免仅凭例外做逆否推断",
+  "material_delta": {
+    "cross_chunk_positive_and_exception_binding": true
+  },
+  "metrics": {
+    "candidate_answer": "BCD",
+    "generator_model": "gpt-5.5",
+    "incumbent_answer": "BCD",
+    "incumbent_official_aggregate_accuracy": 97.0,
+    "incumbent_per_qid_truth_available": false,
+    "pseudo_match": true,
+    "reasoning_aggregate": {
+      "dimension_means": {
+        "clarity": 94.0,
+        "completeness": 95.0,
+        "logical": 93.0
+      },
+      "p10": 94.0,
+      "question_count": 1,
+      "reasoning_score": 94.0,
+      "status_counts": {
+        "scored": 1
+      },
+      "zero_score_count": 0
+    },
+    "reasoning_judge_model": "gpt-5.6",
+    "rule_outputs": [],
+    "run_manifest_status": "complete",
+    "scope": "target1_full_chain_research",
+    "scorecard": {
+      "accuracy_score": 100.0,
+      "accuracy_source": "target1_pseudo_match_to_official97_incumbent_not_ground_truth",
+      "judge_tokens_included_in_submission": false,
+      "reasoning_judge_model": "gpt-5.6",
+      "reasoning_prompt_version": "b_reasoning_judge_v1_new_md",
+      "reasoning_score": 94.0,
+      "token_efficiency_score": 1.3178,
+      "token_total": 6589,
+      "total_score": 79.06356
+    },
+    "submission_token_total": 6589,
+    "used_evidence_ids": [
+      "1::sec_10",
+      "1::sec_38::chunk_3",
+      "2::sec_20::chunk_1",
+      "2::sec_20::chunk_8",
+      "15::sec_21::chunk_1",
+      "15::sec_36",
+      "16::sec_1",
+      "16::sec_2::chunk_7",
+      "16::sec_2::chunk_8"
+    ]
+  },
+  "next_step": "运行全量测试并提交推送有效分支；随后执行100题全链复验，确认无其他答案回归及最终总分增益。",
+  "pipeline_stage": "answering",
+  "question_types": [
+    "multi"
+  ],
+  "recorded_at": "2026-07-22T21:20:19+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "conditional_clause_entailment",
+  "status": "effective",
+  "submission_effect": "not_submitted",
+  "target_qids": [
+    "ins_b_004"
+  ]
+}
+```
+
+## b-loop-metric-scope-correction-ins-b-004-a1
+
+- recorded_at: `2026-07-22T21:21:05+00:00`
+
+```json
+{
+  "approach": "对已记录A1的scorecard口径做追加更正，不修改历史记录：保留单题accuracy/reasoning诊断，但将Token效率1.3178和总分79.06356标记为target1范围、不可与full100比较。",
+  "base_commit": "66877bb2740fb86087644de319075a6fe68cd528",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "66877bb2740fb86087644de319075a6fe68cd528",
+        "code_hash": "8917b3006349a311c3dd10914313021e7729cc6027016d78b75f0313a858c953",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "corrects_experiment_id": "b-loop-insurance-conditional-policy-loan-eligibility-a1",
+          "record_only": true
+        },
+        "domains": [],
+        "hypothesis": "单题诊断scorecard的token效率和总分不可与100题scorecard横向比较，必须显式标注范围并仅以全量验证晋级",
+        "pipeline_stage": "evaluation",
+        "question_types": [],
+        "root_cause_cluster": "metric_scope_hygiene",
+        "target_qids": []
+      }
+    },
+    "context_sha256": "75378cae649e2635afc30b107f0029cdd4fb77cffe4c20ec519f2f143d0dc54e",
+    "direction_sha256": "288e9692ab9a0910dd65186de8c29bf58fde217d1ee5010aeed8890412260ac2",
+    "schema_version": 1,
+    "semantic_sha256": "67b25ea202917c6ebca818b7f441367cba6627449e7d062f8338c50323f0d120",
+    "sha256": "47704e0a93611714e6a02c2c481698991d5ff57634563345205f6ebe67b4d894"
+  },
+  "change_vector": {
+    "corrects_experiment_id": "b-loop-insurance-conditional-policy-loan-eligibility-a1",
+    "record_only": true
+  },
+  "code_hash": "8917b3006349a311c3dd10914313021e7729cc6027016d78b75f0313a858c953",
+  "direction_id": "metric_scope_correction_ins_b_004_a1",
+  "domains": [],
+  "effect": "明确A1的有效性仅由BCD答案门禁、证据闭合和reasoning 94支撑；最终总分晋级待100题全量scorecard确认。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-metric-scope-correction-ins-b-004-a1",
+  "failure_analysis": "原A1日志将target1 scorecard称为目标代理总分，容易误读为全量总分；数值本身由统一公式正确计算，但比较范围不成立。",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "66877bb2740fb86087644de319075a6fe68cd528",
+          "code_hash": "8917b3006349a311c3dd10914313021e7729cc6027016d78b75f0313a858c953",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "corrects_experiment_id": "b-loop-insurance-conditional-policy-loan-eligibility-a1",
+            "record_only": true
+          },
+          "domains": [],
+          "hypothesis": "单题诊断scorecard的token效率和总分不可与100题scorecard横向比较，必须显式标注范围并仅以全量验证晋级",
+          "pipeline_stage": "evaluation",
+          "question_types": [],
+          "root_cause_cluster": "metric_scope_hygiene",
+          "target_qids": []
+        }
+      },
+      "context_sha256": "75378cae649e2635afc30b107f0029cdd4fb77cffe4c20ec519f2f143d0dc54e",
+      "direction_sha256": "288e9692ab9a0910dd65186de8c29bf58fde217d1ee5010aeed8890412260ac2",
+      "schema_version": 1,
+      "semantic_sha256": "67b25ea202917c6ebca818b7f441367cba6627449e7d062f8338c50323f0d120",
+      "sha256": "47704e0a93611714e6a02c2c481698991d5ff57634563345205f6ebe67b4d894"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "66877bb2740fb86087644de319075a6fe68cd528",
+            "code_hash": "8917b3006349a311c3dd10914313021e7729cc6027016d78b75f0313a858c953",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "corrects_experiment_id": "b-loop-insurance-conditional-policy-loan-eligibility-a1",
+              "record_only": true
+            },
+            "domains": [],
+            "hypothesis": "单题诊断scorecard的token效率和总分不可与100题scorecard横向比较，必须显式标注范围并仅以全量验证晋级",
+            "pipeline_stage": "evaluation",
+            "question_types": [],
+            "root_cause_cluster": "metric_scope_hygiene",
+            "target_qids": []
+          }
+        },
+        "context_sha256": "75378cae649e2635afc30b107f0029cdd4fb77cffe4c20ec519f2f143d0dc54e",
+        "direction_sha256": "288e9692ab9a0910dd65186de8c29bf58fde217d1ee5010aeed8890412260ac2",
+        "schema_version": 1,
+        "semantic_sha256": "67b25ea202917c6ebca818b7f441367cba6627449e7d062f8338c50323f0d120",
+        "sha256": "47704e0a93611714e6a02c2c481698991d5ff57634563345205f6ebe67b4d894"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "a6b7a8d349333cd2b745eb22f01ccb61a9d5e8936bcfd4581a5c845d26c4e3e2",
+      "size": 612516
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "2fb7bf258e5808a70c201a507540d84263ee2631db2aaeeb6376534ab7025d0e",
+      "size": 495850
+    },
+    "related_log_sections": [
+      "b-loop-i023-gpt56-answer-error-audit-v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "B0-actual-evaluation",
+      "B0-actual-root-cause-analysis",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a1-traffic-escape-v1",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-b1",
+      "b-loop-research-structural-cost-reduction-res-b-009-a1",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-readme-percent-format-priority-v6",
+      "b-loop-reasoning-shadow-baseline-v1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90",
+      "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+      "b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100"
+    ],
+    "reviewed_at": "2026-07-22T21:21:05+00:00"
+  },
+  "hypothesis": "单题诊断scorecard的Token效率和总分不可与100题scorecard横向比较，必须显式标注范围并仅以全量验证晋级",
+  "material_delta": {
+    "metric_scope_annotation": true
+  },
+  "metrics": {
+    "comparable_to_full100": false,
+    "corrects_experiment_id": "b-loop-insurance-conditional-policy-loan-eligibility-a1",
+    "full100_validation_required": true,
+    "target1_token_efficiency_score": 1.3178,
+    "target1_total_score": 79.06356
+  },
+  "next_step": "在有效分支上运行100题research全链和固定GPT-5.6评估，以full100 Token总量和总分作为唯一晋级依据。",
+  "pipeline_stage": "evaluation",
+  "question_types": [],
+  "recorded_at": "2026-07-22T21:21:05+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "metric_scope_hygiene",
+  "status": "completed",
+  "submission_effect": "not_submitted",
+  "target_qids": []
+}
+```

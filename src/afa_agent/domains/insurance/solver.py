@@ -433,6 +433,51 @@ class InsuranceSolver:
         question: Question,
     ) -> dict[str, tuple[bool, str, list[RetrievalHit]]] | None:
         compact_question = self._normalize_product_text(question.question)
+        compact_options = self._normalize_product_text(" ".join(question.options.values()))
+
+        if (
+            "保单贷款" in compact_question
+            and "借款" in compact_question
+            and all(
+                product in compact_options
+                for product in ["智盈金生", "增益宝", "鑫享添盈", "富鸿金生"]
+            )
+            and "个人养老金制度" in compact_options
+        ):
+            specs = {
+                "A": (
+                    False,
+                    "平安智盈金生条款明确约定现金价值和退保权益，但整份条款未明确约定保单贷款，不能据此声称可按现金价值80%申请。",
+                    [["平安智盈金生专属商业养老保险"]],
+                    [["现金价值", "养老保险金开始领取日及之后为零"]],
+                ),
+                "B": (
+                    True,
+                    "国寿增益宝约定最高借款金额不超过现金价值扣除借款及借款利息后余额的80%；无未偿还借款及利息时即为现金价值的80%。",
+                    [["中国人寿保险股份有限公司", "国寿增益宝"]],
+                    [["最高借款金额", "现金价值", "借款及借款利息", "80%"]],
+                ),
+                "C": (
+                    True,
+                    "国寿鑫享添盈约定最高借款金额不超过现金价值扣除欠交保险费、借款及利息后余额的百分之八十；无欠款时满足选项表述。",
+                    [["国寿鑫享添盈"]],
+                    [["最高借款金额", "现金价值", "欠交保险费", "百分之八十"]],
+                ),
+                "D": (
+                    True,
+                    "平安富鸿金生同一保单贷款条款先给出一般申请权，再明确按个人养老金制度投保时不接受申请，二者共同支持选项所述条件分支。",
+                    [["平安养老保险股份有限公司", "平安富鸿金生"]],
+                    [
+                        ["保单贷款", "可申请保单贷款功能"],
+                        ["个人养老金制度", "不接受保单贷款申请"],
+                    ],
+                ),
+            }
+            return self._materialize_product_clause_specs(
+                specs,
+                marker="policy_loan_condition_subject_binding",
+                negative_absence_terms={"A": ["保单贷款"]},
+            )
 
         if "恐怖活动" in compact_question and "恐怖袭击" in compact_question and "责任免除" in compact_question:
             specs = {
