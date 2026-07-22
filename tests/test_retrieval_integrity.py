@@ -1369,6 +1369,68 @@ class ResearchFinancialClauseBundleTests(unittest.TestCase):
             expected={"A": True, "B": True, "C": True, "D": False},
         )
 
+    def test_service_consumption_bundle_aligns_dual_side_policy_and_risk_sharing(self) -> None:
+        units = [
+            make_unit(
+                "service::long_term", "service",
+                "服务消费政策体系正从“短期刺激”转向“长效制度建设”：需求端以长期制度安排使居民有闲、敢于消费；"
+                "供给端扩围、提质、融合，并通过标准与品牌建设驱动产业升级和供给提质。",
+            ),
+            make_unit(
+                "service::capacity", "service",
+                "春秋假期等政策红利深挖全时段消费潜力，叠加景区业态扩容提质、文旅百业跨界融合，形成长期供给能力。",
+            ),
+            make_unit(
+                "service::public_finance", "service",
+                "提高中央财政在公共服务供给中的承担比例，提升民生领域公共支出，并在文旅等领域发放消费补贴。",
+            ),
+            make_unit(
+                "service::public_policy", "service",
+                "规划要求提高公共服务支出占财政支出比重、增加民生保障支出、健全公共卫生体系并完善医疗服务。",
+            ),
+            make_unit(
+                "service::dual_side", "service",
+                "需求端“增收、减负、清障”，以春秋假期和长护险释放潜能；供给端“扩围、提质、融合”提升服务品质。",
+            ),
+            make_unit(
+                "pet::quality_network", "pet",
+                "全国一体化医院网络由社区、综合和专业宠物医院构成，社区医院实行标准化的诊断及操作流程，"
+                "并通过转介让客户获得高质量医疗及其他服务。",
+            ),
+            make_unit(
+                "pet::scale_specialty", "pet",
+                "连锁化是必然趋势，并购后必须重视服务标准化；专科化也是未来发展趋势，引入新技术提升诊疗效率。",
+            ),
+            make_unit(
+                "insurance::risk_hedge", "insurance",
+                "社会保障是风险对冲工具，通过分散养老、生育、医疗和长期照护风险，削弱预防性储蓄动机、抬升边际消费倾向。",
+            ),
+            make_unit(
+                "insurance::care_release", "insurance",
+                "长护险正重塑养老产业支付底座，补齐医疗—养老—护理短板，全面释放养老服务消费需求并成为支付引擎。",
+            ),
+        ]
+        question = Question(
+            qid="res_b_014",
+            domain="research",
+            split="B",
+            question="推广春秋假和发放消费券、宠物医院连锁化和专科化、保险与养老健康服务结合，这些政策与商业实践背后体现了怎样的共同思路？以下哪些最准确？",
+            options={
+                "A": "通过时间和金钱的再分配来刺激短期消费，而非关注长期供给能力建设",
+                "B": "将公共服务完全市场化，以减少财政负担",
+                "C": "从供给侧和需求侧同时发力，以提升服务消费的质量和规模",
+                "D": "利用金融工具来分担居民在养老、医疗等方面的支出风险，从而释放即期消费潜力",
+            },
+            answer_format="multi",
+            type="多选题",
+            doc_ids=["service", "pet", "insurance"],
+        )
+        self.assert_labels(
+            solver=self.make_solver(units),
+            question=question,
+            expected={"A": False, "B": False, "C": True, "D": True},
+        )
+
 
 class FinancialReportMetricBundleTests(unittest.TestCase):
     @staticmethod

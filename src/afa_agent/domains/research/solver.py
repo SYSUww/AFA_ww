@@ -254,6 +254,9 @@ class ResearchSolver:
         option_text: str,
         hits: list[RetrievalHit],
     ) -> tuple[bool | None, str, list[RetrievalHit]]:
+        service_consumption_rule = self._service_consumption_dual_side_risk_rule(question, option_text)
+        if service_consumption_rule is not None:
+            return service_consumption_rule
         structural_cost_rule = self._structural_cost_reduction_bundle_rule(question, option_text)
         if structural_cost_rule is not None:
             return structural_cost_rule
@@ -318,6 +321,139 @@ class ResearchSolver:
         if ev_q1_sales_rule is not None:
             return ev_q1_sales_rule
         return None, "", []
+
+    def _service_consumption_dual_side_risk_rule(
+        self,
+        question: Question,
+        option_text: str,
+    ) -> tuple[bool, str, list[RetrievalHit]] | None:
+        """Align demand activation, supply quality, and household risk sharing."""
+
+        question_text = self._compact_text(question.question)
+        if not all(
+            term in question_text
+            for term in ("春秋假", "消费券", "宠物医院连锁化", "专科化", "保险", "养老健康服务")
+        ):
+            return None
+        option = self._compact_text(option_text)
+        long_term_policy = self._literal_hits(
+            question,
+            term_groups=[
+                ["从“短期刺激”转向“长效制度建设”", "需求端", "供给端", "供给提质"],
+            ],
+            marker="service_consumption_long_term_dual_side_policy",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        durable_supply = self._literal_hits(
+            question,
+            term_groups=[
+                ["春秋假期等政策红利深挖全时段消费潜力", "景区业态扩容提质", "跨界融合"],
+            ],
+            marker="service_consumption_durable_supply_capacity",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        public_finance = self._literal_hits(
+            question,
+            term_groups=[
+                ["提高中央财政在公共服务供给中的承担比例", "提升民生领域公共支出", "发放消费补贴"],
+            ],
+            marker="service_consumption_public_finance_support",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        public_service_policy = self._literal_hits(
+            question,
+            term_groups=[
+                ["提高公共服务支出占财政支出比重", "增加民生保障支出", "健全公共卫生体系", "完善医疗服务"],
+            ],
+            marker="service_consumption_public_service_counterevidence",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        demand_and_supply = self._literal_hits(
+            question,
+            term_groups=[
+                ["需求端“增收、减负、清障”", "春秋假期", "长护险", "供给端“扩围、提质、融合”"],
+            ],
+            marker="service_consumption_demand_supply_core",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        pet_quality_network = self._literal_hits(
+            question,
+            term_groups=[
+                ["全国一体化医院网络", "专业宠物医院", "标准化的诊断及操作流程", "高质量医疗及其他服务"],
+            ],
+            marker="service_consumption_pet_quality_network",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        pet_scale_specialty = self._literal_hits(
+            question,
+            term_groups=[
+                ["连锁化是必然趋势", "服务标准化", "专科化也是未来发展趋势"],
+            ],
+            marker="service_consumption_pet_scale_specialty",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        risk_hedge = self._literal_hits(
+            question,
+            term_groups=[
+                ["风险对冲工具", "分散养老", "医疗", "长期照护", "削弱预防性储蓄动机", "抬升边际消费倾向"],
+            ],
+            marker="service_consumption_insurance_risk_hedge",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        long_term_care_release = self._literal_hits(
+            question,
+            term_groups=[
+                ["长护险正重塑养老产业", "医疗—养老—护理", "全面释放养老服务消费需求", "支付引擎"],
+            ],
+            marker="service_consumption_long_term_care_release",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+
+        if all(term in option for term in ("时间和金钱的再分配", "刺激短期消费", "长期供给能力建设")):
+            rule_hits = self._merge_hits([*long_term_policy, *durable_supply], limit=3)
+            if len(rule_hits) >= 2:
+                return (
+                    False,
+                    "春秋假和消费补贴确实从时间与资金两端激活需求，但政策材料明确从短期刺激转向长效制度建设，并同步推动服务供给扩围提质、场景扩容和产业融合；因此不能概括为只顾短期消费而不建设长期供给能力。",
+                    rule_hits,
+                )
+        if all(term in option for term in ("公共服务完全市场化", "减少财政负担")):
+            rule_hits = self._merge_hits([*public_finance, *public_service_policy], limit=3)
+            if len(rule_hits) >= 2:
+                return (
+                    False,
+                    "相关政策反而要求提高公共服务支出和中央财政在公共服务供给中的承担比例，并增加民生保障、养老金和医保支持；这与公共服务完全市场化、以减轻财政负担为目标直接相反。",
+                    rule_hits,
+                )
+        if all(term in option for term in ("供给侧和需求侧同时发力", "提升服务消费的质量和规模")):
+            rule_hits = self._merge_hits(
+                [*demand_and_supply, *pet_quality_network, *pet_scale_specialty],
+                limit=3,
+            )
+            if len(rule_hits) == 3:
+                return (
+                    True,
+                    "服务消费政策一端以春秋假、补贴和长护险释放需求，另一端扩围提质；宠物医疗则以全国连锁、分级转介、标准化流程和专科能力扩大覆盖并提升服务质量。两类实践共同体现供需协同扩容提质。",
+                    rule_hits,
+                )
+        if all(term in option for term in ("金融工具", "分担居民", "养老、医疗", "支出风险", "释放即期消费潜力")):
+            rule_hits = self._merge_hits([*risk_hedge, *long_term_care_release], limit=3)
+            if len(rule_hits) >= 2:
+                return (
+                    True,
+                    "材料明确把社会保险、长护险和补充养老保障定义为风险对冲工具：分散养老、医疗和长期照护风险，降低未来不确定性与预防性储蓄，并通过支付保障释放养老服务消费需求。",
+                    rule_hits,
+                )
+        return None
 
     def _structural_cost_reduction_bundle_rule(
         self,

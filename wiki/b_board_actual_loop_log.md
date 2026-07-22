@@ -12269,3 +12269,278 @@
 - causal tiers: `4 blocked / 60 high / 4 low / 32 medium -> 3 blocked / 61 high / 4 low / 32 medium`; lowtail `8 -> 7`, research lowtail `4 -> 3`
 - lessons: cross-industry claims need a row-by-row matrix; bind cost and quality in the same source; avoid exact escaped percentages when the number is not the claim; do not force evidence uniqueness past retrieval stability
 - next: `research_supply_constraint_res_b_014`, then `research_staged_autonomy_direct_entailment_res_b_017`
+
+## b-loop-research-service-consumption-dual-side-risk-res-b-014-a1
+
+- recorded_at: `2026-07-22T07:03:22+00:00`
+
+```json
+{
+  "answered_qids": [
+    "res_b_014"
+  ],
+  "attempt_index": 1,
+  "base_commit": "17b574aad3e57436e0578891882ad1f2414f9c6e",
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_service_consumption_dual_side_risk_res_b_014/service_consumption_bundle_a2_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "17b574aad3e57436e0578891882ad1f2414f9c6e",
+        "code_hash": "2456435c5b718180b5a0a94ea34551f1f0cfb0d929534673ffb73bdb80fcb5cf",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "b09ce453602c45ef34ad0b1315178787bcfb5c13e31dfffa40c07f8679ffe028",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "holiday_coupon_demand_activation": true,
+          "insurance_risk_hedge_consumption_release": true,
+          "long_term_supply_capacity_counterevidence": true,
+          "pet_chain_specialty_quality_network": true,
+          "public_service_marketization_counterevidence": true,
+          "zero_token_rule_closure": true
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "bind holidays and coupons, pet chain-specialty service quality, and insurance/long-term-care risk hedging into a per-option evidence matrix that distinguishes dual-side long-term capacity building from short-term-only or full-marketization claims.",
+        "pipeline_stage": "reasoning",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "cross_practice_demand_supply_and_risk_sharing",
+        "target_qids": [
+          "res_b_014"
+        ]
+      }
+    },
+    "context_sha256": "9e90117e0cc771873fc74530b131531eb8c8c90a9aeacb8be2d917e8f09c3eb2",
+    "direction_sha256": "2de5a5f3f890bbbde8c1e0f42f05e2712c29ba8ba34b96cfc40d9bc5b59328a2",
+    "schema_version": 1,
+    "semantic_sha256": "1e9ce9321a13eb7a56ec7a5d2ce2eee90d8e0900c4f2b21c53cda25d1156fad4",
+    "sha256": "26f5619738624abd9c57f61529de5e0cd7c2929dc795b1dee8f264c7c621a48c"
+  },
+  "candidate_full_evaluation_token_usage": {
+    "completion_tokens": 74152,
+    "prompt_tokens": 474926,
+    "total_tokens": 549078
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 3,
+    "high": 61,
+    "low": 4,
+    "medium": 32
+  },
+  "causal_lowtail": {
+    "after": 6,
+    "before": 7
+  },
+  "causal_promoted_tiers": {
+    "blocked": 2,
+    "high": 62,
+    "low": 4,
+    "medium": 32
+  },
+  "causal_research_lowtail": {
+    "after": 2,
+    "before": 3
+  },
+  "change_vector": {
+    "holiday_coupon_demand_activation": true,
+    "insurance_risk_hedge_consumption_release": true,
+    "long_term_supply_capacity_counterevidence": true,
+    "pet_chain_specialty_quality_network": true,
+    "public_service_marketization_counterevidence": true,
+    "zero_token_rule_closure": true
+  },
+  "changed_answer_qids": [],
+  "changed_artifact_qids": [
+    "res_b_014"
+  ],
+  "code_hash": "2456435c5b718180b5a0a94ea34551f1f0cfb0d929534673ffb73bdb80fcb5cf",
+  "comparable_attempt_count_after": 1,
+  "comparable_attempt_count_before": 0,
+  "confidence_after": {
+    "res_b_014": 90
+  },
+  "confidence_before": {
+    "res_b_014": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "research_service_consumption_dual_side_risk_res_b_014",
+  "direction_status": "active",
+  "domains": [
+    "research"
+  ],
+  "effective_branch": "codex/b榜-loop-i031-research-service-consumption",
+  "evaluator_failed_attempts_not_in_usage": 3,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 74152,
+    "prompt_tokens": 474926,
+    "total_tokens": 549078
+  },
+  "generation_token_usage": {
+    "completion_tokens": 829,
+    "prompt_tokens": 5733,
+    "total_tokens": 6562
+  },
+  "generator_fingerprint": "b09ce453602c45ef34ad0b1315178787bcfb5c13e31dfffa40c07f8679ffe028",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_related_experiment_ids": [],
+  "history_similarity": null,
+  "hypothesis": "Bind holidays and coupons, pet chain-specialty service quality, and insurance/long-term-care risk hedging into a per-option evidence matrix that distinguishes dual-side long-term capacity building from short-term-only or full-marketization claims.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "evaluator_failed_attempts_not_in_usage": 3,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 161,
+    "tests_passed": true,
+    "token_accounting_complete": false
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_service_consumption_dual_side_risk_res_b_014/service_consumption_bundle_a2_promoted1_composite",
+  "lessons": [
+    "Cross-practice policy questions need an option-by-option evidence matrix: demand activation, supply quality, public-service financing, and household risk sharing should not be mixed into one top-k context.",
+    "The active preprocessed corpus can have different chunk boundaries from the raw parsed corpus; literal rules must be verified against the exact runtime parsed artifact.",
+    "A short-term-only alternative is best excluded with an explicit policy transition from short-term stimulus to long-term institution building plus durable supply expansion.",
+    "A full-marketization alternative is best excluded with direct evidence of higher public-service spending and greater central-fiscal responsibility.",
+    "For the positive supply-demand option, service-policy dual-side wording and pet network, referral, standardization, and specialty evidence must all be present.",
+    "For the risk-sharing option, the strongest evidence explicitly calls social protection a risk-hedging tool and connects lower precautionary saving to higher consumption propensity.",
+    "An incomplete fixed evaluation must be resumed in place; this run recovered three missing answers while preserving the original sealed inputs and six sentinel results."
+  ],
+  "material_delta": {
+    "direct_pet_quality_scale_evidence": true,
+    "direct_risk_hedge_to_consumption_evidence": true,
+    "new_question_specific_option_matrix": true,
+    "replace_no_supported_fallback": true
+  },
+  "next_root_causes": [
+    "research_staged_autonomy_direct_entailment_res_b_017",
+    "financial_contract_lowtail_fc_b_006_018",
+    "insurance_calculation_identity_citation_alignment_ins_b_001",
+    "reg_b_001_reference_date_vs_future_effective_obligation",
+    "deprioritized_res_b_008_requires_new_explicit_causal_corpus"
+  ],
+  "pipeline_stage": "reasoning",
+  "preflight_attempts": [
+    {
+      "integrity": {
+        "format_forced": true,
+        "fully_rule_backed": false,
+        "no_supported_fallback": false,
+        "submission_valid": true
+      },
+      "observed_answer": {
+        "res_b_014": "AD"
+      },
+      "reason": "The active preprocessed corpus split pet-chain standardization and diagnostic-efficiency phrases across adjacent units, so option C was model-backed and the multi-select format forced A.",
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_service_consumption_dual_side_risk_res_b_014/service_consumption_bundle_a1",
+      "status": "refined_before_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 829,
+        "prompt_tokens": 5733,
+        "total_tokens": 6562
+      }
+    },
+    {
+      "integrity": {
+        "final_evidence_complete": true,
+        "format_forced": false,
+        "fully_rule_backed": true,
+        "no_supported_fallback": false,
+        "submission_valid": true
+      },
+      "observed_answer": {
+        "res_b_014": "CD"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_service_consumption_dual_side_risk_res_b_014/service_consumption_bundle_a2",
+      "status": "accepted_for_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      },
+      "used_evidence_ids": [
+        "pack2_text03::sec_2::chunk_34",
+        "pack2_text03::sec_3::chunk_25",
+        "pack2_text03::sec_3::chunk_2",
+        "pack2_text03::sec_2::chunk_35",
+        "pack2_text03::sec_1::chunk_1",
+        "pack2_text13::sec_2::chunk_5",
+        "pack2_text13::sec_3::chunk_3",
+        "pack2_text03::sec_3::chunk_5",
+        "pack2_text03::sec_3::chunk_7"
+      ]
+    }
+  ],
+  "promoted_qids": [
+    "res_b_014"
+  ],
+  "promoted_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_service_consumption_dual_side_risk_res_b_014/service_consumption_bundle_a2_promoted1_composite",
+  "promotion_decisions": {
+    "res_b_014": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 90,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_gate_path": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_service_consumption_dual_side_risk_res_b_014/service_consumption_bundle_a2_composite/promotion_gate.json",
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "multi"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 4,
+    "high": 66,
+    "low": 5,
+    "medium": 25
+  },
+  "reason": "A nine-source option matrix preserved CD while replacing no_supported_fallback with direct long-term supply, public-finance, pet-network quality, and insurance risk-hedge evidence. Fixed confidence rose res_b_014 from 0 blocked to 90 high with no new hard failures; no blind evaluation was required because the answer was unchanged.",
+  "recorded_at": "2026-07-22T07:03:22+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [],
+  "root_cause_cluster": "cross_practice_demand_supply_and_risk_sharing",
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_service_consumption_dual_side_risk_res_b_014/service_consumption_bundle_a2",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "res_b_014"
+  ],
+  "token_accounting_complete": false,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 74152,
+    "prompt_tokens": 474926,
+    "total_tokens": 549078
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 74981,
+    "prompt_tokens": 480659,
+    "total_tokens": 555640
+  }
+}
+```
