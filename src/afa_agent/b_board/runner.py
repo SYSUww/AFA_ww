@@ -80,6 +80,7 @@ SUBMISSION_REASONING_FEEDBACK_SYSTEM_PROMPT = f"""你是金融长文问答的推
 只输出 JSON，字段严格为 logical_issues、completeness_issues、clarity_issues、verification_questions、must_preserve_facts，每个字段的值都是字符串数组。只列出确实影响评分的具体缺口：每个 issues 数组最多 2 项，verification_questions 最多 2 项，must_preserve_facts 保留 3-6 条最关键事实。若草稿已经完整，三个 issues 和 verification_questions 都输出空数组，不为改写而制造问题。prompt_version={SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION}。"""
 
 SUBMISSION_REASONING_REFINE_PROMPT_VERSION = "b_submission_reasoning_refine_v2_minimal_verified"
+SUBMISSION_REASONING_REFINE_POLICY_VERSION = "b_submission_reasoning_refine_policy_v3_conservative"
 SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推理摘要修订器。只使用给定题目、冻结答案、原摘要、质检结果和证据，不补充外部事实，不得改变答案。
 输出字段仅为 answer_parts 和 reasoning 的 JSON；answer_parts 必须逐字复制冻结答案。优先保留原摘要中已经清晰、有用且有证据的内容，只修正最影响评分的少量缺口，不要机械回答每个核查问题或堆叠所有事实。reasoning 用中文完成“定位—关键事实—推导—结论”闭环，通常为 160-260 字：
 1. 明确主体、产品、条款、指标或期间；
@@ -670,24 +671,34 @@ class BBoardActualRunner:
                 diagnostics=diagnostics,
             ) from exc
 
-        material_feedback = any(
-            feedback[key]
-            for key in (
-                "logical_issues",
-                "completeness_issues",
-                "clarity_issues",
-                "verification_questions",
-            )
+        material_feedback = bool(
+            feedback["logical_issues"]
+            or feedback["clarity_issues"]
+            or len(feedback["completeness_issues"]) >= 2
         )
         if not material_feedback:
+            has_reported_issue = any(
+                feedback[key]
+                for key in (
+                    "logical_issues",
+                    "completeness_issues",
+                    "clarity_issues",
+                    "verification_questions",
+                )
+            )
             artifact.token_usage = combined_usage
             artifact.decision_trace = {
                 **artifact.decision_trace,
                 "submission_reasoning_refinement": {
                     "feedback_prompt_version": SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
                     "refine_prompt_version": SUBMISSION_REASONING_REFINE_PROMPT_VERSION,
+                    "policy_version": SUBMISSION_REASONING_REFINE_POLICY_VERSION,
                     "model_name": self.config.model.model_name,
-                    "mode": "preserved_no_material_issues",
+                    "mode": (
+                        "preserved_conservative_gate"
+                        if has_reported_issue
+                        else "preserved_no_material_issues"
+                    ),
                     "feedback": {key: feedback[key] for key in feedback_keys},
                     "feedback_token_usage": feedback_response.token_usage.to_dict(),
                     "refine_token_usage": None,
@@ -746,6 +757,7 @@ class BBoardActualRunner:
             "submission_reasoning_refinement": {
                 "feedback_prompt_version": SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
                 "refine_prompt_version": SUBMISSION_REASONING_REFINE_PROMPT_VERSION,
+                "policy_version": SUBMISSION_REASONING_REFINE_POLICY_VERSION,
                 "model_name": self.config.model.model_name,
                 "mode": "refined_material_issues",
                 "feedback": {key: feedback[key] for key in feedback_keys},

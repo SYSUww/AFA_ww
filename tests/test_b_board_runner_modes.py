@@ -14,6 +14,7 @@ from afa_agent.b_board.runner import (
     SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
     SUBMISSION_REASONING_FEEDBACK_SYSTEM_PROMPT,
     SUBMISSION_REASONING_PROMPT_VERSION,
+    SUBMISSION_REASONING_REFINE_POLICY_VERSION,
     SUBMISSION_REASONING_REFINE_PROMPT_VERSION,
     SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT,
     SUBMISSION_REASONING_SYSTEM_PROMPT,
@@ -112,6 +113,10 @@ class BBoardRunnerModeTests(unittest.TestCase):
         )
         self.assertIn("冻结答案", SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT)
         self.assertIn("定位—关键事实—推导—结论", SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT)
+        self.assertEqual(
+            SUBMISSION_REASONING_REFINE_POLICY_VERSION,
+            "b_submission_reasoning_refine_policy_v3_conservative",
+        )
 
     def test_reasoning_refinement_preserves_answer_and_sums_both_raw_usages(self) -> None:
         runner = object.__new__(BBoardActualRunner)
@@ -119,7 +124,7 @@ class BBoardRunnerModeTests(unittest.TestCase):
         runner.client = _QueuedClient(
             [
                 _response(
-                    '{"logical_issues":[],"completeness_issues":["缺关键排除项"],'
+                    '{"logical_issues":["因果链断裂"],"completeness_issues":[],'
                     '"clarity_issues":[],"verification_questions":["为何排除B"],'
                     '"must_preserve_facts":["证据支持A"]}',
                     10,
@@ -178,13 +183,38 @@ class BBoardRunnerModeTests(unittest.TestCase):
         self.assertIsNone(trace["refine_token_usage"])
         self.assertEqual(len(runner.client.messages), 1)
 
+    def test_reasoning_refinement_preserves_single_unverified_completeness_issue(self) -> None:
+        runner = object.__new__(BBoardActualRunner)
+        runner.config = SimpleNamespace(model=SimpleNamespace(model_name="gpt-5.5"))
+        runner.client = _QueuedClient(
+            [
+                _response(
+                    '{"logical_issues":[],"completeness_issues":["缺少一条直接事实"],'
+                    '"clarity_issues":[],"verification_questions":["证据是否存在"],'
+                    '"must_preserve_facts":["证据支持A"]}',
+                    10,
+                    2,
+                )
+            ]
+        )
+        artifact = _artifact()
+        original_reasoning = artifact.decision_summary
+
+        result = runner.refine_submission_reasoning(_question(), artifact)
+
+        self.assertEqual(result.decision_summary, original_reasoning)
+        trace = result.decision_trace["submission_reasoning_refinement"]
+        self.assertEqual(trace["mode"], "preserved_conservative_gate")
+        self.assertEqual(trace["policy_version"], SUBMISSION_REASONING_REFINE_POLICY_VERSION)
+        self.assertEqual(len(runner.client.messages), 1)
+
     def test_reasoning_refinement_rejects_answer_change_and_reports_all_usage(self) -> None:
         runner = object.__new__(BBoardActualRunner)
         runner.config = SimpleNamespace(model=SimpleNamespace(model_name="gpt-5.5"))
         runner.client = _QueuedClient(
             [
                 _response(
-                    '{"logical_issues":[],"completeness_issues":["缺少关键排除项"],"clarity_issues":[],'
+                    '{"logical_issues":["因果链断裂"],"completeness_issues":[],"clarity_issues":[],'
                     '"verification_questions":[],"must_preserve_facts":["证据支持A"]}',
                     10,
                     2,

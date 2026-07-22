@@ -19457,3 +19457,707 @@
   ]
 }
 ```
+
+## b-loop-reasoning-self-refine-verification-a3-conservative-gate
+
+- recorded_at: `2026-07-22T22:08:03+00:00`
+
+```json
+{
+  "approach": "针对A2仍退化的res_b_008冻结答案；gpt-5.5反馈若仅有一个仍需验证的完整性缺口，保留原摘要以避免引入无直接证据的断言，并计入反馈API usage。",
+  "artifact_path": "artifacts/b_board_score_loop/reasoning_self_refine_a3_conservative_gate",
+  "base_commit": "018502c838c204ae3a4a2d11855066ba2ebd4c38",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "018502c838c204ae3a4a2d11855066ba2ebd4c38",
+        "code_hash": "94afa83e64c7f410c3069dbf1874e2e565d0e63d4c54084014733c5873c41129",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "answer_freeze_gate": true,
+          "feedback_prompt_version": "b_submission_reasoning_feedback_v2_prioritized",
+          "refine_policy_version": "b_submission_reasoning_refine_policy_v3_conservative",
+          "refine_prompt_version": "b_submission_reasoning_refine_v2_minimal_verified",
+          "strategy": "conservative_actionability_gate",
+          "variant": "a3"
+        },
+        "domains": [],
+        "hypothesis": "仅有一个完整性疑问且需要进一步验证时保留原摘要，可避免在证据不足时引入新断言并消除a2剩余退化",
+        "pipeline_stage": "reasoning",
+        "question_types": [],
+        "root_cause_cluster": "reasoning_verification_lowtail",
+        "target_qids": [
+          "res_b_008"
+        ]
+      }
+    },
+    "context_sha256": "afebd1d14e222421f23719bb6ba1d2acbe5c64b1b04071e65dad6f781a7dda61",
+    "direction_sha256": "3686b0f371a53f0e52226587d31eba23e30610a8579d9e8c47055a572a4cc311",
+    "schema_version": 1,
+    "semantic_sha256": "c8ca4e034544aee8709792167e0945e85f0460fc191d5a866e431bd297333e86",
+    "sha256": "f298e7e57ac11700abe1e51d0dc67075d6e3221d1bce027f726c74c838a0b738"
+  },
+  "change_vector": {
+    "answer_freeze_gate": true,
+    "feedback_prompt_version": "b_submission_reasoning_feedback_v2_prioritized",
+    "refine_policy_version": "b_submission_reasoning_refine_policy_v3_conservative",
+    "refine_prompt_version": "b_submission_reasoning_refine_v2_minimal_verified",
+    "strategy": "conservative_actionability_gate",
+    "variant": "a3"
+  },
+  "code_hash": "94afa83e64c7f410c3069dbf1874e2e565d0e63d4c54084014733c5873c41129",
+  "direction_id": "reasoning_self_refine_verification",
+  "domains": [],
+  "effect": "目标1题reasoning 91.000→92.667（+1.667）；相对A2全100题因果代理总分 99.238667→99.242000（+0.003333），答案变化0。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-reasoning-self-refine-verification-a3-conservative-gate",
+  "failure_analysis": "通过答案硬冻结、仅reasoning judge和完整usage记账约束；仍是基于97%提交构造的伪标签代理，不能证明逐题真实正确。",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "018502c838c204ae3a4a2d11855066ba2ebd4c38",
+          "code_hash": "94afa83e64c7f410c3069dbf1874e2e565d0e63d4c54084014733c5873c41129",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "answer_freeze_gate": true,
+            "feedback_prompt_version": "b_submission_reasoning_feedback_v2_prioritized",
+            "refine_policy_version": "b_submission_reasoning_refine_policy_v3_conservative",
+            "refine_prompt_version": "b_submission_reasoning_refine_v2_minimal_verified",
+            "strategy": "conservative_actionability_gate",
+            "variant": "a3"
+          },
+          "domains": [],
+          "hypothesis": "仅有一个完整性疑问且需要进一步验证时保留原摘要，可避免在证据不足时引入新断言并消除a2剩余退化",
+          "pipeline_stage": "reasoning",
+          "question_types": [],
+          "root_cause_cluster": "reasoning_verification_lowtail",
+          "target_qids": [
+            "res_b_008"
+          ]
+        }
+      },
+      "context_sha256": "afebd1d14e222421f23719bb6ba1d2acbe5c64b1b04071e65dad6f781a7dda61",
+      "direction_sha256": "3686b0f371a53f0e52226587d31eba23e30610a8579d9e8c47055a572a4cc311",
+      "schema_version": 1,
+      "semantic_sha256": "c8ca4e034544aee8709792167e0945e85f0460fc191d5a866e431bd297333e86",
+      "sha256": "f298e7e57ac11700abe1e51d0dc67075d6e3221d1bce027f726c74c838a0b738"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "018502c838c204ae3a4a2d11855066ba2ebd4c38",
+            "code_hash": "94afa83e64c7f410c3069dbf1874e2e565d0e63d4c54084014733c5873c41129",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "answer_freeze_gate": true,
+              "feedback_prompt_version": "b_submission_reasoning_feedback_v2_prioritized",
+              "refine_policy_version": "b_submission_reasoning_refine_policy_v3_conservative",
+              "refine_prompt_version": "b_submission_reasoning_refine_v2_minimal_verified",
+              "strategy": "conservative_actionability_gate",
+              "variant": "a3"
+            },
+            "domains": [],
+            "hypothesis": "仅有一个完整性疑问且需要进一步验证时保留原摘要，可避免在证据不足时引入新断言并消除a2剩余退化",
+            "pipeline_stage": "reasoning",
+            "question_types": [],
+            "root_cause_cluster": "reasoning_verification_lowtail",
+            "target_qids": [
+              "res_b_008"
+            ]
+          }
+        },
+        "context_sha256": "afebd1d14e222421f23719bb6ba1d2acbe5c64b1b04071e65dad6f781a7dda61",
+        "direction_sha256": "3686b0f371a53f0e52226587d31eba23e30610a8579d9e8c47055a572a4cc311",
+        "schema_version": 1,
+        "semantic_sha256": "c8ca4e034544aee8709792167e0945e85f0460fc191d5a866e431bd297333e86",
+        "sha256": "f298e7e57ac11700abe1e51d0dc67075d6e3221d1bce027f726c74c838a0b738"
+      },
+      "comparable_attempt_count": 2,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-reasoning-self-refine-verification-a2-noop-priority",
+        "b-loop-reasoning-self-refine-verification-a1-lowtail6"
+      ],
+      "similarity": 0.832719
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "2d2006b3bd02c14eb8178716db37cee06ef44c70c0940343913a0c8315c56f57",
+      "size": 691281
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "ad80bc1032ff3216429fdbe6421087c224330952ae2caa4afbecd62ed9422c98",
+      "size": 560523
+    },
+    "related_log_sections": [
+      "b-loop-i023-gpt56-answer-error-audit-v2",
+      "B0-actual-evaluation",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-b1",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-suspect-case-optimization-v3",
+      "b-loop-reasoning-shadow-baseline-v1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-full-chain-reproduction-baseline-v10",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-full-chain-b15966e-research-v1",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-full-chain-476fc31-research-v1",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90",
+      "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+      "b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100",
+      "b-loop-full-chain-737675b-reasoning-v2-research-v1",
+      "b-loop-insurance-conditional-policy-loan-eligibility-a1",
+      "b-loop-metric-scope-correction-ins-b-004-a1",
+      "b-loop-insurance-policy-loan-a1-full100-validation-82d4492",
+      "b-loop-calculation-amount-unit-scale-consistency-a1-res-b-012",
+      "b-loop-online-research-post-local-exhaustion-v1",
+      "b-loop-reasoning-self-refine-verification-a1-lowtail6",
+      "b-loop-reasoning-self-refine-verification-a2-noop-priority"
+    ],
+    "reviewed_at": "2026-07-22T22:07:31+00:00"
+  },
+  "hypothesis": "仅有一个完整性疑问且需要进一步验证时保留原摘要，可避免在证据不足时引入新断言并消除A2剩余退化",
+  "material_delta": {
+    "conservative_actionability_gate": true
+  },
+  "metrics": {
+    "amount_scale_replacement_run": "artifacts/b_board_score_loop/amount_scale_a1_res_b012",
+    "answer_changes": {},
+    "base_run": "artifacts/b_board_score_loop/full_chain_82d4492_research_v1",
+    "baseline_scorecard": {
+      "accuracy_score": 100.0,
+      "reasoning_score": 96.19333333333334,
+      "token_efficiency_score": 100.0,
+      "token_total": 1285840,
+      "total_score": 99.23866666666667
+    },
+    "candidate_scorecard": {
+      "accuracy_score": 100.0,
+      "reasoning_score": 96.21,
+      "token_efficiency_score": 100.0,
+      "token_total": 1277002,
+      "total_score": 99.242
+    },
+    "causally_normalized_unchanged_qids": [
+      "res_b_008"
+    ],
+    "incumbent_official_aggregate_accuracy": 97.0,
+    "incumbent_per_qid_truth_available": false,
+    "incumbent_refine_runs": [
+      "artifacts/b_board_score_loop/reasoning_self_refine_a1_lowtail6",
+      "artifacts/b_board_score_loop/reasoning_self_refine_a2_regressions2"
+    ],
+    "judge_token_usage": {
+      "completion_tokens": 87,
+      "prompt_tokens": 713,
+      "total_tokens": 800
+    },
+    "judge_tokens_included_in_submission": false,
+    "scope": "full100_causal_composite_a2_incumbent_plus_a3_conservative_replacement",
+    "target_qids": [
+      "res_b_008"
+    ],
+    "target_reasoning_after": 92.66666666666667,
+    "target_reasoning_aggregate": {
+      "dimension_means": {
+        "clarity": 89.0,
+        "completeness": 92.0,
+        "logical": 93.0
+      },
+      "p10": 91.33333333333333,
+      "question_count": 1,
+      "reasoning_score": 91.33333333333333,
+      "status_counts": {
+        "scored": 1
+      },
+      "zero_score_count": 0
+    },
+    "target_reasoning_before": 91.0,
+    "target_reasoning_delta": 1.6666666666666714,
+    "total_score_delta": 0.0033333333333303017
+  },
+  "next_step": "运行全量单测并提交推送有效分支；本方向已达3轮上限，随后封盘。",
+  "pipeline_stage": "reasoning",
+  "question_types": [],
+  "recorded_at": "2026-07-22T22:08:03+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "reasoning_verification_lowtail",
+  "sources": [
+    "https://arxiv.org/abs/2303.17651",
+    "https://arxiv.org/abs/2309.11495"
+  ],
+  "status": "effective",
+  "submission_effect": "not_submitted",
+  "target_qids": [
+    "res_b_008"
+  ]
+}
+```
+
+## b-loop-metric-correction-reasoning-self-refine-a3-cumulative-normalization
+
+- recorded_at: `2026-07-22T22:09:13+00:00`
+
+```json
+{
+  "approach": "重放A1、A2的逐题因果归一规则：A2中fc_b_007文本未变，累计到A3时继续使用原密封分91.667；再用A3未变的res_b_008原密封分92.667替换。",
+  "artifact_path": "artifacts/b_board_score_loop/reasoning_self_refine_a3_conservative_gate",
+  "base_commit": "018502c838c204ae3a4a2d11855066ba2ebd4c38",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "018502c838c204ae3a4a2d11855066ba2ebd4c38",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "corrected_experiment": "b-loop-reasoning-self-refine-verification-a3-conservative-gate",
+          "restore_incumbent_causal_normalization": true
+        },
+        "domains": [],
+        "hypothesis": "累计组合必须继承前序实验对未改变文本的因果归一分，不能重新引入当次judge漂移",
+        "pipeline_stage": "evaluation",
+        "question_types": [],
+        "root_cause_cluster": "causal_reasoning_score_accumulation",
+        "target_qids": [
+          "fc_b_007",
+          "res_b_008"
+        ]
+      }
+    },
+    "context_sha256": "f650e5e808d233bf22c64befd2563d76f97598b1ef3e8276ac3db0865a0c071a",
+    "direction_sha256": "615d1afcd906f203de7c3246a751d9c9e77e81b35918dd722e13000c1d1715ce",
+    "schema_version": 1,
+    "semantic_sha256": "3763b23727284ee1323164c442a36f9fed5fde6adb17d167dd9dbeb9c9b9245b",
+    "sha256": "8d539b65d1413c1acdb0e1b664358a9f1ab00a258f6e9ee4a0fd03cbdb7bf8d8"
+  },
+  "change_vector": {
+    "corrected_experiment": "b-loop-reasoning-self-refine-verification-a3-conservative-gate",
+    "restore_incumbent_causal_normalization": true
+  },
+  "direction_id": "metric_scope_correction_reasoning_self_refine_a3",
+  "effect": "A3基线总分99.238667更正为99.238000，候选99.242000更正为99.241333；增量仍为+0.003333，有效性结论不变。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-metric-correction-reasoning-self-refine-a3-cumulative-normalization",
+  "failure_analysis": "旧脚本读取A2原始judge行覆盖了A2 causal_composite中对未变fc_b_007的归一分；影响绝对值，不影响A3相对增量。",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "018502c838c204ae3a4a2d11855066ba2ebd4c38",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "corrected_experiment": "b-loop-reasoning-self-refine-verification-a3-conservative-gate",
+            "restore_incumbent_causal_normalization": true
+          },
+          "domains": [],
+          "hypothesis": "累计组合必须继承前序实验对未改变文本的因果归一分，不能重新引入当次judge漂移",
+          "pipeline_stage": "evaluation",
+          "question_types": [],
+          "root_cause_cluster": "causal_reasoning_score_accumulation",
+          "target_qids": [
+            "fc_b_007",
+            "res_b_008"
+          ]
+        }
+      },
+      "context_sha256": "f650e5e808d233bf22c64befd2563d76f97598b1ef3e8276ac3db0865a0c071a",
+      "direction_sha256": "615d1afcd906f203de7c3246a751d9c9e77e81b35918dd722e13000c1d1715ce",
+      "schema_version": 1,
+      "semantic_sha256": "3763b23727284ee1323164c442a36f9fed5fde6adb17d167dd9dbeb9c9b9245b",
+      "sha256": "8d539b65d1413c1acdb0e1b664358a9f1ab00a258f6e9ee4a0fd03cbdb7bf8d8"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "018502c838c204ae3a4a2d11855066ba2ebd4c38",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "corrected_experiment": "b-loop-reasoning-self-refine-verification-a3-conservative-gate",
+              "restore_incumbent_causal_normalization": true
+            },
+            "domains": [],
+            "hypothesis": "累计组合必须继承前序实验对未改变文本的因果归一分，不能重新引入当次judge漂移",
+            "pipeline_stage": "evaluation",
+            "question_types": [],
+            "root_cause_cluster": "causal_reasoning_score_accumulation",
+            "target_qids": [
+              "fc_b_007",
+              "res_b_008"
+            ]
+          }
+        },
+        "context_sha256": "f650e5e808d233bf22c64befd2563d76f97598b1ef3e8276ac3db0865a0c071a",
+        "direction_sha256": "615d1afcd906f203de7c3246a751d9c9e77e81b35918dd722e13000c1d1715ce",
+        "schema_version": 1,
+        "semantic_sha256": "3763b23727284ee1323164c442a36f9fed5fde6adb17d167dd9dbeb9c9b9245b",
+        "sha256": "8d539b65d1413c1acdb0e1b664358a9f1ab00a258f6e9ee4a0fd03cbdb7bf8d8"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "c4d015fdb08584c8c48d3f60dc0ef28604fde4eb9b8683e0d1b6a3b61b5afe7d",
+      "size": 703650
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "41d5a8b7eb4a5c173003981b51d63d624e484d4dd97d81e2044ed43d5dc84366",
+      "size": 571024
+    },
+    "related_log_sections": [
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a1-traffic-escape-v1",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-b1",
+      "b-loop-research-structural-cost-reduction-res-b-009-a1",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-suspect-case-optimization-v3",
+      "b-loop-i023-readme-percent-format-priority-v6",
+      "b-loop-reasoning-shadow-baseline-v1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90",
+      "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+      "b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100",
+      "b-loop-metric-scope-correction-ins-b-004-a1",
+      "b-loop-insurance-policy-loan-a1-full100-validation-82d4492",
+      "b-loop-calculation-amount-unit-scale-consistency-a1-res-b-012",
+      "b-loop-reasoning-self-refine-verification-a1-lowtail6",
+      "b-loop-reasoning-self-refine-verification-a2-noop-priority",
+      "b-loop-reasoning-self-refine-verification-a3-conservative-gate"
+    ],
+    "reviewed_at": "2026-07-22T22:09:13+00:00"
+  },
+  "hypothesis": "累计组合必须继承前序实验对未改变文本的因果归一分，不能重新引入当次judge漂移",
+  "material_delta": {
+    "metric_correction_only": true
+  },
+  "metrics": {
+    "a3_effective_after_correction": true,
+    "corrected_baseline_scorecard": {
+      "accuracy_score": 100.0,
+      "reasoning_score": 96.19,
+      "token_efficiency_score": 100.0,
+      "token_total": 1285840,
+      "total_score": 99.238
+    },
+    "corrected_candidate_scorecard": {
+      "accuracy_score": 100.0,
+      "reasoning_score": 96.20666666666666,
+      "token_efficiency_score": 100.0,
+      "token_total": 1277002,
+      "total_score": 99.24133333333333
+    },
+    "corrected_total_delta": 0.0033333333333303017,
+    "incorrect_baseline_total": 99.23866666666667,
+    "incorrect_candidate_total": 99.242
+  },
+  "next_step": "使用修正后的累计归一代码构建最终100题研究候选；A3方向按3轮上限封盘。",
+  "pipeline_stage": "evaluation",
+  "recorded_at": "2026-07-22T22:09:13+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "causal_reasoning_score_accumulation",
+  "status": "completed",
+  "submission_effect": "not_submitted",
+  "target_qids": [
+    "fc_b_007",
+    "res_b_008"
+  ]
+}
+```
+
+## b-loop-final-composite-i030-materialization-audit
+
+- recorded_at: `2026-07-22T22:11:06+00:00`
+
+```json
+{
+  "approach": "以full_chain_82d4492为底座，依次覆盖res_b_012金额尺度修复、reasoning self-refine A1/A2/A3逐题产物，重算100题usage与因果reasoning分，并用新版writer/validator执行audit_ready校验。",
+  "artifact_path": "artifacts/b_board_score_loop/final_composite_i030_reasoning_self_refine",
+  "base_commit": "018502c838c204ae3a4a2d11855066ba2ebd4c38",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "018502c838c204ae3a4a2d11855066ba2ebd4c38",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "audit_ready_validation": true,
+          "overlay_order": [
+            "amount_scale_a1",
+            "reasoning_self_refine_a1",
+            "reasoning_self_refine_a2",
+            "reasoning_self_refine_a3"
+          ]
+        },
+        "domains": [],
+        "hypothesis": "将金额修复与三轮reasoning产物按因果顺序合成，可得到逐题usage真实、字段完整且可审计的100题研究候选",
+        "pipeline_stage": "integration",
+        "question_types": [],
+        "root_cause_cluster": "full100_candidate_audit",
+        "target_qids": []
+      }
+    },
+    "context_sha256": "f650e5e808d233bf22c64befd2563d76f97598b1ef3e8276ac3db0865a0c071a",
+    "direction_sha256": "63919abc021163c3eb3c9d8f47e401f54193e9a528e8690c5ccc18dfb1b44181",
+    "schema_version": 1,
+    "semantic_sha256": "4f67059e09e8bd6bcbaf87281cd66f904ecede82895699df2826831375b09442",
+    "sha256": "31ba8bcd28df17dc95f22481aaf413b1c1cb45533ab145ac0a9b4d97101a564a"
+  },
+  "change_vector": {
+    "audit_ready_validation": true,
+    "overlay_order": [
+      "amount_scale_a1",
+      "reasoning_self_refine_a1",
+      "reasoning_self_refine_a2",
+      "reasoning_self_refine_a3"
+    ]
+  },
+  "direction_id": "final_composite_i030_materialization",
+  "effect": "生成100题研究CSV；答案相对97%基准变化0，Token=1277002、reasoning=96.206667、代理总分=99.241333，summary与逐题字段校验通过。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-final-composite-i030-materialization-audit",
+  "failure_analysis": "当前模型保持gpt-5.5，非new.md允许的Qwen3.5/3.6；该文件只能用于研究和后续白名单模型复现，不能直接官网提交。97%也只是整份提交的官网准确率，逐题伪标签并非真值。",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "018502c838c204ae3a4a2d11855066ba2ebd4c38",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "audit_ready_validation": true,
+            "overlay_order": [
+              "amount_scale_a1",
+              "reasoning_self_refine_a1",
+              "reasoning_self_refine_a2",
+              "reasoning_self_refine_a3"
+            ]
+          },
+          "domains": [],
+          "hypothesis": "将金额修复与三轮reasoning产物按因果顺序合成，可得到逐题usage真实、字段完整且可审计的100题研究候选",
+          "pipeline_stage": "integration",
+          "question_types": [],
+          "root_cause_cluster": "full100_candidate_audit",
+          "target_qids": []
+        }
+      },
+      "context_sha256": "f650e5e808d233bf22c64befd2563d76f97598b1ef3e8276ac3db0865a0c071a",
+      "direction_sha256": "63919abc021163c3eb3c9d8f47e401f54193e9a528e8690c5ccc18dfb1b44181",
+      "schema_version": 1,
+      "semantic_sha256": "4f67059e09e8bd6bcbaf87281cd66f904ecede82895699df2826831375b09442",
+      "sha256": "31ba8bcd28df17dc95f22481aaf413b1c1cb45533ab145ac0a9b4d97101a564a"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "018502c838c204ae3a4a2d11855066ba2ebd4c38",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "audit_ready_validation": true,
+              "overlay_order": [
+                "amount_scale_a1",
+                "reasoning_self_refine_a1",
+                "reasoning_self_refine_a2",
+                "reasoning_self_refine_a3"
+              ]
+            },
+            "domains": [],
+            "hypothesis": "将金额修复与三轮reasoning产物按因果顺序合成，可得到逐题usage真实、字段完整且可审计的100题研究候选",
+            "pipeline_stage": "integration",
+            "question_types": [],
+            "root_cause_cluster": "full100_candidate_audit",
+            "target_qids": []
+          }
+        },
+        "context_sha256": "f650e5e808d233bf22c64befd2563d76f97598b1ef3e8276ac3db0865a0c071a",
+        "direction_sha256": "63919abc021163c3eb3c9d8f47e401f54193e9a528e8690c5ccc18dfb1b44181",
+        "schema_version": 1,
+        "semantic_sha256": "4f67059e09e8bd6bcbaf87281cd66f904ecede82895699df2826831375b09442",
+        "sha256": "31ba8bcd28df17dc95f22481aaf413b1c1cb45533ab145ac0a9b4d97101a564a"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "9d1e98b003f822676f42d67dae257c26c78398a35cabf7d5ec248210c6a732bf",
+      "size": 714245
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "38c7db78e82fbab2a272f7d9033871cfe6bd06cd420ca5db53e5b47be703dde6",
+      "size": 580065
+    },
+    "related_log_sections": [],
+    "reviewed_at": "2026-07-22T22:11:06+00:00"
+  },
+  "hypothesis": "将金额修复与三轮reasoning产物按因果顺序合成，可得到逐题usage真实、字段完整且可审计的100题研究候选",
+  "metrics": {
+    "answer_change_count": 0,
+    "audit_ready_csv_validated": true,
+    "base_run": "artifacts/b_board_score_loop/full_chain_82d4492_research_v1",
+    "generator_model": "gpt-5.5",
+    "incumbent_submission": "artifacts/b_board_actual/candidates/i024_remaining93_p0/official94_plus_direct_source_five_v1/submit.csv",
+    "overlay_qids": {
+      "artifacts/b_board_score_loop/amount_scale_a1_res_b012": [
+        "res_b_012"
+      ],
+      "artifacts/b_board_score_loop/reasoning_self_refine_a1_lowtail6": [
+        "fc_b_007",
+        "fin_b_014",
+        "reg_b_003",
+        "reg_b_024",
+        "res_b_008",
+        "res_b_014"
+      ],
+      "artifacts/b_board_score_loop/reasoning_self_refine_a2_regressions2": [
+        "fc_b_007",
+        "res_b_008"
+      ],
+      "artifacts/b_board_score_loop/reasoning_self_refine_a3_conservative_gate": [
+        "res_b_008"
+      ]
+    },
+    "overlay_runs": [
+      "artifacts/b_board_score_loop/amount_scale_a1_res_b012",
+      "artifacts/b_board_score_loop/reasoning_self_refine_a1_lowtail6",
+      "artifacts/b_board_score_loop/reasoning_self_refine_a2_regressions2",
+      "artifacts/b_board_score_loop/reasoning_self_refine_a3_conservative_gate"
+    ],
+    "pseudo_mismatches": {},
+    "question_count": 100,
+    "scorecard": {
+      "accuracy_score": 100.0,
+      "accuracy_source": "pseudo_match_to_official97_incumbent_not_per_qid_ground_truth",
+      "incumbent_official_aggregate_accuracy": 97.0,
+      "incumbent_per_qid_truth_available": false,
+      "judge_tokens_included_in_submission": false,
+      "reasoning_score": 96.20666666666666,
+      "reasoning_score_source": "causal_per_qid_gpt5.6_scores_with_unchanged_text_normalization",
+      "token_efficiency_score": 100.0,
+      "token_total": 1277002,
+      "total_score": 99.24133333333333
+    },
+    "status": "complete",
+    "submission_eligible": false,
+    "submission_ineligibility_reasons": [
+      "research_composite_is_not_an_official_submission",
+      "model_is_not_qwen3.5_or_qwen3.6"
+    ],
+    "submission_model_allowlisted": false,
+    "token_total": 1277002
+  },
+  "next_step": "全量测试、检查分支与远端一致性并推送A3；后续若要官网提交，需用白名单Qwen复现并重新记录全部原始usage。",
+  "pipeline_stage": "integration",
+  "recorded_at": "2026-07-22T22:11:06+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "full100_candidate_audit",
+  "status": "completed",
+  "submission_effect": "not_submitted",
+  "target_qids": []
+}
+```
