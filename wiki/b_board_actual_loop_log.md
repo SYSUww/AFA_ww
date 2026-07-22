@@ -11808,3 +11808,435 @@
   }
 }
 ```
+
+## b-loop-research-institutional-change-effect-res-b-008-a1
+
+- recorded_at: `2026-07-22T05:59:29+00:00`
+
+```json
+{
+  "answered_qids": [
+    "res_b_008"
+  ],
+  "attempt_index": 1,
+  "base_commit": "ead974711a7498d2c52a477b419a0c71f7f3b80a",
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "blind_pairs": {},
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_institutional_change_effect_res_b_008/institutional_change_bundle_a2_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "ead974711a7498d2c52a477b419a0c71f7f3b80a",
+        "code_hash": "49840dca00ecb5717d6317b21a9c16c94333997d1e5e4518f8b57a0d6d5fdbe5",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "b09ce453602c45ef34ad0b1315178787bcfb5c13e31dfffa40c07f8679ffe028",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "bancassurance_outlet_deregulation": true,
+          "compliance_cost_to_exit": true,
+          "long_horizon_counterevidence": true,
+          "pet_geographic_network": true,
+          "subsidy_crowding_counterevidence": true
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "bind compliance cost, small-insurer exit, bancassurance outlet deregulation, pet-network expansion, subsidy crowding, and multi-decade transition evidence to distinguish common institutional effects from absolute claims.",
+        "pipeline_stage": "reasoning",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "cross_industry_institutional_change_entailment",
+        "target_qids": [
+          "res_b_008"
+        ]
+      }
+    },
+    "context_sha256": "7f0fffdddfa523171d21ea81314ee56f7e142dedc6b3dbe0da29c462f50bbce8",
+    "direction_sha256": "97ac64fb9460b55b65e4d109d06b1cf6cb31d5cce8d2b3fd14220586358e3884",
+    "schema_version": 1,
+    "semantic_sha256": "5257aefbebf78cdd1a06695cb5904e5746ae9dc990545ac37d37894f57e8e88f",
+    "sha256": "9d1f753eee16ac3cc678d62c35195b6b158675a69dcf1715f102820156778f33"
+  },
+  "candidate_full_evaluation_token_usage": {
+    "completion_tokens": 73238,
+    "prompt_tokens": 472916,
+    "total_tokens": 546154
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 5,
+    "high": 60,
+    "low": 3,
+    "medium": 32
+  },
+  "causal_lowtail": {
+    "after": 8,
+    "before": 8
+  },
+  "causal_promoted_tiers": {
+    "blocked": 4,
+    "high": 60,
+    "low": 4,
+    "medium": 32
+  },
+  "causal_research_lowtail": {
+    "after": 4,
+    "before": 4
+  },
+  "change_vector": {
+    "bancassurance_outlet_deregulation": true,
+    "compliance_cost_to_exit": true,
+    "long_horizon_counterevidence": true,
+    "pet_geographic_network": true,
+    "subsidy_crowding_counterevidence": true
+  },
+  "changed_answer_qids": [],
+  "changed_artifact_qids": [
+    "res_b_008"
+  ],
+  "code_hash": "49840dca00ecb5717d6317b21a9c16c94333997d1e5e4518f8b57a0d6d5fdbe5",
+  "comparable_attempt_count_after": 1,
+  "comparable_attempt_count_before": 0,
+  "confidence_after": {
+    "res_b_008": 55
+  },
+  "confidence_before": {
+    "res_b_008": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "research_institutional_change_effect_res_b_008",
+  "direction_status": "active",
+  "domains": [
+    "research"
+  ],
+  "evaluator_failed_attempts_not_in_usage": 1,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-research-institutional-change-effect-res-b-008-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 73238,
+    "prompt_tokens": 472916,
+    "total_tokens": 546154
+  },
+  "generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "generator_fingerprint": "b09ce453602c45ef34ad0b1315178787bcfb5c13e31dfffa40c07f8679ffe028",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_related_experiment_ids": [],
+  "history_similarity": null,
+  "hypothesis": "Bind compliance cost, small-insurer exit, bancassurance outlet deregulation, pet-network expansion, subsidy crowding, and multi-decade transition evidence to distinguish common institutional effects from absolute claims.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 159,
+    "tests_passed": true,
+    "token_accounting_complete": false
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_institutional_change_effect_res_b_008/institutional_change_bundle_a2_promoted1_composite",
+  "lessons": [
+    "The decisive compliance-cost, small-insurer-exit, outlet-deregulation, and pet-network evidence already existed in the corpus but generic top-k assembly selected only loosely related industry snippets.",
+    "Duplicate units can consume a literal-hit limit before semantic deduplication; retrieve logically distinct support and counterevidence in separate calls before merging.",
+    "Absolute alternatives are best excluded with direct counterevidence: service subsidies coexist with housing crowding, and both bancassurance and pet chains evolve over multi-year horizons.",
+    "The fixed judge still rates the cross-industry commonality only partially supported because pet regulation-to-market-share causality and service/pet compliance-cost generalization are not explicit enough.",
+    "A resumed sealed evaluation is promotion-safe after all 100 answers and six sentinels pass, while the failed evaluator call remains explicitly unmetered."
+  ],
+  "material_delta": {
+    "cross_industry_option_matrix": true,
+    "direct_small_insurer_exit_evidence": true,
+    "separate_semantic_counterevidence_retrieval": true,
+    "zero_token_rule_closure": true
+  },
+  "next_root_causes": [
+    "refine_res_b_008_pet_regulation_and_head_share_direct_evidence",
+    "remaining_research_policy_effect_evidence_res_b_009_014",
+    "research_staged_autonomy_direct_entailment_res_b_017",
+    "remaining_financial_contract_lowtail_fc_b_006_018",
+    "insurance_calculation_identity_citation_alignment_ins_b_001",
+    "reg_b_001_reference_date_vs_future_effective_obligation"
+  ],
+  "pipeline_stage": "reasoning",
+  "preflight_attempts": [
+    {
+      "integrity": {
+        "final_evidence_complete": false,
+        "format_forced": false,
+        "fully_rule_backed": true
+      },
+      "observed_answer": {
+        "res_b_008": "AC"
+      },
+      "reason": "Duplicate corpus units consumed the per-query limit before semantic deduplication, omitting distinct subsidy-crowding and pet-duration counterevidence from final evidence.",
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_institutional_change_effect_res_b_008/institutional_change_bundle_a1",
+      "status": "refined_before_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      }
+    },
+    {
+      "integrity": {
+        "final_evidence_complete": true,
+        "format_forced": false,
+        "fully_rule_backed": true,
+        "no_supported_fallback": false,
+        "submission_valid": true
+      },
+      "observed_answer": {
+        "res_b_008": "AC"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_institutional_change_effect_res_b_008/institutional_change_bundle_a2",
+      "status": "accepted_for_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      },
+      "used_evidence_ids": [
+        "pack2_text15::sec_3::chunk_7",
+        "pack2_text15::sec_3::chunk_25",
+        "pack2_text01::sec_1::chunk_1",
+        "pack2_text03::sec_3::chunk_8",
+        "pack2_text03::sec_2::chunk_17",
+        "pack2_text13::sec_2::chunk_5",
+        "pack2_text01::sec_1::chunk_2",
+        "pack2_text01::sec_3::chunk_3",
+        "pack2_text13::sec_1::chunk_2"
+      ]
+    }
+  ],
+  "promoted_qids": [
+    "res_b_008"
+  ],
+  "promoted_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_institutional_change_effect_res_b_008/institutional_change_bundle_a2_promoted1_composite",
+  "promotion_decisions": {
+    "res_b_008": {
+      "promote": true,
+      "reasons": [],
+      "score_delta": 55,
+      "tier_after": "low",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_gate_path": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_institutional_change_effect_res_b_008/institutional_change_bundle_a2_composite/promotion_gate.json",
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "multi"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 5,
+    "high": 63,
+    "low": 5,
+    "medium": 27
+  },
+  "reason": "A complete institutional-change option matrix preserved AC while replacing no_supported_fallback with direct support and counterevidence. Fixed confidence rose res_b_008 from 0 blocked to 55 low, every applicable dimension improved, and no blind evaluation was required; remaining uncertainty is the explicit cross-industry generalization for pet regulation and head-share causality.",
+  "recorded_at": "2026-07-22T05:59:29+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [],
+  "root_cause_cluster": "cross_industry_institutional_change_entailment",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failed_attempts_not_in_usage": 1,
+      "failures": 0,
+      "sentinels_passed": true,
+      "successful_token_usage": {
+        "completion_tokens": 73238,
+        "prompt_tokens": 472916,
+        "total_tokens": 546154
+      },
+      "token_accounting_complete": false
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "res_b_008"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 3,
+          "blocked_low_before": 3,
+          "low_tier_improved_qids": [],
+          "p10_after": 30,
+          "p10_before": 30,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 0,
+          "blocked_low_before": 0,
+          "low_tier_improved_qids": [],
+          "p10_after": 85,
+          "p10_before": 85,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 2,
+          "blocked_low_before": 2,
+          "low_tier_improved_qids": [],
+          "p10_after": 55,
+          "p10_before": 55,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 2,
+          "blocked_low_before": 2,
+          "low_tier_improved_qids": [],
+          "p10_after": 55,
+          "p10_before": 55,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 6,
+          "blocked_low_before": 6,
+          "low_tier_improved_qids": [
+            "res_b_008"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_003": -3,
+        "fc_b_004": -7,
+        "fc_b_005": 3,
+        "fc_b_007": -6,
+        "fc_b_008": -2,
+        "fc_b_009": -6,
+        "fc_b_010": 3,
+        "fc_b_011": -5,
+        "fc_b_012": 6,
+        "fc_b_013": 3,
+        "fc_b_015": -5,
+        "fc_b_016": 15,
+        "fc_b_018": -5,
+        "fc_b_019": 20,
+        "fin_b_001": -10,
+        "fin_b_002": 5,
+        "fin_b_004": 3,
+        "fin_b_005": 5,
+        "fin_b_006": -5,
+        "fin_b_007": -5,
+        "fin_b_011": -5,
+        "fin_b_015": -7,
+        "fin_b_016": 5,
+        "fin_b_019": -5,
+        "fin_b_020": 1,
+        "ins_b_002": 2,
+        "ins_b_003": 6,
+        "ins_b_004": -5,
+        "ins_b_005": -3,
+        "ins_b_006": -10,
+        "ins_b_007": -4,
+        "ins_b_008": 2,
+        "ins_b_009": -2,
+        "ins_b_011": 5,
+        "ins_b_012": 5,
+        "ins_b_014": -4,
+        "ins_b_016": -23,
+        "ins_b_017": 26,
+        "ins_b_019": -13,
+        "ins_b_020": 5,
+        "reg_b_001": 3,
+        "reg_b_003": 25,
+        "reg_b_005": 4,
+        "reg_b_008": 2,
+        "reg_b_009": 3,
+        "reg_b_014": -5,
+        "reg_b_015": -3,
+        "reg_b_016": -5,
+        "reg_b_017": -4,
+        "reg_b_020": 2,
+        "reg_b_023": -6,
+        "reg_b_024": 4,
+        "reg_b_025": 6,
+        "reg_b_027": -3,
+        "res_b_001": -10,
+        "res_b_002": -1,
+        "res_b_004": -2,
+        "res_b_005": 5,
+        "res_b_006": 5,
+        "res_b_007": -4,
+        "res_b_010": 6,
+        "res_b_012": -15,
+        "res_b_013": 3,
+        "res_b_015": -2,
+        "res_b_016": 4,
+        "res_b_017": 10,
+        "res_b_019": 2,
+        "res_b_020": 18
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_019",
+        "fin_b_015",
+        "ins_b_007",
+        "ins_b_016",
+        "ins_b_017",
+        "ins_b_019",
+        "reg_b_003",
+        "reg_b_005",
+        "reg_b_017",
+        "reg_b_024",
+        "res_b_001",
+        "res_b_006",
+        "res_b_010",
+        "res_b_015",
+        "res_b_017",
+        "res_b_020"
+      ]
+    },
+    "reasons": [],
+    "tests": {
+      "count": 159,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_institutional_change_effect_res_b_008/institutional_change_bundle_a2",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "res_b_008"
+  ],
+  "token_accounting_complete": false,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 73238,
+    "prompt_tokens": 472916,
+    "total_tokens": 546154
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 73238,
+    "prompt_tokens": 472916,
+    "total_tokens": 546154
+  }
+}
+```

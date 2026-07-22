@@ -1226,6 +1226,74 @@ class ResearchFinancialClauseBundleTests(unittest.TestCase):
             expected={"A": True, "B": True, "C": False, "D": False},
         )
 
+    def test_institutional_change_bundle_links_cost_exit_barriers_and_time_horizon(self) -> None:
+        units = [
+            make_unit(
+                "life::compliance",
+                "life",
+                "在代理人规模扩张红利趋弱、渠道合规成本抬升与低利率常态化的背景下，传统人海战术面临约束；"
+                "公司率先完成渠道清虚与产品结构调整。",
+            ),
+            make_unit(
+                "bancassurance::exit",
+                "bancassurance",
+                "报行合一加速供给侧出清，头部集中度显著提升。费率严监管彻底击碎了中小险企依赖高费用换规模的竞争模型，"
+                "头部公司在合规高压下成为银行首选并实现市场份额的逆势扩张。",
+            ),
+            make_unit(
+                "service::subsidy",
+                "service",
+                "文旅等领域的消费补贴持续，消费乘数效应达到1:8.3，预计有望带动消费增长。",
+            ),
+            make_unit(
+                "service::crowding",
+                "service",
+                "服务消费占比偏低主要由住房等刚性支出挤出，高居住成本挤压了我国服务消费支出空间。",
+            ),
+            make_unit(
+                "bancassurance::network",
+                "bancassurance",
+                "受益于监管放开银保合作网点限制，公司利用品牌优势与国有大行及头部股份制银行建立合作，"
+                "承接了外部渠道中小险企退出后的网点真空。",
+            ),
+            make_unit(
+                "pet::network",
+                "pet",
+                "公司建设全国一体化医院网络，满足中国各地宠物主人的各种需求；遍布中国各地的社区宠物医院"
+                "通过转介把客户引导至综合性或专科医院。",
+            ),
+            make_unit(
+                "bancassurance::horizon",
+                "bancassurance",
+                "我国银保渠道自2000年启动以来，经历由政策驱动、产品驱动到结构转型的多阶段演进。",
+            ),
+            make_unit(
+                "pet::horizon",
+                "pet",
+                "我国目前处于连锁化扩张的关键阶段，成熟模式走过40-80年的发展历程，国内企业转向谋求稳健发展。",
+            ),
+        ]
+        question = Question(
+            qid="res_b_008",
+            domain="research",
+            split="B",
+            question="服务消费、宠物医疗、寿险、银保等行业均在经历制度变革。以下哪些对制度变革效果的判断是这些行业共同支持的？",
+            options={
+                "A": "监管政策的标准化通常会增加中小企业的合规成本，加速行业集中",
+                "B": "财政补贴政策能够直接提升相关服务消费占比，且不存在挤出效应",
+                "C": "银保渠道放开网点合作限制与宠物医院连锁化都是通过打破地域或渠道壁垒来提升头部企业份额",
+                "D": "所有制度变革的效果都是立竿见影的，能在一年内完成行业格局重塑",
+            },
+            answer_format="multi",
+            type="多选题",
+            doc_ids=["life", "bancassurance", "service", "pet"],
+        )
+        self.assert_labels(
+            solver=self.make_solver(units),
+            question=question,
+            expected={"A": True, "B": False, "C": True, "D": False},
+        )
+
 
 class FinancialReportMetricBundleTests(unittest.TestCase):
     @staticmethod

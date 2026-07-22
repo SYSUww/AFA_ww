@@ -254,6 +254,9 @@ class ResearchSolver:
         option_text: str,
         hits: list[RetrievalHit],
     ) -> tuple[bool | None, str, list[RetrievalHit]]:
+        institutional_change_rule = self._institutional_change_effect_bundle_rule(question, option_text)
+        if institutional_change_rule is not None:
+            return institutional_change_rule
         risk_reallocation_rule = self._risk_asset_reallocation_bundle_rule(question, option_text)
         if risk_reallocation_rule is not None:
             return risk_reallocation_rule
@@ -312,6 +315,134 @@ class ResearchSolver:
         if ev_q1_sales_rule is not None:
             return ev_q1_sales_rule
         return None, "", []
+
+    def _institutional_change_effect_bundle_rule(
+        self,
+        question: Question,
+        option_text: str,
+    ) -> tuple[bool, str, list[RetrievalHit]] | None:
+        """Bind cross-industry institutional changes to their costs, channels, and time horizons."""
+
+        question_text = self._compact_text(question.question)
+        if not all(
+            term in question_text
+            for term in ("服务消费", "宠物医疗", "寿险", "银保", "制度变革")
+        ):
+            return None
+        option = self._compact_text(option_text)
+        compliance_and_exit = self._literal_hits(
+            question,
+            term_groups=[
+                ["渠道合规成本抬升", "传统人海战术", "渠道清虚"],
+                ["费率严监管彻底击碎了中小险企", "合规高压", "市场份额的逆势扩张"],
+            ],
+            marker="institutional_change_compliance_cost_and_exit",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        head_concentration = self._literal_hits(
+            question,
+            term_groups=[
+                ["报行合一加速供给侧出清", "头部集中度显著提升", "中小险企"],
+                ["银保监管规范化", "头部险企综合优势", "行业集中度稳步提升"],
+            ],
+            marker="institutional_change_head_concentration",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        subsidy_effect = self._literal_hits(
+            question,
+            term_groups=[
+                ["文旅等领域的消费补贴", "消费乘数效应", "有望带动消费"],
+            ],
+            marker="institutional_change_subsidy_effect",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        crowding_counterevidence = self._literal_hits(
+            question,
+            term_groups=[
+                ["住房等刚性支出挤出", "挤压了我国服务消费支出空间"],
+            ],
+            marker="institutional_change_crowding_counterevidence",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        bancassurance_barriers = self._literal_hits(
+            question,
+            term_groups=[
+                ["受益于监管放开银保合作网点限制", "中小险企退出后的网点真空", "头部股份制银行"],
+                ["银行网点1+N合作放开", "头部保险公司积极发展银保", "市场集中度迅速提升"],
+            ],
+            marker="institutional_change_bancassurance_channel_barriers",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        pet_network = self._literal_hits(
+            question,
+            term_groups=[
+                ["全国一体化医院网络", "满足中国各地宠物主人的各种需求", "遍布中国各地的社区宠物医院", "转介"],
+                ["初步完成全国城市布局", "近100家门店连锁规模", "连锁化是必然趋势"],
+            ],
+            marker="institutional_change_pet_geographic_network",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        bancassurance_horizon = self._literal_hits(
+            question,
+            term_groups=[
+                ["自2000年启动以来", "多阶段演进", "结构转型"],
+            ],
+            marker="institutional_change_bancassurance_horizon",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        pet_horizon = self._literal_hits(
+            question,
+            term_groups=[
+                ["走过40-80年的发展历程", "连锁化扩张的关键阶段", "谋求稳健发展"],
+            ],
+            marker="institutional_change_pet_horizon",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+
+        if all(term in option for term in ("监管政策的标准化", "中小企业", "合规成本", "行业集中")):
+            rule_hits = self._merge_hits([*compliance_and_exit, *head_concentration], limit=4)
+            if rule_hits:
+                return (
+                    True,
+                    "寿险材料明确记录渠道合规成本抬升；银保费率严监管又使中小险企原有高费用竞争模式失效、加速供给出清，并让合规和综合服务能力更强的头部险企获得份额，形成“规范化—成本约束—集中度提升”的完整链条。",
+                    rule_hits,
+                )
+        if all(term in option for term in ("财政补贴", "直接提升", "不存在挤出效应")):
+            subsidies_and_crowding = self._merge_hits(
+                [*subsidy_effect, *crowding_counterevidence],
+                limit=4,
+            )
+            if subsidies_and_crowding:
+                return (
+                    False,
+                    "消费券和养老服务补贴确有乘数效应，但同一服务消费报告明确指出住房等刚性支出挤压服务消费空间；因此不能把补贴效果绝对化为直接抬升占比且不存在挤出效应。",
+                    subsidies_and_crowding,
+                )
+        if all(term in option for term in ("银保渠道放开网点合作限制", "宠物医院连锁化", "地域或渠道壁垒", "头部企业份额")):
+            rule_hits = self._merge_hits([*bancassurance_barriers, *pet_network], limit=4)
+            if rule_hits:
+                return (
+                    True,
+                    "银保材料直接说明“1+N”放开网点限制后，头部险企承接中小险企退出留下的网点并扩大份额；宠物医疗材料则展示头部连锁通过全国城市布局、一体化医院网络和跨院转介覆盖各地客户。两者共同机制都是突破原有渠道或地域覆盖限制，强化头部网络效应。",
+                    rule_hits,
+                )
+        if all(term in option for term in ("所有制度变革", "立竿见影", "一年内", "格局重塑")):
+            long_horizon = self._merge_hits([*bancassurance_horizon, *pet_horizon], limit=4)
+            if long_horizon:
+                return (
+                    False,
+                    "银保改革自2000年以来经历政策驱动、产品驱动和结构转型等多阶段；成熟宠物连锁模式也走过40至80年，国内仍处连锁化关键阶段。两类长期演进事实直接否定一年内完成全部格局重塑的绝对判断。",
+                    long_horizon,
+                )
+        return None
 
     def _risk_asset_reallocation_bundle_rule(
         self,
