@@ -1,5 +1,7 @@
 # AFAC2026 赛道四：金融长文本 Agent 的动态记忆压缩与高效问答
 
+> 历史制度说明：本文件中的 `0.7/0.3` 公式是旧版赛题资料。2026-07-23 起，B 榜按准确率、推理过程、Token 效率 `60/20/20` 加权；当前规则以 [`upload_b/new.md`](upload_b/new.md) 和 [`wiki/b_board_scoring_v2_migration.md`](wiki/b_board_scoring_v2_migration.md) 为准。
+
 ## 赛题简介
 
 AFAC2026 赛道四，聚焦金融长文档问答任务。参赛者需要在**不修改基座模型参数**的前提下，设计 Agent 层面的记忆流转、动态压缩和上下文优化策略。

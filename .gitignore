@@ -16,3 +16,6 @@ results/
 indices/heading_index.json
 .env
 public_dataset_upload/*
+/upload_b/question_b/
+/upload_b/submit.csv
+/calculator.py

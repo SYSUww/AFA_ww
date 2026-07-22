@@ -2,6 +2,8 @@
 
 本仓库用于实现 AFAC2026 赛道四的金融长文本问答系统。当前已打通五个领域的 Group A 100 题链路，并完成首版无 `doc_ids` 文档定位与答题迁移实验：支持文档清单构建、领域化解析与分块、BM25 检索、evidence gate、低置信 rescue、`answer.csv`/`evidence.json`/Token 留痕，以及按题 checkpoint 的可恢复运行。
 
+> 2026-07-23：B 榜已切换为“准确率 60% + 推理过程 20% + Token 效率 20%”的新制度，并要求九列提交、逐题 reasoning、Qwen3.5/Qwen3.6 白名单和完整原始 usage。迁移状态与执行边界见 [`wiki/b_board_scoring_v2_migration.md`](wiki/b_board_scoring_v2_migration.md)。旧八列/GPT 产物只保留作历史证据，不能直接提交。
+
 ## 当前进度
 
 - 已完成共享骨架与五领域插件：`regulatory`、`financial_reports`、`insurance`、`research`、`financial_contracts`
@@ -9,9 +11,19 @@
 - 已支持 `.env` 读取模型配置
 - 已支持运行结果、token 统计、证据链导出
 - 已实现 B 榜迁移所需的无 `doc_ids` locator，并在 Group A 的 78 道严格盲测候选题上完成闭环
-- 当前主要待处理项是保险/财报的证据支持与答案格式冲突，以及实际 Group B 数据接入
+- 已接入 Group B 100 题；当前按用户决定暂时保留 `gpt-5.5`，先以 97% 答案序列推进 reasoning/usage 审计工程，白名单模型切换延后
 
 ## 当前最佳版本快照
+
+### Group B 当前外部准确率基线
+
+截至 `2026-07-23`，用户反馈提交 007 的平台准确率为 **97%**：
+
+- 提交文件：`artifacts/b_board_actual/candidates/i024_remaining93_p0/official94_plus_direct_source_five_v1/submit.csv`
+- SHA-256：`497658e3e76c0df3bb28134a4d1b2d442bb5b5602ea4654d7d0ce019aecb400d`
+- total tokens：`931,605`
+- 相对提交 006 的 94%：`+3` 个百分点
+- 边界：该结果确认整份答案序列达到 97%，不能单独确认五道变化题各自的对错；它仍是旧八列、GPT 模型产物，只能作为新制度下的答案回归基线，不能直接作为九列合规提交。
 
 ### Group A 当前参考版本
 
@@ -34,7 +46,7 @@
 - 运行产物：`artifacts/b_board_migration/no_docids_clean_subset_run/`
 - 对比产物：`artifacts/b_board_migration/comparisons/attempt43_rank_preserved_vs_attempt31_v20_20260715/`
 
-以上匹配率只是相对 v20 的回归代理，不是官方 B 榜准确率。当前工作区尚无官方 Group B 题目或标签。
+以上匹配率只是相对 v20 的回归代理，不是官方 B 榜准确率；该段为 2026-07-15 的历史迁移快照。
 
 ### 历史快照
 

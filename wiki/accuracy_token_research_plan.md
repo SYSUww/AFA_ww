@@ -4,6 +4,8 @@
 
 状态：P0 零 Token 工程批次已完成；等待明确授权后生成全新付费 `B0-run`
 
+> 制度切换说明（2026-07-23）：本文的“准确率优先、同准确率时继续压低 Token”是旧评分阶段的历史研究口径。当前 B 榜以 `accuracy × 0.6 + reasoning × 0.2 + token_efficiency × 0.2` 计分，且 50 万至 500 万 Token 均为 100 分。当前执行策略以 [`b_board_scoring_v2_migration.md`](b_board_scoring_v2_migration.md) 为准；历史实验记录不回写。
+
 ## 1. 研究目标
 
 本阶段只优化两个核心目标：
