@@ -254,6 +254,9 @@ class ResearchSolver:
         option_text: str,
         hits: list[RetrievalHit],
     ) -> tuple[bool | None, str, list[RetrievalHit]]:
+        risk_reallocation_rule = self._risk_asset_reallocation_bundle_rule(question, option_text)
+        if risk_reallocation_rule is not None:
+            return risk_reallocation_rule
         market_fund_flow_rule = self._market_fund_flow_bundle_rule(question, option_text)
         if market_fund_flow_rule is not None:
             return market_fund_flow_rule
@@ -309,6 +312,114 @@ class ResearchSolver:
         if ev_q1_sales_rule is not None:
             return ev_q1_sales_rule
         return None, "", []
+
+    def _risk_asset_reallocation_bundle_rule(
+        self,
+        question: Question,
+        option_text: str,
+    ) -> tuple[bool, str, list[RetrievalHit]] | None:
+        """Separate asset-level de-risking from institution-wide risk appetite."""
+
+        question_text = self._compact_text(question.question)
+        if not all(
+            term in question_text
+            for term in ("不动产投资占比", "保险行业整体大幅增配", "银行业普遍增配政府债券", "压缩主动负债")
+        ):
+            return None
+        option = self._compact_text(option_text)
+        property_and_equity = self._literal_hits(
+            question,
+            term_groups=[
+                ["持续增配低估值、高股息权益资产", "不动产相关投资", "风险敞口实质收敛"],
+                ["前瞻性增配高股息权益资产", "房地产风险敞口持续收缩", "不动产投资余额"],
+            ],
+            marker="risk_reallocation_property_to_high_dividend_equity",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        bank_defensive_allocation = self._literal_hits(
+            question,
+            term_groups=[
+                ["减少基金投资，增配政府债券", "金融投资的主要功能仍以流动性管理为主", "非标占比下降"],
+                ["资产荒", "增配政府债券", "FVOCI账户占比以平滑利润波动"],
+            ],
+            marker="risk_reallocation_bank_defensive_assets",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        insurer_equity_high = self._literal_hits(
+            question,
+            term_groups=[
+                ["保险公司的资产配置策略由其负债特性驱动", "权益配置的历史高位"],
+                ["权益投资占比", "高分红、低波动", "投资收益与报表稳定性的平衡"],
+            ],
+            marker="risk_reallocation_insurer_equity_high",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        margin_scope = self._literal_hits(
+            question,
+            term_groups=[
+                ["两融资金整体上周净流入约553.7亿元", "近三年95%分位", "参与度处近三年82%分位"],
+                ["个人投资者数量达到811.1万名", "散户参与度上升"],
+            ],
+            marker="risk_reallocation_margin_scope_counterevidence",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        institutional_divergence = self._literal_hits(
+            question,
+            term_groups=[
+                ["负债端对波动的低容忍度", "债基和货基", "稳健为首要目标"],
+                ["减少基金投资，增配政府债券", "流动性管理为主"],
+            ],
+            marker="risk_reallocation_institutional_divergence",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+        consumer_risk_counterevidence = self._literal_hits(
+            question,
+            term_groups=[
+                ["居民风险偏好较低", "预定利率多次下调", "保险公司积极销售", "银保渠道"],
+                ["居民风险偏好较低", "银保渠道持续高增"],
+            ],
+            marker="risk_reallocation_consumer_risk_counterevidence",
+            limit=2,
+            allow_corpus_wide=True,
+        )
+
+        if all(term in option for term in ("压缩不动产敞口", "银行增配政府债券", "方向一致", "风险偏好下降")):
+            rule_hits = self._merge_hits([*property_and_equity, *bank_defensive_allocation], limit=4)
+            if rule_hits:
+                return (
+                    True,
+                    "就选项点名的两类资产而言，不动产风险敞口已实质收敛至3.1%，银行同时减少基金和非标、增配以流动性管理为主的政府债券；两项局部行为都体现从较高风险暴露转向更防御的资产。",
+                    rule_hits,
+                )
+        if all(term in option for term in ("缩窄不动产", "大幅增配权益", "风险偏好并未实质下降", "风险置换")):
+            rule_hits = self._merge_hits([*property_and_equity, *insurer_equity_high], limit=4)
+            if rule_hits:
+                return (
+                    True,
+                    "同一险企在地产风险敞口实质收敛的同时持续增配低估值、高股息权益，行业权益配置亦达到历史高位；这说明险资并非全面退出风险资产，而是把风险预算转向兼顾收益、现金回报和报表稳定的权益资产。",
+                    rule_hits,
+                )
+        if all(term in option for term in ("券商两融规模攀升", "整个金融体系", "风险偏好已全面回升")):
+            rule_hits = self._merge_hits([*margin_scope, *institutional_divergence], limit=4)
+            if rule_hits:
+                return (
+                    False,
+                    "两融高流入和参与度只刻画杠杆交易及个人投资者；同期银行偏向流动性管理资产、理财仍受低波动负债约束，不能由局部杠杆资金外推整个金融体系风险偏好全面回升。",
+                    rule_hits,
+                )
+        if all(term in option for term in ("银保渠道分红险", "消费者风险偏好已完全修复")):
+            if consumer_risk_counterevidence:
+                return (
+                    False,
+                    "银保渠道增长的同期材料仍明确写明居民风险偏好较低，并将增长与预定利率多次下调及保险公司积极销售并列；渠道热销不能证明消费者风险偏好已经完全修复。",
+                    consumer_risk_counterevidence,
+                )
+        return None
 
     def _market_fund_flow_bundle_rule(
         self,

@@ -1167,6 +1167,65 @@ class ResearchFinancialClauseBundleTests(unittest.TestCase):
             expected={"A": False, "B": True, "C": True, "D": True},
         )
 
+    def test_risk_reallocation_bundle_separates_local_derisking_from_systemwide_appetite(self) -> None:
+        units = [
+            make_unit(
+                "insurer::property_equity",
+                "insurer",
+                "公司持续增配低估值、高股息权益资产。不动产风险拨备充分、风险敞口实质收敛，"
+                "不动产相关投资在总投资资产中的占比仅为3.1%。",
+            ),
+            make_unit(
+                "bank::defensive",
+                "bank",
+                "金市配置减少基金投资，增配政府债券；金融投资的主要功能仍以流动性管理为主，"
+                "结构变化中非标占比下降。",
+            ),
+            make_unit(
+                "insurer::equity_high",
+                "insurer",
+                "保险公司的资产配置策略由其负债特性驱动，权益配置达到历史高位；高分红、低波动权益"
+                "兼顾投资收益与报表稳定性的平衡。",
+            ),
+            make_unit(
+                "margin::scope",
+                "margin",
+                "两融资金整体上周净流入约553.7亿元，处近三年95%分位，参与度处近三年82%分位；"
+                "个人投资者数量达到811.1万名，散户参与度上升。",
+            ),
+            make_unit(
+                "wealth::constraint",
+                "wealth",
+                "理财负债端对波动的低容忍度决定了稳健为首要目标，基金配置以债基和货基为主。",
+            ),
+            make_unit(
+                "consumer::risk",
+                "consumer",
+                "2023年以来在居民风险偏好较低、预定利率多次下调、保险公司积极销售等因素推动下，"
+                "银保渠道持续高增。",
+            ),
+        ]
+        question = Question(
+            qid="res_b_006",
+            domain="research",
+            split="B",
+            question="一家综合金融集团的不动产投资占比已降至较低水平，同时保险行业整体大幅增配了高股息权益资产。结合当前银行业普遍增配政府债券、压缩主动负债的背景，以下哪些最能反映金融机构对风险资产态度的微妙变化？",
+            options={
+                "A": "压缩不动产敞口与银行增配政府债券的行为方向一致，都体现了风险偏好下降",
+                "B": "保险资金在缩窄不动产的同时大幅增配权益，说明其整体风险偏好并未实质下降，只是在资产间进行风险置换",
+                "C": "券商两融规模攀升表明整个金融体系的风险偏好已全面回升",
+                "D": "银保渠道分红险的热销意味着消费者风险偏好已完全修复",
+            },
+            answer_format="multi",
+            type="多选题",
+            doc_ids=["insurer", "bank", "margin", "wealth", "consumer"],
+        )
+        self.assert_labels(
+            solver=self.make_solver(units),
+            question=question,
+            expected={"A": True, "B": True, "C": False, "D": False},
+        )
+
 
 class FinancialReportMetricBundleTests(unittest.TestCase):
     @staticmethod

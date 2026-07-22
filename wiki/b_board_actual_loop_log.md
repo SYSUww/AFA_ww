@@ -11464,3 +11464,347 @@
   }
 }
 ```
+
+## b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1
+
+- recorded_at: `2026-07-22T05:39:30+00:00`
+
+```json
+{
+  "answered_qids": [
+    "res_b_006"
+  ],
+  "attempt_index": 1,
+  "base_commit": "3b75c506efe4963099003e55b0725aa43a039028",
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "blind_pairs": {},
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_risk_asset_reallocation_evidence_res_b_006/risk_reallocation_bundle_a2_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "3b75c506efe4963099003e55b0725aa43a039028",
+        "code_hash": "f7d0e574623791f246e7b7fd6d8202a21f2303dd",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "aa16880896eedf25e3f67c6aaa100e70bb0921157af63f0e7bd8cb13e43d66f1",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "absolute_claim_counterevidence": true,
+          "bank_government_bond_allocation": true,
+          "institution_specific_risk_appetite_scope": true,
+          "insurer_high_dividend_equity_reallocation": true,
+          "property_exposure_reduction": true
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "bind property exposure reduction, bank government-bond allocation, insurer high-dividend equity allocation, and each institution liability constraint to distinguish local de-risking from cross-asset risk substitution.",
+        "pipeline_stage": "reasoning",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "cross_institution_risk_reallocation_alignment",
+        "target_qids": [
+          "res_b_006"
+        ]
+      }
+    },
+    "context_sha256": "595b17950dcb0e9e7bb3fee46e87f510be85fd94fe33948dd8c8d99aa3d4f166",
+    "direction_sha256": "d0080099a6b645424608eaa12f6fd6d35bc654de98ee982fc6eeabdf6a982dd2",
+    "schema_version": 1,
+    "semantic_sha256": "935a55d988498c2602d963d806145c92c11979670d23390e4201a800deaa4d36",
+    "sha256": "2297445c5b7b5448e789b484681a4f8982f7c63b217b977718ef6e428daeb875"
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 6,
+    "high": 60,
+    "low": 3,
+    "medium": 31
+  },
+  "causal_lowtail": {
+    "after": 8,
+    "before": 9
+  },
+  "causal_promoted_tiers": {
+    "blocked": 5,
+    "high": 60,
+    "low": 3,
+    "medium": 32
+  },
+  "causal_research_lowtail": {
+    "after": 4,
+    "before": 5
+  },
+  "change_vector": {
+    "absolute_claim_counterevidence": true,
+    "bank_government_bond_allocation": true,
+    "institution_specific_risk_appetite_scope": true,
+    "insurer_high_dividend_equity_reallocation": true,
+    "property_exposure_reduction": true
+  },
+  "changed_answer_qids": [],
+  "changed_artifact_qids": [
+    "res_b_006"
+  ],
+  "code_hash": "f7d0e574623791f246e7b7fd6d8202a21f2303dd",
+  "comparable_attempt_count_after": 1,
+  "comparable_attempt_count_before": 0,
+  "confidence_after": {
+    "res_b_006": 75
+  },
+  "confidence_before": {
+    "res_b_006": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "research_risk_asset_reallocation_evidence_res_b_006",
+  "direction_status": "active",
+  "domains": [
+    "research"
+  ],
+  "effective_branch": "codex/b榜-loop-i027-research-risk-reallocation",
+  "evaluator_failed_attempts_not_in_usage": 1,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 72445,
+    "prompt_tokens": 473397,
+    "total_tokens": 545842
+  },
+  "generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "generator_fingerprint": "ecd847b0153a5f82786e3e579b68bf3f1a6ce171805981ce832bd08e11385c66",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_related_experiment_ids": [],
+  "history_similarity": null,
+  "hypothesis": "Bind property exposure reduction, bank government-bond allocation, insurer high-dividend equity allocation, and each institution liability constraint to distinguish local de-risking from cross-asset risk substitution.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 158,
+    "tests_passed": true,
+    "token_accounting_complete": false
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_risk_asset_reallocation_evidence_res_b_006/risk_reallocation_bundle_a2_promoted1_composite",
+  "lessons": [
+    "Interpret risk appetite at the scope named by each option: asset-level de-risking can coexist with institution-wide risk reallocation.",
+    "A same-subject unit tying property exposure at 3.1 percent to high-dividend equity allocation is stronger than stitching unrelated institution facts.",
+    "Margin-financing activity describes a leveraged participant segment and cannot establish system-wide risk appetite.",
+    "Bancassurance growth does not prove consumer risk recovery when the same source still states resident risk appetite is low and names pricing and insurer sales as drivers.",
+    "Literal retrieval must tolerate escaped percent glyphs; otherwise a semantically exact source can be silently omitted from final evidence.",
+    "A resumed sealed evaluation is promotion-safe after all 100 answers and six sentinels pass, but the failed evaluator call remains explicitly unmetered."
+  ],
+  "material_delta": {
+    "asset_level_vs_system_level_scope": true,
+    "cross_institution_counterevidence": true,
+    "escaped_percent_tolerant_literal_matching": true,
+    "property_and_equity_same_subject_binding": true,
+    "zero_token_rule_closure": true
+  },
+  "next_root_causes": [
+    "remaining_research_policy_cost_and_risk_evidence_res_b_008_009_014",
+    "research_staged_autonomy_direct_entailment_res_b_017",
+    "remaining_financial_contract_lowtail_fc_b_006_018",
+    "insurance_calculation_identity_citation_alignment_ins_b_001",
+    "reg_b_001_reference_date_vs_future_effective_obligation",
+    "res_b_003_petrochemical_downstream_cost_and_margin_evidence"
+  ],
+  "pipeline_stage": "reasoning",
+  "preflight_attempts": [
+    {
+      "integrity": {
+        "final_evidence_complete": false,
+        "format_forced": false,
+        "fully_rule_backed": true,
+        "no_supported_fallback": false,
+        "submission_valid": true
+      },
+      "observed_answer": {
+        "res_b_006": "AB"
+      },
+      "reason": "The 3.1 percent source used an escaped percent sign, so strict literal matching omitted the same-subject property-and-equity unit from final evidence.",
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_risk_asset_reallocation_evidence_res_b_006/risk_reallocation_bundle_a1",
+      "status": "refined_before_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      }
+    },
+    {
+      "integrity": {
+        "final_evidence_complete": true,
+        "format_forced": false,
+        "fully_rule_backed": true,
+        "no_supported_fallback": false,
+        "submission_valid": true
+      },
+      "observed_answer": {
+        "res_b_006": "AB"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_risk_asset_reallocation_evidence_res_b_006/risk_reallocation_bundle_a2",
+      "status": "accepted_for_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      },
+      "used_evidence_ids": [
+        "pack2_text15::sec_1::chunk_1",
+        "pack2_text15::sec_7::chunk_11",
+        "pack2_text14::sec_1::chunk_1",
+        "pack2_text15::sec_5::chunk_3",
+        "pack2_text08::sec_2::chunk_2",
+        "pack2_text08::sec_3::chunk_1"
+      ]
+    }
+  ],
+  "promoted_qids": [
+    "res_b_006"
+  ],
+  "promoted_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_risk_asset_reallocation_evidence_res_b_006/risk_reallocation_bundle_a2_promoted1_composite",
+  "promotion_decisions": {
+    "res_b_006": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 75,
+      "tier_after": "medium",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_gate_path": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_risk_asset_reallocation_evidence_res_b_006/risk_reallocation_bundle_a2_composite/promotion_gate.json",
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "multi"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 6,
+    "high": 64,
+    "low": 7,
+    "medium": 23
+  },
+  "reason": "A scoped risk-reallocation bundle preserved AB while removing no_supported_fallback. Fixed confidence rose res_b_006 from 0 blocked to 75 medium, every applicable dimension improved, and the first incomplete final-evidence preflight was refined before full evaluation.",
+  "recorded_at": "2026-07-22T05:39:30+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [],
+  "root_cause_cluster": "cross_institution_risk_reallocation_alignment",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failed_attempts_not_in_usage": 1,
+      "failures": 0,
+      "sentinels_passed": true,
+      "successful_token_usage": {
+        "completion_tokens": 72445,
+        "prompt_tokens": 473397,
+        "total_tokens": 545842
+      },
+      "token_accounting_complete": false
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "res_b_006"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 2,
+          "blocked_low_before": 2,
+          "low_tier_improved_qids": [],
+          "p10_after": 30,
+          "p10_before": 30,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 0,
+          "blocked_low_before": 0,
+          "low_tier_improved_qids": [],
+          "p10_after": 85,
+          "p10_before": 85,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 65,
+          "p10_before": 65,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 4,
+          "blocked_low_before": 5,
+          "low_tier_improved_qids": [
+            "res_b_006"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {},
+      "unchanged_raw_tier_drift": []
+    },
+    "reasons": [],
+    "tests": {
+      "count": 158,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_risk_asset_reallocation_evidence_res_b_006/risk_reallocation_bundle_a2",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "res_b_006"
+  ],
+  "token_accounting_complete": false,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 72445,
+    "prompt_tokens": 473397,
+    "total_tokens": 545842
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 72445,
+    "prompt_tokens": 473397,
+    "total_tokens": 545842
+  }
+}
+```
