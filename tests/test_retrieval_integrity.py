@@ -13,6 +13,7 @@ from afa_agent.domains.insurance.solver import InsuranceSolver
 from afa_agent.domains.regulatory.retriever import RegulatoryRetriever
 from afa_agent.domains.regulatory.solver import RegulatorySolver
 from afa_agent.domains.research.plugin import ResearchPlugin
+from afa_agent.domains.research.solver import ResearchSolver
 from afa_agent.io_utils import read_json, write_json
 from afa_agent.models import Question
 
@@ -621,6 +622,141 @@ class FinancialContractSubjectClauseTests(unittest.TestCase):
         self.assertTrue(evidence[0]["metadata"]["rule_label"])
         self.assertEqual(evidence[1]["metadata"]["option_key"], "B")
         self.assertFalse(evidence[1]["metadata"]["rule_label"])
+
+
+class ResearchFinancialClauseBundleTests(unittest.TestCase):
+    @staticmethod
+    def make_solver(units: list[dict[str, object]]) -> ResearchSolver:
+        solver = ResearchSolver.__new__(ResearchSolver)
+        solver.retriever = GenericBM25Retriever(units)
+        return solver
+
+    def assert_labels(
+        self,
+        solver: ResearchSolver,
+        question: Question,
+        expected: dict[str, bool],
+    ) -> None:
+        labels: dict[str, bool] = {}
+        payloads: list[dict[str, object]] = []
+        for option_key, option_text in question.options.items():
+            result = solver._rule_evaluate(question, option_text, [])
+            self.assertIsNotNone(result[0], option_key)
+            self.assertTrue(result[2], option_key)
+            labels[option_key] = bool(result[0])
+            payloads.append(
+                {
+                    "option": option_key,
+                    "label": bool(result[0]),
+                    "rule_backed": True,
+                    "evidence_items": [hit.to_dict() for hit in result[2]],
+                }
+            )
+        self.assertEqual(labels, expected)
+        focused = solver._complete_rule_evidence_items(payloads)
+        self.assertTrue(focused)
+        self.assertTrue(all(item["metadata"].get("targeted_research") for item in focused))
+
+    def test_deposit_migration_bundle_supports_insurance_and_low_volatility_wealth_management(self) -> None:
+        units = [
+            make_unit(
+                "banca::migration", "banca",
+                "居民存款逐步向理财、基金及保险等替代资产转移。保险产品凭借相对稳定的收益特征及长期锁定收益能力，"
+                "成为承接存款搬家的重要方向，相对银行存款具备比较优势。",
+            ),
+            make_unit(
+                "allocation::wealth", "allocation",
+                "理财资金大幅增加公募基金和存款配置，基金配置以债基和货基为主，对权益类基金配置很少；"
+                "其负债端对波动的低容忍度决定了稳健优先。",
+            ),
+            make_unit(
+                "funds::redemption", "funds",
+                "赎回费规则对债券基金和指数型基金显著宽松，较此前条款明显宽松。",
+            ),
+        ]
+        question = Question(
+            qid="unseen_deposit_migration", domain="research", split="B",
+            question="存款搬家现象正在发生，以下关于不同金融机构影响的判断中哪些得到支持？",
+            options={
+                "A": "存款搬家的主要去向是高风险权益市场，因此推升股市估值中枢",
+                "B": "保险产品凭借长期锁定收益和相对存款的利率优势成为重要载体",
+                "C": "银行理财因负债端对净值波动敏感，主要配置固收和公募基金",
+                "D": "公募基金赎回费新规抑制存款搬家并使基金规模增长停滞",
+            },
+            answer_format="multi", type="多选题", doc_ids=["banca", "allocation", "funds"],
+        )
+        self.assert_labels(solver=self.make_solver(units), question=question, expected={"A": False, "B": True, "C": True, "D": False})
+
+    def test_bancassurance_bundle_links_participating_products_to_deep_bank_cooperation(self) -> None:
+        units = [
+            make_unit(
+                "banca::value", "banca",
+                "报行合一实行之后银保渠道价值提升，头部保险公司积极发展银保。",
+            ),
+            make_unit(
+                "insurer::participating", "insurer",
+                "分红险成为行业转型核心战略，依靠风险共担、收益共享机制；行业转型共识形成，"
+                "分红险在新单结构中已占据主导地位。",
+            ),
+            make_unit(
+                "allocation::balance", "allocation",
+                "投资端为匹配负债要求，需要解决高波动资产与偿付能力之间的平衡难题，并配置高分红资产。",
+            ),
+            make_unit(
+                "banca::binding", "banca",
+                "分红险依赖长期稳定的银保战略合作关系以及产品、客户和资产配置的深度协同；"
+                "合作关系将从协议代理向长期战略合作转型并深化银保一体化合作。",
+            ),
+        ]
+        question = Question(
+            qid="unseen_bancassurance_strategy", domain="research", split="B",
+            question="在预定利率持续下调和报行合一深化的背景下，哪些最可能成为行业共识？",
+            options={
+                "A": "个险仍是唯一重要渠道，银保战略地位无需提升",
+                "B": "分红险转型要求投资端提供稳定的分红收益来源",
+                "C": "应单边扩大高波动高收益成长股",
+                "D": "银保价值持续提升取决于深度绑定而非简单协议代理",
+            },
+            answer_format="multi", type="多选题", doc_ids=["banca", "insurer", "allocation"],
+        )
+        self.assert_labels(solver=self.make_solver(units), question=question, expected={"A": False, "B": True, "C": False, "D": True})
+
+    def test_asset_liability_bundle_combines_duration_fvoci_and_risk_constraints(self) -> None:
+        units = [
+            make_unit(
+                "allocation::duration", "allocation",
+                "有效久期缺口综合考虑资产和负债的到期现金流。增配长久期低风险债和发展分红险后，"
+                "资产负债久期缺口持续收窄。",
+            ),
+            make_unit(
+                "allocation::fvoci", "allocation",
+                "提高FVOCI账户占比可以平滑利润波动；高分红低波动资产计入其他综合收益，有助于报表稳定性。",
+            ),
+            make_unit(
+                "insurer_report::government", "insurer_report",
+                "加大长久期国债配置可拉长资产久期，锁定长期稳定票息；政府债配置有效缩窄资产负债久期缺口。",
+            ),
+            make_unit(
+                "broker::capital", "broker",
+                "两融和股票质押属于券商资本中介业务的扩表场景。",
+            ),
+            make_unit(
+                "allocation::risk", "allocation",
+                "资产配置为匹配负债要求，需要处理高波动资产、偿付能力与收益之间的平衡难题。",
+            ),
+        ]
+        question = Question(
+            qid="unseen_asset_liability", domain="research", split="B",
+            question="关于金融机构资产负债管理能力的讨论，哪些符合当前主流观点？",
+            options={
+                "A": "优化资产负债久期匹配并增配FVOCI资产，实现更好的资产负债联动",
+                "B": "增配长久期政府债券有助于拉长资产久期并匹配稳定负债",
+                "C": "两融和股票质押是平滑券商收入的资产负债管理工具",
+                "D": "所有机构都应追求收益最大化而非风险最小化",
+            },
+            answer_format="multi", type="多选题", doc_ids=["allocation", "broker"],
+        )
+        self.assert_labels(solver=self.make_solver(units), question=question, expected={"A": True, "B": True, "C": False, "D": False})
 
 
 class FinancialReportMetricBundleTests(unittest.TestCase):

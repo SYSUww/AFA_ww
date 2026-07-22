@@ -7179,3 +7179,469 @@
   }
 }
 ```
+
+## b-loop-research-financial-multi-clause-evidence-bundle-a1
+
+- recorded_at: `2026-07-22T01:06:45+00:00`
+
+```json
+{
+  "answered_qids": [
+    "res_b_011",
+    "res_b_016",
+    "res_b_019"
+  ],
+  "attempt_index": 1,
+  "base_commit": "086b48b25f41102abcb0178c93bf2cff1d86c8f2",
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 715,
+    "prompt_tokens": 24314,
+    "total_tokens": 25029
+  },
+  "blind_pairs": {
+    "res_b_011": {
+      "candidate_label": "A",
+      "evaluation": {
+        "confidence": 92,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "A选择BC更受封存证据支持。证据明确表述保险产品因相对稳定收益、长期锁定收益能力及相对存款比较优势，成为承接“存款搬家”的重要方向，支持B；证据还表述银行理财规模回升、负债端对波动低容忍，权益类基金配置很少，配置以债基和货基等稳健工具及公募基金为主，可支持C的方向性判断。A未选择A、D也符合证据：A关于主要流向高风险权益市场并推升股市估值中枢无证据支持；D关于赎回费新规抑制存款搬家、导致基金规模停滞无证据支持。B答案为AB，且其自身决策轨迹显示A为false_selected_option、supported_only_answer为B，存在强制补选和格式冲突，选择了无证据支持的A并遗漏了可由证据支持的C，因此应拒绝。",
+        "winner": "A"
+      },
+      "incumbent_label": "B",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "prompt_version": "b_blind_pair_v1",
+      "qid": "res_b_011",
+      "token_usage": {
+        "completion_tokens": 452,
+        "prompt_tokens": 11528,
+        "total_tokens": 11980
+      }
+    },
+    "res_b_016": {
+      "candidate_label": "B",
+      "evaluation": {
+        "confidence": 95,
+        "prompt_version": "b_blind_pair_v1",
+        "reason": "B选择BD，且其证据分别直接支持：分红险在低利率环境下成为行业转型核心、主要险企分红险占比提升，并指出投资端需通过高分红资产等方式匹配负债要求；同时证据明确银保合作需从协议代理向长期战略合作/深度绑定升级，支持D。B未选择A、C，符合证据方向。A最终答案为AD，但其自身决策轨迹已标明A为false_selected_option、supported_only_answer为D，且存在format_forced和single_supported_multi问题；A所列证据也显示银保渠道价值提升、头部险企重视银保，与A选项“银保渠道战略地位无需提升”方向相反。因此B更受证据支持且更可验证。",
+        "winner": "B"
+      },
+      "incumbent_label": "A",
+      "prompt_fingerprint": "bd74aac0b37d7f88a99eae50c5c9fe6fa5e5779a835568d58d7592acf2de79f4",
+      "prompt_version": "b_blind_pair_v1",
+      "qid": "res_b_016",
+      "token_usage": {
+        "completion_tokens": 263,
+        "prompt_tokens": 12786,
+        "total_tokens": 13049
+      }
+    }
+  },
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_financial_multi_clause_evidence_bundle/financial_clause_bundle_a2_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "086b48b25f41102abcb0178c93bf2cff1d86c8f2",
+        "code_hash": "5bec50e45ab2d6a94dbf0f9e498dc64ea3ebe0b057568ada9005bc0fefa30f22",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "bundle_families": [
+            "deposit_migration",
+            "bancassurance_strategy",
+            "asset_liability_management"
+          ],
+          "explicit_counterevidence": true,
+          "focused_rule_evidence": true,
+          "group_by": [
+            "report_identity",
+            "topic",
+            "clause_role"
+          ],
+          "selection": "remaining_financial_research_lowtail_first"
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "explicit report-scoped evidence bundles for deposit migration, bancassurance strategy, and insurer asset-liability management can resolve forced multi-choice answers by supporting or refuting every option from the source reports.",
+        "pipeline_stage": "reasoning",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "multi_clause_choice_coverage",
+        "target_qids": [
+          "res_b_011",
+          "res_b_016",
+          "res_b_019"
+        ]
+      }
+    },
+    "context_sha256": "092f70f016c77feb29fe6255ce07ef89626ec9a74b7b7093ceb7c04330805d26",
+    "direction_sha256": "613bc157731f57e6e4709ffa698adf758a92c7e441ee295deeeeb756c7c47cca",
+    "schema_version": 1,
+    "semantic_sha256": "06e8f603ad61b5a305f39cc25f6e8ac57bc545815531cf81aa2ebfa6d4452bc9",
+    "sha256": "554a52c6c48aaea0707ea51ac606ace8d8b5e8607d81b41e4c215350c07b77d7"
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 24,
+    "high": 48,
+    "low": 2,
+    "medium": 26
+  },
+  "causal_promoted_tiers": {
+    "blocked": 21,
+    "high": 50,
+    "low": 2,
+    "medium": 27
+  },
+  "causal_research_lowtail": {
+    "after": 12,
+    "before": 15
+  },
+  "change_vector": {
+    "bundle_families": [
+      "deposit_migration",
+      "bancassurance_strategy",
+      "asset_liability_management"
+    ],
+    "explicit_counterevidence": true,
+    "focused_rule_evidence": true,
+    "group_by": [
+      "report_identity",
+      "topic",
+      "clause_role"
+    ],
+    "selection": "remaining_financial_research_lowtail_first"
+  },
+  "changed_answer_qids": [
+    "res_b_011",
+    "res_b_016"
+  ],
+  "code_hash": "5bec50e45ab2d6a94dbf0f9e498dc64ea3ebe0b057568ada9005bc0fefa30f22",
+  "comparable_attempt_count_after": 1,
+  "comparable_attempt_count_before": 0,
+  "confidence_after": {
+    "res_b_011": 83,
+    "res_b_016": 84,
+    "res_b_019": 72
+  },
+  "confidence_before": {
+    "res_b_011": 0,
+    "res_b_016": 0,
+    "res_b_019": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "research_financial_multi_clause_evidence_bundle",
+  "direction_status": "resolved",
+  "domains": [
+    "research"
+  ],
+  "effective_branch": "codex/b榜-loop-i017-research-financial-clauses",
+  "evaluator_failed_attempts_not_in_usage": 0,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 78485,
+    "prompt_tokens": 488063,
+    "total_tokens": 566548
+  },
+  "generation_token_usage": {
+    "completion_tokens": 509,
+    "prompt_tokens": 6078,
+    "total_tokens": 6587
+  },
+  "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_related_experiment_ids": [],
+  "history_similarity": null,
+  "hypothesis": "Explicit report-scoped evidence bundles for deposit migration, bancassurance strategy, and insurer asset-liability management can resolve forced multi-choice answers by supporting or refuting every option from the source reports.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 142,
+    "tests_passed": true,
+    "token_accounting_complete": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_financial_multi_clause_evidence_bundle/financial_clause_bundle_a2_composite",
+  "lessons": [
+    "Exact source clauses may sit outside the locator top-ten answer shortlist even when the document appears in the broader candidate list; narrowly scoped corpus-wide literal recovery can close that gap.",
+    "Fully rule-backed option bundles should serialize only targeted support and counterevidence, preventing unrelated reports from diluting judge confidence.",
+    "Negative options need scope-aware counterevidence rather than absence claims alone.",
+    "A zero-token targeted preflight is an effective gate: the first preflight exposed the missing report before the full fixed evaluation."
+  ],
+  "material_delta": {
+    "explicit_counterevidence": true,
+    "multi_clause_complete_bundle": true,
+    "new_direction": true,
+    "research_focused_serialization": true
+  },
+  "next_root_causes": [
+    "research_nonfinancial_multi_clause_evidence_bundle",
+    "research_remaining_choice_evidence_coverage",
+    "insurance_remaining_subject_clause_coverage",
+    "remaining_fin_b_010_evidence_sufficiency",
+    "remaining_reg_b_001_evidence_sufficiency"
+  ],
+  "pipeline_stage": "reasoning",
+  "preflight_attempts": [
+    {
+      "observed_answer": {
+        "res_b_011": "BC",
+        "res_b_016": "BD",
+        "res_b_019": "AB"
+      },
+      "root_cause": "The locator selected only its top ten reports for answering, so the exact long-duration government-bond clause in pack2_text15 was omitted and res_b_019 option B fell back to the model.",
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_financial_multi_clause_evidence_bundle/financial_clause_bundle_a1",
+      "status": "refined_before_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 509,
+        "prompt_tokens": 6078,
+        "total_tokens": 6587
+      }
+    },
+    {
+      "material_delta": {
+        "corpus_wide_exact_clause_recovery": true
+      },
+      "observed_answer": {
+        "res_b_011": "BC",
+        "res_b_016": "BD",
+        "res_b_019": "AB"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_financial_multi_clause_evidence_bundle/financial_clause_bundle_a2",
+      "status": "accepted_for_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      }
+    }
+  ],
+  "promoted_qids": [
+    "res_b_011",
+    "res_b_016",
+    "res_b_019"
+  ],
+  "promotion_decisions": {
+    "res_b_011": {
+      "blind_required": true,
+      "blind_winner": "A",
+      "candidate_blind_label": "A",
+      "promote": true,
+      "reasons": [],
+      "score_delta": 83,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "res_b_016": {
+      "blind_required": true,
+      "blind_winner": "B",
+      "candidate_blind_label": "B",
+      "promote": true,
+      "reasons": [],
+      "score_delta": 84,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "res_b_019": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 72,
+      "tier_after": "medium",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "multi"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 21,
+    "high": 50,
+    "low": 4,
+    "medium": 25
+  },
+  "reason": "Report-scoped evidence bundles corrected res_b_011 from AB to BC and res_b_016 from AD to BD, while preserving res_b_019 as AB with auditable evidence. Fixed scores rose 0→83, 0→84, and 0→72; both changed answers won blind review at confidence 92 and 95.",
+  "recorded_at": "2026-07-22T01:06:45+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [],
+  "root_cause_cluster": "multi_clause_choice_coverage",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failures": 0,
+      "sentinels_passed": true,
+      "token_accounting_complete": true
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "res_b_011",
+        "res_b_016",
+        "res_b_019"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 3,
+          "blocked_low_before": 3,
+          "low_tier_improved_qids": [],
+          "p10_after": 30,
+          "p10_before": 30,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 75,
+          "p10_before": 75,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 10,
+          "blocked_low_before": 10,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 65,
+          "p10_before": 65,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 12,
+          "blocked_low_before": 15,
+          "low_tier_improved_qids": [
+            "res_b_011",
+            "res_b_016",
+            "res_b_019"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_003": -15,
+        "fc_b_004": -2,
+        "fc_b_005": -2,
+        "fc_b_006": 5,
+        "fc_b_007": -3,
+        "fc_b_008": -4,
+        "fc_b_009": -6,
+        "fc_b_012": 3,
+        "fc_b_013": 10,
+        "fc_b_015": -1,
+        "fc_b_017": 6,
+        "fc_b_018": 10,
+        "fc_b_019": 13,
+        "fin_b_004": 8,
+        "fin_b_005": 4,
+        "fin_b_007": 4,
+        "fin_b_009": 3,
+        "fin_b_011": 2,
+        "fin_b_015": 10,
+        "fin_b_016": 6,
+        "fin_b_019": 2,
+        "ins_b_002": 7,
+        "ins_b_004": 33,
+        "ins_b_006": 3,
+        "ins_b_007": -14,
+        "ins_b_008": -15,
+        "ins_b_010": 10,
+        "ins_b_012": 7,
+        "ins_b_014": -16,
+        "ins_b_016": -3,
+        "ins_b_017": 15,
+        "ins_b_018": -10,
+        "ins_b_020": 5,
+        "reg_b_005": 2,
+        "reg_b_007": -5,
+        "reg_b_008": -4,
+        "reg_b_013": -5,
+        "reg_b_015": -14,
+        "reg_b_016": -1,
+        "reg_b_017": 5,
+        "reg_b_018": -5,
+        "reg_b_021": 2,
+        "reg_b_023": -3,
+        "reg_b_024": -6,
+        "reg_b_025": -10,
+        "reg_b_026": 4,
+        "reg_b_027": 3,
+        "res_b_001": 6,
+        "res_b_013": 8,
+        "res_b_015": 8
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_003",
+        "fc_b_013",
+        "fc_b_018",
+        "fin_b_015",
+        "ins_b_002",
+        "ins_b_004",
+        "ins_b_007",
+        "ins_b_017",
+        "reg_b_015",
+        "reg_b_025",
+        "reg_b_026",
+        "res_b_001"
+      ]
+    },
+    "reasons": [],
+    "tests": {
+      "count": 142,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_financial_multi_clause_evidence_bundle/financial_clause_bundle_a2",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "res_b_011",
+    "res_b_016",
+    "res_b_019"
+  ],
+  "token_accounting_complete": true,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 79200,
+    "prompt_tokens": 512377,
+    "total_tokens": 591577
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 79709,
+    "prompt_tokens": 518455,
+    "total_tokens": 598164
+  }
+}
+```
