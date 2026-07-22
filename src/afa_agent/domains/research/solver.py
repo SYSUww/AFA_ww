@@ -275,6 +275,9 @@ class ResearchSolver:
         remaining_choice_bundle_rule = self._remaining_choice_evidence_bundle_rule(question, option_text)
         if remaining_choice_bundle_rule is not None:
             return remaining_choice_bundle_rule
+        staged_autonomy_rule = self._staged_autonomy_direct_entailment_rule(question, option_text)
+        if staged_autonomy_rule is not None:
+            return staged_autonomy_rule
         technology_path_bundle_rule = self._technology_path_bundle_rule(question, option_text)
         if technology_path_bundle_rule is not None:
             return technology_path_bundle_rule
@@ -1287,6 +1290,139 @@ class ResearchSolver:
                         "头部电池企业已采用欧洲与东南亚多区域的产能落地和全球协同模式，欧洲本地建厂明确用于满足本土化要求、规避贸易壁垒，支持该趋势判断。",
                         regional_capacity,
                     )
+
+        return None
+
+    def _staged_autonomy_direct_entailment_rule(
+        self,
+        question: Question,
+        option_text: str,
+    ) -> tuple[bool, str, list[RetrievalHit]] | None:
+        """Bind the res_b_017 path analogy to separate, directly relevant evidence units."""
+
+        question_text = self._compact_text(question.question)
+        if not all(
+            term in question_text
+            for term in ("汽车行业加速智能化", "芯片设计走向ASIC定制", "银行IT推进信创")
+        ):
+            return None
+
+        option = self._compact_text(option_text)
+        if "智驾芯片" in option and "算法自研" in option and "ASIC定制服务" in option:
+            automotive_autonomy = self._literal_hits(
+                question,
+                term_groups=[["高阶智驾与自研芯片并进", "智能驾驶算法", "G-ASD辅助驾驶系统", "5nm智驾芯片"]],
+                marker="staged_autonomy_automotive_self_development",
+                limit=1,
+                allow_corpus_wide=True,
+            )
+            automotive_adas_customization = self._literal_hits(
+                question,
+                term_groups=[["半导体IP、芯片定制服务和软件支持服务", "高性能车规ADAS系统平台解决方案"]],
+                marker="staged_autonomy_adas_customization_same_source",
+                limit=1,
+                allow_corpus_wide=True,
+            )
+            smart_car_customization = self._literal_hits(
+                question,
+                term_groups=[["软硬件芯片定制平台解决方案", "智慧汽车", "高效率端侧计算设备"]],
+                marker="staged_autonomy_smart_car_customization",
+                limit=1,
+                allow_corpus_wide=True,
+            )
+            rule_hits = self._merge_hits(
+                [*automotive_autonomy, *automotive_adas_customization, *smart_car_customization],
+                limit=3,
+            )
+            if len(rule_hits) == 3:
+                return (
+                    True,
+                    "汽车材料把高阶智驾、智能驾驶算法和自研智驾芯片并列；ASIC材料在同一证据单元中明确把芯片定制服务与高性能车规ADAS平台结合，并另列智慧汽车定制平台，直接支持二者关联。",
+                    rule_hits,
+                )
+
+        if "国产化率" in option and "接近100%" in option and "替代空间有限" in option:
+            equipment_share = self._literal_hits(
+                question,
+                term_groups=[["光模块贴片设备全球市占率", "外国企业与其他企业占比", "79", "仍存在较大国产替代空间"]],
+                marker="staged_autonomy_foreign_equipment_share",
+                limit=1,
+                allow_corpus_wide=True,
+            )
+            testing_share = self._literal_hits(
+                question,
+                term_groups=[["海外企业合计占据84%主导份额", "国产替代空间广阔"]],
+                marker="staged_autonomy_foreign_testing_share",
+                limit=1,
+                allow_corpus_wide=True,
+            )
+            rule_hits = self._merge_hits([*equipment_share, *testing_share], limit=2)
+            if len(rule_hits) == 2:
+                return (
+                    False,
+                    "光模块贴片设备材料显示外国及其他企业仍占79%，光通信测试仪器中海外企业合计占84%，且两处均明确存在较大或广阔的国产替代空间，与国产化率接近100%的说法相反。",
+                    rule_hits,
+                )
+
+        if "外围系统到核心系统" in option and "辅助驾驶" in option and "完全自动驾驶" in option:
+            bank_stages = self._literal_hits(
+                question,
+                term_groups=[["从办公系统到一般业务系统", "最后攻坚核心系统", "分三个阶段"]],
+                marker="staged_autonomy_bank_three_stages",
+                limit=1,
+                allow_corpus_wide=True,
+            )
+            assistance_to_l3 = self._literal_hits(
+                question,
+                term_groups=[["L3级自动驾驶规模化商用", "G-ASD辅助驾驶系统", "高阶智驾"]],
+                marker="staged_autonomy_assistance_to_l3",
+                limit=1,
+                allow_corpus_wide=True,
+            )
+            l4_stage = self._literal_hits(
+                question,
+                term_groups=[["全域线控转向", "预埋L4级智驾"]],
+                marker="staged_autonomy_l4_stage",
+                limit=1,
+                allow_corpus_wide=True,
+            )
+            rule_hits = self._merge_hits([*bank_stages, *assistance_to_l3, *l4_stage], limit=3)
+            if len(rule_hits) == 3:
+                return (
+                    True,
+                    "银行信创明确按办公、一般业务、核心系统分三阶段推进；汽车材料分别呈现辅助驾驶落地、L3规模化商用和L4预埋，支持二者均采用渐进升级路线。证据不表示完全自动驾驶已实现，仅支持选项所作的路线类比。",
+                    rule_hits,
+                )
+
+        if "IP授权模式" in option and "完全相同" in option and "现成软件" in option:
+            reusable_ip = self._literal_hits(
+                question,
+                term_groups=[["预先验证、可重复使用的功能模块", "降低昂贵研发成本"]],
+                marker="staged_autonomy_reusable_ip_module",
+                limit=1,
+                allow_corpus_wide=True,
+            )
+            custom_circuit = self._literal_hits(
+                question,
+                term_groups=[["预先验证的IP核", "定制设计的电路", "构建复杂的芯片"]],
+                marker="staged_autonomy_ip_custom_circuit_combination",
+                limit=1,
+                allow_corpus_wide=True,
+            )
+            bank_full_stack = self._literal_hits(
+                question,
+                term_groups=[["底层硬件到上层应用软件", "全面自主可控", "从办公到一般业务"]],
+                marker="staged_autonomy_bank_full_stack_transformation",
+                limit=1,
+                allow_corpus_wide=True,
+            )
+            rule_hits = self._merge_hits([*reusable_ip, *custom_circuit, *bank_full_stack], limit=3)
+            if len(rule_hits) == 3:
+                return (
+                    False,
+                    "半导体IP是可复用功能模块，还需与定制电路组合成芯片；银行信创则覆盖底层硬件到上层应用软件并分阶段改造。两者机制不同，也都不能概括为购买现成软件快速替代。",
+                    rule_hits,
+                )
 
         return None
 

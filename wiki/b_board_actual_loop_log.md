@@ -12544,3 +12544,445 @@
   }
 }
 ```
+
+## b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1
+
+- recorded_at: `2026-07-22T07:25:48+00:00`
+
+```json
+{
+  "answered_qids": [
+    "res_b_017"
+  ],
+  "attempt_index": 1,
+  "base_commit": "6ba1fefb712ab2b57acc7401bc1b249fa5da6bd2",
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_staged_autonomy_direct_entailment_res_b_017/staged_autonomy_bundle_a2_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "6ba1fefb712ab2b57acc7401bc1b249fa5da6bd2",
+        "code_hash": "045fc9bd1506995f70c40b1a4048ca7503aa5b91b4a507061d4cd0d6aa32edd6",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "b09ce453602c45ef34ad0b1315178787bcfb5c13e31dfffa40c07f8679ffe028",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "automotive_adas_customization_same_source": true,
+          "auxiliary_l3_l4_separate_stage_units": true,
+          "foreign_equipment_share_counterevidence": true,
+          "ip_vs_bank_mechanism_separation": true,
+          "zero_token_option_matrix": true
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "bind same-source automotive adas customization and separate assistance, l3, and l4 stages while using exact foreign-equipment shares and distinct ip-versus-bank mechanisms.",
+        "pipeline_stage": "reasoning",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "adas_customization_and_staged_autonomy_entailment",
+        "target_qids": [
+          "res_b_017"
+        ]
+      }
+    },
+    "context_sha256": "38ac258d455a7632e5f80615b0956c17dbf7c075abac4e82e09553a6fd8f893c",
+    "direction_sha256": "a234966e58541c4f80c101a8a80178a0ed7a032ab1fc3f29c5c00613fe13fa27",
+    "schema_version": 1,
+    "semantic_sha256": "5809bc5907d28b3e0e6481906de1797afd8daef4991cc171d40cacc25c5be232",
+    "sha256": "44b782fc6b93c1cedcf9ba922020998275c6ebcd66353fb1c5a02db6707f2418"
+  },
+  "candidate_full_evaluation_token_usage": {
+    "completion_tokens": 75151,
+    "prompt_tokens": 477435,
+    "total_tokens": 552586
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 2,
+    "high": 62,
+    "low": 4,
+    "medium": 32
+  },
+  "causal_lowtail": {
+    "after": 5,
+    "before": 6
+  },
+  "causal_promoted_tiers": {
+    "blocked": 2,
+    "high": 62,
+    "low": 3,
+    "medium": 33
+  },
+  "causal_research_lowtail": {
+    "after": 1,
+    "before": 2
+  },
+  "change_vector": {
+    "automotive_adas_customization_same_source": true,
+    "auxiliary_l3_l4_separate_stage_units": true,
+    "foreign_equipment_share_counterevidence": true,
+    "ip_vs_bank_mechanism_separation": true,
+    "zero_token_option_matrix": true
+  },
+  "changed_answer_qids": [],
+  "changed_artifact_qids": [
+    "res_b_017"
+  ],
+  "code_hash": "045fc9bd1506995f70c40b1a4048ca7503aa5b91b4a507061d4cd0d6aa32edd6",
+  "comparable_attempt_count_after": 1,
+  "comparable_attempt_count_before": 0,
+  "confidence_after": {
+    "res_b_017": 74
+  },
+  "confidence_before": {
+    "res_b_017": 58
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "dimension_changes": {
+    "alternative_exclusion": 4,
+    "answer_entailment": 16,
+    "citation_alignment": 4,
+    "document_relevance": 0,
+    "evidence_sufficiency": 14,
+    "format_compliance": 0,
+    "internal_consistency": 9,
+    "overall_confidence": 14
+  },
+  "direction_id": "research_staged_autonomy_direct_entailment_res_b_017",
+  "direction_status": "active",
+  "domains": [
+    "research"
+  ],
+  "effective_branch": "codex/b榜-loop-i032-research-staged-autonomy",
+  "evaluator_failed_attempts_not_in_usage": 0,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 75151,
+    "prompt_tokens": 477435,
+    "total_tokens": 552586
+  },
+  "generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "generator_fingerprint": "b09ce453602c45ef34ad0b1315178787bcfb5c13e31dfffa40c07f8679ffe028",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_related_experiment_ids": [],
+  "history_similarity": null,
+  "hypothesis": "Bind same-source automotive ADAS customization and separate assistance, L3, and L4 stages while using exact foreign-equipment shares and distinct IP-versus-bank mechanisms.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "evaluator_failed_attempts_not_in_usage": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 162,
+    "tests_passed": true,
+    "token_accounting_complete": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_staged_autonomy_direct_entailment_res_b_017/staged_autonomy_bundle_a2_promoted1_composite",
+  "lessons": [
+    "A broad multi-clause technology-path root had already consumed its comparable-attempt budget; a new run was justified only after narrowing to the specific ADAS-customization and staged-autonomy entailment gap.",
+    "The active runtime corpus must be checked at exact chunk boundaries: assistance and L3 occur in one automotive unit while L4 appears in the adjacent unit.",
+    "A same-source sentence that joins chip customization services to a high-performance vehicle-grade ADAS platform materially strengthens the ASIC relation beyond generic automotive application coverage.",
+    "LaTeX-escaped percentages can break literal matching; bind the share field, numeric value, and substitution conclusion in the same unit rather than matching rendered punctuation.",
+    "Route evidence should remain honest: assistance, L3, and L4 support a gradual-path analogy but do not prove that complete autonomous driving has already been achieved.",
+    "The fixed judge still identifies residual subject precision risk because option B says laser equipment while the strongest quantitative counterevidence concerns optical-module placement and test equipment."
+  ],
+  "material_delta": {
+    "direct_adas_source_binding": true,
+    "exact_foreign_share_counterevidence": true,
+    "explicit_separate_l4_chunk": true,
+    "runtime_chunk_boundary_regression_test": true
+  },
+  "next_root_causes": [
+    "financial_contract_lowtail_fc_b_006_018",
+    "insurance_calculation_identity_citation_alignment_ins_b_001",
+    "reg_b_001_reference_date_vs_future_effective_obligation",
+    "deprioritized_res_b_008_requires_new_explicit_causal_corpus"
+  ],
+  "pipeline_stage": "reasoning",
+  "preflight_attempts": [
+    {
+      "integrity": {
+        "final_evidence_complete": false,
+        "format_forced": false,
+        "fully_rule_backed": true,
+        "no_supported_fallback": false,
+        "submission_valid": true
+      },
+      "observed_answer": {
+        "res_b_017": "AC"
+      },
+      "reason": "The runtime corpus encodes 79 percent with LaTeX escaping, so option B fell through to the older broad rule instead of the exact-share evidence path.",
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_staged_autonomy_direct_entailment_res_b_017/staged_autonomy_bundle_a1",
+      "status": "refined_before_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      }
+    },
+    {
+      "integrity": {
+        "final_evidence_complete": true,
+        "format_forced": false,
+        "fully_rule_backed": true,
+        "no_supported_fallback": false,
+        "submission_valid": true
+      },
+      "observed_answer": {
+        "res_b_017": "AC"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_staged_autonomy_direct_entailment_res_b_017/staged_autonomy_bundle_a2",
+      "status": "accepted_for_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      },
+      "used_evidence_ids": [
+        "pack2_text07::sec_1::chunk_1",
+        "pack2_text09::sec_1::chunk_7",
+        "pack2_text09::sec_2::chunk_2",
+        "pack2_text12::sec_2::chunk_5",
+        "pack2_text12::sec_2::chunk_18",
+        "pack2_text17::sec_1::chunk_3",
+        "pack2_text07::sec_1::chunk_2",
+        "pack2_text09::sec_1::chunk_1",
+        "pack2_text09::sec_1::chunk_15",
+        "pack2_text17::sec_1::chunk_1"
+      ]
+    }
+  ],
+  "promoted_qids": [
+    "res_b_017"
+  ],
+  "promoted_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_staged_autonomy_direct_entailment_res_b_017/staged_autonomy_bundle_a2_promoted1_composite",
+  "promotion_decisions": {
+    "res_b_017": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 16,
+      "tier_after": "medium",
+      "tier_before": "low"
+    }
+  },
+  "promotion_gate_path": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_staged_autonomy_direct_entailment_res_b_017/staged_autonomy_bundle_a2_composite/promotion_gate.json",
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "multi"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 3,
+    "high": 62,
+    "low": 3,
+    "medium": 32
+  },
+  "reason": "A ten-unit option matrix preserved AC while replacing broad cross-document stitching with same-source vehicle-grade ADAS customization, separate assistance/L3/L4 stages, exact 79/84 percent substitution counterevidence, and distinct IP-versus-bank mechanisms. Fixed confidence rose from 58 low to 74 medium with no hard failures or answer change.",
+  "recorded_at": "2026-07-22T07:25:48+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [],
+  "root_cause_cluster": "adas_customization_and_staged_autonomy_entailment",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failed_attempts_not_in_usage": 0,
+      "failures": 0,
+      "sentinels_passed": true,
+      "successful_token_usage": {
+        "completion_tokens": 75151,
+        "prompt_tokens": 477435,
+        "total_tokens": 552586
+      },
+      "token_accounting_complete": true
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "res_b_017"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 2,
+          "blocked_low_before": 2,
+          "low_tier_improved_qids": [],
+          "p10_after": 30,
+          "p10_before": 30,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 0,
+          "blocked_low_before": 0,
+          "low_tier_improved_qids": [],
+          "p10_after": 85,
+          "p10_before": 85,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 3,
+          "blocked_low_before": 3,
+          "low_tier_improved_qids": [],
+          "p10_after": 35,
+          "p10_before": 35,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 2,
+          "blocked_low_before": 2,
+          "low_tier_improved_qids": [],
+          "p10_after": 55,
+          "p10_before": 55,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 2,
+          "low_tier_improved_qids": [
+            "res_b_017"
+          ],
+          "p10_after": 60,
+          "p10_before": 58,
+          "p10_delta": 2
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_002": -4,
+        "fc_b_003": 20,
+        "fc_b_006": 10,
+        "fc_b_007": -6,
+        "fc_b_009": -8,
+        "fc_b_010": 5,
+        "fc_b_011": 5,
+        "fc_b_012": 4,
+        "fc_b_013": -2,
+        "fc_b_016": 2,
+        "fc_b_017": 2,
+        "fc_b_018": 10,
+        "fc_b_019": -6,
+        "fin_b_002": 5,
+        "fin_b_003": -5,
+        "fin_b_004": -5,
+        "fin_b_005": -3,
+        "fin_b_006": 5,
+        "fin_b_007": -3,
+        "fin_b_010": -1,
+        "fin_b_011": 3,
+        "fin_b_015": -8,
+        "fin_b_016": -5,
+        "fin_b_017": 3,
+        "ins_b_003": 8,
+        "ins_b_004": 2,
+        "ins_b_005": -2,
+        "ins_b_006": -20,
+        "ins_b_007": 7,
+        "ins_b_008": 3,
+        "ins_b_010": -5,
+        "ins_b_012": 2,
+        "ins_b_014": -6,
+        "ins_b_016": -20,
+        "ins_b_017": 30,
+        "ins_b_019": -22,
+        "ins_b_020": 5,
+        "reg_b_001": -5,
+        "reg_b_003": 5,
+        "reg_b_004": 5,
+        "reg_b_005": -4,
+        "reg_b_009": -8,
+        "reg_b_014": 5,
+        "reg_b_015": 4,
+        "reg_b_017": 3,
+        "reg_b_018": -5,
+        "reg_b_020": -10,
+        "reg_b_021": 13,
+        "reg_b_023": 6,
+        "reg_b_024": 2,
+        "reg_b_025": 2,
+        "reg_b_026": 3,
+        "reg_b_027": -4,
+        "res_b_001": 7,
+        "res_b_002": 10,
+        "res_b_003": 3,
+        "res_b_006": -2,
+        "res_b_009": -4,
+        "res_b_010": -4,
+        "res_b_012": 10,
+        "res_b_014": -2,
+        "res_b_015": 3,
+        "res_b_018": 2,
+        "res_b_020": 2
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_003",
+        "fc_b_013",
+        "fc_b_018",
+        "fin_b_015",
+        "ins_b_006",
+        "ins_b_007",
+        "ins_b_010",
+        "ins_b_016",
+        "ins_b_017",
+        "ins_b_019",
+        "reg_b_005",
+        "reg_b_021",
+        "reg_b_027",
+        "res_b_001",
+        "res_b_003",
+        "res_b_010"
+      ]
+    },
+    "reasons": [],
+    "tests": {
+      "count": 162,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_staged_autonomy_direct_entailment_res_b_017/staged_autonomy_bundle_a2",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "res_b_017"
+  ],
+  "token_accounting_complete": true,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 75151,
+    "prompt_tokens": 477435,
+    "total_tokens": 552586
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 75151,
+    "prompt_tokens": 477435,
+    "total_tokens": 552586
+  }
+}
+```

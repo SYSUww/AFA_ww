@@ -965,6 +965,73 @@ class ResearchFinancialClauseBundleTests(unittest.TestCase):
         )
         self.assert_labels(solver=self.make_solver(units), question=question, expected={"A": True, "B": False, "C": True, "D": False})
 
+    def test_staged_autonomy_direct_entailment_survives_runtime_chunk_boundaries(self) -> None:
+        units = [
+            make_unit(
+                "auto::assist_l3", "auto",
+                "自主品牌高阶智驾与自研芯片并进，集中呈现智能驾驶算法；G-ASD辅助驾驶系统已落地，"
+                "行业进入L3级自动驾驶规模化商用阶段，并搭载5nm智驾芯片。",
+            ),
+            make_unit(
+                "auto::l4", "auto",
+                "新车型搭载高算力平台与全域线控转向，并预埋L4级智驾。",
+            ),
+            make_unit(
+                "asic::adas", "asic",
+                "公司将半导体IP、芯片定制服务和软件支持服务有机结合，提供高性能车规ADAS系统平台解决方案。",
+            ),
+            make_unit(
+                "asic::smart_car", "asic",
+                "面向AI应用的软硬件芯片定制平台解决方案覆盖智慧汽车等高效率端侧计算设备。",
+            ),
+            make_unit(
+                "equipment::share", "equipment",
+                "光模块贴片设备全球市占率数据显示外国企业与其他企业占比79%，仍存在较大国产替代空间。",
+            ),
+            make_unit(
+                "testing::share", "equipment",
+                "海外企业合计占据84%主导份额，国产替代空间广阔。",
+            ),
+            make_unit(
+                "bank::stages", "bank",
+                "银行信创从办公系统到一般业务系统，最后攻坚核心系统，分三个阶段推进。",
+            ),
+            make_unit(
+                "ip::module", "asic",
+                "半导体IP提供预先验证、可重复使用的功能模块，可降低昂贵研发成本。",
+            ),
+            make_unit(
+                "ip::custom", "asic",
+                "芯片设计将预先验证的IP核与定制设计的电路组合，从而构建复杂的芯片。",
+            ),
+            make_unit(
+                "bank::full_stack", "bank",
+                "银行信创实现从底层硬件到上层应用软件的全面自主可控，推进路径从办公到一般业务。",
+            ),
+        ]
+        question = Question(
+            qid="res_b_017", domain="research", split="B",
+            question="汽车行业加速智能化、芯片设计走向ASIC定制、激光设备受益扩产、银行IT推进信创，哪些路径正确？",
+            options={
+                "A": "汽车自主可控主要体现为智驾芯片和算法自研，与ASIC定制服务直接相关",
+                "B": "激光设备国产化率已接近100%，因此国产替代空间有限",
+                "C": "银行IT从外围系统到核心系统，与汽车从辅助驾驶到完全自动驾驶的渐进路线相似",
+                "D": "芯片IP授权模式与银行IT完全相同，都是购买现成软件快速替代",
+            },
+            answer_format="multi", type="多选题", doc_ids=["auto", "asic", "equipment", "bank"],
+        )
+        solver = self.make_solver(units)
+        self.assert_labels(solver=solver, question=question, expected={"A": True, "B": False, "C": True, "D": False})
+
+        evidence_by_option = {
+            option_key: {hit.unit_id for hit in solver._rule_evaluate(question, option_text, [])[2]}
+            for option_key, option_text in question.options.items()
+        }
+        self.assertEqual(evidence_by_option["A"], {"auto::assist_l3", "asic::adas", "asic::smart_car"})
+        self.assertEqual(evidence_by_option["B"], {"equipment::share", "testing::share"})
+        self.assertEqual(evidence_by_option["C"], {"auto::assist_l3", "auto::l4", "bank::stages"})
+        self.assertEqual(evidence_by_option["D"], {"ip::module", "ip::custom", "bank::full_stack"})
+
     def test_source_control_bundle_distinguishes_operational_control_and_asset_ownership(self) -> None:
         units = [
             make_unit(
