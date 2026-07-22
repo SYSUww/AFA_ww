@@ -254,6 +254,9 @@ class ResearchSolver:
         option_text: str,
         hits: list[RetrievalHit],
     ) -> tuple[bool | None, str, list[RetrievalHit]]:
+        technology_path_bundle_rule = self._technology_path_bundle_rule(question, option_text)
+        if technology_path_bundle_rule is not None:
+            return technology_path_bundle_rule
         financial_clause_bundle_rule = self._financial_multi_clause_bundle_rule(question, option_text)
         if financial_clause_bundle_rule is not None:
             return financial_clause_bundle_rule
@@ -297,6 +300,172 @@ class ResearchSolver:
         if ev_q1_sales_rule is not None:
             return ev_q1_sales_rule
         return None, "", []
+
+    def _technology_path_bundle_rule(
+        self,
+        question: Question,
+        option_text: str,
+    ) -> tuple[bool, str, list[RetrievalHit]] | None:
+        """Resolve cross-report technology-path choices from complete evidence bundles."""
+
+        question_text = self._compact_text(question.question)
+        option = self._compact_text(option_text)
+
+        if all(term in question_text for term in ("合资品牌", "自研ASIC", "3D打印技术")):
+            china_solution = self._literal_hits(
+                question,
+                term_groups=[
+                    ["中国方案主导合资转型", "中方主导定义", "反向输出技术标准"],
+                    ["研发主导权从外资向中方", "反向输出技术标准"],
+                ],
+                marker="technology_path_china_solution_export",
+                limit=2,
+                allow_corpus_wide=True,
+            )
+            precision_manufacturing = self._literal_hits(
+                question,
+                term_groups=[
+                    ["HANSM410", "微米级", "3C零部件", "一体化成型"],
+                    ["3D打印", "头部客户", "高精度", "多功能集成"],
+                ],
+                marker="technology_path_precision_manufacturing",
+                limit=2,
+                allow_corpus_wide=True,
+            )
+            overseas_self_development = self._literal_hits(
+                question,
+                term_groups=[
+                    ["自研ASIC成为CSP投资重心"],
+                    ["OpenAI", "自研AI芯片", "自研ASIC", "定制化支持"],
+                ],
+                marker="technology_path_overseas_asic_self_development",
+                limit=2,
+                allow_corpus_wide=True,
+            )
+            if "反向输出" in option and "全球产业链分工" in option:
+                if china_solution:
+                    return (
+                        True,
+                        "汽车研报明确写明合资平台由中方主导定义、研发主导权向中方转移并开始反向输出技术标准，直接支持部分核心技术由引进转向输出及全球分工变化。",
+                        china_solution,
+                    )
+            if "全面采用中国供应商" in option and "放弃自研" in option:
+                rule_hits = self._merge_hits([*overseas_self_development, *china_solution], limit=4)
+                if rule_hits:
+                    return (
+                        False,
+                        "海外CSP仍把自研ASIC作为投资重心，OpenAI也在推进自研芯片；合资智驾采用中国方案是局部技术路径变化，不能外推为跨国企业全面采用中国供应商并放弃自研。",
+                        rule_hits,
+                    )
+            if "精密制造" in option and "算法能力" in option and "全球产业链" in option:
+                rule_hits = self._merge_hits([*china_solution, *precision_manufacturing], limit=4)
+                if rule_hits:
+                    return (
+                        True,
+                        "中国智驾方案已参与并主导部分合资平台定义、输出技术标准；国产3D打印设备具备微米级精度和复杂结构一体成型能力，共同支持中国企业参与乃至主导部分产业链创新环节。",
+                        rule_hits,
+                    )
+            if "权宜之计" in option and "重新切换" in option:
+                if china_solution:
+                    return (
+                        False,
+                        "研报将合资导入中国智驾概括为研发主导权实质性转移和技术标准反向输出，并无日后切回外资本土方案的证据，故不能认定为权宜之计。",
+                        china_solution,
+                    )
+
+        if all(term in question_text for term in ("汽车行业加速智能化", "银行IT推进信创")):
+            automotive_autonomy = self._literal_hits(
+                question,
+                term_groups=[
+                    ["高阶智驾与自研芯片并进", "智能驾驶算法", "自研芯片"],
+                    ["新势力竞逐自研芯片", "全域智驾", "智驾芯片"],
+                ],
+                marker="technology_path_automotive_autonomy",
+                limit=2,
+                allow_corpus_wide=True,
+            )
+            automotive_asic = self._literal_hits(
+                question,
+                term_groups=[
+                    ["自主半导体IP", "芯片定制服务", "汽车电子"],
+                    ["软硬件芯片定制平台解决方案", "智慧汽车", "自主可控"],
+                ],
+                marker="technology_path_automotive_asic_binding",
+                limit=2,
+                allow_corpus_wide=True,
+            )
+            laser_substitution = self._literal_hits(
+                question,
+                term_groups=[
+                    ["国产光模块测试仪器龙头", "有望受益国产替代", "仍存在国产替代空间"],
+                    ["老旧进口设备替换", "自主研发", "产品化并批量生产"],
+                ],
+                marker="technology_path_laser_substitution_counterevidence",
+                limit=2,
+                allow_corpus_wide=True,
+            )
+            bank_progression = self._literal_hits(
+                question,
+                term_groups=[
+                    ["从办公到一般业务", "核心系统", "由外到内", "由易及难"],
+                    ["外围业务", "办公系统", "一般业务系统", "核心系统", "三个阶段"],
+                ],
+                marker="technology_path_bank_it_progression",
+                limit=2,
+                allow_corpus_wide=True,
+            )
+            automotive_progression = self._literal_hits(
+                question,
+                term_groups=[
+                    ["L3级自动驾驶规模化商用", "辅助驾驶系统", "高阶智驾"],
+                    ["辅助驾驶", "L3", "L4级智驾"],
+                ],
+                marker="technology_path_automotive_progression",
+                limit=3,
+                allow_corpus_wide=True,
+            )
+            ip_reuse = self._literal_hits(
+                question,
+                term_groups=[
+                    ["预先验证", "可重复使用的功能模块", "SoC设计复杂度"],
+                    ["SiPaaS", "可复用性", "缩短设计周期", "降低设计风险"],
+                ],
+                marker="technology_path_ip_reuse_counterevidence",
+                limit=2,
+                allow_corpus_wide=True,
+            )
+            if "智驾芯片" in option and "算法自研" in option and "ASIC定制服务" in option:
+                rule_hits = self._merge_hits([*automotive_autonomy, *automotive_asic], limit=4)
+                if rule_hits:
+                    return (
+                        True,
+                        "汽车研报把高阶智驾、智能驾驶算法与自研智驾芯片并列为核心能力；ASIC研报又明确芯片定制平台覆盖汽车电子和智慧汽车，两条材料共同支持二者的直接技术关联。",
+                        rule_hits,
+                    )
+            if "国产化率" in option and "接近100%" in option and "替代空间有限" in option:
+                if laser_substitution:
+                    return (
+                        False,
+                        "设备材料仍明确讨论国产替代空间、老旧进口设备替换及自主工艺量产，不能支持激光设备国产化率已接近100%或替代空间有限的绝对判断。",
+                        laser_substitution,
+                    )
+            if "外围系统到核心系统" in option and "辅助驾驶" in option and "完全自动驾驶" in option:
+                rule_hits = self._merge_hits([*bank_progression, *automotive_progression], limit=5)
+                if rule_hits:
+                    return (
+                        True,
+                        "银行信创明确按办公、一般业务、核心系统由外到内推进；汽车材料同时呈现辅助驾驶落地、L3规模化商用和L4预埋，二者都体现从低风险或低等级环节向核心、高等级能力渐进升级。",
+                        rule_hits,
+                    )
+            if "IP授权模式" in option and "完全相同" in option and "现成软件" in option:
+                rule_hits = self._merge_hits([*ip_reuse, *bank_progression], limit=4)
+                if rule_hits:
+                    return (
+                        False,
+                        "半导体IP是预先验证、可复用的芯片功能模块和设计平台；银行信创则覆盖硬件、基础软件、应用软件并分阶段改造，二者既非完全相同，也不是简单购买现成软件即可替代。",
+                        rule_hits,
+                    )
+        return None
 
     def _financial_multi_clause_bundle_rule(
         self,

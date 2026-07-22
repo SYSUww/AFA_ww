@@ -758,6 +758,79 @@ class ResearchFinancialClauseBundleTests(unittest.TestCase):
         )
         self.assert_labels(solver=self.make_solver(units), question=question, expected={"A": True, "B": True, "C": False, "D": False})
 
+    def test_cross_industry_innovation_bundle_supports_reverse_export_and_precision_capability(self) -> None:
+        units = [
+            make_unit(
+                "auto::export", "auto",
+                "中国方案主导合资转型，大众平台首次实现中方主导定义，研发主导权从外资向中方转移，"
+                "中国开始反向输出技术标准。",
+            ),
+            make_unit(
+                "manufacturing::precision", "manufacturing",
+                "HANS M410拥有微米级精密制造体系，支持3C零部件复杂结构一体化成型，并推动3D打印设备向高精度、"
+                "多功能集成方向迭代，深度参与头部客户研发。",
+            ),
+            make_unit(
+                "asic::self-developed", "asic",
+                "自研 ASIC 成为 CSP 投资重心。OpenAI正在推进自研AI芯片，自研ASIC可为大模型提供更高度的定制化支持。",
+            ),
+        ]
+        question = Question(
+            qid="unseen_cross_industry_innovation", domain="research", split="B",
+            question="合资品牌导入中国智驾，海外云厂商发展自研ASIC，消费电子制造采用3D打印技术，这些事件指向什么？",
+            options={
+                "A": "中国企业在部分高端制造和核心技术领域已具备反向输出能力，全球产业链分工正在变化",
+                "B": "跨国企业正在全面采用中国供应商并放弃自研",
+                "C": "中国企业精密制造和算法能力提升，使其参与甚至主导部分全球产业链创新环节",
+                "D": "合资导入中国智驾只是权宜之计，之后会重新切换",
+            },
+            answer_format="multi", type="多选题", doc_ids=["auto", "manufacturing", "asic"],
+        )
+        self.assert_labels(solver=self.make_solver(units), question=question, expected={"A": True, "B": False, "C": True, "D": False})
+
+    def test_cross_industry_autonomy_bundle_links_staged_paths_and_rejects_absolute_claims(self) -> None:
+        units = [
+            make_unit(
+                "auto::autonomy", "auto",
+                "自主品牌高阶智驾与自研芯片并进，集中呈现智能驾驶算法；新势力竞逐自研芯片与全域智驾，"
+                "并搭载5nm智驾芯片。",
+            ),
+            make_unit(
+                "auto::progression", "auto",
+                "当前辅助驾驶系统加速落地，2026年进入L3级自动驾驶规模化商用阶段，部分车型预埋L4级智驾。",
+            ),
+            make_unit(
+                "asic::automotive", "asic",
+                "公司依托自主半导体IP提供芯片定制服务，应用覆盖汽车电子；软硬件芯片定制平台解决方案覆盖智慧汽车。",
+            ),
+            make_unit(
+                "equipment::substitution", "equipment",
+                "国产光模块测试仪器龙头有望受益国产替代，相关设备仍存在国产替代空间；老旧进口设备替换正在推进，"
+                "自主研发工艺已产品化并批量生产。",
+            ),
+            make_unit(
+                "bank::progression", "bank",
+                "银行信创从办公到一般业务，再到核心系统，遵循由外到内、由易及难；具体从非关键外围业务起步，"
+                "经办公系统和一般业务系统，分三个阶段攻坚核心系统。",
+            ),
+            make_unit(
+                "asic::reuse", "asic",
+                "半导体IP提供预先验证、可重复使用的功能模块，应对SoC设计复杂度；SiPaaS依靠可复用性缩短设计周期并降低设计风险。",
+            ),
+        ]
+        question = Question(
+            qid="unseen_cross_industry_autonomy", domain="research", split="B",
+            question="汽车行业加速智能化、芯片ASIC定制、激光设备国产替代、银行IT推进信创，哪些推进路径分析正确？",
+            options={
+                "A": "汽车自主可控主要体现为智驾芯片和算法自研，与ASIC定制服务直接相关",
+                "B": "激光设备国产化率已接近100%，因此国产替代空间有限",
+                "C": "银行IT从外围系统到核心系统，与汽车从辅助驾驶到完全自动驾驶的渐进路线相似",
+                "D": "芯片IP授权模式与银行IT完全相同，都是购买现成软件快速替代",
+            },
+            answer_format="multi", type="多选题", doc_ids=["auto", "asic", "equipment", "bank"],
+        )
+        self.assert_labels(solver=self.make_solver(units), question=question, expected={"A": True, "B": False, "C": True, "D": False})
+
 
 class FinancialReportMetricBundleTests(unittest.TestCase):
     @staticmethod

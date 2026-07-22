@@ -7645,3 +7645,411 @@
   }
 }
 ```
+
+## b-loop-research-cross-industry-technology-path-bundle-a1
+
+- recorded_at: `2026-07-22T01:26:49+00:00`
+
+```json
+{
+  "answered_qids": [
+    "res_b_010",
+    "res_b_017"
+  ],
+  "attempt_index": 1,
+  "base_commit": "932b66de25bebf31f8e359c1f32f88c5f6755af8",
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_cross_industry_technology_path_bundle/technology_path_bundle_a1_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "932b66de25bebf31f8e359c1f32f88c5f6755af8",
+        "code_hash": "38743392b4b49ac5f82e861d43b271224833407929391e2bcefded8b2f3076b3",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "bundle_families": [
+            "china_solution_export",
+            "advanced_manufacturing_adoption",
+            "staged_core_system_upgrade"
+          ],
+          "explicit_counterevidence": true,
+          "focused_rule_evidence": true,
+          "group_by": [
+            "report_identity",
+            "industry",
+            "technology_path",
+            "claim_role"
+          ],
+          "selection": "remaining_technology_research_lowtail_first"
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "cross-report technology-path evidence bundles can replace forced multi-choice fallbacks by binding chinese solution export, precision manufacturing, asic customization, and staged autonomy or localization claims to direct support and counterevidence.",
+        "pipeline_stage": "reasoning",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "multi_clause_choice_coverage",
+        "target_qids": [
+          "res_b_010",
+          "res_b_017"
+        ]
+      }
+    },
+    "context_sha256": "079ef37a5ff21b793317b45589337117a214adb3f0df950187f0c8d3906205a0",
+    "direction_sha256": "3c11ac839d49d885923793696877d6d998cecce1aee980b1e2f4ac9b39bd6049",
+    "schema_version": 1,
+    "semantic_sha256": "72f57a561494cfd8a783c3fd7450eaf7e0fa8ac3256f7a6ffd5158a69cc90804",
+    "sha256": "e15a17a1c3bb2fbfae21ea94d2fdca457035d078502d241b4c960c3f82625627"
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 21,
+    "high": 50,
+    "low": 2,
+    "medium": 27
+  },
+  "causal_promoted_tiers": {
+    "blocked": 19,
+    "high": 51,
+    "low": 3,
+    "medium": 27
+  },
+  "causal_research_lowtail": {
+    "after": 11,
+    "before": 12
+  },
+  "change_vector": {
+    "bundle_families": [
+      "china_solution_export",
+      "advanced_manufacturing_adoption",
+      "staged_core_system_upgrade"
+    ],
+    "explicit_counterevidence": true,
+    "focused_rule_evidence": true,
+    "group_by": [
+      "report_identity",
+      "industry",
+      "technology_path",
+      "claim_role"
+    ],
+    "selection": "remaining_technology_research_lowtail_first"
+  },
+  "changed_answer_qids": [],
+  "code_hash": "38743392b4b49ac5f82e861d43b271224833407929391e2bcefded8b2f3076b3",
+  "comparable_attempt_count_after": 2,
+  "comparable_attempt_count_before": 1,
+  "confidence_after": {
+    "res_b_010": 82,
+    "res_b_017": 58
+  },
+  "confidence_before": {
+    "res_b_010": 0,
+    "res_b_017": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "research_cross_industry_technology_path_bundle",
+  "direction_status": "active",
+  "domains": [
+    "research"
+  ],
+  "effective_branch": "codex/b榜-loop-i018-research-tech-paths",
+  "evaluator_failed_attempts_not_in_usage": 7,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-research-cross-industry-technology-path-bundle-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 76964,
+    "prompt_tokens": 482190,
+    "total_tokens": 559154
+  },
+  "generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "generator_fingerprint": "7065fb44bd2068405f035c76f9853af31a9e24c0c69676ce14c1e203cafc9219",
+  "generator_model": "gpt-5.5",
+  "history_decision": "refine_existing",
+  "history_reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+  "history_related_experiment_ids": [
+    "b-loop-research-financial-multi-clause-evidence-bundle-a1"
+  ],
+  "history_similarity": 0.764615,
+  "hypothesis": "Cross-report technology-path evidence bundles can replace forced multi-choice fallbacks by binding Chinese solution export, precision manufacturing, ASIC customization, and staged autonomy or localization claims to direct support and counterevidence.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 144,
+    "tests_passed": true,
+    "token_accounting_complete": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_cross_industry_technology_path_bundle/technology_path_bundle_a1_composite",
+  "lessons": [
+    "Cross-report analogy questions need every constituent claim bound to direct support or counterevidence before option composition.",
+    "An unchanged answer can be promoted without blind review when fixed confidence gains, hard failures disappear, and every dimension is non-regressive.",
+    "L3/L4 evidence improves a staged-driving analogy but does not fully entail the wording 'complete autonomous driving'; keep res_b_017 in the low tail.",
+    "When evaluator concurrency triggers 429 responses, resume the immutable run at lower concurrency and report failed attempts outside token usage."
+  ],
+  "material_delta": {
+    "cross_report_complete_bundle": true,
+    "new_direction": true,
+    "technology_path_binding": true
+  },
+  "next_root_causes": [
+    "research_remaining_choice_evidence_coverage",
+    "research_staged_autonomy_direct_entailment",
+    "insurance_remaining_subject_clause_coverage",
+    "remaining_fin_b_010_evidence_sufficiency",
+    "remaining_reg_b_001_evidence_sufficiency"
+  ],
+  "pipeline_stage": "reasoning",
+  "preflight_attempts": [
+    {
+      "integrity": {
+        "answer_warnings": [],
+        "format_forced": false,
+        "fully_rule_backed": true,
+        "no_supported_fallback": false
+      },
+      "observed_answer": {
+        "res_b_010": "AC",
+        "res_b_017": "AC"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_cross_industry_technology_path_bundle/technology_path_bundle_a1",
+      "status": "accepted_for_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      }
+    }
+  ],
+  "promoted_qids": [
+    "res_b_010",
+    "res_b_017"
+  ],
+  "promoted_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_cross_industry_technology_path_bundle/technology_path_bundle_a1_composite",
+  "promotion_decisions": {
+    "res_b_010": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 82,
+      "tier_after": "high",
+      "tier_before": "blocked"
+    },
+    "res_b_017": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 58,
+      "tier_after": "low",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "multi"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 20,
+    "high": 55,
+    "low": 3,
+    "medium": 22
+  },
+  "reason": "Complete cross-report technology-path bundles preserved both answers as AC while removing format/no-support fallbacks. Fixed confidence rose res_b_010 0→82 (high) and res_b_017 0→58 (low), with no dimension regressions and no blind review required because answers did not change.",
+  "recorded_at": "2026-07-22T01:26:49+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [],
+  "root_cause_cluster": "multi_clause_choice_coverage",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failures": 0,
+      "sentinels_passed": true,
+      "token_accounting_complete": true
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "res_b_010",
+        "res_b_017"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 4,
+          "blocked_low_before": 4,
+          "low_tier_improved_qids": [],
+          "p10_after": 40,
+          "p10_before": 40,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 85,
+          "p10_before": 85,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 7,
+          "blocked_low_before": 7,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 70,
+          "p10_before": 70,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 11,
+          "blocked_low_before": 12,
+          "low_tier_improved_qids": [
+            "res_b_010",
+            "res_b_017"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_002": 10,
+        "fc_b_003": 15,
+        "fc_b_005": 2,
+        "fc_b_006": -10,
+        "fc_b_007": 13,
+        "fc_b_008": 6,
+        "fc_b_009": 1,
+        "fc_b_010": -10,
+        "fc_b_011": 3,
+        "fc_b_012": -3,
+        "fc_b_014": 10,
+        "fc_b_015": 1,
+        "fc_b_017": -10,
+        "fc_b_018": -5,
+        "fc_b_019": 17,
+        "fin_b_001": -3,
+        "fin_b_002": -5,
+        "fin_b_003": 1,
+        "fin_b_004": -8,
+        "fin_b_007": -2,
+        "fin_b_008": -3,
+        "fin_b_010": -5,
+        "fin_b_011": 5,
+        "fin_b_012": 1,
+        "fin_b_015": -3,
+        "fin_b_016": -6,
+        "fin_b_019": -2,
+        "ins_b_002": 5,
+        "ins_b_004": 4,
+        "ins_b_005": 6,
+        "ins_b_006": -30,
+        "ins_b_007": 16,
+        "ins_b_008": 10,
+        "ins_b_009": -4,
+        "ins_b_012": -10,
+        "ins_b_014": 8,
+        "ins_b_016": -2,
+        "ins_b_017": 12,
+        "ins_b_018": 10,
+        "ins_b_020": -2,
+        "reg_b_003": 10,
+        "reg_b_005": -2,
+        "reg_b_008": 6,
+        "reg_b_009": 6,
+        "reg_b_014": 5,
+        "reg_b_015": -5,
+        "reg_b_016": 5,
+        "reg_b_017": 8,
+        "reg_b_018": 10,
+        "reg_b_021": 6,
+        "reg_b_023": 4,
+        "reg_b_024": -12,
+        "reg_b_025": -2,
+        "reg_b_026": -2,
+        "reg_b_027": 10,
+        "res_b_001": -4,
+        "res_b_005": -5,
+        "res_b_007": 5,
+        "res_b_011": -3,
+        "res_b_013": -5,
+        "res_b_016": 2,
+        "res_b_019": 6
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_002",
+        "fc_b_003",
+        "fc_b_007",
+        "fc_b_017",
+        "fc_b_018",
+        "fc_b_019",
+        "ins_b_006",
+        "ins_b_007",
+        "ins_b_017",
+        "reg_b_003",
+        "reg_b_027",
+        "res_b_001"
+      ]
+    },
+    "reasons": [],
+    "tests": {
+      "count": 144,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_cross_industry_technology_path_bundle/technology_path_bundle_a1",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "res_b_010",
+    "res_b_017"
+  ],
+  "token_accounting_complete": true,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 76964,
+    "prompt_tokens": 482190,
+    "total_tokens": 559154
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 76964,
+    "prompt_tokens": 482190,
+    "total_tokens": 559154
+  }
+}
+```
