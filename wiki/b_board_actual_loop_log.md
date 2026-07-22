@@ -10800,3 +10800,322 @@
   }
 }
 ```
+
+## b-loop-research-supply-constraint-causal-evidence-res-b-003-a1
+
+- recorded_at: `2026-07-22T05:04:56+00:00`
+
+```json
+{
+  "answered_qids": [
+    "res_b_003"
+  ],
+  "attempt_index": 1,
+  "base_commit": "755604e1de9b48a9b53e8904156f547797fc8c21",
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "blind_pairs": {},
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_supply_constraint_causal_evidence_res_b_003/supply_constraint_bundle_a1_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "755604e1de9b48a9b53e8904156f547797fc8c21",
+        "code_hash": "f9272b79169bef904aaa5f8d22465b7bc1aff6bfe3e3d30d2d020e3863d09aaf",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "f4c1d39c54968a8cda2cb00591d4f1e4fcfada6cfa93d812e52f6a0a8139762d",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "absolute_duration_counterevidence": true,
+          "autonomous_supply_advantage": true,
+          "event_to_downstream_impact": true,
+          "substitution_difficulty": true
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "bind the petrochemical export restriction and optical-chip bottleneck to direct downstream-impact, substitution-duration, and autonomous-supply evidence so the common supply-constraint conclusion is auditable.",
+        "pipeline_stage": "reasoning",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "cross_domain_supply_constraint_entailment",
+        "target_qids": [
+          "res_b_003"
+        ]
+      }
+    },
+    "context_sha256": "285893a20aa68e70f7dd4f0a143707293667d5c6dd69dba039fd3f1966ebd8cf",
+    "direction_sha256": "74fe30e84bf631292e8da48a03132669fbcaf08de09ad6907ba948fbbca58902",
+    "schema_version": 1,
+    "semantic_sha256": "f806c4a610426d9287b870d065b81fb9f8dad6fcc8d0ac8d6355a77a42ee6358",
+    "sha256": "f61a87ed490fe92f2e5644f068acd2d8d0c7a4fe7f730f67b36be0db5a9d6ba0"
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 8,
+    "high": 59,
+    "low": 3,
+    "medium": 30
+  },
+  "causal_lowtail": {
+    "after": 10,
+    "before": 11
+  },
+  "causal_promoted_tiers": {
+    "blocked": 7,
+    "high": 59,
+    "low": 3,
+    "medium": 31
+  },
+  "causal_research_lowtail": {
+    "after": 6,
+    "before": 7
+  },
+  "change_vector": {
+    "absolute_duration_counterevidence": true,
+    "autonomous_supply_advantage": true,
+    "event_to_downstream_impact": true,
+    "substitution_difficulty": true
+  },
+  "changed_answer_qids": [],
+  "changed_artifact_qids": [
+    "res_b_003"
+  ],
+  "code_hash": "f9272b79169bef904aaa5f8d22465b7bc1aff6bfe3e3d30d2d020e3863d09aaf",
+  "comparable_attempt_count_after": 1,
+  "comparable_attempt_count_before": 0,
+  "confidence_after": {
+    "res_b_003": 62
+  },
+  "confidence_before": {
+    "res_b_003": 0
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "research_supply_constraint_causal_evidence_res_b_003",
+  "direction_status": "active",
+  "domains": [
+    "research"
+  ],
+  "effective_branch": "codex/b榜-loop-i025-research-supply-constraint",
+  "evaluator_failed_attempts_not_in_usage": 0,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 74386,
+    "prompt_tokens": 477214,
+    "total_tokens": 551600
+  },
+  "generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "generator_fingerprint": "f4c1d39c54968a8cda2cb00591d4f1e4fcfada6cfa93d812e52f6a0a8139762d",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_related_experiment_ids": [],
+  "history_similarity": null,
+  "hypothesis": "Bind the petrochemical export restriction and optical-chip bottleneck to direct downstream-impact, substitution-duration, and autonomous-supply evidence so the common supply-constraint conclusion is auditable.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 156,
+    "tests_passed": true,
+    "token_accounting_complete": true
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_supply_constraint_causal_evidence_res_b_003/supply_constraint_bundle_a1_promoted1_composite",
+  "lessons": [
+    "Cross-industry questions need one event-and-impact chain per industry; a generic evidence pool is not enough.",
+    "Duration and absolute-language counterevidence can be stronger than selected-option support and materially improve alternative exclusion.",
+    "The optical-chip evidence directly supports long expansion cycles, market constraint, and delivery-capable supplier advantage.",
+    "The petrochemical export event and alternative-route benefit support the direction, but direct downstream cost, order, or margin evidence is still needed for high confidence.",
+    "A zero-token deterministic bundle can remove no_supported_fallback without changing the incumbent answer."
+  ],
+  "material_delta": {
+    "autonomous_supply_evidence": true,
+    "cross_domain_event_binding": true,
+    "direct_duration_counterevidence": true,
+    "zero_token_rule_closure": true
+  },
+  "next_root_causes": [
+    "res_b_003_petrochemical_downstream_cost_and_margin_evidence",
+    "remaining_research_market_fund_flow_evidence_res_b_004",
+    "remaining_research_policy_cost_and_risk_evidence_res_b_006_008_009_014",
+    "research_staged_autonomy_direct_entailment_res_b_017",
+    "remaining_financial_contract_lowtail_fc_b_006_018",
+    "insurance_calculation_identity_citation_alignment_ins_b_001",
+    "reg_b_001_reference_date_vs_future_effective_obligation"
+  ],
+  "pipeline_stage": "reasoning",
+  "preflight_attempts": [
+    {
+      "integrity": {
+        "format_forced": false,
+        "fully_rule_backed": true,
+        "no_supported_fallback": false,
+        "submission_valid": true
+      },
+      "observed_answer": {
+        "res_b_003": "AB"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_supply_constraint_causal_evidence_res_b_003/supply_constraint_bundle_a1",
+      "status": "accepted_for_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      },
+      "used_evidence_ids": [
+        "pack2_text06::sec_1::chunk_1",
+        "pack2_text11::sec_6::chunk_3",
+        "pack2_text11::sec_15::chunk_2",
+        "pack2_text06::sec_16::chunk_53",
+        "pack2_text11::sec_6::chunk_7",
+        "pack2_text11::sec_8::chunk_7"
+      ]
+    }
+  ],
+  "promoted_qids": [
+    "res_b_003"
+  ],
+  "promoted_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_supply_constraint_causal_evidence_res_b_003/supply_constraint_bundle_a1_promoted1_composite",
+  "promotion_decisions": {
+    "res_b_003": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 62,
+      "tier_after": "medium",
+      "tier_before": "blocked"
+    }
+  },
+  "promotion_gate_path": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_supply_constraint_causal_evidence_res_b_003/supply_constraint_bundle_a1_composite/promotion_gate.json",
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "multi"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 9,
+    "high": 58,
+    "low": 5,
+    "medium": 28
+  },
+  "reason": "A cross-domain causal evidence bundle preserved AB while removing no_supported_fallback. Fixed confidence rose res_b_003 from 0 blocked to 62 medium; all dimensions improved, C/D gained direct counterevidence, and no blind review was required. Remaining uncertainty is concentrated in the petrochemical-side cost and firm-advantage causal chain.",
+  "recorded_at": "2026-07-22T05:04:56+00:00",
+  "rejected_qids": [],
+  "root_cause_cluster": "cross_domain_supply_constraint_entailment",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failed_attempts_not_in_usage": 0,
+      "failures": 0,
+      "sentinels_passed": true,
+      "successful_token_usage": {
+        "completion_tokens": 74386,
+        "prompt_tokens": 477214,
+        "total_tokens": 551600
+      },
+      "token_accounting_complete": true
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "res_b_003"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 2,
+          "blocked_low_before": 2,
+          "low_tier_improved_qids": [],
+          "p10_after": 30,
+          "p10_before": 30,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 0,
+          "blocked_low_before": 0,
+          "low_tier_improved_qids": [],
+          "p10_after": 85,
+          "p10_before": 85,
+          "p10_delta": 0
+        },
+        "insurance": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 65,
+          "p10_before": 65,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 6,
+          "blocked_low_before": 7,
+          "low_tier_improved_qids": [
+            "res_b_003"
+          ],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": false,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {},
+      "unchanged_raw_tier_drift": []
+    },
+    "reasons": [],
+    "tests": {
+      "count": 156,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/research_supply_constraint_causal_evidence_res_b_003/supply_constraint_bundle_a1",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "res_b_003"
+  ],
+  "token_accounting_complete": true,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 74386,
+    "prompt_tokens": 477214,
+    "total_tokens": 551600
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 74386,
+    "prompt_tokens": 477214,
+    "total_tokens": 551600
+  }
+}
+```

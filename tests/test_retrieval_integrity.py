@@ -1060,6 +1060,59 @@ class ResearchFinancialClauseBundleTests(unittest.TestCase):
         )
         self.assert_labels(solver=self.make_solver(units), question=question, expected={"A": False, "B": True, "C": False, "D": True})
 
+    def test_supply_constraint_bundle_binds_downstream_impact_and_duration_counterevidence(self) -> None:
+        units = [
+            make_unit(
+                "chemical::event",
+                "chemical",
+                "伊朗已暂停所有石化产品出口，以确保国内供应减少情况下的内需保障。若油价上涨，油气及替代路线企业有望受益；"
+                "风险包括地缘风险演化导致原材料价格波动以及行业产能发生重大变化。",
+            ),
+            make_unit(
+                "optical::bottleneck",
+                "optical",
+                "关键的EML与CW-LD等光电芯片因产能配置问题陷入供应紧张，光学对准等高精度制程能力限制产能，"
+                "供应商通过策略性长约锁定关键物料。",
+            ),
+            make_unit(
+                "optical::duration",
+                "optical",
+                "LightCounting预计EML和CW激光器芯片的短缺将制约市场增长直至2026年底。",
+            ),
+            make_unit(
+                "optical::advantage",
+                "optical",
+                "光模块头部厂商技术领先、客户关系稳固、具备规模化交付能力，优势将进一步凸显。"
+                "光芯片研发和扩产周期长，具有较高的技术、人才、客户验证和资金壁垒，部分光芯片供需缺口持续扩大。",
+            ),
+            make_unit(
+                "optical::substitution",
+                "optical",
+                "基于InP的EML的短缺正在加速向硅光的转型，但仍需要CW激光器；DR4和DR8可使产能提升30-50%，"
+                "能够供应相关光源且具有供应能力的厂商数量增加。",
+            ),
+        ]
+        question = Question(
+            qid="res_b_003",
+            domain="research",
+            split="B",
+            question="伊朗暂停石化产品出口，同期EML和CW激光器芯片短缺。这两类供给约束有何共同规律？",
+            options={
+                "A": "两者都存在供给收缩，且替代越困难，对下游成本与供货的影响越明显",
+                "B": "供给约束使得拥有自主供应能力的企业获得竞争优势",
+                "C": "光模块芯片短缺可以通过国产替代快速解决，而石化产品短缺则完全依赖地缘政治走向",
+                "D": "两类供给约束的持续时间都将非常短暂，因为新增产能可在半年内快速释放",
+            },
+            answer_format="multi",
+            type="多选题",
+            doc_ids=["chemical", "optical"],
+        )
+        self.assert_labels(
+            solver=self.make_solver(units),
+            question=question,
+            expected={"A": True, "B": True, "C": False, "D": False},
+        )
+
 
 class FinancialReportMetricBundleTests(unittest.TestCase):
     @staticmethod

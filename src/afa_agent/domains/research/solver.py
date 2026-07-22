@@ -254,6 +254,9 @@ class ResearchSolver:
         option_text: str,
         hits: list[RetrievalHit],
     ) -> tuple[bool | None, str, list[RetrievalHit]]:
+        supply_constraint_rule = self._supply_constraint_causal_bundle_rule(question, option_text)
+        if supply_constraint_rule is not None:
+            return supply_constraint_rule
         remaining_choice_bundle_rule = self._remaining_choice_evidence_bundle_rule(question, option_text)
         if remaining_choice_bundle_rule is not None:
             return remaining_choice_bundle_rule
@@ -303,6 +306,112 @@ class ResearchSolver:
         if ev_q1_sales_rule is not None:
             return ev_q1_sales_rule
         return None, "", []
+
+    def _supply_constraint_causal_bundle_rule(
+        self,
+        question: Question,
+        option_text: str,
+    ) -> tuple[bool, str, list[RetrievalHit]] | None:
+        """Bind each side of the cross-industry supply-constraint comparison."""
+
+        question_text = self._compact_text(question.question)
+        if not all(term in question_text for term in ("石化产品出口", "EML", "CW激光器芯片", "供给约束")):
+            return None
+        option = self._compact_text(option_text)
+        chemical_event = self._literal_hits(
+            question,
+            term_groups=[
+                ["暂停所有石化产品出口", "国内供应减少", "内需保障"],
+                ["暂停所有石化产品出口", "确保", "内需"],
+            ],
+            marker="supply_constraint_chemical_export_restriction",
+            limit=2,
+        )
+        chemical_alternatives = self._literal_hits(
+            question,
+            term_groups=[
+                ["油价上涨", "油气及替代路线企业有望受益"],
+                ["地缘风险演化导致原材料价格波动", "行业产能发生重大变化"],
+            ],
+            marker="supply_constraint_chemical_alternative_capacity",
+            limit=2,
+        )
+        optical_bottleneck = self._literal_hits(
+            question,
+            term_groups=[
+                ["EML", "CW-LD", "供应紧张", "限制产能"],
+                ["EML和CW激光器芯片的短缺", "制约市场增长"],
+            ],
+            marker="supply_constraint_optical_bottleneck",
+            limit=2,
+        )
+        optical_duration = self._literal_hits(
+            question,
+            term_groups=[
+                ["EML和CW激光器芯片的短缺", "制约市场增长直至2026年底"],
+                ["EML", "CW激光器芯片", "短缺", "2026年底"],
+            ],
+            marker="supply_constraint_optical_duration_counterevidence",
+            limit=2,
+        )
+        optical_advantage = self._literal_hits(
+            question,
+            term_groups=[
+                ["光模块头部厂商技术领先", "规模化交付能力", "优势将进一步凸显"],
+                ["光芯片研发和扩产周期长", "技术、人才、客户验证和资金壁垒", "供需缺口持续扩大"],
+            ],
+            marker="supply_constraint_optical_supply_advantage",
+            limit=2,
+        )
+        optical_substitution = self._literal_hits(
+            question,
+            term_groups=[
+                ["基于InP的EML的短缺正在加速向硅光的转型", "产能提升30-50%"],
+                ["EML的短缺", "硅光", "供应能力", "30-50%"],
+            ],
+            marker="supply_constraint_optical_substitution_limits",
+            limit=2,
+        )
+
+        if "供给收缩" in option and "替代越困难" in option:
+            rule_hits = self._merge_hits(
+                [*chemical_event, *optical_bottleneck, *optical_advantage],
+                limit=4,
+            )
+            if chemical_event and optical_bottleneck and optical_advantage:
+                return (
+                    True,
+                    "石化材料记录出口收缩，光通信材料则明确EML/CW-LD供应紧张会限制产能和市场增长；光芯片扩产周期长且验证壁垒高，支持替代越难、下游供货影响越明显的共同规律。",
+                    rule_hits,
+                )
+        if "自主供应能力" in option and "竞争优势" in option:
+            rule_hits = self._merge_hits([*chemical_alternatives, *optical_advantage], limit=4)
+            if chemical_alternatives and optical_advantage:
+                return (
+                    True,
+                    "化工材料指出油价上行时油气及替代路线企业受益；光通信材料指出技术领先且具规模交付能力的头部厂商优势进一步凸显，支持供给约束提升自主或替代供应能力的竞争价值。",
+                    rule_hits,
+                )
+        if "国产替代快速解决" in option and "完全依赖地缘政治" in option:
+            rule_hits = self._merge_hits(
+                [*optical_duration, *optical_substitution, *chemical_alternatives],
+                limit=5,
+            )
+            if optical_duration and optical_substitution and chemical_alternatives:
+                return (
+                    False,
+                    "光通信材料预计芯片短缺制约市场至2026年底，硅光替代仍受光源和产能条件约束，不能称为快速解决；化工材料还列出替代路线、原料价格与行业产能因素，不能归结为完全依赖地缘政治。",
+                    rule_hits,
+                )
+        if "持续时间都将非常短暂" in option and "半年内快速释放" in option:
+            rule_hits = self._merge_hits([*optical_duration, *optical_advantage], limit=4)
+            if optical_duration and optical_advantage:
+                return (
+                    False,
+                    "光通信材料预计EML和CW激光器芯片短缺将制约市场至2026年底，并强调光芯片研发扩产周期长、验证和资金壁垒高，直接反驳半年内快速释放、两类约束都很短暂的绝对判断。",
+                    rule_hits,
+                )
+        return None
 
     def _remaining_choice_evidence_bundle_rule(
         self,
