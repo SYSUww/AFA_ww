@@ -827,10 +827,15 @@ class FinancialReportsSolver:
             f"{byd_cash[0]:g}/{byd_cash[1]:g}/{byd_cash[2]:g}（相对下降{byd_cash_relative_decline:.2f}%），"
             "倍数的相对变化不能表述为百分点。"
         )
-        evidence_units = [
-            byd_balance[1], byd_current[1], byd_prior[1],
-            catl_balance[1], catl_current[1], catl_prior[1],
-        ]
+        byd_evidence = [byd_balance[1], byd_current[1], byd_prior[1]]
+        catl_evidence = [catl_balance[1], catl_current[1], catl_prior[1]]
+        # Final evidence collection keeps only the first few units per selected
+        # option. Put the company named by the option first so a split table's
+        # continuation rows are not displaced by unrelated company coverage.
+        if "宁德时代" in option_text:
+            evidence_units = [*catl_evidence, *byd_evidence]
+        else:
+            evidence_units = [*byd_evidence, *catl_evidence]
         unique = {unit["unit_id"]: unit for unit in evidence_units}
         return label, reason, [self._unit_to_evidence(unit, 999.0) for unit in unique.values()]
 

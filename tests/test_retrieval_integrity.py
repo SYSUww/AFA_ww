@@ -1349,8 +1349,17 @@ class FinancialReportMetricBundleTests(unittest.TestCase):
                 "annual_catl_2024_report", "annual_catl_2025_report",
             ],
         )
-        labels = {key: solver._choice_metric_bundle_rule(question, option)[0] for key, option in options.items()}
+        results = {key: solver._choice_metric_bundle_rule(question, option) for key, option in options.items()}
+        labels = {key: result[0] for key, result in results.items()}
         self.assertEqual(labels, {"A": True, "B": False, "C": False, "D": True})
+        self.assertEqual(
+            [item["unit_id"] for item in results["A"][2]][:3],
+            ["catl::2025-balance", "catl::2025-interest", "catl::2024-interest"],
+        )
+        self.assertEqual(
+            [item["unit_id"] for item in results["D"][2]][:3],
+            ["byd::2025-balance", "byd::2025-interest", "byd::2024-interest"],
+        )
 
     def test_research_expense_rate_bundle_replays_amount_and_rate_changes(self) -> None:
         units = [

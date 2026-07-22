@@ -10016,3 +10016,437 @@
   }
 }
 ```
+
+## b-loop-financial-reports-claim-conditioned-evidence-alignment-a1
+
+- recorded_at: `2026-07-22T04:20:46+00:00`
+
+```json
+{
+  "answered_qids": [
+    "fin_b_010"
+  ],
+  "attempt_index": 1,
+  "base_commit": "af747b4f17794f820ae47fe2cc83bf9009ceb3b9",
+  "blind_evaluation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "candidate_composite_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_reports_claim_conditioned_evidence_alignment/claim_evidence_order_a1_composite",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "af747b4f17794f820ae47fe2cc83bf9009ceb3b9",
+        "code_hash": "91f4825042566fcbdc7fe6e326345d195c5f7fa56659624464de7974a3505b61",
+        "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+        "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+        "evaluator_model": "gpt-5.5",
+        "generator_fingerprint": "1525c7cc38bd625525a7a79c9839f227060dac6c90d029e69691bcd8276d21d1",
+        "generator_model": "gpt-5.5",
+        "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd"
+      },
+      "identity": {
+        "change_vector": {
+          "claim_conditioned_evidence_order": true,
+          "selected_option_support_first": true,
+          "split_table_continuation_preserved": true
+        },
+        "domains": [
+          "financial_reports"
+        ],
+        "hypothesis": "prioritize the exact company-year metric units that entail each selected option so final evidence collection preserves split-table continuations.",
+        "pipeline_stage": "evidence_assembly",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "selected_option_evidence_alignment",
+        "target_qids": [
+          "fin_b_010"
+        ]
+      }
+    },
+    "context_sha256": "557f476cf9bdf690252fcc5b706aa351cb3763960e78fa4ed7ebb6c8c4291036",
+    "direction_sha256": "ba87d5514111da29d34f5b93015ba609890593381875df55a19c8b085ba4771f",
+    "schema_version": 1,
+    "semantic_sha256": "2a95608f2acc9c374943f13a53bd2d8db8762ec4bae98c8491e1791024e3384d",
+    "sha256": "d3635508c870c2fe019fcd7f5a51a225a63a1dbd935604c2e4de752bae2dcd66"
+  },
+  "causal_financial_reports_lowtail": {
+    "after": 0,
+    "before": 1
+  },
+  "causal_incumbent_tiers": {
+    "blocked": 9,
+    "high": 58,
+    "low": 3,
+    "medium": 30
+  },
+  "causal_lowtail": {
+    "after": [
+      "fc_b_006",
+      "fc_b_018",
+      "ins_b_001",
+      "reg_b_001",
+      "res_b_003",
+      "res_b_004",
+      "res_b_006",
+      "res_b_008",
+      "res_b_009",
+      "res_b_014",
+      "res_b_017"
+    ],
+    "before": [
+      "fc_b_006",
+      "fc_b_018",
+      "fin_b_010",
+      "ins_b_001",
+      "reg_b_001",
+      "res_b_003",
+      "res_b_004",
+      "res_b_006",
+      "res_b_008",
+      "res_b_009",
+      "res_b_014",
+      "res_b_017"
+    ],
+    "count_after": 11,
+    "count_before": 12
+  },
+  "causal_promoted_tiers": {
+    "blocked": 9,
+    "high": 59,
+    "low": 2,
+    "medium": 30
+  },
+  "change_vector": {
+    "claim_conditioned_evidence_order": true,
+    "selected_option_support_first": true,
+    "split_table_continuation_preserved": true
+  },
+  "changed_answer_qids": [],
+  "code_hash": "91f4825042566fcbdc7fe6e326345d195c5f7fa56659624464de7974a3505b61",
+  "comparable_attempt_count_after": 1,
+  "comparable_attempt_count_before": 0,
+  "confidence_after": {
+    "fin_b_010": 95
+  },
+  "confidence_before": {
+    "fin_b_010": 50
+  },
+  "corpus_hash": "71ba1941150be3c705db4c54bb04b8e29b9b7924cb610747e37589bf277f7242",
+  "direction_id": "financial_reports_claim_conditioned_evidence_alignment",
+  "direction_status": "active",
+  "domains": [
+    "financial_reports"
+  ],
+  "effective_branch": "codex/b榜-loop-i023-financial-evidence-alignment",
+  "evaluator_failed_attempts_not_in_usage": 5,
+  "evaluator_fingerprint": "3a31f89c4764adb6e081781ba1ef9db8307ec75402558a1c1f74b48ed97f539f",
+  "evaluator_model": "gpt-5.5",
+  "experiment_id": "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+  "full_evaluation_token_usage": {
+    "completion_tokens": 74080,
+    "prompt_tokens": 481452,
+    "total_tokens": 555532
+  },
+  "generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "generator_fingerprint": "1525c7cc38bd625525a7a79c9839f227060dac6c90d029e69691bcd8276d21d1",
+  "generator_model": "gpt-5.5",
+  "history_decision": "execute",
+  "history_reason": "No comparable historical experiment was found",
+  "history_related_experiment_ids": [],
+  "history_similarity": null,
+  "hypothesis": "Prioritize the exact company-year metric units that entail each selected option so final evidence collection preserves split-table continuations.",
+  "integrity": {
+    "answered_question_count": 100,
+    "artifact_complete": true,
+    "evaluation_failure_count": 0,
+    "expected_question_count": 100,
+    "passed": true,
+    "sentinels_passed": true,
+    "submission_valid": true,
+    "test_count": 154,
+    "tests_passed": true,
+    "token_accounting_complete": false
+  },
+  "iteration_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_reports_claim_conditioned_evidence_alignment/claim_evidence_order_a1_promoted1_composite",
+  "lessons": [
+    "A rule can calculate the correct value while final evidence still loses the entailing unit because per-option collection caps the first few items.",
+    "For multi-company choices, order rule evidence by the company named in each option before applying document-coverage backfill.",
+    "Split financial tables require both the balance-ratio chunk and the adjacent interest-coverage continuation in the final cited evidence.",
+    "A complete resumed evaluation is promotion-safe after all 100 answers and six sentinels pass, but failed API attempts without usage metadata must remain explicitly unmetered."
+  ],
+  "material_delta": {
+    "catl_interest_chunk_exposed": true,
+    "final_evidence_closure": true,
+    "option_specific_company_order": true
+  },
+  "next_root_causes": [
+    "remaining_financial_contract_lowtail_fc_b_006_018",
+    "insurance_calculation_identity_citation_alignment_ins_b_001",
+    "remaining_reg_b_001_effective_date_evidence",
+    "remaining_research_supply_constraint_evidence_res_b_003",
+    "remaining_research_market_fund_flow_evidence_res_b_004",
+    "remaining_research_policy_cost_and_risk_evidence_res_b_006_008_009_014",
+    "research_staged_autonomy_direct_entailment_res_b_017"
+  ],
+  "pipeline_stage": "evidence_assembly",
+  "preflight_attempts": [
+    {
+      "integrity": {
+        "format_forced": false,
+        "fully_rule_backed": true,
+        "no_supported_fallback": false,
+        "submission_valid": true
+      },
+      "observed_answer": {
+        "fin_b_010": "AD"
+      },
+      "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_reports_claim_conditioned_evidence_alignment/claim_evidence_order_a1",
+      "status": "accepted_for_full_evaluation",
+      "token_usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      },
+      "used_evidence_ids": [
+        "annual_catl_2025_report::sec_14::chunk_2",
+        "annual_catl_2025_report::sec_14::chunk_3",
+        "annual_catl_2024_report::sec_12::chunk_12",
+        "annual_byd_2025_report::sec_22::chunk_14",
+        "annual_byd_2025_report::sec_22::chunk_15",
+        "annual_byd_2024_report::sec_24::chunk_13"
+      ]
+    }
+  ],
+  "promoted_qids": [
+    "fin_b_010"
+  ],
+  "promoted_run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_reports_claim_conditioned_evidence_alignment/claim_evidence_order_a1_promoted1_composite",
+  "promotion_decisions": {
+    "fin_b_010": {
+      "blind_required": false,
+      "promote": true,
+      "reasons": [],
+      "score_delta": 45,
+      "tier_after": "high",
+      "tier_before": "low"
+    }
+  },
+  "promotion_gate_path": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_reports_claim_conditioned_evidence_alignment/claim_evidence_order_a1_composite/promotion_gate.json",
+  "promotion_result": "promoted",
+  "question_hash": "5eaad1926729bc4c3c68f0fb59d05c6393b327a2672f7a3cc9f43904d27f21dd",
+  "question_types": [
+    "multi"
+  ],
+  "raw_candidate_tiers": {
+    "blocked": 10,
+    "high": 62,
+    "low": 3,
+    "medium": 25
+  },
+  "reason": "Claim-conditioned evidence ordering preserved answer AD while adding the missing CATL 2025 interest-coverage continuation. Fixed confidence rose fin_b_010 from 50 low to 95 high, financial-report low-tail fell from 1 to 0, no dimension regressed, no new hard failure appeared, and no blind evaluation was required.",
+  "recorded_at": "2026-07-22T04:20:46+00:00",
+  "registry_schema_version": 1,
+  "rejected_qids": [],
+  "root_cause_cluster": "selected_option_evidence_alignment",
+  "round_gate": {
+    "evaluation": {
+      "evaluated_answers": 100,
+      "evaluated_sentinels": 6,
+      "failed_attempts_not_in_usage": 5,
+      "failures": 0,
+      "sentinels_passed": true,
+      "successful_token_usage": {
+        "completion_tokens": 74080,
+        "prompt_tokens": 481452,
+        "total_tokens": 555532
+      },
+      "token_accounting_complete": false
+    },
+    "metrics": {
+      "causal_changed_qids": [
+        "fin_b_010"
+      ],
+      "domain_metrics": {
+        "financial_contracts": {
+          "blocked_low_after": 2,
+          "blocked_low_before": 2,
+          "low_tier_improved_qids": [],
+          "p10_after": 30,
+          "p10_before": 30,
+          "p10_delta": 0
+        },
+        "financial_reports": {
+          "blocked_low_after": 0,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [
+            "fin_b_010"
+          ],
+          "p10_after": 85,
+          "p10_before": 82,
+          "p10_delta": 3
+        },
+        "insurance": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        },
+        "regulatory": {
+          "blocked_low_after": 1,
+          "blocked_low_before": 1,
+          "low_tier_improved_qids": [],
+          "p10_after": 65,
+          "p10_before": 65,
+          "p10_delta": 0
+        },
+        "research": {
+          "blocked_low_after": 7,
+          "blocked_low_before": 7,
+          "low_tier_improved_qids": [],
+          "p10_after": 0,
+          "p10_before": 0,
+          "p10_delta": 0
+        }
+      },
+      "evaluated_qid_count": 100,
+      "expected_qid_count": 100,
+      "has_domain_p10_gain": true,
+      "has_low_tier_improvement": true,
+      "new_hard_failures": {},
+      "unchanged_raw_score_drift": {
+        "fc_b_002": -4,
+        "fc_b_003": -4,
+        "fc_b_004": 2,
+        "fc_b_006": 33,
+        "fc_b_007": 12,
+        "fc_b_008": 2,
+        "fc_b_009": 2,
+        "fc_b_010": 5,
+        "fc_b_011": -10,
+        "fc_b_013": -7,
+        "fc_b_014": 5,
+        "fc_b_016": 5,
+        "fc_b_017": 9,
+        "fc_b_018": 5,
+        "fc_b_019": 7,
+        "fin_b_001": 4,
+        "fin_b_002": -3,
+        "fin_b_003": 5,
+        "fin_b_004": 2,
+        "fin_b_005": 5,
+        "fin_b_007": -3,
+        "fin_b_008": 9,
+        "fin_b_009": -3,
+        "fin_b_012": -7,
+        "fin_b_016": 3,
+        "fin_b_017": -2,
+        "fin_b_019": -3,
+        "fin_b_020": 3,
+        "ins_b_003": -6,
+        "ins_b_004": -3,
+        "ins_b_005": 4,
+        "ins_b_006": -35,
+        "ins_b_007": -39,
+        "ins_b_008": -2,
+        "ins_b_009": 4,
+        "ins_b_010": -6,
+        "ins_b_012": 4,
+        "ins_b_014": 2,
+        "ins_b_017": 3,
+        "ins_b_019": -5,
+        "ins_b_020": 5,
+        "reg_b_003": -25,
+        "reg_b_004": 10,
+        "reg_b_005": -6,
+        "reg_b_008": 10,
+        "reg_b_009": 7,
+        "reg_b_013": 10,
+        "reg_b_014": -5,
+        "reg_b_015": 10,
+        "reg_b_017": 20,
+        "reg_b_020": 3,
+        "reg_b_021": -10,
+        "reg_b_023": 16,
+        "reg_b_024": -8,
+        "reg_b_025": -4,
+        "reg_b_026": 10,
+        "reg_b_027": -4,
+        "res_b_001": -6,
+        "res_b_002": -4,
+        "res_b_010": 2,
+        "res_b_011": 2,
+        "res_b_012": 15,
+        "res_b_013": 8,
+        "res_b_015": -4,
+        "res_b_016": 1,
+        "res_b_017": 5,
+        "res_b_019": -6,
+        "res_b_020": -12
+      },
+      "unchanged_raw_tier_drift": [
+        "fc_b_002",
+        "fc_b_003",
+        "fc_b_006",
+        "fc_b_007",
+        "fc_b_011",
+        "fc_b_013",
+        "fc_b_019",
+        "fin_b_001",
+        "ins_b_006",
+        "ins_b_007",
+        "ins_b_009",
+        "ins_b_014",
+        "reg_b_003",
+        "reg_b_004",
+        "reg_b_008",
+        "reg_b_013",
+        "reg_b_017",
+        "reg_b_023",
+        "reg_b_025",
+        "reg_b_026",
+        "reg_b_027",
+        "res_b_001",
+        "res_b_012",
+        "res_b_015",
+        "res_b_020"
+      ]
+    },
+    "reasons": [],
+    "tests": {
+      "count": 154,
+      "passed": true
+    },
+    "valid": true
+  },
+  "run_dir": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/candidates/financial_reports_claim_conditioned_evidence_alignment/claim_evidence_order_a1",
+  "status": "accepted",
+  "successful_candidate_generation_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "target_qids": [
+    "fin_b_010"
+  ],
+  "token_accounting_complete": false,
+  "total_evaluation_token_usage": {
+    "completion_tokens": 74080,
+    "prompt_tokens": 481452,
+    "total_tokens": 555532
+  },
+  "total_iteration_token_usage": {
+    "completion_tokens": 74080,
+    "prompt_tokens": 481452,
+    "total_tokens": 555532
+  }
+}
+```
