@@ -18654,3 +18654,245 @@
   ]
 }
 ```
+
+## b-loop-online-research-post-local-exhaustion-v1
+
+- recorded_at: `2026-07-22T21:46:45+00:00`
+
+```json
+{
+  "approach": "使用agent-reach doctor确认Exa/GitHub/Jina可用；检索并核对Self-Refine、Chain-of-Verification、RAGChecker、CRAG、VerityMath与PROVE原始论文，再与loop日志按根因和change vector去重。",
+  "base_commit": "f3f4deac0bf11d722457e99ecd2534d816060759",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "f3f4deac0bf11d722457e99ecd2534d816060759",
+        "code_hash": "f3f4deac0bf11d722457e99ecd2534d816060759",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "deduplicate_against_loop_log": true,
+          "primary_sources_only": true,
+          "search_backend": "agent-reach_exa"
+        },
+        "domains": [],
+        "hypothesis": "在本地方向封盘后，通过原始论文和官方代码检索可发现与现有日志不重复、可映射到最终评分公式的新方向",
+        "pipeline_stage": "research",
+        "question_types": [],
+        "root_cause_cluster": "new_direction_discovery",
+        "target_qids": []
+      }
+    },
+    "context_sha256": "853a3a9b045aca48b03b11bba2fbe67dac5aadb976aa8625b8a308d08ce9d5ee",
+    "direction_sha256": "90c2b9b4cdd123a1b1def16ecc11255979cd2a4690b795b16e1807101a592825",
+    "schema_version": 1,
+    "semantic_sha256": "bbe38e64450ba332cdab54c09f1e876546fbf46e5b3e310d81f6ab301f7d6f00",
+    "sha256": "609549c55f1a585609186eeee8b0b2569e849e36498d4e9fab1dda2609631ce2"
+  },
+  "change_vector": {
+    "deduplicate_against_loop_log": true,
+    "primary_sources_only": true,
+    "search_backend": "agent-reach_exa"
+  },
+  "code_hash": "f3f4deac0bf11d722457e99ecd2534d816060759",
+  "direction_id": "online_research_post_local_exhaustion_v1",
+  "domains": [],
+  "effect": "筛出一个未尝试方向reasoning_self_refine_verification：保持gpt-5.5，冻结答案，对reasoning草稿做一次具体缺口反馈和证据约束重写；保留claim-level reasoning coverage作为候选。单位一致性/程序验证已被金额尺度门禁覆盖，CRAG已被检索救援覆盖，均不重复试验。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-online-research-post-local-exhaustion-v1",
+  "failure_analysis": "Jina Reader读取arXiv摘要本次返回空内容，但Exa直接返回原始arXiv论文标题、URL、摘要和方法片段；未使用二手文章。社交平台不可用或不适合技术一手证据，未纳入。",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "f3f4deac0bf11d722457e99ecd2534d816060759",
+          "code_hash": "f3f4deac0bf11d722457e99ecd2534d816060759",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "deduplicate_against_loop_log": true,
+            "primary_sources_only": true,
+            "search_backend": "agent-reach_exa"
+          },
+          "domains": [],
+          "hypothesis": "在本地方向封盘后，通过原始论文和官方代码检索可发现与现有日志不重复、可映射到最终评分公式的新方向",
+          "pipeline_stage": "research",
+          "question_types": [],
+          "root_cause_cluster": "new_direction_discovery",
+          "target_qids": []
+        }
+      },
+      "context_sha256": "853a3a9b045aca48b03b11bba2fbe67dac5aadb976aa8625b8a308d08ce9d5ee",
+      "direction_sha256": "90c2b9b4cdd123a1b1def16ecc11255979cd2a4690b795b16e1807101a592825",
+      "schema_version": 1,
+      "semantic_sha256": "bbe38e64450ba332cdab54c09f1e876546fbf46e5b3e310d81f6ab301f7d6f00",
+      "sha256": "609549c55f1a585609186eeee8b0b2569e849e36498d4e9fab1dda2609631ce2"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "f3f4deac0bf11d722457e99ecd2534d816060759",
+            "code_hash": "f3f4deac0bf11d722457e99ecd2534d816060759",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "deduplicate_against_loop_log": true,
+              "primary_sources_only": true,
+              "search_backend": "agent-reach_exa"
+            },
+            "domains": [],
+            "hypothesis": "在本地方向封盘后，通过原始论文和官方代码检索可发现与现有日志不重复、可映射到最终评分公式的新方向",
+            "pipeline_stage": "research",
+            "question_types": [],
+            "root_cause_cluster": "new_direction_discovery",
+            "target_qids": []
+          }
+        },
+        "context_sha256": "853a3a9b045aca48b03b11bba2fbe67dac5aadb976aa8625b8a308d08ce9d5ee",
+        "direction_sha256": "90c2b9b4cdd123a1b1def16ecc11255979cd2a4690b795b16e1807101a592825",
+        "schema_version": 1,
+        "semantic_sha256": "bbe38e64450ba332cdab54c09f1e876546fbf46e5b3e310d81f6ab301f7d6f00",
+        "sha256": "609549c55f1a585609186eeee8b0b2569e849e36498d4e9fab1dda2609631ce2"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "7ee33c3fdb4a3241c1503b3a618c412933e97a43c807f4a0c88277db8a5626d0",
+      "size": 654564
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "2aae94af315ec4747d2f501834245fb68b4e7fe0cbc6f7f769cd34d05e285b13",
+      "size": 529368
+    },
+    "related_log_sections": [
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-b1",
+      "b-loop-research-structural-cost-reduction-res-b-009-a1",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-reasoning-shadow-baseline-v1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-full-chain-reproduction-baseline-v10",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-full-chain-b15966e-research-v1",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-full-chain-476fc31-research-v1",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90",
+      "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+      "b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100",
+      "b-loop-full-chain-737675b-reasoning-v2-research-v1",
+      "b-loop-insurance-conditional-policy-loan-eligibility-a1",
+      "b-loop-metric-scope-correction-ins-b-004-a1",
+      "b-loop-insurance-policy-loan-a1-full100-validation-82d4492",
+      "b-loop-calculation-amount-unit-scale-consistency-a1-res-b-012"
+    ],
+    "reviewed_at": "2026-07-22T21:46:45+00:00"
+  },
+  "hypothesis": "在本地方向封盘后，通过原始论文和官方代码检索可发现与现有日志不重复、可映射到最终评分公式的新方向",
+  "material_delta": {
+    "post_local_exhaustion_web_research": true
+  },
+  "metrics": {
+    "agent_reach_update_available": false,
+    "agent_reach_version": "v1.5.0",
+    "deduplicated_directions": [
+      "unit_consistency_program_verification",
+      "program_as_verifier",
+      "corrective_retrieval"
+    ],
+    "deferred_direction": "claim_level_reasoning_coverage_gate",
+    "selected_direction": "reasoning_self_refine_verification",
+    "sources": [
+      {
+        "mapping": "single-model feedback then refine",
+        "title": "Self-Refine: Iterative Refinement with Self-Feedback",
+        "url": "https://arxiv.org/abs/2303.17651"
+      },
+      {
+        "mapping": "verification questions before final response",
+        "title": "Chain-of-Verification Reduces Hallucination in Large Language Models",
+        "url": "https://arxiv.org/abs/2309.11495"
+      },
+      {
+        "mapping": "claim-level completeness and faithfulness diagnostics",
+        "title": "RAGChecker: A Fine-grained Framework for Diagnosing Retrieval-Augmented Generation",
+        "url": "https://arxiv.org/abs/2408.08067"
+      },
+      {
+        "mapping": "already covered by amount scale validator",
+        "title": "VerityMath: Advancing Mathematical Reasoning by Self-Verification Through Unit Consistency",
+        "url": "https://arxiv.org/abs/2311.07172"
+      },
+      {
+        "mapping": "already covered by executable calculation plans",
+        "title": "Programs as Verifiers Improve Self-Consistency of Language Models for Math Reasoning",
+        "url": "https://arxiv.org/abs/2410.12608"
+      },
+      {
+        "mapping": "already covered by retrieval rescue",
+        "title": "Corrective Retrieval Augmented Generation",
+        "url": "https://arxiv.org/abs/2401.15884"
+      }
+    ]
+  },
+  "next_step": "先执行reasoning_self_refine_verification A1：选择当前reasoning低尾且答案正确的冻结样本，单轮feedback+refine，固定GPT-5.6评估；最多3轮。",
+  "pipeline_stage": "research",
+  "question_types": [],
+  "recorded_at": "2026-07-22T21:46:45+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "new_direction_discovery",
+  "status": "completed",
+  "submission_effect": "not_submitted",
+  "target_qids": []
+}
+```
