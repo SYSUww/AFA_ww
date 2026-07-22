@@ -73,15 +73,15 @@ reasoning 是可审计但不暴露冗长思维链的中文短摘要，建议 120
 4. 结论必须显式写出与 answer_parts 完全一致的最终答案。
 不得只复述题目或答案，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。即使已有求解摘要很短，也要依据给定证据形成自洽摘要。只输出 JSON。prompt_version={SUBMISSION_REASONING_PROMPT_VERSION}。"""
 
-SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION = "b_submission_reasoning_feedback_v1_new_md"
+SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION = "b_submission_reasoning_feedback_v2_prioritized"
 SUBMISSION_REASONING_FEEDBACK_SYSTEM_PROMPT = f"""你是金融长文问答的推理摘要质检器。只使用给定题目、冻结答案、摘要草稿和证据，不补充外部事实，不得建议改变答案。
 严格按评分规则的三个维度诊断：logical 检查步骤间因果关系和自洽性；completeness 检查定位、提取、推导和结论是否完整；clarity 检查结构、条理和表达准确性。
 选择题还要检查每个选中项的支持事实、至少一个关键排除项及显式最终答案；计算题还要检查必要公式、代入、单位和结果格式。
-只输出 JSON，字段严格为 logical_issues、completeness_issues、clarity_issues、verification_questions、must_preserve_facts，每个字段的值都是字符串数组。问题必须具体可修正；无问题时输出空数组。prompt_version={SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION}。"""
+只输出 JSON，字段严格为 logical_issues、completeness_issues、clarity_issues、verification_questions、must_preserve_facts，每个字段的值都是字符串数组。只列出确实影响评分的具体缺口：每个 issues 数组最多 2 项，verification_questions 最多 2 项，must_preserve_facts 保留 3-6 条最关键事实。若草稿已经完整，三个 issues 和 verification_questions 都输出空数组，不为改写而制造问题。prompt_version={SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION}。"""
 
-SUBMISSION_REASONING_REFINE_PROMPT_VERSION = "b_submission_reasoning_refine_v1_verified"
+SUBMISSION_REASONING_REFINE_PROMPT_VERSION = "b_submission_reasoning_refine_v2_minimal_verified"
 SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推理摘要修订器。只使用给定题目、冻结答案、原摘要、质检结果和证据，不补充外部事实，不得改变答案。
-输出字段仅为 answer_parts 和 reasoning 的 JSON；answer_parts 必须逐字复制冻结答案。reasoning 用中文完成“定位—关键事实—推导—结论”闭环，通常为 120-220 字：
+输出字段仅为 answer_parts 和 reasoning 的 JSON；answer_parts 必须逐字复制冻结答案。优先保留原摘要中已经清晰、有用且有证据的内容，只修正最影响评分的少量缺口，不要机械回答每个核查问题或堆叠所有事实。reasoning 用中文完成“定位—关键事实—推导—结论”闭环，通常为 160-260 字：
 1. 明确主体、产品、条款、指标或期间；
 2. 只写证据可支持的具体事实；选择题覆盖每个选中项并说明至少一个关键排除项；
 3. 补齐事实到判断的因果联系；计算题写必要公式、代入、单位换算和结果格式；
@@ -670,6 +670,32 @@ class BBoardActualRunner:
                 diagnostics=diagnostics,
             ) from exc
 
+        material_feedback = any(
+            feedback[key]
+            for key in (
+                "logical_issues",
+                "completeness_issues",
+                "clarity_issues",
+                "verification_questions",
+            )
+        )
+        if not material_feedback:
+            artifact.token_usage = combined_usage
+            artifact.decision_trace = {
+                **artifact.decision_trace,
+                "submission_reasoning_refinement": {
+                    "feedback_prompt_version": SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
+                    "refine_prompt_version": SUBMISSION_REASONING_REFINE_PROMPT_VERSION,
+                    "model_name": self.config.model.model_name,
+                    "mode": "preserved_no_material_issues",
+                    "feedback": {key: feedback[key] for key in feedback_keys},
+                    "feedback_token_usage": feedback_response.token_usage.to_dict(),
+                    "refine_token_usage": None,
+                    "answer_parts_preserved": True,
+                },
+            }
+            return artifact
+
         refine_payload = {
             **shared_payload,
             "feedback": {key: feedback[key] for key in feedback_keys},
@@ -721,6 +747,7 @@ class BBoardActualRunner:
                 "feedback_prompt_version": SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
                 "refine_prompt_version": SUBMISSION_REASONING_REFINE_PROMPT_VERSION,
                 "model_name": self.config.model.model_name,
+                "mode": "refined_material_issues",
                 "feedback": {key: feedback[key] for key in feedback_keys},
                 "feedback_token_usage": feedback_response.token_usage.to_dict(),
                 "refine_token_usage": refine_response.token_usage.to_dict(),

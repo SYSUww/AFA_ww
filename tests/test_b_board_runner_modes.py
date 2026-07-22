@@ -102,13 +102,13 @@ class BBoardRunnerModeTests(unittest.TestCase):
     def test_reasoning_refinement_prompts_match_new_md_dimensions_and_freeze_answer(self) -> None:
         self.assertEqual(
             SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
-            "b_submission_reasoning_feedback_v1_new_md",
+            "b_submission_reasoning_feedback_v2_prioritized",
         )
         for dimension in ("logical", "completeness", "clarity"):
             self.assertIn(dimension, SUBMISSION_REASONING_FEEDBACK_SYSTEM_PROMPT)
         self.assertEqual(
             SUBMISSION_REASONING_REFINE_PROMPT_VERSION,
-            "b_submission_reasoning_refine_v1_verified",
+            "b_submission_reasoning_refine_v2_minimal_verified",
         )
         self.assertIn("冻结答案", SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT)
         self.assertIn("定位—关键事实—推导—结论", SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT)
@@ -149,13 +149,42 @@ class BBoardRunnerModeTests(unittest.TestCase):
         self.assertEqual(trace["refine_prompt_version"], SUBMISSION_REASONING_REFINE_PROMPT_VERSION)
         self.assertEqual(len(runner.client.messages), 2)
 
-    def test_reasoning_refinement_rejects_answer_change_and_reports_all_usage(self) -> None:
+    def test_reasoning_refinement_preserves_original_when_feedback_has_no_issues(self) -> None:
         runner = object.__new__(BBoardActualRunner)
         runner.config = SimpleNamespace(model=SimpleNamespace(model_name="gpt-5.5"))
         runner.client = _QueuedClient(
             [
                 _response(
                     '{"logical_issues":[],"completeness_issues":[],"clarity_issues":[],'
+                    '"verification_questions":[],"must_preserve_facts":["证据支持A"]}',
+                    10,
+                    2,
+                )
+            ]
+        )
+        artifact = _artifact()
+        original_reasoning = artifact.decision_summary
+
+        result = runner.refine_submission_reasoning(_question(), artifact)
+
+        self.assertEqual(result.decision_summary, original_reasoning)
+        self.assertEqual(result.answer_parts, ["A"])
+        self.assertEqual(
+            result.token_usage,
+            {"prompt_tokens": 20, "completion_tokens": 7, "total_tokens": 27},
+        )
+        trace = result.decision_trace["submission_reasoning_refinement"]
+        self.assertEqual(trace["mode"], "preserved_no_material_issues")
+        self.assertIsNone(trace["refine_token_usage"])
+        self.assertEqual(len(runner.client.messages), 1)
+
+    def test_reasoning_refinement_rejects_answer_change_and_reports_all_usage(self) -> None:
+        runner = object.__new__(BBoardActualRunner)
+        runner.config = SimpleNamespace(model=SimpleNamespace(model_name="gpt-5.5"))
+        runner.client = _QueuedClient(
+            [
+                _response(
+                    '{"logical_issues":[],"completeness_issues":["缺少关键排除项"],"clarity_issues":[],'
                     '"verification_questions":[],"must_preserve_facts":["证据支持A"]}',
                     10,
                     2,

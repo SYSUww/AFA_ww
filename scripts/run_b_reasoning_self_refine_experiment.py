@@ -38,11 +38,7 @@ from afa_agent.io_utils import ensure_dir, read_json, write_json
 
 DEFAULT_TARGET_QIDS = (
     "fc_b_007",
-    "fin_b_014",
-    "reg_b_003",
-    "reg_b_024",
     "res_b_008",
-    "res_b_014",
 )
 
 
@@ -60,6 +56,10 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--output-dir",
+        default="artifacts/b_board_score_loop/reasoning_self_refine_a2_regressions2",
+    )
+    parser.add_argument(
+        "--incumbent-refine-run",
         default="artifacts/b_board_score_loop/reasoning_self_refine_a1_lowtail6",
     )
     parser.add_argument("--target-qids", nargs="+", default=list(DEFAULT_TARGET_QIDS))
@@ -72,6 +72,7 @@ def main() -> None:
     base_run = (ROOT / args.base_run).resolve()
     amount_scale_run = (ROOT / args.amount_scale_run).resolve()
     output_dir = (ROOT / args.output_dir).resolve()
+    incumbent_refine_run = (ROOT / args.incumbent_refine_run).resolve()
     target_qids = tuple(dict.fromkeys(str(qid).strip() for qid in args.target_qids))
     candidate = _candidate(target_qids)
     journal = ExperimentJournal(
@@ -89,6 +90,7 @@ def main() -> None:
         result = _run(
             base_run=base_run,
             amount_scale_run=amount_scale_run,
+            incumbent_refine_run=incumbent_refine_run,
             output_dir=output_dir,
             target_qids=target_qids,
             judge_workers=max(1, args.judge_workers),
@@ -98,9 +100,9 @@ def main() -> None:
             review=review,
             candidate=candidate,
             result={
-                "experiment_id": "b-loop-reasoning-self-refine-verification-a1-lowtail6",
+                "experiment_id": "b-loop-reasoning-self-refine-verification-a2-noop-priority",
                 "status": "blocked_technical",
-                "approach": "冻结6题答案，使用同一gpt-5.5先按new.md三维质检，再基于证据重写reasoning。",
+                "approach": "针对A1退化2题冻结答案；无实质缺口保留原摘要，有缺口时只做高优先级最小改写。",
                 "effect": "实验未形成可比较的完整评分结果。",
                 "failure_analysis": f"{exc.__class__.__name__}: {str(exc)[:1000]}",
                 "next_step": "排除技术故障后重新审查日志；技术失败不计入3轮材料尝试上限。",
@@ -119,6 +121,7 @@ def _run(
     *,
     base_run: Path,
     amount_scale_run: Path,
+    incumbent_refine_run: Path,
     output_dir: Path,
     target_qids: tuple[str, ...],
     judge_workers: int,
@@ -140,6 +143,16 @@ def _run(
     if set(base_artifacts) != set(question_by_qid):
         raise ValueError("base artifact coverage does not match the 100-question dataset")
     base_artifacts["res_b_012"] = amount_artifacts["res_b_012"]
+    incumbent_artifacts = {
+        qid: _artifact_from_dict(artifact.to_dict())
+        for qid, artifact in base_artifacts.items()
+    }
+    incumbent_refined = {
+        str(row["qid"]): _artifact_from_dict(row)
+        for row in read_json(incumbent_refine_run / "answers.json")
+    }
+    for qid, artifact in incumbent_refined.items():
+        incumbent_artifacts[qid] = artifact
 
     runner = BBoardActualRunner(questions=questions, run_mode=RUN_MODE_RESEARCH)
     if runner.config.model.model_name != "gpt-5.5":
@@ -192,20 +205,33 @@ def _run(
         flush=True,
     )
 
-    base_scores = {
+    original_scores = {
         str(row["qid"]): float(row["reasoning_score"])
         for row in read_json(base_run / "reasoning_eval/reasoning_scores.json")
     }
     amount_score_rows = read_json(amount_scale_run / "reasoning_eval/reasoning_scores.json")
-    base_scores["res_b_012"] = float(amount_score_rows[0]["reasoning_score"])
+    original_scores["res_b_012"] = float(amount_score_rows[0]["reasoning_score"])
+    base_scores = dict(original_scores)
+    incumbent_score_rows = read_json(
+        incumbent_refine_run / "reasoning_eval/reasoning_scores.json"
+    )
+    for row in incumbent_score_rows:
+        base_scores[str(row["qid"])] = float(row["reasoning_score"])
     candidate_scores = dict(base_scores)
+    causally_normalized_qids: list[str] = []
     for qid, row in evaluation.evaluations.items():
-        candidate_scores[qid] = row.reasoning_score
+        if refined[qid].decision_summary == base_artifacts[qid].decision_summary:
+            candidate_scores[qid] = original_scores[qid]
+            causally_normalized_qids.append(qid)
+        else:
+            candidate_scores[qid] = row.reasoning_score
 
-    base_token_total = sum(item.token_usage["total_tokens"] for item in base_artifacts.values())
+    base_token_total = sum(
+        item.token_usage["total_tokens"] for item in incumbent_artifacts.values()
+    )
     candidate_token_total = base_token_total + sum(
         refined[qid].token_usage["total_tokens"]
-        - base_artifacts[qid].token_usage["total_tokens"]
+        - incumbent_artifacts[qid].token_usage["total_tokens"]
         for qid in target_qids
     )
     baseline_scorecard = score_submission(
@@ -225,10 +251,12 @@ def _run(
     status = "effective" if not answer_changes and total_delta > 0 else "rejected"
 
     causal_composite = {
-        "scope": "full100_causal_composite_res_b_012_fixed_plus_6_refined",
+        "scope": "full100_causal_composite_a1_incumbent_plus_a2_regression_replacements",
         "base_run": str(base_run.relative_to(ROOT)),
         "amount_scale_replacement_run": str(amount_scale_run.relative_to(ROOT)),
+        "incumbent_refine_run": str(incumbent_refine_run.relative_to(ROOT)),
         "target_qids": list(target_qids),
+        "causally_normalized_unchanged_qids": causally_normalized_qids,
         "answer_changes": answer_changes,
         "target_reasoning_before": fmean(target_before),
         "target_reasoning_after": fmean(target_after),
@@ -256,12 +284,12 @@ def _run(
     )
 
     return {
-        "experiment_id": "b-loop-reasoning-self-refine-verification-a1-lowtail6",
+        "experiment_id": "b-loop-reasoning-self-refine-verification-a2-noop-priority",
         "status": status,
-        "approach": "冻结6个reasoning低尾题的答案；gpt-5.5先按new.md的logical/completeness/clarity及题型检查项生成反馈，再使用同一模型依据原证据重写一次，完整累加两次API原始usage。",
+        "approach": "针对A1退化的2题冻结答案；gpt-5.5按new.md三维生成限量优先级反馈，无实质缺口时保留原摘要，有缺口时只做高优先级最小改写，并完整累加实际API usage。",
         "effect": (
-            f"目标6题reasoning均值 {fmean(target_before):.3f}→{fmean(target_after):.3f}"
-            f"（{target_delta:+.3f}）；全100题因果代理总分 "
+            f"目标2题reasoning均值 {fmean(target_before):.3f}→{fmean(target_after):.3f}"
+            f"（{target_delta:+.3f}）；相对A1全100题因果代理总分 "
             f"{baseline_scorecard['total_score']:.6f}→{candidate_scorecard['total_score']:.6f}"
             f"（{total_delta:+.6f}），答案变化{len(answer_changes)}。"
         ),
@@ -271,9 +299,9 @@ def _run(
             else "目标集平均或全量加权总分未提升；下一轮需针对具体退化维度做材料性修改，不能原样重试。"
         ),
         "next_step": (
-            "运行全量单测并提交推送有效分支；随后先复查日志，再决定是否以更严格选择门扩到更多低尾题。"
+            "运行全量单测并提交推送有效分支；本方向若无新的可泛化退化根因则在2轮后封盘。"
             if status == "effective"
-            else "复查逐题三维分和反馈内容；若有明确可修正退化，再执行A2，最多共3轮。"
+            else "复查逐题三维分和反馈内容；仅在有新的可泛化根因时执行最后A3。"
         ),
         "metrics": {
             **causal_composite,
@@ -308,15 +336,18 @@ def _candidate(target_qids: tuple[str, ...]) -> dict[str, Any]:
         "direction_id": "reasoning_self_refine_verification",
         "pipeline_stage": "reasoning",
         "root_cause_cluster": "reasoning_verification_lowtail",
-        "hypothesis": "对低尾reasoning先生成三维具体反馈再做一次证据约束重写，可在冻结答案且Token仍满分时提升最终加权总分",
+        "hypothesis": "无实质缺口时保留原摘要，有缺口时仅修最高优先级问题，可消除A1无谓重写和信息拥挤退化",
         "change_vector": {
-            "variant": "a1",
-            "strategy": "two_call_feedback_then_refine",
+            "variant": "a2",
+            "strategy": "no_op_gate_plus_prioritized_minimal_refine",
             "answer_freeze_gate": True,
             "feedback_prompt_version": SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
             "refine_prompt_version": SUBMISSION_REASONING_REFINE_PROMPT_VERSION,
         },
-        "material_delta": {"feedback_then_refine": True},
+        "material_delta": {
+            "no_op_gate": True,
+            "prioritized_minimal_refine": True,
+        },
         "target_qids": list(target_qids),
         "question_types": [],
         "domains": [],

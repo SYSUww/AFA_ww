@@ -19188,3 +19188,272 @@
   ]
 }
 ```
+
+## b-loop-reasoning-self-refine-verification-a2-noop-priority
+
+- recorded_at: `2026-07-22T22:04:23+00:00`
+
+```json
+{
+  "approach": "针对A1退化的2题冻结答案；gpt-5.5按new.md三维生成限量优先级反馈，无实质缺口时保留原摘要，有缺口时只做高优先级最小改写，并完整累加实际API usage。",
+  "artifact_path": "artifacts/b_board_score_loop/reasoning_self_refine_a2_regressions2",
+  "base_commit": "ab4532cae07b97039996feadca9b9a1d17756a27",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "ab4532cae07b97039996feadca9b9a1d17756a27",
+        "code_hash": "c6de65d427a7cae9d3a9ea1dc01639eccda552a000704a1b7960fa1939525041",
+        "evaluator_model": "gpt-5.6",
+        "evaluator_version": "b_reasoning_judge_v1_new_md",
+        "generator_model": "gpt-5.5"
+      },
+      "identity": {
+        "change_vector": {
+          "answer_freeze_gate": true,
+          "feedback_prompt_version": "b_submission_reasoning_feedback_v2_prioritized",
+          "refine_prompt_version": "b_submission_reasoning_refine_v2_minimal_verified",
+          "strategy": "no_op_gate_plus_prioritized_minimal_refine",
+          "variant": "a2"
+        },
+        "domains": [],
+        "hypothesis": "无实质缺口时保留原摘要，有缺口时仅修最高优先级问题，可消除a1无谓重写和信息拥挤退化",
+        "pipeline_stage": "reasoning",
+        "question_types": [],
+        "root_cause_cluster": "reasoning_verification_lowtail",
+        "target_qids": [
+          "fc_b_007",
+          "res_b_008"
+        ]
+      }
+    },
+    "context_sha256": "868c301b4044190a7d3ebddc635b6da9e26ec6d18a2e8817a65e51e2772ae053",
+    "direction_sha256": "70089d3e9104ee4765e145fc601ea957dcd7043226e3cae4684ad1310cc9c75b",
+    "schema_version": 1,
+    "semantic_sha256": "4ac56ea752721f4b2fa9d3e5b7d1cc3fb121c426e660c22573ff3316294cccce",
+    "sha256": "5b6ed84223dfce5feefff8889747d5cd83353efeea497a352c6a2accd5390c6c"
+  },
+  "change_vector": {
+    "answer_freeze_gate": true,
+    "feedback_prompt_version": "b_submission_reasoning_feedback_v2_prioritized",
+    "refine_prompt_version": "b_submission_reasoning_refine_v2_minimal_verified",
+    "strategy": "no_op_gate_plus_prioritized_minimal_refine",
+    "variant": "a2"
+  },
+  "code_hash": "c6de65d427a7cae9d3a9ea1dc01639eccda552a000704a1b7960fa1939525041",
+  "direction_id": "reasoning_self_refine_verification",
+  "domains": [],
+  "effect": "目标2题reasoning均值 89.333→91.333（+2.000）；相对A1全100题因果代理总分 99.230000→99.238000（+0.008000），答案变化0。",
+  "evaluator_model": "gpt-5.6",
+  "evaluator_version": "b_reasoning_judge_v1_new_md",
+  "experiment_id": "b-loop-reasoning-self-refine-verification-a2-noop-priority",
+  "failure_analysis": "通过答案硬冻结、仅reasoning judge和完整usage记账约束；仍是基于97%提交构造的伪标签代理，不能证明逐题真实正确。",
+  "generator_model": "gpt-5.5",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "ab4532cae07b97039996feadca9b9a1d17756a27",
+          "code_hash": "c6de65d427a7cae9d3a9ea1dc01639eccda552a000704a1b7960fa1939525041",
+          "evaluator_model": "gpt-5.6",
+          "evaluator_version": "b_reasoning_judge_v1_new_md",
+          "generator_model": "gpt-5.5"
+        },
+        "identity": {
+          "change_vector": {
+            "answer_freeze_gate": true,
+            "feedback_prompt_version": "b_submission_reasoning_feedback_v2_prioritized",
+            "refine_prompt_version": "b_submission_reasoning_refine_v2_minimal_verified",
+            "strategy": "no_op_gate_plus_prioritized_minimal_refine",
+            "variant": "a2"
+          },
+          "domains": [],
+          "hypothesis": "无实质缺口时保留原摘要，有缺口时仅修最高优先级问题，可消除a1无谓重写和信息拥挤退化",
+          "pipeline_stage": "reasoning",
+          "question_types": [],
+          "root_cause_cluster": "reasoning_verification_lowtail",
+          "target_qids": [
+            "fc_b_007",
+            "res_b_008"
+          ]
+        }
+      },
+      "context_sha256": "868c301b4044190a7d3ebddc635b6da9e26ec6d18a2e8817a65e51e2772ae053",
+      "direction_sha256": "70089d3e9104ee4765e145fc601ea957dcd7043226e3cae4684ad1310cc9c75b",
+      "schema_version": 1,
+      "semantic_sha256": "4ac56ea752721f4b2fa9d3e5b7d1cc3fb121c426e660c22573ff3316294cccce",
+      "sha256": "5b6ed84223dfce5feefff8889747d5cd83353efeea497a352c6a2accd5390c6c"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "ab4532cae07b97039996feadca9b9a1d17756a27",
+            "code_hash": "c6de65d427a7cae9d3a9ea1dc01639eccda552a000704a1b7960fa1939525041",
+            "evaluator_model": "gpt-5.6",
+            "evaluator_version": "b_reasoning_judge_v1_new_md",
+            "generator_model": "gpt-5.5"
+          },
+          "identity": {
+            "change_vector": {
+              "answer_freeze_gate": true,
+              "feedback_prompt_version": "b_submission_reasoning_feedback_v2_prioritized",
+              "refine_prompt_version": "b_submission_reasoning_refine_v2_minimal_verified",
+              "strategy": "no_op_gate_plus_prioritized_minimal_refine",
+              "variant": "a2"
+            },
+            "domains": [],
+            "hypothesis": "无实质缺口时保留原摘要，有缺口时仅修最高优先级问题，可消除a1无谓重写和信息拥挤退化",
+            "pipeline_stage": "reasoning",
+            "question_types": [],
+            "root_cause_cluster": "reasoning_verification_lowtail",
+            "target_qids": [
+              "fc_b_007",
+              "res_b_008"
+            ]
+          }
+        },
+        "context_sha256": "868c301b4044190a7d3ebddc635b6da9e26ec6d18a2e8817a65e51e2772ae053",
+        "direction_sha256": "70089d3e9104ee4765e145fc601ea957dcd7043226e3cae4684ad1310cc9c75b",
+        "schema_version": 1,
+        "semantic_sha256": "4ac56ea752721f4b2fa9d3e5b7d1cc3fb121c426e660c22573ff3316294cccce",
+        "sha256": "5b6ed84223dfce5feefff8889747d5cd83353efeea497a352c6a2accd5390c6c"
+      },
+      "comparable_attempt_count": 1,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-reasoning-self-refine-verification-a1-lowtail6"
+      ],
+      "similarity": 0.782797
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "e1b2e2fc88372bf1ef18e4e23ced7b4239d5d370d0d27745c373375de8d71e26",
+      "size": 679344
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "5aa3993a3d6690881a6441deb4d7200a204e610b6d6e2af77ceb36e6bb7df5ab",
+      "size": 550434
+    },
+    "related_log_sections": [
+      "b-loop-i023-gpt56-answer-error-audit-v2",
+      "B0-actual-evaluation",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-b1",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-suspect-case-optimization-v3",
+      "b-loop-reasoning-shadow-baseline-v1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-full-chain-reproduction-baseline-v10",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-full-chain-b15966e-research-v1",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-full-chain-476fc31-research-v1",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90",
+      "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+      "b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100",
+      "b-loop-full-chain-737675b-reasoning-v2-research-v1",
+      "b-loop-insurance-conditional-policy-loan-eligibility-a1",
+      "b-loop-metric-scope-correction-ins-b-004-a1",
+      "b-loop-insurance-policy-loan-a1-full100-validation-82d4492",
+      "b-loop-calculation-amount-unit-scale-consistency-a1-res-b-012",
+      "b-loop-online-research-post-local-exhaustion-v1",
+      "b-loop-reasoning-self-refine-verification-a1-lowtail6"
+    ],
+    "reviewed_at": "2026-07-22T22:03:28+00:00"
+  },
+  "hypothesis": "无实质缺口时保留原摘要，有缺口时仅修最高优先级问题，可消除A1无谓重写和信息拥挤退化",
+  "material_delta": {
+    "no_op_gate": true,
+    "prioritized_minimal_refine": true
+  },
+  "metrics": {
+    "amount_scale_replacement_run": "artifacts/b_board_score_loop/amount_scale_a1_res_b012",
+    "answer_changes": {},
+    "base_run": "artifacts/b_board_score_loop/full_chain_82d4492_research_v1",
+    "baseline_scorecard": {
+      "accuracy_score": 100.0,
+      "reasoning_score": 96.15,
+      "token_efficiency_score": 100.0,
+      "token_total": 1295227,
+      "total_score": 99.23
+    },
+    "candidate_scorecard": {
+      "accuracy_score": 100.0,
+      "reasoning_score": 96.19,
+      "token_efficiency_score": 100.0,
+      "token_total": 1285840,
+      "total_score": 99.238
+    },
+    "causally_normalized_unchanged_qids": [
+      "fc_b_007"
+    ],
+    "incumbent_official_aggregate_accuracy": 97.0,
+    "incumbent_per_qid_truth_available": false,
+    "incumbent_refine_run": "artifacts/b_board_score_loop/reasoning_self_refine_a1_lowtail6",
+    "judge_token_usage": {
+      "completion_tokens": 215,
+      "prompt_tokens": 1471,
+      "total_tokens": 1686
+    },
+    "judge_tokens_included_in_submission": false,
+    "scope": "full100_causal_composite_a1_incumbent_plus_a2_regression_replacements",
+    "target_qids": [
+      "fc_b_007",
+      "res_b_008"
+    ],
+    "target_reasoning_after": 91.33333333333334,
+    "target_reasoning_aggregate": {
+      "dimension_means": {
+        "clarity": 92.0,
+        "completeness": 90.5,
+        "logical": 92.0
+      },
+      "p10": 91.0,
+      "question_count": 2,
+      "reasoning_score": 91.5,
+      "status_counts": {
+        "scored": 2
+      },
+      "zero_score_count": 0
+    },
+    "target_reasoning_before": 89.33333333333334,
+    "target_reasoning_delta": 2.0,
+    "total_score_delta": 0.007999999999995566
+  },
+  "next_step": "运行全量单测并提交推送有效分支；本方向若无新的可泛化退化根因则在2轮后封盘。",
+  "pipeline_stage": "reasoning",
+  "question_types": [],
+  "recorded_at": "2026-07-22T22:04:23+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "reasoning_verification_lowtail",
+  "sources": [
+    "https://arxiv.org/abs/2303.17651",
+    "https://arxiv.org/abs/2309.11495"
+  ],
+  "status": "effective",
+  "submission_effect": "not_submitted",
+  "target_qids": [
+    "fc_b_007",
+    "res_b_008"
+  ]
+}
+```
