@@ -26915,3 +26915,665 @@
   ]
 }
 ```
+
+## b-loop-qwen37-structured-output-contract-a2-full100
+
+- recorded_at: `2026-07-23T18:08:55+00:00`
+
+```json
+{
+  "approach": "在已推送664f4b9分支上重读日志后，固定Qwen3.7快照、attempt_43、workers=4和native strict CalculationPlan v1，独立运行100题；不注入pseudo99或答案锁，不上传官网，答案与reasoning分阶段即时持久化。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_full100_structured_strict_a2",
+  "base_commit": "664f4b9",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "664f4b9"
+      },
+      "identity": {
+        "change_vector": {
+          "calculation_plan_schema": "calculation_plan_v1",
+          "local_normalization": "qwen37_structure_contract_v3_schema",
+          "locator": "attempt_43",
+          "model": "qwen3.7-plus-2026-05-26",
+          "retry_policy": "normalize_then_schema_validate_then_model_retry_without_retrieval",
+          "structured_output_mode": "native_json_schema_strict",
+          "workers": 4
+        },
+        "domains": [
+          "financial_contracts",
+          "financial_reports",
+          "insurance",
+          "regulatory",
+          "research"
+        ],
+        "hypothesis": "在3题a1验证有效后，将原生strict calculationplan schema和确定性本地硬兜底扩展到独立100题，可显著降低格式失败，同时保持pseudo99参考与官网答案锁且不恶化完整token。",
+        "pipeline_stage": "qwen37_calculation_plan_serialization",
+        "question_types": [
+          "calculation",
+          "extraction",
+          "mcq",
+          "multi",
+          "tf"
+        ],
+        "root_cause_cluster": "qwen37_calculation_plan_format_drift",
+        "target_qids": [
+          "all_100"
+        ]
+      }
+    },
+    "context_sha256": "024cc09bb49247877e0a75c785465efd5da7d8e0837ac41156f73054dce6f550",
+    "direction_sha256": "3f37183aeb70df0fced42979ad1566f6d1f629c06f4525f228147d58b83fe7f8",
+    "schema_version": 1,
+    "semantic_sha256": "bfe7628b77e76e87d5a2b7ff11981e6199579cf12d3dda4126ca35088058a6e9",
+    "sha256": "5a2780a7063f4f401046dcd6e5dedceb09dd7c2a304325f1858ad865c5e34ff8"
+  },
+  "change_vector": {
+    "calculation_plan_schema": "calculation_plan_v1",
+    "local_normalization": "qwen37_structure_contract_v3_schema",
+    "locator": "attempt_43",
+    "model": "qwen3.7-plus-2026-05-26",
+    "retry_policy": "normalize_then_schema_validate_then_model_retry_without_retrieval",
+    "structured_output_mode": "native_json_schema_strict",
+    "workers": 4
+  },
+  "direction_id": "qwen37_structured_output_contract",
+  "domains": [
+    "financial_contracts",
+    "financial_reports",
+    "insurance",
+    "regulatory",
+    "research"
+  ],
+  "effect": "Stage A由旧基线80/100提升至99/100，Stage B完成96/100；25道已完成计算题的30次答案调用全部为native strict。总生成Token从1725071降至1306610，减少418461（24.26%）。但99个答案仅91个与pseudo99参考等价，8个不同，且ins_b_016触发1个官网答案锁回退，因此本轮不能晋级，也不能生成完整submit或影子总分。",
+  "experiment_id": "b-loop-qwen37-structured-output-contract-a2-full100",
+  "failure_analysis": "res_b_005仍因API read timeout未完成答案；fc_b_005、fin_b_011、ins_b_002仅reasoning不足，答案已冻结。8个参考差异为fc_b_005、fin_b_006、fin_b_007、fin_b_011、fin_b_013、ins_b_002、ins_b_016、ins_b_019；其中非计算题漂移不由strict Schema直接造成。pseudo99匹配不是官网准确率。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "664f4b9"
+        },
+        "identity": {
+          "change_vector": {
+            "calculation_plan_schema": "calculation_plan_v1",
+            "local_normalization": "qwen37_structure_contract_v3_schema",
+            "locator": "attempt_43",
+            "model": "qwen3.7-plus-2026-05-26",
+            "retry_policy": "normalize_then_schema_validate_then_model_retry_without_retrieval",
+            "structured_output_mode": "native_json_schema_strict",
+            "workers": 4
+          },
+          "domains": [
+            "financial_contracts",
+            "financial_reports",
+            "insurance",
+            "regulatory",
+            "research"
+          ],
+          "hypothesis": "在3题a1验证有效后，将原生strict calculationplan schema和确定性本地硬兜底扩展到独立100题，可显著降低格式失败，同时保持pseudo99参考与官网答案锁且不恶化完整token。",
+          "pipeline_stage": "qwen37_calculation_plan_serialization",
+          "question_types": [
+            "calculation",
+            "extraction",
+            "mcq",
+            "multi",
+            "tf"
+          ],
+          "root_cause_cluster": "qwen37_calculation_plan_format_drift",
+          "target_qids": [
+            "all_100"
+          ]
+        }
+      },
+      "context_sha256": "024cc09bb49247877e0a75c785465efd5da7d8e0837ac41156f73054dce6f550",
+      "direction_sha256": "3f37183aeb70df0fced42979ad1566f6d1f629c06f4525f228147d58b83fe7f8",
+      "schema_version": 1,
+      "semantic_sha256": "bfe7628b77e76e87d5a2b7ff11981e6199579cf12d3dda4126ca35088058a6e9",
+      "sha256": "5a2780a7063f4f401046dcd6e5dedceb09dd7c2a304325f1858ad865c5e34ff8"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "664f4b9"
+          },
+          "identity": {
+            "change_vector": {
+              "calculation_plan_schema": "calculation_plan_v1",
+              "local_normalization": "qwen37_structure_contract_v3_schema",
+              "locator": "attempt_43",
+              "model": "qwen3.7-plus-2026-05-26",
+              "retry_policy": "normalize_then_schema_validate_then_model_retry_without_retrieval",
+              "structured_output_mode": "native_json_schema_strict",
+              "workers": 4
+            },
+            "domains": [
+              "financial_contracts",
+              "financial_reports",
+              "insurance",
+              "regulatory",
+              "research"
+            ],
+            "hypothesis": "在3题a1验证有效后，将原生strict calculationplan schema和确定性本地硬兜底扩展到独立100题，可显著降低格式失败，同时保持pseudo99参考与官网答案锁且不恶化完整token。",
+            "pipeline_stage": "qwen37_calculation_plan_serialization",
+            "question_types": [
+              "calculation",
+              "extraction",
+              "mcq",
+              "multi",
+              "tf"
+            ],
+            "root_cause_cluster": "qwen37_calculation_plan_format_drift",
+            "target_qids": [
+              "all_100"
+            ]
+          }
+        },
+        "context_sha256": "024cc09bb49247877e0a75c785465efd5da7d8e0837ac41156f73054dce6f550",
+        "direction_sha256": "3f37183aeb70df0fced42979ad1566f6d1f629c06f4525f228147d58b83fe7f8",
+        "schema_version": 1,
+        "semantic_sha256": "bfe7628b77e76e87d5a2b7ff11981e6199579cf12d3dda4126ca35088058a6e9",
+        "sha256": "5a2780a7063f4f401046dcd6e5dedceb09dd7c2a304325f1858ad865c5e34ff8"
+      },
+      "comparable_attempt_count": 1,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-qwen37-structured-output-contract-a1"
+      ],
+      "similarity": 0.834773
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "5520b45e1febe9f284b71936aeec33a5b7345dd31d05aab382af6e156fd2af99",
+      "size": 1018435
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "bdb70f69cbc1eca0fd6c279cc7ca58702fe3f4632908195d8ad6c1684b021705",
+      "size": 827821
+    },
+    "related_log_sections": [
+      "b-loop-qwen37-compliance-and-score-loop-scaffold-a1",
+      "b-loop-qwen37-compliance-and-score-loop-scaffold-a2",
+      "b-loop-qwen37-full100-independent-baseline-a1",
+      "b-loop-qwen37-full100-independent-baseline-a1-metric-correction",
+      "b-loop-qwen37-calculation-plan-structure-contract-a2",
+      "b-loop-qwen37-structured-output-contract-a1"
+    ],
+    "reviewed_at": "2026-07-23T17:33:45+00:00"
+  },
+  "hypothesis": "在3题A1验证有效后，将原生strict CalculationPlan Schema和确定性本地硬兜底扩展到独立100题，可显著降低格式失败，同时保持pseudo99参考与官网答案锁且不恶化完整Token。",
+  "material_delta": {
+    "coverage_expansion": "3_to_100",
+    "implementation_committed_and_pushed": true
+  },
+  "metrics": {
+    "answer_completed_count": 99,
+    "answer_failed_qids": [
+      "res_b_005"
+    ],
+    "baseline_answer_completed_count": 80,
+    "baseline_generation_token_total": 1725071,
+    "calculation_answer_completed_count": 25,
+    "calculation_question_count": 26,
+    "candidate_generation_token_total": 1306610,
+    "candidate_vs_baseline_token_delta": -418461,
+    "candidate_vs_baseline_token_reduction_rate": 0.242576,
+    "grounding_retrieval_round_count": 4,
+    "native_strict_calculation_call_count": 30,
+    "non_native_calculation_call_count": 0,
+    "normalization_counts": {
+      "clear_absent_same_scale_ratio_units": 1,
+      "prune_non_output_dependencies": 3
+    },
+    "official_accuracy": null,
+    "official_answer_lock_regression_count": 1,
+    "official_answer_lock_regressions": [
+      {
+        "candidate": [
+          "ABD"
+        ],
+        "lock": [
+          "BD"
+        ],
+        "qid": "ins_b_016"
+      }
+    ],
+    "official_submission_count": 0,
+    "proxy_total_score": null,
+    "reasoning_completed_count": 96,
+    "reasoning_failed_qids": [
+      "fc_b_005",
+      "fin_b_011",
+      "ins_b_002"
+    ],
+    "reasoning_shadow_score": null,
+    "reference_match_count": 91,
+    "reference_mismatch_count": 8,
+    "reference_mismatches": [
+      {
+        "candidate": [
+          "1468.47%",
+          "1468.47%"
+        ],
+        "qid": "fc_b_005",
+        "reference": [
+          "1468.47%",
+          "740.58%"
+        ]
+      },
+      {
+        "candidate": [
+          "ABC"
+        ],
+        "qid": "fin_b_006",
+        "reference": [
+          "BC"
+        ]
+      },
+      {
+        "candidate": [
+          "AD"
+        ],
+        "qid": "fin_b_007",
+        "reference": [
+          "ABD"
+        ]
+      },
+      {
+        "candidate": [
+          "ABCD"
+        ],
+        "qid": "fin_b_011",
+        "reference": [
+          "ABC"
+        ]
+      },
+      {
+        "candidate": [
+          "8.12%",
+          "2.34"
+        ],
+        "qid": "fin_b_013",
+        "reference": [
+          "40.05%",
+          "10.10"
+        ]
+      },
+      {
+        "candidate": [
+          "ABCD"
+        ],
+        "qid": "ins_b_002",
+        "reference": [
+          "BC"
+        ]
+      },
+      {
+        "candidate": [
+          "ABD"
+        ],
+        "qid": "ins_b_016",
+        "reference": [
+          "BD"
+        ]
+      },
+      {
+        "candidate": [
+          "212.00"
+        ],
+        "qid": "ins_b_019",
+        "reference": [
+          "211.50"
+        ]
+      }
+    ],
+    "reference_missing_count": 1,
+    "structural_retry_retrieval_skip_count": 1,
+    "target_question_count": 100
+  },
+  "next_step": "进行同一不可变run的最终A3断点续跑：只重试res_b_005答案和3个缺失reasoning，不重跑其余99个答案；收口后记录结果。随后把8个参考差异作为独立accuracy保持badcase方向，而不是向生成Prompt注入参考答案。",
+  "pipeline_stage": "qwen37_calculation_plan_serialization",
+  "promotion_result": "needs_refinement",
+  "question_types": [
+    "calculation",
+    "extraction",
+    "mcq",
+    "multi",
+    "tf"
+  ],
+  "recorded_at": "2026-07-23T18:08:55+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "qwen37_calculation_plan_format_drift",
+  "status": "completed",
+  "submission_effect": "incomplete_not_submitted",
+  "target_qids": [
+    "all_100"
+  ]
+}
+```
+
+## b-loop-qwen37-structured-output-contract-a3-staged-retry
+
+- recorded_at: `2026-07-23T18:18:47+00:00`
+
+```json
+{
+  "approach": "在A2后重读日志并执行该方向第3轮，仅对res_b_005重跑Stage A，对fc_b_005、fin_b_011、ins_b_002读取已持久化answer_artifact后重跑Stage B；三道冻结答案逐题校验签名，未重算其答案。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_full100_structured_strict_a3_staged_retry",
+  "base_commit": "664f4b9",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "664f4b9"
+      },
+      "identity": {
+        "change_vector": {
+          "answer_retry_qids": [
+            "res_b_005"
+          ],
+          "calculation_plan_schema": "calculation_plan_v1",
+          "local_normalization": "qwen37_structure_contract_v3_schema",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reasoning_retry_qids": [
+            "fc_b_005",
+            "fin_b_011",
+            "ins_b_002"
+          ],
+          "retry_policy": "stage_scoped_retry_only",
+          "source_run": "qwen37_full100_structured_strict_a2",
+          "structured_output_mode": "native_json_schema_strict",
+          "workers": 4
+        },
+        "domains": [
+          "financial_contracts",
+          "financial_reports",
+          "insurance",
+          "research"
+        ],
+        "hypothesis": "利用答案/reasoning两阶段持久化，对全100题a2仅重试res_b_005答案与三个缺失reasoning，可在不重算、不改写其余99个冻结答案的前提下收口完整产物。",
+        "pipeline_stage": "qwen37_calculation_plan_serialization",
+        "question_types": [
+          "calculation",
+          "extraction",
+          "mcq",
+          "multi"
+        ],
+        "root_cause_cluster": "qwen37_calculation_plan_format_drift",
+        "target_qids": [
+          "fc_b_005",
+          "fin_b_011",
+          "ins_b_002",
+          "res_b_005"
+        ]
+      }
+    },
+    "context_sha256": "024cc09bb49247877e0a75c785465efd5da7d8e0837ac41156f73054dce6f550",
+    "direction_sha256": "0b32383cbbd4b583db6752337fb7f3d58a0a85c1168574617ca28a700b1d1f84",
+    "schema_version": 1,
+    "semantic_sha256": "e18275bc94136a8000dd04e39d0933e701152eb3cda2a18905bce88e5800beac",
+    "sha256": "0cfcbc4fa7dad084b13e31a3a9b48b4377ccab1c000dc2a4d0e2f585fb920416"
+  },
+  "change_vector": {
+    "answer_retry_qids": [
+      "res_b_005"
+    ],
+    "calculation_plan_schema": "calculation_plan_v1",
+    "local_normalization": "qwen37_structure_contract_v3_schema",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reasoning_retry_qids": [
+      "fc_b_005",
+      "fin_b_011",
+      "ins_b_002"
+    ],
+    "retry_policy": "stage_scoped_retry_only",
+    "source_run": "qwen37_full100_structured_strict_a2",
+    "structured_output_mode": "native_json_schema_strict",
+    "workers": 4
+  },
+  "direction_id": "qwen37_structured_output_contract",
+  "domains": [
+    "financial_contracts",
+    "financial_reports",
+    "insurance",
+    "research"
+  ],
+  "effect": "4个缺失阶段均未恢复：res_b_005再次API read timeout，三道reasoning再次证据不足。冻结答案改写0，新增Token 36867全部来自三道reasoning，res_b_005超时响应未返回usage。本方向已达3轮上限；A1的格式修复有效结论保留，但全100题候选仍为99答案/96 reasoning，不能生成完整submit或影子总分。",
+  "experiment_id": "b-loop-qwen37-structured-output-contract-a3-staged-retry",
+  "failure_analysis": "相同Stage B证据救援重复后仍insufficient，继续同策略重试不会增加信息；res_b_005连续跨A1/A2/A3超时，根因属于单题请求/证据负载或服务稳定性，不是JSON结构。8个参考差异与1个答案锁回退也仍未解决。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "664f4b9"
+        },
+        "identity": {
+          "change_vector": {
+            "answer_retry_qids": [
+              "res_b_005"
+            ],
+            "calculation_plan_schema": "calculation_plan_v1",
+            "local_normalization": "qwen37_structure_contract_v3_schema",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reasoning_retry_qids": [
+              "fc_b_005",
+              "fin_b_011",
+              "ins_b_002"
+            ],
+            "retry_policy": "stage_scoped_retry_only",
+            "source_run": "qwen37_full100_structured_strict_a2",
+            "structured_output_mode": "native_json_schema_strict",
+            "workers": 4
+          },
+          "domains": [
+            "financial_contracts",
+            "financial_reports",
+            "insurance",
+            "research"
+          ],
+          "hypothesis": "利用答案/reasoning两阶段持久化，对全100题a2仅重试res_b_005答案与三个缺失reasoning，可在不重算、不改写其余99个冻结答案的前提下收口完整产物。",
+          "pipeline_stage": "qwen37_calculation_plan_serialization",
+          "question_types": [
+            "calculation",
+            "extraction",
+            "mcq",
+            "multi"
+          ],
+          "root_cause_cluster": "qwen37_calculation_plan_format_drift",
+          "target_qids": [
+            "fc_b_005",
+            "fin_b_011",
+            "ins_b_002",
+            "res_b_005"
+          ]
+        }
+      },
+      "context_sha256": "024cc09bb49247877e0a75c785465efd5da7d8e0837ac41156f73054dce6f550",
+      "direction_sha256": "0b32383cbbd4b583db6752337fb7f3d58a0a85c1168574617ca28a700b1d1f84",
+      "schema_version": 1,
+      "semantic_sha256": "e18275bc94136a8000dd04e39d0933e701152eb3cda2a18905bce88e5800beac",
+      "sha256": "0cfcbc4fa7dad084b13e31a3a9b48b4377ccab1c000dc2a4d0e2f585fb920416"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "664f4b9"
+          },
+          "identity": {
+            "change_vector": {
+              "answer_retry_qids": [
+                "res_b_005"
+              ],
+              "calculation_plan_schema": "calculation_plan_v1",
+              "local_normalization": "qwen37_structure_contract_v3_schema",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reasoning_retry_qids": [
+                "fc_b_005",
+                "fin_b_011",
+                "ins_b_002"
+              ],
+              "retry_policy": "stage_scoped_retry_only",
+              "source_run": "qwen37_full100_structured_strict_a2",
+              "structured_output_mode": "native_json_schema_strict",
+              "workers": 4
+            },
+            "domains": [
+              "financial_contracts",
+              "financial_reports",
+              "insurance",
+              "research"
+            ],
+            "hypothesis": "利用答案/reasoning两阶段持久化，对全100题a2仅重试res_b_005答案与三个缺失reasoning，可在不重算、不改写其余99个冻结答案的前提下收口完整产物。",
+            "pipeline_stage": "qwen37_calculation_plan_serialization",
+            "question_types": [
+              "calculation",
+              "extraction",
+              "mcq",
+              "multi"
+            ],
+            "root_cause_cluster": "qwen37_calculation_plan_format_drift",
+            "target_qids": [
+              "fc_b_005",
+              "fin_b_011",
+              "ins_b_002",
+              "res_b_005"
+            ]
+          }
+        },
+        "context_sha256": "024cc09bb49247877e0a75c785465efd5da7d8e0837ac41156f73054dce6f550",
+        "direction_sha256": "0b32383cbbd4b583db6752337fb7f3d58a0a85c1168574617ca28a700b1d1f84",
+        "schema_version": 1,
+        "semantic_sha256": "e18275bc94136a8000dd04e39d0933e701152eb3cda2a18905bce88e5800beac",
+        "sha256": "0cfcbc4fa7dad084b13e31a3a9b48b4377ccab1c000dc2a4d0e2f585fb920416"
+      },
+      "comparable_attempt_count": 2,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-qwen37-structured-output-contract-a2-full100",
+        "b-loop-qwen37-structured-output-contract-a1"
+      ],
+      "similarity": 0.798494
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "7a0e538947b4a1e80a9b32de32c982d3829d406df3ef6ba52869072bd6e337a8",
+      "size": 1030611
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "f1d6bd0611356776dc1085ea9a7c5c655fd0c96355e5408576158d6932fa50f5",
+      "size": 837340
+    },
+    "related_log_sections": [
+      "B0-actual-integrity",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-readme-percent-format-priority-v6",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-full-chain-reproduction-baseline-v10",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-last-error-minimal-candidate-set-official-history-a1",
+      "b-loop-percentage-bundle-net-plus-one-explanation-a1",
+      "b-loop-percentage-bundle-most-likely-positive-fin017-a1",
+      "b-loop-three-percentage-question-full-chain-numeric-revalidation-a1",
+      "b-loop-qwen37-full100-independent-baseline-a1",
+      "b-loop-answer-reasoning-stage-decoupling-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a2",
+      "b-loop-qwen37-structured-output-contract-a1",
+      "b-loop-qwen37-structured-output-contract-a2-full100"
+    ],
+    "reviewed_at": "2026-07-23T18:10:39+00:00"
+  },
+  "hypothesis": "利用答案/reasoning两阶段持久化，对全100题A2仅重试res_b_005答案与三个缺失reasoning，可在不重算、不改写其余99个冻结答案的前提下收口完整产物。",
+  "material_delta": {
+    "frozen_answer_count": 99,
+    "immutable_staged_resume": true
+  },
+  "metrics": {
+    "frozen_answer_mutation_count": 0,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "proxy_total_score": null,
+    "reasoning_shadow_score": null,
+    "recovered_answer_count": 0,
+    "recovered_reasoning_count": 0,
+    "remaining_answer_qids": [
+      "res_b_005"
+    ],
+    "remaining_reasoning_qids": [
+      "fc_b_005",
+      "fin_b_011",
+      "ins_b_002"
+    ],
+    "retry_failure_types": {
+      "fc_b_005": "BAnswerGenerationError",
+      "fin_b_011": "BAnswerGenerationError",
+      "ins_b_002": "BAnswerGenerationError",
+      "res_b_005": "BAnswerGenerationError"
+    },
+    "retry_generation_token_total": 36867,
+    "target_stage_count": 4
+  },
+  "next_step": "停止qwen37_structured_output_contract方向。新开reasoning_evidence_coverage方向审计三题证据缺口；另开accuracy保持方向逐题分析8个参考差异，并把res_b_005拆为请求负载/超时诊断，不再重复当前重试。",
+  "pipeline_stage": "qwen37_calculation_plan_serialization",
+  "promotion_result": "direction_exhausted_keep_effective_a1",
+  "question_types": [
+    "calculation",
+    "extraction",
+    "mcq",
+    "multi"
+  ],
+  "recorded_at": "2026-07-23T18:18:47+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "qwen37_calculation_plan_format_drift",
+  "status": "completed",
+  "submission_effect": "incomplete_not_submitted",
+  "target_qids": [
+    "res_b_005",
+    "fc_b_005",
+    "fin_b_011",
+    "ins_b_002"
+  ]
+}
+```
