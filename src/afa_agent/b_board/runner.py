@@ -124,10 +124,12 @@ SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推�
 4. 显式写出与 answer_parts 完全一致的最终答案。
 不得提及“质检”、“反馈”、“草稿”或修订过程，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。只输出 JSON。prompt_version={SUBMISSION_REASONING_REFINE_PROMPT_VERSION}。"""
 
-RUNNER_VERSION = "b_actual_v12_evidence_bound_semantics"
+RUNNER_VERSION = "b_actual_v13_period_bound_semantics"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 CALCULATION_PLAN_NORMALIZATION_VERSION = "qwen37_structure_contract_v3_schema"
-CALCULATION_EVIDENCE_SEMANTIC_VERSION = "insurance_surrender_rate_v1"
+CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
+    "insurance_surrender_rate_v1+question_target_date_binding_v1"
+)
 RUN_MODE_SUBMISSION = "submission"
 RUN_MODE_RESEARCH = "research"
 RUN_MODES = (RUN_MODE_SUBMISSION, RUN_MODE_RESEARCH)
@@ -802,6 +804,11 @@ class BBoardActualRunner:
                 ]
                 validate_calculation_plan_schema(plan)
                 _validate_insurance_surrender_rate_binding(
+                    question,
+                    plan,
+                    evidence_text_by_id,
+                )
+                _validate_calculation_variable_period_binding(
                     question,
                     plan,
                     evidence_text_by_id,
@@ -2445,6 +2452,48 @@ def _validate_insurance_surrender_rate_binding(
         f"国寿增益宝第{policy_year}个保单年度的证据费率为{expected_rate}%，"
         f"但计划未使用该费率；不得套用相邻年度区间"
     )
+
+
+_EXPLICIT_CN_DATE_RE = re.compile(r"20\d{2}年\d{1,2}月\d{1,2}日")
+
+
+def _validate_calculation_variable_period_binding(
+    question: BQuestion,
+    plan: Mapping[str, Any],
+    evidence_text_by_id: Mapping[str, str],
+) -> None:
+    """Require a dated variable to cite evidence from the same target date."""
+
+    target_dates = set(_EXPLICIT_CN_DATE_RE.findall(_compact_text(question.question)))
+    if not target_dates:
+        return
+    raw_variables = plan.get("variables", [])
+    if not isinstance(raw_variables, list):
+        return
+    for raw_variable in raw_variables:
+        if not isinstance(raw_variable, Mapping):
+            continue
+        name = str(raw_variable.get("name", "")).strip()
+        variable_dates = set(_EXPLICIT_CN_DATE_RE.findall(_compact_text(name)))
+        required_dates = variable_dates & target_dates
+        if not required_dates:
+            continue
+        raw_evidence_ids = raw_variable.get("evidence_ids", [])
+        if not isinstance(raw_evidence_ids, list):
+            continue
+        cited_text = "\n".join(
+            str(evidence_text_by_id.get(str(evidence_id), ""))
+            for evidence_id in raw_evidence_ids
+        )
+        cited_dates = set(_EXPLICIT_CN_DATE_RE.findall(_compact_text(cited_text)))
+        missing_dates = sorted(required_dates - cited_dates)
+        if not missing_dates:
+            continue
+        raise CalculationPlanError(
+            "calculation variable period binding mismatch: "
+            f"变量“{name}”要求证据日期{','.join(missing_dates)}，"
+            "但其evidence_ids未引用包含该日期的证据；不得复制其他期间数值"
+        )
 
 
 def _insurance_surrender_rate_from_evidence(

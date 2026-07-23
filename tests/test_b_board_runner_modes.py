@@ -28,6 +28,7 @@ from afa_agent.b_board.runner import (
     _is_calculation_plan_structure_error,
     _normalize_calculation_plan_structure,
     _normalize_calculation_numeric_literals,
+    _validate_calculation_variable_period_binding,
     _validate_calculation_result_semantics,
     _validate_insurance_surrender_rate_binding,
 )
@@ -556,6 +557,70 @@ class BBoardRunnerModeTests(unittest.TestCase):
             ],
         }
         _validate_insurance_surrender_rate_binding(
+            question,
+            correct_plan,
+            evidence,
+        )
+
+    def test_dated_variable_requires_evidence_from_same_target_date(self) -> None:
+        question = BQuestion(
+            qid="fc_b_005",
+            domain="financial_contracts",
+            split="B",
+            question=(
+                "两次评估基准日2023年6月30日和2023年12月31日的"
+                "评估增值率分别是多少？"
+            ),
+            options={},
+            answer_format="freeform",
+            type="计算题",
+            answer_slots=2,
+            answer_slot_templates=("0.00%", "0.00%"),
+        )
+        wrong_plan = {
+            "variables": [
+                {
+                    "name": "2023年6月30日评估增值率",
+                    "value": "1468.47",
+                    "value_type": "decimal",
+                    "unit": "%",
+                    "evidence_ids": ["june"],
+                },
+                {
+                    "name": "2023年12月31日评估增值率",
+                    "value": "1468.47",
+                    "value_type": "decimal",
+                    "unit": "%",
+                    "evidence_ids": ["june"],
+                },
+            ]
+        }
+        evidence = {
+            "june": "评估基准日为2023年6月30日，增值率1468.47%。",
+            "december": "加期评估基准日为2023年12月31日，增值率740.58%。",
+        }
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "2023年12月31日",
+        ):
+            _validate_calculation_variable_period_binding(
+                question,
+                wrong_plan,
+                evidence,
+            )
+
+        correct_plan = {
+            "variables": [
+                wrong_plan["variables"][0],
+                {
+                    **wrong_plan["variables"][1],
+                    "value": "740.58",
+                    "evidence_ids": ["december"],
+                },
+            ]
+        }
+        _validate_calculation_variable_period_binding(
             question,
             correct_plan,
             evidence,

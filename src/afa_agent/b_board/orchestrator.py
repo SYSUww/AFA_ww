@@ -389,6 +389,7 @@ class BBoardLoopOrchestrator:
             "b_actual_v10_reasoning_audit",
             "b_actual_v11_staged_answer_reasoning",
             "b_actual_v12_evidence_bound_semantics",
+            "b_actual_v13_period_bound_semantics",
             "b_actual_composite_v1",
         }:
             raise BBoardLoopStateError("Existing B0 manifest runner identity mismatch")

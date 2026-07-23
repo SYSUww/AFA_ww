@@ -29225,3 +29225,232 @@
   ]
 }
 ```
+
+## b-loop-qwen37-calculation-variable-period-binding-a1
+
+- recorded_at: `2026-07-23T19:04:25+00:00`
+
+```json
+{
+  "approach": "在结构化计划通过Schema后增加通用日期绑定门禁：仅检查题面明确出现的完整日期；若变量名包含其中某日期，则该变量自己的evidence_ids必须至少引用一条含同日期的证据。fc_b_005首轮把12月变量引用到6月证据时被拒绝，错误信息进入既有评估增值率短语补检索，再由Qwen生成第二个native strict计划。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_calculation_variable_period_binding_a1",
+  "base_commit": "6240aae",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "6240aae"
+      },
+      "identity": {
+        "change_vector": {
+          "base_commit": "6240aae",
+          "locator": "attempt_43",
+          "model": "qwen3.7-plus-2026-05-26",
+          "retrieval": "existing_phrase_overlay_evaluation_rate",
+          "retry_policy": "local_semantic_reject_then_existing_qwen_retry",
+          "semantic_gate": "question_target_date_to_variable_evidence_v1",
+          "structured_output_mode": "native_json_schema_strict",
+          "workers": 1
+        },
+        "domains": [
+          "financial_contracts"
+        ],
+        "hypothesis": "fc_b_005把6月增值率复制到12月变量，是变量名日期未与所引证据日期绑定；对题面明确日期执行逐变量证据日期一致性门禁，可触发已有评估增值率短语补检索并恢复740.58%。",
+        "pipeline_stage": "calculation_variable_evidence_binding",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "cross_period_value_copy",
+        "target_qids": [
+          "fc_b_005"
+        ]
+      }
+    },
+    "context_sha256": "c2020074a30a6c87c16b59ff0011eedd741410db2cd4dc239323631a22cd43c5",
+    "direction_sha256": "c617daa182571d0fef2feef5efc4d3fa972fb3a2fca8ac5c2abfde66599ea8e0",
+    "schema_version": 1,
+    "semantic_sha256": "5ec0feadf809ded5328f7ccd69f2c0528e71f45508adf81290af2284d4c660d5",
+    "sha256": "e0ced8b353fc96b4e74012f5743582d70a609dc4a79680d0566bee79b9fa119c"
+  },
+  "change_vector": {
+    "base_commit": "6240aae",
+    "locator": "attempt_43",
+    "model": "qwen3.7-plus-2026-05-26",
+    "retrieval": "existing_phrase_overlay_evaluation_rate",
+    "retry_policy": "local_semantic_reject_then_existing_qwen_retry",
+    "semantic_gate": "question_target_date_to_variable_evidence_v1",
+    "structured_output_mode": "native_json_schema_strict",
+    "workers": 1
+  },
+  "direction_id": "qwen37_calculation_variable_period_binding",
+  "domains": [
+    "financial_contracts"
+  ],
+  "effect": "第二次计划分别引用2023年6月30日1468.47%和2023年12月31日740.58%的同文档直接证据，答案与pseudo99及原文一致；独立reasoning一次完成，覆盖两次评估值、增值额和最终双槽答案。相对旧产物从1468.47%/1468.47%修正为1468.47%/740.58%，同时修复旧reasoning不足。",
+  "experiment_id": "b-loop-qwen37-calculation-variable-period-binding-a1",
+  "failure_analysis": "单题发生2次答案调用，总Token38190；旧答案阶段12491且reasoning未完成，因此本轮增加25700 Token，其中包含定向补入38条证据后的较长二次Prompt。门禁只约束题面明确完整日期，不处理“年末/上期”等隐含期间，避免扩大误伤。pseudo99仍非官网逐题真值，但两值均有同一原始报告逐字证据。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "base_commit": "6240aae",
+            "locator": "attempt_43",
+            "model": "qwen3.7-plus-2026-05-26",
+            "retrieval": "existing_phrase_overlay_evaluation_rate",
+            "retry_policy": "local_semantic_reject_then_existing_qwen_retry",
+            "semantic_gate": "question_target_date_to_variable_evidence_v1",
+            "structured_output_mode": "native_json_schema_strict",
+            "workers": 1
+          },
+          "domains": [
+            "financial_contracts"
+          ],
+          "hypothesis": "fc_b_005把6月增值率复制到12月变量，是变量名日期未与所引证据日期绑定；对题面明确日期执行逐变量证据日期一致性门禁，可触发已有评估增值率短语补检索并恢复740.58%。",
+          "pipeline_stage": "calculation_variable_evidence_binding",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "cross_period_value_copy",
+          "target_qids": [
+            "fc_b_005"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "c617daa182571d0fef2feef5efc4d3fa972fb3a2fca8ac5c2abfde66599ea8e0",
+      "schema_version": 1,
+      "semantic_sha256": "5ec0feadf809ded5328f7ccd69f2c0528e71f45508adf81290af2284d4c660d5",
+      "sha256": "a2b6b7f8f3259cf64ab3b906d32d52a9ed22dfd282a6c9a330b0409ab59b7833"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "base_commit": "6240aae",
+              "locator": "attempt_43",
+              "model": "qwen3.7-plus-2026-05-26",
+              "retrieval": "existing_phrase_overlay_evaluation_rate",
+              "retry_policy": "local_semantic_reject_then_existing_qwen_retry",
+              "semantic_gate": "question_target_date_to_variable_evidence_v1",
+              "structured_output_mode": "native_json_schema_strict",
+              "workers": 1
+            },
+            "domains": [
+              "financial_contracts"
+            ],
+            "hypothesis": "fc_b_005把6月增值率复制到12月变量，是变量名日期未与所引证据日期绑定；对题面明确日期执行逐变量证据日期一致性门禁，可触发已有评估增值率短语补检索并恢复740.58%。",
+            "pipeline_stage": "calculation_variable_evidence_binding",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "cross_period_value_copy",
+            "target_qids": [
+              "fc_b_005"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "c617daa182571d0fef2feef5efc4d3fa972fb3a2fca8ac5c2abfde66599ea8e0",
+        "schema_version": 1,
+        "semantic_sha256": "5ec0feadf809ded5328f7ccd69f2c0528e71f45508adf81290af2284d4c660d5",
+        "sha256": "a2b6b7f8f3259cf64ab3b906d32d52a9ed22dfd282a6c9a330b0409ab59b7833"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "addc0d6fe8652bf9d085eb02249543b3995d1bd9b51c335df523aa41a364e0cb",
+      "size": 1119598
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "df86a97ef9ca9e5d7f305d0d90cf46825764590228d52f5dce25b80264c6fd5e",
+      "size": 911987
+    },
+    "related_log_sections": [
+      "B0-actual-integrity",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-answer-reasoning-stage-decoupling-a1",
+      "b-loop-qwen37-structured-output-contract-a2-full100",
+      "b-loop-qwen37-structured-output-contract-a3-staged-retry",
+      "b-loop-qwen37-insurance-surrender-year-binding-a2"
+    ],
+    "reviewed_at": "2026-07-23T19:00:36+00:00"
+  },
+  "hypothesis": "fc_b_005把6月增值率复制到12月变量，是变量名日期未与所引证据日期绑定；对题面明确日期执行逐变量证据日期一致性门禁，可触发已有评估增值率短语补检索并恢复740.58%。",
+  "material_delta": {
+    "retrieval": "existing_phrase_overlay_evaluation_rate",
+    "semantic_gate": "question_target_date_to_variable_evidence_v1"
+  },
+  "metrics": {
+    "added_evidence_count": 19,
+    "answer_completed_count": 1,
+    "answer_model_call_count": 2,
+    "baseline_answer": [
+      "1468.47%",
+      "1468.47%"
+    ],
+    "baseline_answer_token_total": 12491,
+    "baseline_reasoning_completed_count": 0,
+    "baseline_reference_match_count": 0,
+    "candidate_answer": [
+      "1468.47%",
+      "740.58%"
+    ],
+    "candidate_answer_token_total": 33321,
+    "candidate_generation_token_total": 38190,
+    "candidate_reasoning_token_total": 4869,
+    "evidence_supported_answer": [
+      "1468.47%",
+      "740.58%"
+    ],
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "phrase_overlay_count": 12,
+    "proxy_total_score": null,
+    "reasoning_completed_count": 1,
+    "reasoning_model_call_count": 1,
+    "reference_match_count": 1,
+    "reference_mismatch_count": 0,
+    "semantic_gate_rejection_count": 1,
+    "tests_passed": 305,
+    "vs_baseline_generation_token_delta": 25699
+  },
+  "next_step": "该方向A1已同时提升准确率代理与reasoning完整性，停止追加轮次，建分支提交推送。下一方向处理res_b_005 API read timeout，优先缩小单请求证据载荷而不改变答案语义；完成本地主要badcase后重跑100题。",
+  "pipeline_stage": "calculation_variable_evidence_binding",
+  "promotion_result": "promoted_effective_direction",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T19:04:25+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "cross_period_value_copy",
+  "status": "completed",
+  "submission_effect": "local_partial_submit_only_not_officially_uploaded",
+  "target_qids": [
+    "fc_b_005"
+  ]
+}
+```
