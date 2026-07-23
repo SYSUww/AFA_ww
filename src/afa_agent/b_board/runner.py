@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import os
@@ -45,6 +46,7 @@ DEFAULT_STRATEGY_PATH = ROOT / "configs" / "autoresearch" / "evidence_gate_rescu
 CALCULATION_SYSTEM_PROMPT = """你是金融长文计算题的结构化求解器。只使用题目和给定证据，不补充未给出的事实。
 输出一个 JSON 对象，字段为 variables、steps、outputs、decision_summary。
 variables: [{name,value,value_type,unit,evidence_ids}]，value_type 仅 decimal/date/text，所有变量必须给 evidence_ids。
+凡是要进入 decimal0、decimal1、decimal2、percent2 输出或算术步骤的数值变量，value_type 必须是 decimal，禁止写成 text。百分数变量的正确示例为 {"name":"毛利率","value":"5.55","value_type":"decimal","unit":"%","evidence_ids":["原证据ID"]}；也可保留 value 中的 %，但 value_type 仍必须为 decimal 且 unit 必须为 %。
 每个变量的 value 必须以同一数值或日期直接出现在所引证据中，unit 也必须与证据一致；不得把 5.55% 擅自写成 0.0555。
 只有证据同一片段明确写出单位时才填 unit；表格只有裸金额但未标单位时必须填空字符串，不得推断或补写“元”。比率或百分比计算可直接使用同口径原始金额。
 执行器会按 unit 自动处理百分数：金额÷带 % 的变量时会把百分数转为比率；带 % 的变量÷另一个带 % 的变量会约去百分数单位；金额×带 % 的变量也会自动除以 100；1 减带 % 的变量会先统一为比率。
@@ -449,8 +451,12 @@ class BBoardActualRunner:
             response = self.client.chat_json(messages)
             usage.add(response.token_usage)
             plan: dict[str, Any] | None = None
+            plan_normalizations: list[dict[str, str]] = []
             try:
                 plan = extract_json_object(response.content)
+                plan, plan_normalizations = _normalize_calculation_numeric_literals(
+                    plan
+                )
                 result = self.calculator.execute(
                     plan,
                     expected_slots=question.answer_slots,
@@ -485,7 +491,11 @@ class BBoardActualRunner:
                     used_evidence_ids=list(result.used_evidence_ids),
                     evidence_items=selected_evidence,
                     decision_summary=str(plan.get("decision_summary", "")).strip(),
-                    decision_trace={"source": "structured_calculation_plan", "format_forced": False},
+                    decision_trace={
+                        "source": "structured_calculation_plan",
+                        "format_forced": False,
+                        "calculation_plan_normalizations": plan_normalizations,
+                    },
                     calculation_trace=result.trace,
                     token_usage=usage.to_dict(),
                     locator={
@@ -511,6 +521,11 @@ class BBoardActualRunner:
                         "error_type": exc.__class__.__name__,
                         "error": str(exc)[:1000],
                         "plan": plan,
+                        "plan_normalizations": (
+                            plan_normalizations
+                            if plan is not None
+                            else []
+                        ),
                     }
                 )
                 added_ids: list[str] = []
@@ -1066,6 +1081,80 @@ def _normalize_evidence(item: Mapping[str, Any]) -> dict[str, Any]:
     payload.setdefault("title_path", [])
     payload.setdefault("text", "")
     return payload
+
+
+_DIRECT_NUMERIC_OUTPUT_FORMATS = frozenset(
+    {"decimal0", "decimal1", "decimal2", "percent2"}
+)
+_NUMERIC_LITERAL_RE = re.compile(
+    r"[+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:\s*%)?"
+)
+_PERCENT_UNITS = frozenset({"%", "百分点", "percent", "percentage"})
+
+
+def _normalize_calculation_numeric_literals(
+    plan: Mapping[str, Any],
+) -> tuple[dict[str, Any], list[dict[str, str]]]:
+    """Repair an unambiguous Qwen schema error without changing numeric content."""
+
+    normalized_plan = copy.deepcopy(dict(plan))
+    direct_numeric_refs: set[str] = set()
+    outputs = normalized_plan.get("outputs")
+    if isinstance(outputs, list):
+        for output in outputs:
+            if not isinstance(output, Mapping):
+                continue
+            if str(output.get("format", "")).strip() not in _DIRECT_NUMERIC_OUTPUT_FORMATS:
+                continue
+            source = output.get("source")
+            if isinstance(source, Mapping) and "ref" in source:
+                direct_numeric_refs.add(str(source["ref"]))
+            elif isinstance(source, str):
+                direct_numeric_refs.add(source)
+
+    normalizations: list[dict[str, str]] = []
+    variables = normalized_plan.get("variables")
+    if not isinstance(variables, list):
+        return normalized_plan, normalizations
+    for variable in variables:
+        if not isinstance(variable, dict):
+            continue
+        name = str(variable.get("name", "")).strip()
+        if name not in direct_numeric_refs:
+            continue
+        if str(variable.get("value_type", "")).strip().lower() != "text":
+            continue
+        raw_value = str(variable.get("value", "")).strip()
+        if _NUMERIC_LITERAL_RE.fullmatch(raw_value) is None:
+            continue
+        before_unit = str(variable.get("unit", "")).strip()
+        normalized_unit = "".join(before_unit.split()).lower()
+        has_percent_suffix = raw_value.rstrip().endswith("%")
+        if (
+            has_percent_suffix
+            and normalized_unit
+            and normalized_unit not in _PERCENT_UNITS
+        ):
+            continue
+
+        normalized_value = re.sub(r"\s+%", "%", raw_value)
+        after_unit = before_unit or ("%" if has_percent_suffix else "")
+        variable["value"] = normalized_value
+        variable["value_type"] = "decimal"
+        variable["unit"] = after_unit
+        normalizations.append(
+            {
+                "variable": name,
+                "reason": "direct_numeric_output_literal",
+                "before_value": raw_value,
+                "after_value": normalized_value,
+                "before_value_type": "text",
+                "after_value_type": "decimal",
+                "before_unit": before_unit,
+                "after_unit": after_unit,
+            }
+        )
+    return normalized_plan, normalizations
 
 
 def _calculation_evidence_payload(

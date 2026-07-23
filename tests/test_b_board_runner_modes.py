@@ -8,6 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
+from afa_agent.b_board.calculation import CalculationExecutor
 from afa_agent.b_board.io import BQuestion
 from afa_agent.b_board.runner import (
     RUN_MODE_RESEARCH,
@@ -22,6 +23,7 @@ from afa_agent.b_board.runner import (
     BAnswerArtifact,
     BAnswerGenerationError,
     BBoardActualRunner,
+    _normalize_calculation_numeric_literals,
 )
 from afa_agent.client import LLMResponse
 from afa_agent.config import ModelConfig, RunConfig
@@ -93,6 +95,65 @@ def _response(content: str, prompt: int, completion: int) -> LLMResponse:
 
 
 class BBoardRunnerModeTests(unittest.TestCase):
+    def test_direct_numeric_output_normalizes_qwen_text_percentage_literal(self) -> None:
+        plan = {
+            "variables": [
+                {
+                    "name": "毛利率",
+                    "value": "5.55%",
+                    "value_type": "text",
+                    "unit": "%",
+                    "evidence_ids": ["u1"],
+                }
+            ],
+            "steps": [],
+            "outputs": [{"source": "毛利率", "format": "percent2"}],
+        }
+
+        normalized, changes = _normalize_calculation_numeric_literals(plan)
+        result = CalculationExecutor().execute(
+            normalized,
+            expected_slots=1,
+            evidence_text_by_id={"u1": "报告期内主营业务毛利率为5.55%。"},
+            expected_slot_templates=("999999.99%",),
+            expected_percent_suffixes=(True,),
+        )
+
+        self.assertEqual(plan["variables"][0]["value_type"], "text")
+        self.assertEqual(normalized["variables"][0]["value_type"], "decimal")
+        self.assertEqual(result.answer_parts, ("5.55%",))
+        self.assertEqual(changes[0]["reason"], "direct_numeric_output_literal")
+
+    def test_numeric_literal_normalization_does_not_retype_non_numeric_text(self) -> None:
+        plan = {
+            "variables": [
+                {
+                    "name": "排序",
+                    "value": "甲>乙",
+                    "value_type": "text",
+                    "unit": "",
+                    "evidence_ids": ["u1"],
+                },
+                {
+                    "name": "说明",
+                    "value": "5.55%",
+                    "value_type": "text",
+                    "unit": "%",
+                    "evidence_ids": ["u1"],
+                },
+            ],
+            "steps": [],
+            "outputs": [
+                {"source": {"ref": "排序"}, "format": "text"},
+                {"source": {"ref": "说明"}, "format": "raw"},
+            ],
+        }
+
+        normalized, changes = _normalize_calculation_numeric_literals(plan)
+
+        self.assertEqual(normalized, plan)
+        self.assertEqual(changes, [])
+
     def test_reasoning_prompt_requires_explicit_auditable_structure(self) -> None:
         self.assertEqual(
             SUBMISSION_REASONING_PROMPT_VERSION,
