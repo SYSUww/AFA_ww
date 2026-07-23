@@ -16,6 +16,7 @@ from afa_agent.b_board.runner import (
     RUN_MODE_SUBMISSION,
     SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
     SUBMISSION_REASONING_FEEDBACK_SYSTEM_PROMPT,
+    DEFAULT_SUBMISSION_REASONING_EVIDENCE_CHAR_LIMIT,
     SUBMISSION_REASONING_PROMPT_VERSION,
     SUBMISSION_REASONING_REFINE_POLICY_VERSION,
     SUBMISSION_REASONING_REFINE_PROMPT_VERSION,
@@ -31,6 +32,7 @@ from afa_agent.b_board.runner import (
     _is_calculation_plan_structure_error,
     _normalize_calculation_plan_structure,
     _normalize_calculation_numeric_literals,
+    _reasoning_evidence_payload,
     _submission_reasoning_style_hint,
     _validate_aggregate_intensity_plan_binding,
     _validate_calculation_summary_output_consistency,
@@ -1320,12 +1322,30 @@ class BBoardRunnerModeTests(unittest.TestCase):
     def test_reasoning_prompt_requires_explicit_auditable_structure(self) -> None:
         self.assertEqual(
             SUBMISSION_REASONING_PROMPT_VERSION,
-            "b_submission_reasoning_v4_grounded_date_boundary_hint",
+            "b_submission_reasoning_v5_grounded_evidence_policy",
         )
+        self.assertEqual(DEFAULT_SUBMISSION_REASONING_EVIDENCE_CHAR_LIMIT, 1800)
         self.assertIn("定位—关键事实—推导—结论", SUBMISSION_REASONING_SYSTEM_PROMPT)
         self.assertIn("frozen_answer_parts", SUBMISSION_REASONING_SYSTEM_PROMPT)
         self.assertIn('grounding_status="insufficient"', SUBMISSION_REASONING_SYSTEM_PROMPT)
         self.assertIn("reasoning_style_hint", SUBMISSION_REASONING_SYSTEM_PROMPT)
+
+    def test_reasoning_evidence_payload_caps_each_text(self) -> None:
+        payload = _reasoning_evidence_payload(
+            [
+                {
+                    "unit_id": "e1",
+                    "title_path": ["章节", "小节"],
+                    "text": "证" * 1200,
+                }
+            ],
+            limit=1,
+            char_limit=900,
+        )
+
+        self.assertEqual(payload[0]["evidence_id"], "e1")
+        self.assertEqual(payload[0]["title"], "章节 > 小节")
+        self.assertEqual(len(payload[0]["text"]), 900)
 
     def test_reasoning_style_hint_is_question_derived_and_date_specific(
         self,

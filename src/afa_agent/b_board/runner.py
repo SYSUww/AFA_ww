@@ -109,11 +109,12 @@ format 仅 raw,decimal0,decimal1,decimal2,percent2,date_cn,text。中间过程�
 证据 ID 必须原样使用给定 evidence_id。题目本身给出的数值可引用 question:<qid>。只输出 JSON。"""
 
 SUBMISSION_REASONING_PROMPT_VERSION = (
-    "b_submission_reasoning_v4_grounded_date_boundary_hint"
+    "b_submission_reasoning_v5_grounded_evidence_policy"
 )
 SUBMISSION_REASONING_STYLE_HINT_VERSION = (
     "question_derived_date_natural_day_boundary_v1"
 )
+DEFAULT_SUBMISSION_REASONING_EVIDENCE_CHAR_LIMIT = 1800
 SUBMISSION_REASONING_SYSTEM_PROMPT = f"""你是金融长文问答的提交推理摘要生成器。你的任务不是重新解题，而是基于用户提供的题目、冻结答案、检索证据和已验证求解结果，生成能够支持冻结答案的中文 reasoning 摘要。
 最高优先级约束：
 1. frozen_answer_parts 是冻结答案，禁止修改、增删、重新排序或重新选择。
@@ -238,8 +239,13 @@ class BBoardActualRunner:
         strategy_path: Path = DEFAULT_STRATEGY_PATH,
         locator_attempt_id: str = "attempt_43",
         calculation_top_k: int = 18,
+        reasoning_evidence_char_limit: int = (
+            DEFAULT_SUBMISSION_REASONING_EVIDENCE_CHAR_LIMIT
+        ),
         run_mode: str = RUN_MODE_SUBMISSION,
     ) -> None:
+        if reasoning_evidence_char_limit < 1:
+            raise ValueError("reasoning_evidence_char_limit must be positive")
         self.questions = list(questions)
         self.question_by_qid = {item.qid: item for item in questions}
         self.parsed_root = Path(parsed_root).resolve()
@@ -247,6 +253,7 @@ class BBoardActualRunner:
         self.strategy_path = Path(strategy_path).resolve()
         self.locator_attempt_id = locator_attempt_id
         self.calculation_top_k = calculation_top_k
+        self.reasoning_evidence_char_limit = reasoning_evidence_char_limit
         self.run_mode = _validate_run_mode(run_mode)
         self.config = build_run_config(ROOT)
         if self.config.model is None:
@@ -1196,6 +1203,11 @@ class BBoardActualRunner:
         payload_normalizations: list[dict[str, Any]] = []
         format_retry_count = 0
         response_format_modes: list[str] = []
+        evidence_char_limit = getattr(
+            self,
+            "reasoning_evidence_char_limit",
+            DEFAULT_SUBMISSION_REASONING_EVIDENCE_CHAR_LIMIT,
+        )
         reasoning_evidence_items = [
             dict(item) for item in artifact.evidence_items
         ]
@@ -1204,6 +1216,7 @@ class BBoardActualRunner:
             evidence_payload = _reasoning_evidence_payload(
                 reasoning_evidence_items,
                 limit=12 if attempt_number == 1 else 18,
+                char_limit=evidence_char_limit,
             )
             base_messages = [
                 {"role": "system", "content": SUBMISSION_REASONING_SYSTEM_PROMPT},
@@ -1366,6 +1379,7 @@ class BBoardActualRunner:
                             SUBMISSION_REASONING_STYLE_HINT_VERSION
                         ),
                         "reasoning_style_hint": reasoning_style_hint,
+                        "evidence_item_char_limit": evidence_char_limit,
                         "model_name": self.config.model.model_name,
                         "attempt_count": attempt_number,
                         "api_call_count": len(diagnostics),
@@ -3955,14 +3969,17 @@ def _reasoning_evidence_payload(
     evidence_items: Sequence[Mapping[str, Any]],
     *,
     limit: int,
+    char_limit: int = DEFAULT_SUBMISSION_REASONING_EVIDENCE_CHAR_LIMIT,
 ) -> list[dict[str, str]]:
+    if char_limit < 1:
+        raise ValueError("char_limit must be positive")
     return [
         {
             "evidence_id": str(item.get("unit_id", "")),
             "title": " > ".join(
                 str(value) for value in item.get("title_path", [])
             ),
-            "text": str(item.get("text", ""))[:1800],
+            "text": str(item.get("text", ""))[:char_limit],
         }
         for item in evidence_items[:limit]
     ]

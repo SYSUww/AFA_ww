@@ -35985,3 +35985,573 @@
   ]
 }
 ```
+
+## b-loop-qwen37-reasoning-evidence-payload-compression-a1-global900-probe
+
+- recorded_at: `2026-07-23T23:31:56+00:00`
+
+```json
+{
+  "approach": "将reasoning每条证据文本上限由1800降至900，对4个高证据负载研究题冻结答案单次重生成；GPT-5.6离线复评并逐题按最终公式计算。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_reasoning_evidence_900_a1_research4",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "answer_stage_calls": false,
+          "base_commit": "051d52f",
+          "evidence_item_char_limit_after": 900,
+          "evidence_item_char_limit_before": 1800,
+          "evidence_item_count_limit": 12,
+          "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reasoning_prompt": "b_submission_reasoning_v5_evidence_900",
+          "reference_answer_access": false,
+          "selection_gate": "per_qid_final_formula_delta_positive",
+          "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "冻结答案与已验证summary不变，将reasoning证据单片字符上限从1800缩至900，可去除冗余长段落、降低高负载研究题token，并在gpt-5.6影子分与最终公式门禁下保留净增项。",
+        "pipeline_stage": "submission_reasoning_generation",
+        "question_types": [
+          "multiple_choice"
+        ],
+        "root_cause_cluster": "reasoning_oversized_evidence_payload_token_cost",
+        "target_qids": [
+          "res_b_009",
+          "res_b_013",
+          "res_b_015",
+          "res_b_017"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "d4ace7da9b3d2f2f4efcf0be56ae5502678c25e62e5835cb7448f0c89d6d2a00",
+    "schema_version": 1,
+    "semantic_sha256": "8f58a27b9e219de8b204ae14fa2e80d0650fd87eb5f110429847aede55755e66",
+    "sha256": "f021805521148a421839fb35e2a9c2cf3745b85a5986c20bb6a28953a0be4d2f"
+  },
+  "change_vector": {
+    "answer_stage_calls": false,
+    "base_commit": "051d52f",
+    "evidence_item_char_limit_after": 900,
+    "evidence_item_char_limit_before": 1800,
+    "evidence_item_count_limit": 12,
+    "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reasoning_prompt": "b_submission_reasoning_v5_evidence_900",
+    "reference_answer_access": false,
+    "selection_gate": "per_qid_final_formula_delta_positive",
+    "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+  },
+  "direction_id": "qwen37_reasoning_evidence_payload_compression",
+  "domains": [
+    "research"
+  ],
+  "effect": "4题reasoning Token合计38259→37890，仅节省369；res_b_015与res_b_017初次探针代理净增，res_b_009与res_b_013净降，4题整体reasoning均分约91.33→90.25。全局900策略不推广。",
+  "experiment_id": "b-loop-qwen37-reasoning-evidence-payload-compression-a1-global900-probe",
+  "failure_analysis": "压缩输入后completion波动抵消大部分prompt节省；res_b_013 reasoning下降5.6667且净降0.014484，证明证据截断不可全局应用。初探res_b_017虽净增，但后续可复现门禁仍需独立验证。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "answer_stage_calls": false,
+            "base_commit": "051d52f",
+            "evidence_item_char_limit_after": 900,
+            "evidence_item_char_limit_before": 1800,
+            "evidence_item_count_limit": 12,
+            "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reasoning_prompt": "b_submission_reasoning_v5_evidence_900",
+            "reference_answer_access": false,
+            "selection_gate": "per_qid_final_formula_delta_positive",
+            "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+          },
+          "domains": [
+            "research"
+          ],
+          "hypothesis": "冻结答案与已验证summary不变，将reasoning证据单片字符上限从1800缩至900，可去除冗余长段落、降低高负载研究题token，并在gpt-5.6影子分与最终公式门禁下保留净增项。",
+          "pipeline_stage": "submission_reasoning_generation",
+          "question_types": [
+            "multiple_choice"
+          ],
+          "root_cause_cluster": "reasoning_oversized_evidence_payload_token_cost",
+          "target_qids": [
+            "res_b_009",
+            "res_b_013",
+            "res_b_015",
+            "res_b_017"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "d4ace7da9b3d2f2f4efcf0be56ae5502678c25e62e5835cb7448f0c89d6d2a00",
+      "schema_version": 1,
+      "semantic_sha256": "8f58a27b9e219de8b204ae14fa2e80d0650fd87eb5f110429847aede55755e66",
+      "sha256": "f021805521148a421839fb35e2a9c2cf3745b85a5986c20bb6a28953a0be4d2f"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "answer_stage_calls": false,
+              "base_commit": "051d52f",
+              "evidence_item_char_limit_after": 900,
+              "evidence_item_char_limit_before": 1800,
+              "evidence_item_count_limit": 12,
+              "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reasoning_prompt": "b_submission_reasoning_v5_evidence_900",
+              "reference_answer_access": false,
+              "selection_gate": "per_qid_final_formula_delta_positive",
+              "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+            },
+            "domains": [
+              "research"
+            ],
+            "hypothesis": "冻结答案与已验证summary不变，将reasoning证据单片字符上限从1800缩至900，可去除冗余长段落、降低高负载研究题token，并在gpt-5.6影子分与最终公式门禁下保留净增项。",
+            "pipeline_stage": "submission_reasoning_generation",
+            "question_types": [
+              "multiple_choice"
+            ],
+            "root_cause_cluster": "reasoning_oversized_evidence_payload_token_cost",
+            "target_qids": [
+              "res_b_009",
+              "res_b_013",
+              "res_b_015",
+              "res_b_017"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "d4ace7da9b3d2f2f4efcf0be56ae5502678c25e62e5835cb7448f0c89d6d2a00",
+        "schema_version": 1,
+        "semantic_sha256": "8f58a27b9e219de8b204ae14fa2e80d0650fd87eb5f110429847aede55755e66",
+        "sha256": "f021805521148a421839fb35e2a9c2cf3745b85a5986c20bb6a28953a0be4d2f"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "ca7beda9405fef15954994abd6bed80aa6d64f8875f94b3f8ca3caa532b354a3",
+      "size": 1440796
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "38ffb461add29c81e7735e277c409489c5824b44d31e8210efc03fa947482ef1",
+      "size": 1183762
+    },
+    "related_log_sections": [
+      "b-loop-i023-gpt56-answer-error-audit-v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-b1",
+      "b-loop-research-structural-cost-reduction-res-b-009-a1",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-suspect-case-optimization-v3",
+      "b-loop-qwen37-reasoning-structured-output-hard-fallback-a3",
+      "b-loop-qwen37-integrated-full100-candidate-a3",
+      "b-loop-qwen37-reasoning-refinement-structured-output-contract-a1",
+      "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a1",
+      "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a2-date-boundary",
+      "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a1",
+      "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a2",
+      "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a3"
+    ],
+    "reviewed_at": "2026-07-23T23:21:45+00:00"
+  },
+  "hypothesis": "冻结答案与已验证summary不变，将reasoning证据单片字符上限从1800缩至900，可去除冗余长段落、降低高负载研究题Token，并在GPT-5.6影子分与最终公式门禁下保留净增项。",
+  "metrics": {
+    "answer_parts_changed_count": 0,
+    "answer_stage_api_call_count": 0,
+    "evidence_char_limit_after": 900,
+    "evidence_char_limit_before": 1800,
+    "format_retry_count": 0,
+    "global_policy_promoted": false,
+    "official_upload_performed": false,
+    "per_qid": {
+      "res_b_009": {
+        "proxy_total_delta": -0.0009639999999999999,
+        "reasoning_score_after": 84.66666666666667,
+        "reasoning_score_before": 84.66666666666667,
+        "reasoning_score_delta": 0.0,
+        "reasoning_token_after": 9363,
+        "reasoning_token_before": 9122,
+        "reasoning_token_delta": 241
+      },
+      "res_b_013": {
+        "proxy_total_delta": -0.014484000000000014,
+        "reasoning_score_after": 90.0,
+        "reasoning_score_before": 95.66666666666667,
+        "reasoning_score_delta": -5.666666666666671,
+        "reasoning_token_after": 10286,
+        "reasoning_token_before": 10915,
+        "reasoning_token_delta": -629
+      },
+      "res_b_015": {
+        "proxy_total_delta": 0.003092000000000014,
+        "reasoning_score_after": 94.0,
+        "reasoning_score_before": 93.33333333333333,
+        "reasoning_score_delta": 0.6666666666666714,
+        "reasoning_token_after": 9023,
+        "reasoning_token_before": 9296,
+        "reasoning_token_delta": -273
+      },
+      "res_b_017": {
+        "proxy_total_delta": 0.0008319999999999714,
+        "reasoning_score_after": 92.33333333333333,
+        "reasoning_score_before": 91.66666666666667,
+        "reasoning_score_delta": 0.6666666666666572,
+        "reasoning_token_after": 9218,
+        "reasoning_token_before": 8926,
+        "reasoning_token_delta": 292
+      }
+    },
+    "reasoning_api_call_count": 4,
+    "reasoning_judge_model": "gpt-5.6",
+    "reasoning_judge_offline_only": true,
+    "reasoning_token_after": 37890,
+    "reasoning_token_before": 38259,
+    "reasoning_token_saved": 369,
+    "target_qids": [
+      "res_b_013",
+      "res_b_015",
+      "res_b_009",
+      "res_b_017"
+    ]
+  },
+  "next_step": "将1800保留为生产默认，只暴露显式实验参数；重新审查日志后对初探正收益题做可复现复跑，并仅合并最终公式净增项。",
+  "pipeline_stage": "submission_reasoning_generation",
+  "promotion_result": "reject_global_policy_retest_positive_rows_with_explicit_parameter",
+  "question_types": [
+    "multiple_choice"
+  ],
+  "recorded_at": "2026-07-23T23:31:56+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "reasoning_oversized_evidence_payload_token_cost",
+  "status": "completed_mixed_not_promoted",
+  "submission_effect": "research_patch_not_uploaded",
+  "target_qids": [
+    "res_b_013",
+    "res_b_015",
+    "res_b_009",
+    "res_b_017"
+  ]
+}
+```
+
+## b-loop-qwen37-reasoning-evidence-payload-compression-a2-parameterized-repro
+
+- recorded_at: `2026-07-23T23:35:21+00:00`
+
+```json
+{
+  "accepted_patch_artifact_path": "artifacts/b_board_actual/qwen37_reasoning_evidence_900_a2_res015",
+  "approach": "生产默认证据字符上限保持1800，在reasoning checkpoint脚本新增显式--evidence-char-limit参数；对A1初探正收益的res_b_015、res_b_017逐题独立重跑900并离线复评，只合并可复现净增项。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_integrated_full100_candidate_a8_evidence900_res015_repro",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "answer_stage_calls": false,
+          "base_commit": "051d52f",
+          "experiment_evidence_char_limit": 900,
+          "model": "qwen3.7-plus-2026-05-26",
+          "production_default_evidence_char_limit": 1800,
+          "reasoning_prompt": "b_submission_reasoning_v5_grounded_evidence_policy",
+          "reference_answer_access": false,
+          "runner_parameterized": true,
+          "selection_gate": "per_qid_repro_final_formula_delta_positive",
+          "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "在生产默认1800不变的前提下，用显式900字符实验参数复跑a1初探正收益题；逐题独立封存并按最终公式门禁，可判断收益是否可复现且只合并稳定净增项。",
+        "pipeline_stage": "submission_reasoning_generation",
+        "question_types": [
+          "multiple_choice"
+        ],
+        "root_cause_cluster": "reasoning_oversized_evidence_payload_token_cost",
+        "target_qids": [
+          "res_b_015",
+          "res_b_017"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "0944eaaa1593320593c55451f2104a106f5146e80499bd93990e26bc6058a6a9",
+    "schema_version": 1,
+    "semantic_sha256": "0d5952017b9a0823bd54f572a1cca2daab61f59c61672f04779c54c13e038ce7",
+    "sha256": "3e47509cb6afb86fbbb29f39b2879f80716cecea2778838ee5a2972952fc8d44"
+  },
+  "change_vector": {
+    "answer_stage_calls": false,
+    "base_commit": "051d52f",
+    "experiment_evidence_char_limit": 900,
+    "model": "qwen3.7-plus-2026-05-26",
+    "production_default_evidence_char_limit": 1800,
+    "reasoning_prompt": "b_submission_reasoning_v5_grounded_evidence_policy",
+    "reference_answer_access": false,
+    "runner_parameterized": true,
+    "selection_gate": "per_qid_repro_final_formula_delta_positive",
+    "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+  },
+  "direction_id": "qwen37_reasoning_evidence_payload_compression",
+  "domains": [
+    "research"
+  ],
+  "effect": "res_b_015复现后reasoning 93.3333→94.6667、Token 9296→8804，逐题及完整候选代理总分净增0.005968；res_b_017 reasoning 91.6667→89.0000且Token增加131，净降0.008524，拒绝。A8只替换res_b_015，100题CSV有效且答案不变。",
+  "experiment_id": "b-loop-qwen37-reasoning-evidence-payload-compression-a2-parameterized-repro",
+  "failure_analysis": "900字符不是稳定的全局Token优化，收益具有样本与生成波动依赖。参数化使默认链路不受影响，且把局部实验完整写入trace/manifest；禁止用A1的单次初探正收益直接推广。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "answer_stage_calls": false,
+            "base_commit": "051d52f",
+            "experiment_evidence_char_limit": 900,
+            "model": "qwen3.7-plus-2026-05-26",
+            "production_default_evidence_char_limit": 1800,
+            "reasoning_prompt": "b_submission_reasoning_v5_grounded_evidence_policy",
+            "reference_answer_access": false,
+            "runner_parameterized": true,
+            "selection_gate": "per_qid_repro_final_formula_delta_positive",
+            "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+          },
+          "domains": [
+            "research"
+          ],
+          "hypothesis": "在生产默认1800不变的前提下，用显式900字符实验参数复跑a1初探正收益题；逐题独立封存并按最终公式门禁，可判断收益是否可复现且只合并稳定净增项。",
+          "pipeline_stage": "submission_reasoning_generation",
+          "question_types": [
+            "multiple_choice"
+          ],
+          "root_cause_cluster": "reasoning_oversized_evidence_payload_token_cost",
+          "target_qids": [
+            "res_b_015",
+            "res_b_017"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "0944eaaa1593320593c55451f2104a106f5146e80499bd93990e26bc6058a6a9",
+      "schema_version": 1,
+      "semantic_sha256": "0d5952017b9a0823bd54f572a1cca2daab61f59c61672f04779c54c13e038ce7",
+      "sha256": "3e47509cb6afb86fbbb29f39b2879f80716cecea2778838ee5a2972952fc8d44"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "answer_stage_calls": false,
+              "base_commit": "051d52f",
+              "experiment_evidence_char_limit": 900,
+              "model": "qwen3.7-plus-2026-05-26",
+              "production_default_evidence_char_limit": 1800,
+              "reasoning_prompt": "b_submission_reasoning_v5_grounded_evidence_policy",
+              "reference_answer_access": false,
+              "runner_parameterized": true,
+              "selection_gate": "per_qid_repro_final_formula_delta_positive",
+              "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+            },
+            "domains": [
+              "research"
+            ],
+            "hypothesis": "在生产默认1800不变的前提下，用显式900字符实验参数复跑a1初探正收益题；逐题独立封存并按最终公式门禁，可判断收益是否可复现且只合并稳定净增项。",
+            "pipeline_stage": "submission_reasoning_generation",
+            "question_types": [
+              "multiple_choice"
+            ],
+            "root_cause_cluster": "reasoning_oversized_evidence_payload_token_cost",
+            "target_qids": [
+              "res_b_015",
+              "res_b_017"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "0944eaaa1593320593c55451f2104a106f5146e80499bd93990e26bc6058a6a9",
+        "schema_version": 1,
+        "semantic_sha256": "0d5952017b9a0823bd54f572a1cca2daab61f59c61672f04779c54c13e038ce7",
+        "sha256": "3e47509cb6afb86fbbb29f39b2879f80716cecea2778838ee5a2972952fc8d44"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "Related history is inconclusive, so executing will add information",
+      "related_experiment_ids": [
+        "b-loop-qwen37-reasoning-evidence-payload-compression-a1-global900-probe"
+      ],
+      "similarity": 0.837185
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "91204406f6d1b6eb0ecb72178f45d1b4a4fe00bd9785796e0bdf0aa96c68151c",
+      "size": 1454750
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "74bd9c3807f433d831cf1616d7becbd0f2f61e52c8eebcad93f7318714dfe919",
+      "size": 1195483
+    },
+    "related_log_sections": [
+      "B0-actual-evaluation",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-structural-cost-reduction-res-b-009-a1",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-qwen37-reasoning-structured-output-hard-fallback-a3",
+      "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a1",
+      "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a2-date-boundary",
+      "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a1",
+      "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a2",
+      "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a3",
+      "b-loop-qwen37-reasoning-evidence-payload-compression-a1-global900-probe"
+    ],
+    "reviewed_at": "2026-07-23T23:32:16+00:00"
+  },
+  "hypothesis": "在生产默认1800不变的前提下，用显式900字符实验参数复跑A1初探正收益题；逐题独立封存并按最终公式门禁，可判断收益是否可复现且只合并稳定净增项。",
+  "metrics": {
+    "accepted_qids": [
+      "res_b_015"
+    ],
+    "answer_parts_changed_count": 0,
+    "answer_stage_api_call_count": 0,
+    "compileall_passed": true,
+    "experiment_evidence_char_limit": 900,
+    "full100_reasoning_score_after": 95.77333333333334,
+    "full100_reasoning_score_before": 95.76,
+    "full100_token_after": 1322904,
+    "full100_token_before": 1323396,
+    "full100_token_efficiency_after": 73.54192,
+    "generation_models": [
+      "qwen3.7-plus-2026-05-26"
+    ],
+    "official_accuracy": null,
+    "official_total_score": null,
+    "official_upload_performed": false,
+    "per_qid": {
+      "res_b_015": {
+        "proxy_total_delta": 0.005968000000000029,
+        "reasoning_score_after": 94.66666666666667,
+        "reasoning_score_before": 93.33333333333333,
+        "reasoning_score_delta": 1.3333333333333428,
+        "reasoning_token_after": 8804,
+        "reasoning_token_before": 9296,
+        "reasoning_token_delta": -492
+      },
+      "res_b_017": {
+        "proxy_total_delta": -0.008524000000000014,
+        "reasoning_score_after": 89.0,
+        "reasoning_score_before": 91.66666666666667,
+        "reasoning_token_after": 9057,
+        "reasoning_token_before": 8926
+      }
+    },
+    "production_default_evidence_char_limit": 1800,
+    "proxy_total_delta_accuracy_invariant": 0.005967999999981544,
+    "reasoning_judge_model": "gpt-5.6",
+    "reasoning_judge_offline_only": true,
+    "rejected_qids": [
+      "res_b_017"
+    ],
+    "submission_valid": true,
+    "target_qids": [
+      "res_b_015",
+      "res_b_017"
+    ],
+    "tests_passed": 338
+  },
+  "next_step": "A2局部有效，创建并推送独立分支。若继续A3，只能用不同且有明确证据负载特征的样本测试，并在第三轮后封闭该方向；不做官网上传。",
+  "pipeline_stage": "submission_reasoning_generation",
+  "promotion_result": "effective_push_pending",
+  "question_types": [
+    "multiple_choice"
+  ],
+  "recorded_at": "2026-07-23T23:35:21+00:00",
+  "registry_schema_version": 1,
+  "rejected_patch_artifact_path": "artifacts/b_board_actual/qwen37_reasoning_evidence_900_a2_res017",
+  "root_cause_cluster": "reasoning_oversized_evidence_payload_token_cost",
+  "status": "completed_effective",
+  "submission_effect": "local_reasoning_candidate_not_officially_uploaded",
+  "target_qids": [
+    "res_b_015",
+    "res_b_017"
+  ]
+}
+```

@@ -46,6 +46,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--qids", nargs="+", required=True)
     parser.add_argument("--question-root", default="upload_b/question_b")
     parser.add_argument("--submission-template", default="upload_b/submit.csv")
+    parser.add_argument(
+        "--evidence-char-limit",
+        type=int,
+        default=1800,
+        help="Maximum characters retained from each reasoning evidence item",
+    )
     return parser.parse_args()
 
 
@@ -94,6 +100,7 @@ def main() -> None:
 
     runner = BBoardActualRunner(
         questions=[question_by_qid[qid] for qid in qids],
+        reasoning_evidence_char_limit=args.evidence_char_limit,
         run_mode=RUN_MODE_SUBMISSION,
     )
     if runner.config.model.model_name != model_name:
@@ -191,6 +198,7 @@ def main() -> None:
         "answer_artifact_signature_verified": True,
         "answer_parts_preserved": True,
         "source_model_verified": True,
+        "reasoning_evidence_char_limit": args.evidence_char_limit,
         "submission_eligible": False,
         "submission_ineligibility_reasons": [
             "partial_reasoning_patch_requires_full_assembly"
