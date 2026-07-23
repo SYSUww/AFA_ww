@@ -59,6 +59,8 @@ variables 只能放证据或题目中逐字出现的原始输入，禁止放任�
 题目明确给出的目标期假设值优先于材料中的历史值；例如题目给出2026年增速时，必须使用该增速计算2026年结果，不得误用材料中的2025年历史增速。已抽取且与目标公式相关的题目输入不得在依赖链中遗漏。
 凡是要进入 decimal0、decimal1、decimal2、percent2 输出或算术步骤的数值变量，value_type 必须是 decimal，禁止写成 text。百分数变量的正确示例为 {"name":"毛利率","value":"5.55","value_type":"decimal","unit":"%","evidence_ids":["原证据ID"]}；也可保留 value 中的 %，但 value_type 仍必须为 decimal 且 unit 必须为 %。
 每个变量的 value 必须以同一数值或日期直接出现在所引证据中，unit 也必须与证据一致；不得把 5.55% 擅自写成 0.0555。
+题目明确要求“分地区/分销售模式”等表格行时，变量名称必须保留题目指定的行标签，且该行标签与变量数值必须在同一条证据表格行中；不得把“境外”冒名绑定到“经销”等其他行。
+题目明确要求“使用原始金额计算”占比或比重的百分点变化时，必须先分别用原始金额分子除以同期间原始金额分母得到新旧占比，再把两个 div 步骤作为 pct_point_delta 的 new 和 old；禁止直接使用报告展示百分比作差。
 只有证据同一片段明确写出单位时才填 unit；表格只有裸金额但未标单位时必须填空字符串，不得推断或补写“元”。比率或百分比计算可直接使用同口径原始金额。
 执行器会按 unit 自动处理百分数：金额÷带 % 的变量时会把百分数转为比率；带 % 的变量÷另一个带 % 的变量会约去百分数单位；金额×带 % 的变量也会自动除以 100；1 减带 % 的变量会先统一为比率。
 百分点差必须使用 pct_point_delta：若输入是 ratio，执行器会自动乘 100 转成百分点；若输入本来带 %，则直接作差。pct_change 已直接返回百分数，ratio 使用 percent 格式输出时也会自动乘 100。以上情况均不得再手工重复缩放。
@@ -124,12 +126,14 @@ SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推�
 4. 显式写出与 answer_parts 完全一致的最终答案。
 不得提及“质检”、“反馈”、“草稿”或修订过程，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。只输出 JSON。prompt_version={SUBMISSION_REASONING_REFINE_PROMPT_VERSION}。"""
 
-RUNNER_VERSION = "b_actual_v17_calculation_semantic_gate"
+RUNNER_VERSION = "b_actual_v19_raw_amount_ratio_binding"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 CALCULATION_PLAN_NORMALIZATION_VERSION = "qwen37_structure_contract_v3_schema"
 CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
     "insurance_surrender_rate_v1+question_target_date_binding_v1"
     "+aggregate_intensity_binding_v1"
+    "+table_row_label_binding_v1"
+    "+raw_amount_ratio_binding_v1"
 )
 CALCULATION_PROMPT_EVIDENCE_POLICY_VERSION = "progressive_8_16_24_v1"
 CALCULATION_PROMPT_HITS_PER_ATTEMPT = 8
@@ -746,15 +750,33 @@ class BBoardActualRunner:
             expand_neighbors=True,
         )
         question_evidence_id = f"question:{question.qid}"
-        evidence_items = [
-            {
-                "unit_id": question_evidence_id,
-                "doc_id": "__question__",
-                "title_path": ["题目"],
-                "text": question.question,
-                "score": 1.0,
-            },
-            *[_normalize_evidence(hit.to_dict()) for hit in hits],
+        question_evidence = {
+            "unit_id": question_evidence_id,
+            "doc_id": "__question__",
+            "title_path": ["题目"],
+            "text": question.question,
+            "score": 1.0,
+        }
+        generic_evidence = [
+            _normalize_evidence(hit.to_dict()) for hit in hits
+        ]
+        initial_phrase_evidence = (
+            _diagnostic_phrase_evidence(
+                self.retrievers[question.domain],
+                candidate_doc_ids,
+                f"{question.question}\n{_calculation_semantic_query_terms(question.question)}",
+                top_k=max(12, self.calculation_top_k),
+            )
+            if _requested_calculation_table_row_labels(question.question)
+            else []
+        )
+        evidence_items, _ = _merge_calculation_evidence(
+            [question_evidence, *initial_phrase_evidence],
+            generic_evidence,
+            max_items=1 + self.calculation_top_k * 3,
+        )
+        initial_phrase_evidence_ids = [
+            str(item["unit_id"]) for item in initial_phrase_evidence
         ]
         usage = TokenUsage()
         last_error: Exception | None = None
@@ -821,6 +843,12 @@ class BBoardActualRunner:
                     plan,
                     semantic_constraints,
                 )
+                _validate_calculation_table_row_label_binding(
+                    question,
+                    plan,
+                    evidence_text_by_id,
+                )
+                _validate_raw_amount_ratio_dependency(question, plan)
                 _validate_insurance_surrender_rate_binding(
                     question,
                     plan,
@@ -849,10 +877,14 @@ class BBoardActualRunner:
                     ),
                 )
                 _validate_calculation_result_semantics(question, result.trace)
-                _validate_calculation_summary_output_consistency(
-                    plan,
-                    result.answer_parts,
+                summary_normalization = (
+                    _validate_calculation_summary_output_consistency(
+                        plan,
+                        result.answer_parts,
+                    )
                 )
+                if summary_normalization is not None:
+                    plan_normalizations.append(summary_normalization)
                 available = {
                     str(item["evidence_id"]) for item in evidence_payload
                 }
@@ -920,6 +952,9 @@ class BBoardActualRunner:
                     locator={
                         **dict(locator),
                         "selected_doc_ids": candidate_doc_ids,
+                        "initial_phrase_evidence_ids": (
+                            initial_phrase_evidence_ids
+                        ),
                         "calculation_retrieval_rounds": retrieval_rounds,
                     },
                 )
@@ -2411,6 +2446,7 @@ def _is_calculation_plan_structure_error(exc: Exception) -> bool:
         "percentage-point output must have percent_points value_kind",
         "Aggregate-intensity plan must",
         "decision_summary does not contain replayed output",
+        "Raw-amount ratio plan must",
     )
     return any(marker in message for marker in structural_markers)
 
@@ -2437,6 +2473,28 @@ def _calculation_semantic_query_terms(question_text: str) -> str:
     ):
         terms.append(
             "乘用车单车带电量 总体平均口径 销量持平 动力电池需求"
+        )
+    requested_row_labels = _requested_calculation_table_row_labels(
+        question_text
+    )
+    if requested_row_labels:
+        terms.append(
+            " ".join(
+                [
+                    "表格行标签 同行原始金额",
+                    *requested_row_labels,
+                    *(
+                        ["分地区"]
+                        if "分地区" in compact
+                        else []
+                    ),
+                    *(
+                        ["分销售模式"]
+                        if "分销售模式" in compact
+                        else []
+                    ),
+                ]
+            )
         )
     return " ".join(terms)
 
@@ -2654,7 +2712,7 @@ def _validate_aggregate_intensity_plan_binding(
 def _validate_calculation_summary_output_consistency(
     plan: Mapping[str, Any],
     answer_parts: Sequence[str],
-) -> None:
+) -> dict[str, Any] | None:
     summary = str(plan.get("decision_summary", "")).strip()
     if not summary:
         raise CalculationPlanError(
@@ -2674,10 +2732,240 @@ def _validate_calculation_summary_output_consistency(
         if normalized is not None and normalized not in summary_values:
             missing.append(str(answer))
     if missing:
-        raise CalculationPlanError(
-            "decision_summary does not contain replayed output: "
-            + ", ".join(missing)
+        explicit_conclusion = re.search(
+            r"(?:答案|结果|最终|同比增速|同比增幅|百分点差)"
+            r"[^。；\n]{0,120}(?:为|是|=|≈|：)\s*[+-]?\d",
+            summary,
         )
+        if explicit_conclusion is not None:
+            raise CalculationPlanError(
+                "decision_summary does not contain replayed output: "
+                + ", ".join(missing)
+            )
+        replay_suffix = "；".join(str(item) for item in answer_parts)
+        if not isinstance(plan, dict):
+            raise CalculationPlanError(
+                "decision_summary does not contain replayed output and "
+                "the plan is not mutable"
+            )
+        plan["decision_summary"] = (
+            f"{summary.rstrip('。')}。本地重放结果为：{replay_suffix}。"
+        )
+        return {
+            "reason": "append_missing_replayed_outputs_to_summary",
+            "answer_parts": [str(item) for item in answer_parts],
+        }
+    return None
+
+
+_CALCULATION_TABLE_ROW_LABELS = (
+    "境外",
+    "境内",
+    "直销",
+    "经销",
+)
+
+
+def _requested_calculation_table_row_labels(
+    question_text: str,
+) -> list[str]:
+    compact = _compact_text(question_text)
+    if not any(
+        marker in compact
+        for marker in ("分地区", "分销售模式")
+    ):
+        return []
+    return [
+        label
+        for label in _CALCULATION_TABLE_ROW_LABELS
+        if label in compact
+    ]
+
+
+def _validate_calculation_table_row_label_binding(
+    question: BQuestion,
+    plan: Mapping[str, Any],
+    evidence_text_by_id: Mapping[str, str],
+) -> None:
+    labels = _requested_calculation_table_row_labels(question.question)
+    if not labels:
+        return
+    question_years = list(
+        dict.fromkeys(re.findall(r"(20\d{2})\s*年", question.question))
+    )
+    variables = [
+        item
+        for item in plan.get("variables", [])
+        if isinstance(item, Mapping)
+    ]
+    for label in labels:
+        required_years = question_years or [""]
+        for year in required_years:
+            candidates = [
+                variable
+                for variable in variables
+                if label in _compact_text(
+                    str(variable.get("name", ""))
+                )
+                and (
+                    not year
+                    or year in str(variable.get("name", ""))
+                )
+            ]
+            if not candidates:
+                period = f"{year}年" if year else ""
+                raise CalculationPlanError(
+                    "Requested table row label binding requires a raw "
+                    f"{period}{label} variable"
+                )
+            if any(
+                _variable_is_grounded_in_labeled_table_row(
+                    variable,
+                    label=label,
+                    evidence_text_by_id=evidence_text_by_id,
+                )
+                for variable in candidates
+            ):
+                continue
+            period = f"{year}年" if year else ""
+            raise CalculationPlanError(
+                "Requested table row label binding requires "
+                f"{period}{label} and its literal value in the same cited "
+                "table row; a value from another row cannot be renamed"
+            )
+
+
+def _validate_raw_amount_ratio_dependency(
+    question: BQuestion,
+    plan: Mapping[str, Any],
+) -> None:
+    """Bind an explicit raw-amount share delta to replayable ratio steps."""
+
+    compact = _compact_text(question.question)
+    if not (
+        "原始金额" in compact
+        and any(marker in compact for marker in ("占比", "比重"))
+        and "百分点" in compact
+    ):
+        return
+
+    variables = {
+        str(item.get("name", "")).strip(): item
+        for item in plan.get("variables", [])
+        if isinstance(item, Mapping) and str(item.get("name", "")).strip()
+    }
+    steps = {
+        str(item.get("id", "")).strip(): item
+        for item in plan.get("steps", [])
+        if isinstance(item, Mapping) and str(item.get("id", "")).strip()
+    }
+    symbols = {*variables, *steps}
+
+    def dependency_variables(
+        value: Any,
+        seen: set[str] | None = None,
+    ) -> set[str]:
+        visited = set() if seen is None else set(seen)
+        direct_refs = _calculation_reference_names(value, symbols)
+        dependencies: set[str] = set()
+        for ref in direct_refs:
+            if ref in variables:
+                dependencies.add(ref)
+            elif ref in steps and ref not in visited:
+                dependencies.update(
+                    dependency_variables(
+                        steps[ref],
+                        {*visited, ref},
+                    )
+                )
+        return dependencies
+
+    reachable_steps: set[str] = set()
+
+    def collect_reachable(value: Any) -> None:
+        for ref in _calculation_reference_names(value, symbols):
+            if ref in steps and ref not in reachable_steps:
+                reachable_steps.add(ref)
+                collect_reachable(steps[ref])
+
+    collect_reachable(plan.get("outputs", []))
+    point_delta_steps = [
+        steps[step_id]
+        for step_id in reachable_steps
+        if str(steps[step_id].get("op", "")).strip() == "pct_point_delta"
+    ]
+    if not point_delta_steps:
+        raise CalculationPlanError(
+            "Raw-amount ratio plan must derive an output-reachable "
+            "pct_point_delta from original amount ratios"
+        )
+
+    def valid_ratio_step(operand: Any) -> tuple[bool, str]:
+        refs = _calculation_reference_names(operand, symbols)
+        if len(refs) != 1:
+            return False, ""
+        ref = next(iter(refs))
+        ratio_step = steps.get(ref)
+        if ratio_step is None or str(ratio_step.get("op", "")).strip() != "div":
+            return False, ref
+        dependencies = dependency_variables(ratio_step)
+        if len(dependencies) < 2:
+            return False, ref
+        for variable_name in dependencies:
+            variable = variables[variable_name]
+            if str(variable.get("value_type", "")).strip() != "decimal":
+                return False, ref
+            unit = _compact_text(str(variable.get("unit", ""))).casefold()
+            if unit in _PERCENT_UNITS:
+                return False, ref
+        return True, ref
+
+    for step in point_delta_steps:
+        new_valid, new_ref = valid_ratio_step(step.get("new"))
+        old_valid, old_ref = valid_ratio_step(step.get("old"))
+        if new_valid and old_valid and new_ref != old_ref:
+            continue
+        raise CalculationPlanError(
+            "Raw-amount ratio plan must derive pct_point_delta new and old "
+            "from distinct div steps over original amount variables; "
+            "reported percentage variables cannot replace the raw ratios"
+        )
+
+
+def _variable_is_grounded_in_labeled_table_row(
+    variable: Mapping[str, Any],
+    *,
+    label: str,
+    evidence_text_by_id: Mapping[str, str],
+) -> bool:
+    evidence_ids = [
+        str(item)
+        for item in variable.get("evidence_ids", [])
+        if str(item) in evidence_text_by_id
+    ]
+    labeled_rows: dict[str, str] = {}
+    for evidence_id in evidence_ids:
+        rows = [
+            line
+            for line in str(evidence_text_by_id[evidence_id]).splitlines()
+            if re.match(
+                rf"^\s*{re.escape(label)}\s*\|",
+                line,
+            )
+        ]
+        if rows:
+            labeled_rows[evidence_id] = "\n".join(rows)
+    if not labeled_rows:
+        return False
+    check = check_variable_grounding(
+        name=str(variable.get("name", "")),
+        value=variable.get("value"),
+        value_type=str(variable.get("value_type", "decimal")),
+        unit=str(variable.get("unit", "")),
+        evidence_ids=evidence_ids,
+        evidence_text_by_id=labeled_rows,
+    )
+    return bool(check["verified"])
 
 
 def _validate_calculation_result_semantics(

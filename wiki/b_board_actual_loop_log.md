@@ -30364,3 +30364,631 @@
   ]
 }
 ```
+
+## b-loop-qwen37-calculation-row-label-evidence-binding-a1
+
+- recorded_at: `2026-07-23T19:49:50+00:00`
+
+```json
+{
+  "approach": "为题面明确分地区/分销售模式行标签的计算题追加行标签检索词，并在本地要求每个题目年份的行标签变量与其字面值出现在同一引用表格行；单题运行fin_b_013。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_calculation_row_label_evidence_binding_a1",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "base_commit": "fbd237b",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reference_answer_access": false,
+          "requested_table_row_query_terms": "v1",
+          "row_label_value_colocation_gate": "v1",
+          "workers": 1
+        },
+        "domains": [
+          "financial_reports"
+        ],
+        "hypothesis": "fin_b_013把题目要求的分地区境外行误绑成分销售模式经销行；检索加入题面明确行标签，并要求名称含境外的原始变量在所引证据中与境外行及其数值同片段出现，可拒绝跨行语义冒名并让qwen改用正确原文。",
+        "pipeline_stage": "calculation_variable_semantic_grounding",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "table_row_label_value_scope_drift",
+        "target_qids": [
+          "fin_b_013"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "0470b8ed944d205aa6657e018364c9072c1d64f7f43dc2c6a867ce4bf3c8c471",
+    "schema_version": 1,
+    "semantic_sha256": "9c4dc24883391769c12b12a23396a92082ad6618060e1492f7067b7235a05c03",
+    "sha256": "353eb68f077874278e545ce4395551d0afa930784cc8910971810390526453cb"
+  },
+  "change_vector": {
+    "base_commit": "fbd237b",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reference_answer_access": false,
+    "requested_table_row_query_terms": "v1",
+    "row_label_value_colocation_gate": "v1",
+    "workers": 1
+  },
+  "direction_id": "qwen37_calculation_row_label_evidence_binding",
+  "domains": [
+    "financial_reports"
+  ],
+  "effect": "三次Qwen strict响应usage均完整返回，合计30232 Token。第1轮把其他收入项冒充境外，门禁准确拒绝；第2轮承认证据不足；第3轮已提取2025境外310740988000、2024境外221884773000及两年营业收入合计，本地重放答案为40.05%和10.10，与原文和pseudo99一致。",
+  "experiment_id": "b-loop-qwen37-calculation-row-label-evidence-binding-a1",
+  "failure_analysis": "第3轮正确计划因decision_summary只写原始金额与计算步骤、未重复写最终两个数值，被全局摘要—输出一致性门禁拒绝，导致答案和reasoning均未落盘。门禁把“未写结论”误当成“结论冲突”；另外精确境外证据在首轮失败后才由phrase overlay加入，造成前两次无效调用。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "base_commit": "fbd237b",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reference_answer_access": false,
+            "requested_table_row_query_terms": "v1",
+            "row_label_value_colocation_gate": "v1",
+            "workers": 1
+          },
+          "domains": [
+            "financial_reports"
+          ],
+          "hypothesis": "fin_b_013把题目要求的分地区境外行误绑成分销售模式经销行；检索加入题面明确行标签，并要求名称含境外的原始变量在所引证据中与境外行及其数值同片段出现，可拒绝跨行语义冒名并让qwen改用正确原文。",
+          "pipeline_stage": "calculation_variable_semantic_grounding",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "table_row_label_value_scope_drift",
+          "target_qids": [
+            "fin_b_013"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "0470b8ed944d205aa6657e018364c9072c1d64f7f43dc2c6a867ce4bf3c8c471",
+      "schema_version": 1,
+      "semantic_sha256": "9c4dc24883391769c12b12a23396a92082ad6618060e1492f7067b7235a05c03",
+      "sha256": "353eb68f077874278e545ce4395551d0afa930784cc8910971810390526453cb"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "base_commit": "fbd237b",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reference_answer_access": false,
+              "requested_table_row_query_terms": "v1",
+              "row_label_value_colocation_gate": "v1",
+              "workers": 1
+            },
+            "domains": [
+              "financial_reports"
+            ],
+            "hypothesis": "fin_b_013把题目要求的分地区境外行误绑成分销售模式经销行；检索加入题面明确行标签，并要求名称含境外的原始变量在所引证据中与境外行及其数值同片段出现，可拒绝跨行语义冒名并让qwen改用正确原文。",
+            "pipeline_stage": "calculation_variable_semantic_grounding",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "table_row_label_value_scope_drift",
+            "target_qids": [
+              "fin_b_013"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "0470b8ed944d205aa6657e018364c9072c1d64f7f43dc2c6a867ce4bf3c8c471",
+        "schema_version": 1,
+        "semantic_sha256": "9c4dc24883391769c12b12a23396a92082ad6618060e1492f7067b7235a05c03",
+        "sha256": "353eb68f077874278e545ce4395551d0afa930784cc8910971810390526453cb"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "61bf5e97ebb7ac043b1c90706a798266b3de71c687f4b23f92b2ae47cb261134",
+      "size": 1175494
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "553ced0a2ab9b54544943be291b3fc7a9127b49548e70d4d10a80a8348d1b0b3",
+      "size": 959727
+    },
+    "related_log_sections": [
+      "B0-actual-integrity",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-i023-readme-percent-format-priority-v6",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-last-error-minimal-candidate-set-official-history-a1",
+      "b-loop-percentage-bundle-net-plus-one-explanation-a1",
+      "b-loop-percentage-bundle-most-likely-positive-fin017-a1",
+      "b-loop-three-percentage-question-full-chain-numeric-revalidation-a1",
+      "b-loop-qwen37-structured-output-contract-a2-full100"
+    ],
+    "reviewed_at": "2026-07-23T19:43:08+00:00"
+  },
+  "hypothesis": "fin_b_013把题目要求的分地区境外行误绑成分销售模式经销行；检索加入题面明确行标签，并要求名称含境外的原始变量在所引证据中与境外行及其数值同片段出现，可拒绝跨行语义冒名并让Qwen改用正确原文。",
+  "metrics": {
+    "answer_call_count": 3,
+    "answer_completed_count": 0,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "official_upload_performed": false,
+    "proxy_total_score": null,
+    "reasoning_completed_count": 0,
+    "recorded_token_total": 30232,
+    "returned_api_response_count": 3,
+    "tests_passed": 315,
+    "third_plan_replay_values": [
+      "40.05%",
+      "10.10"
+    ],
+    "third_plan_semantically_correct": true,
+    "usage_complete": true
+  },
+  "next_step": "A2把题面明确行标签的phrase evidence在首轮Prompt前置；摘要门禁改为仅拒绝显式结论与重放输出冲突，若摘要没有显式最终数值则由代码追加“本地重放结果”而不重试。随后只跑fin_b_013验证答案、reasoning和Token。",
+  "pipeline_stage": "calculation_variable_semantic_grounding",
+  "promotion_result": "not_effective",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T19:49:50+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "table_row_label_value_scope_drift",
+  "status": "completed_not_effective_correct_plan_rejected",
+  "submission_effect": "not_submitted_incomplete",
+  "target_qids": [
+    "fin_b_013"
+  ]
+}
+```
+
+## b-loop-qwen37-calculation-row-label-evidence-binding-a2
+
+- recorded_at: `2026-07-23T19:54:35+00:00`
+
+```json
+{
+  "approach": "在A1同行标签门禁基础上，把境外/分地区phrase evidence前置到首轮8条证据；摘要仅在显式结论冲突时拒绝，未写最终值则追加本地重放结果。单题运行fin_b_013。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_calculation_row_label_evidence_binding_a2",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "base_commit": "fbd237b",
+          "initial_phrase_evidence_promotion": "v1",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reference_answer_access": false,
+          "row_label_value_colocation_gate": "v1",
+          "summary_consistency": "explicit_conflict_or_append_replay_v2",
+          "workers": 1
+        },
+        "domains": [
+          "financial_reports"
+        ],
+        "hypothesis": "a1第三轮计划已正确但被摘要门禁误拒；将精确行标签phrase evidence前置到首轮，并区分“显式结论冲突”与“未写最终值”，后者追加本地重放结果，可减少无效调用并完成fin_b_013两阶段产物。",
+        "pipeline_stage": "calculation_variable_semantic_grounding",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "table_row_label_value_scope_drift",
+        "target_qids": [
+          "fin_b_013"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "beff961f8e85f1ba027f22b0de36f042d3c6b483a34b2c4590a6cccc6ea60ddb",
+    "schema_version": 1,
+    "semantic_sha256": "8b8f48a74be336da586574c1cfb6f669d44e75be87e00bce97c05364ed33bfea",
+    "sha256": "54f248cf452ee84782821192325715001cd20138b6ecb5e2bdf0a371b7be8d7c"
+  },
+  "change_vector": {
+    "base_commit": "fbd237b",
+    "initial_phrase_evidence_promotion": "v1",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reference_answer_access": false,
+    "row_label_value_colocation_gate": "v1",
+    "summary_consistency": "explicit_conflict_or_append_replay_v2",
+    "workers": 1
+  },
+  "direction_id": "qwen37_calculation_row_label_evidence_binding",
+  "domains": [
+    "financial_reports"
+  ],
+  "effect": "答案与reasoning均一次完成，输出40.05%和10.10，与境外原文及pseudo99一致；总Token17861，较A1的30232减少40.92%。同行门禁、grounding和replay均通过。",
+  "experiment_id": "b-loop-qwen37-calculation-row-label-evidence-binding-a2",
+  "failure_analysis": "第二槽计划直接用年报展示占比38.65%和28.55%做百分点差，未按题面“使用原始金额计算，中间过程不四舍五入”分别以310740988000/803964958000和221884773000/777102455000复算。最终四舍五入同为10.10，所以accuracy代理已修复，但reasoning过程契约不完整，暂不晋级。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "base_commit": "fbd237b",
+            "initial_phrase_evidence_promotion": "v1",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reference_answer_access": false,
+            "row_label_value_colocation_gate": "v1",
+            "summary_consistency": "explicit_conflict_or_append_replay_v2",
+            "workers": 1
+          },
+          "domains": [
+            "financial_reports"
+          ],
+          "hypothesis": "a1第三轮计划已正确但被摘要门禁误拒；将精确行标签phrase evidence前置到首轮，并区分“显式结论冲突”与“未写最终值”，后者追加本地重放结果，可减少无效调用并完成fin_b_013两阶段产物。",
+          "pipeline_stage": "calculation_variable_semantic_grounding",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "table_row_label_value_scope_drift",
+          "target_qids": [
+            "fin_b_013"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "beff961f8e85f1ba027f22b0de36f042d3c6b483a34b2c4590a6cccc6ea60ddb",
+      "schema_version": 1,
+      "semantic_sha256": "8b8f48a74be336da586574c1cfb6f669d44e75be87e00bce97c05364ed33bfea",
+      "sha256": "54f248cf452ee84782821192325715001cd20138b6ecb5e2bdf0a371b7be8d7c"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "base_commit": "fbd237b",
+              "initial_phrase_evidence_promotion": "v1",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reference_answer_access": false,
+              "row_label_value_colocation_gate": "v1",
+              "summary_consistency": "explicit_conflict_or_append_replay_v2",
+              "workers": 1
+            },
+            "domains": [
+              "financial_reports"
+            ],
+            "hypothesis": "a1第三轮计划已正确但被摘要门禁误拒；将精确行标签phrase evidence前置到首轮，并区分“显式结论冲突”与“未写最终值”，后者追加本地重放结果，可减少无效调用并完成fin_b_013两阶段产物。",
+            "pipeline_stage": "calculation_variable_semantic_grounding",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "table_row_label_value_scope_drift",
+            "target_qids": [
+              "fin_b_013"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "beff961f8e85f1ba027f22b0de36f042d3c6b483a34b2c4590a6cccc6ea60ddb",
+        "schema_version": 1,
+        "semantic_sha256": "8b8f48a74be336da586574c1cfb6f669d44e75be87e00bce97c05364ed33bfea",
+        "sha256": "54f248cf452ee84782821192325715001cd20138b6ecb5e2bdf0a371b7be8d7c"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-qwen37-calculation-row-label-evidence-binding-a1"
+      ],
+      "similarity": 0.896134
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "f40954860826bef466948283a308b056168a8147e282a84d65d56a604460bed9",
+      "size": 1184810
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "4a1dc5ef9348b4fae75cebf54dc8ac2ecd24bdb5b610542e734feb26d4b17f02",
+      "size": 967608
+    },
+    "related_log_sections": [
+      "B0-actual-integrity",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-i023-readme-percent-format-priority-v6",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-last-error-minimal-candidate-set-official-history-a1",
+      "b-loop-percentage-bundle-net-plus-one-explanation-a1",
+      "b-loop-percentage-bundle-most-likely-positive-fin017-a1",
+      "b-loop-three-percentage-question-full-chain-numeric-revalidation-a1",
+      "b-loop-qwen37-structured-output-contract-a2-full100",
+      "b-loop-qwen37-calculation-row-label-evidence-binding-a1"
+    ],
+    "reviewed_at": "2026-07-23T19:50:07+00:00"
+  },
+  "hypothesis": "A1第三轮计划已正确但被摘要门禁误拒；将精确行标签phrase evidence前置到首轮，并区分“显式结论冲突”与“未写最终值”，后者追加本地重放结果，可减少无效调用并完成fin_b_013两阶段产物。",
+  "material_delta": {
+    "initial_phrase_evidence_promotion": "v1",
+    "summary_consistency": "explicit_conflict_or_append_replay_v2"
+  },
+  "metrics": {
+    "answer_call_count": 1,
+    "answer_completed_count": 1,
+    "answer_parts": [
+      "40.05%",
+      "10.10"
+    ],
+    "grounding_verified": true,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "official_upload_performed": false,
+    "plan_used_reported_percentage_for_second_slot": true,
+    "previous_round_token_total": 30232,
+    "raw_amount_exact_point_delta": "10.09822733396436599583268707",
+    "reasoning_call_count": 1,
+    "reasoning_completed_count": 1,
+    "recorded_token_total": 17861,
+    "replay_verified": true,
+    "tests_passed": 315,
+    "token_reduction_percent": 40.92,
+    "usage_complete": true
+  },
+  "next_step": "A3增加原始金额依赖门禁：题目明确原始金额且要求占比百分点差时，pct_point_delta的new/old必须分别依赖两个div步骤，div再依赖原始收入与营业收入合计；禁止直接引用报告展示百分比。重跑fin_b_013。",
+  "pipeline_stage": "calculation_variable_semantic_grounding",
+  "promotion_result": "partially_effective_not_promoted",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T19:54:35+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "table_row_label_value_scope_drift",
+  "status": "completed_partial_effective_raw_amount_violation",
+  "submission_effect": "not_officially_submitted_single_qid_artifact_only",
+  "target_qids": [
+    "fin_b_013"
+  ]
+}
+```
+
+## b-loop-qwen37-calculation-row-label-evidence-binding-a3
+
+- recorded_at: `2026-07-23T20:04:21+00:00`
+
+```json
+{
+  "approach": "在A2同行标签与首轮phrase evidence基础上，Prompt要求原始金额占比必须先做新旧两次div，再进入pct_point_delta；本地门禁只在题面明确“原始金额+占比/比重+百分点”时触发，并拒绝直接用报告展示百分比作差。单题运行fin_b_013。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_calculation_row_label_evidence_binding_a3",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "base_commit": "fbd237b",
+          "initial_phrase_evidence_promotion": "v1",
+          "model": "qwen3.7-plus-2026-05-26",
+          "raw_amount_ratio_dependency_gate": "v1",
+          "reference_answer_access": false,
+          "row_label_value_colocation_gate": "v1",
+          "summary_consistency": "explicit_conflict_or_append_replay_v2",
+          "workers": 1
+        },
+        "domains": [
+          "financial_reports"
+        ],
+        "hypothesis": "fin_b_013题面明确要求使用原始金额，但a2直接使用报告展示百分比得到同一四舍五入结果；约束百分点差的new/old必须分别由原始金额分子除以原始金额分母得到，可保证计算过程契约与答案同时正确。",
+        "pipeline_stage": "calculation_variable_semantic_grounding",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "table_row_label_value_scope_drift",
+        "target_qids": [
+          "fin_b_013"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "15663e2210078041602e6cd4f97bd4f1182501efd691b108a354a2aebcd0f732",
+    "schema_version": 1,
+    "semantic_sha256": "50ffdf229345649e85fde14396de8f0bbf321187ad9813dff20f6a61537938d5",
+    "sha256": "1a0eec2c4c5a201a1073641b1acbdb9cd0724d794f9a6dd8e7b882e0ce215dec"
+  },
+  "change_vector": {
+    "base_commit": "fbd237b",
+    "initial_phrase_evidence_promotion": "v1",
+    "model": "qwen3.7-plus-2026-05-26",
+    "raw_amount_ratio_dependency_gate": "v1",
+    "reference_answer_access": false,
+    "row_label_value_colocation_gate": "v1",
+    "summary_consistency": "explicit_conflict_or_append_replay_v2",
+    "workers": 1
+  },
+  "direction_id": "qwen37_calculation_row_label_evidence_binding",
+  "domains": [
+    "financial_reports"
+  ],
+  "effect": "答案为40.05%和10.10；计算trace以310740988000/803964958000和221884773000/777102455000得到两个未舍入ratio，再计算精确百分点差10.09822733396436599583268707，满足题面原始金额与中间不四舍五入约束。答案与reasoning阶段均完整，316项测试通过。",
+  "experiment_id": "b-loop-qwen37-calculation-row-label-evidence-binding-a3",
+  "failure_analysis": "首轮计划把由分地区加总得到的2025营业收入合计错误放入原始变量，grounding拒绝后第二次答案调用才引用直接合计证据；总Token30090，较A2的17861增加68.47%。reasoning虽展示原始金额和两次比值，但写入证据片段未明确给出的“元”，且用约38.65%和约28.55%的展示值表述后续差值，需在后续reasoning质量方向约束“无证据单位不补写、明确按未舍入比值直接作差”。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "base_commit": "fbd237b",
+            "initial_phrase_evidence_promotion": "v1",
+            "model": "qwen3.7-plus-2026-05-26",
+            "raw_amount_ratio_dependency_gate": "v1",
+            "reference_answer_access": false,
+            "row_label_value_colocation_gate": "v1",
+            "summary_consistency": "explicit_conflict_or_append_replay_v2",
+            "workers": 1
+          },
+          "domains": [
+            "financial_reports"
+          ],
+          "hypothesis": "fin_b_013题面明确要求使用原始金额，但a2直接使用报告展示百分比得到同一四舍五入结果；约束百分点差的new/old必须分别由原始金额分子除以原始金额分母得到，可保证计算过程契约与答案同时正确。",
+          "pipeline_stage": "calculation_variable_semantic_grounding",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "table_row_label_value_scope_drift",
+          "target_qids": [
+            "fin_b_013"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "15663e2210078041602e6cd4f97bd4f1182501efd691b108a354a2aebcd0f732",
+      "schema_version": 1,
+      "semantic_sha256": "50ffdf229345649e85fde14396de8f0bbf321187ad9813dff20f6a61537938d5",
+      "sha256": "1a0eec2c4c5a201a1073641b1acbdb9cd0724d794f9a6dd8e7b882e0ce215dec"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "base_commit": "fbd237b",
+              "initial_phrase_evidence_promotion": "v1",
+              "model": "qwen3.7-plus-2026-05-26",
+              "raw_amount_ratio_dependency_gate": "v1",
+              "reference_answer_access": false,
+              "row_label_value_colocation_gate": "v1",
+              "summary_consistency": "explicit_conflict_or_append_replay_v2",
+              "workers": 1
+            },
+            "domains": [
+              "financial_reports"
+            ],
+            "hypothesis": "fin_b_013题面明确要求使用原始金额，但a2直接使用报告展示百分比得到同一四舍五入结果；约束百分点差的new/old必须分别由原始金额分子除以原始金额分母得到，可保证计算过程契约与答案同时正确。",
+            "pipeline_stage": "calculation_variable_semantic_grounding",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "table_row_label_value_scope_drift",
+            "target_qids": [
+              "fin_b_013"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "15663e2210078041602e6cd4f97bd4f1182501efd691b108a354a2aebcd0f732",
+        "schema_version": 1,
+        "semantic_sha256": "50ffdf229345649e85fde14396de8f0bbf321187ad9813dff20f6a61537938d5",
+        "sha256": "1a0eec2c4c5a201a1073641b1acbdb9cd0724d794f9a6dd8e7b882e0ce215dec"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-qwen37-calculation-row-label-evidence-binding-a2",
+        "b-loop-qwen37-calculation-row-label-evidence-binding-a1"
+      ],
+      "similarity": 0.939814
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "f4e1bd830264ccbe8fd501ff4fd3ac9984d2d90bb9b90e460012e30525a63667",
+      "size": 1194730
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "1549f35335e78fe187d49861a0bea786886b45b794bc0d3ed72890cb41eef264",
+      "size": 976001
+    },
+    "related_log_sections": [
+      "B0-actual-integrity",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-i023-readme-percent-format-priority-v6",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-last-error-minimal-candidate-set-official-history-a1",
+      "b-loop-percentage-bundle-net-plus-one-explanation-a1",
+      "b-loop-percentage-bundle-most-likely-positive-fin017-a1",
+      "b-loop-three-percentage-question-full-chain-numeric-revalidation-a1",
+      "b-loop-qwen37-structured-output-contract-a2-full100",
+      "b-loop-qwen37-calculation-row-label-evidence-binding-a1",
+      "b-loop-qwen37-calculation-row-label-evidence-binding-a2"
+    ],
+    "reviewed_at": "2026-07-23T19:56:14+00:00"
+  },
+  "hypothesis": "fin_b_013题面明确要求使用原始金额，但A2直接使用报告展示百分比得到同一四舍五入结果；约束百分点差的new/old必须分别由原始金额分子除以原始金额分母得到，可保证计算过程契约与答案同时正确。",
+  "material_delta": {
+    "raw_amount_ratio_dependency_gate": "v1"
+  },
+  "metrics": {
+    "answer_call_count": 2,
+    "answer_parts": [
+      "40.05%",
+      "10.10"
+    ],
+    "answer_token_total": 24145,
+    "exact_growth_percent": "40.04610762542051499856639550",
+    "exact_share_point_delta": "10.09822733396436599583268707",
+    "grounding_verified": true,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "official_upload_performed": false,
+    "previous_round_token_total": 17861,
+    "raw_amount_ratio_dependency_verified": true,
+    "reasoning_call_count": 1,
+    "reasoning_mentions_unit_not_explicit_in_evidence": true,
+    "reasoning_token_total": 5945,
+    "recorded_token_total": 30090,
+    "replay_verified": true,
+    "tests_passed": 316,
+    "token_increase_percent": 68.47,
+    "usage_complete": true
+  },
+  "next_step": "该方向已满3轮并得到合规计算trace；创建独立有效分支并推送。随后用当前有效代码重建Qwen3.7全100题产物，再对冻结reasoning运行GPT-5.6影子评测；按全量badcase与Token账本开启新的reasoning方向。",
+  "pipeline_stage": "calculation_variable_semantic_grounding",
+  "promotion_result": "effective_promote_calculation_contract",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T20:04:21+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "table_row_label_value_scope_drift",
+  "status": "completed_effective_with_reasoning_caveat",
+  "submission_effect": "not_officially_submitted_single_qid_artifact_only",
+  "target_qids": [
+    "fin_b_013"
+  ]
+}
+```

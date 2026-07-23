@@ -32,9 +32,11 @@ from afa_agent.b_board.runner import (
     _normalize_calculation_numeric_literals,
     _validate_aggregate_intensity_plan_binding,
     _validate_calculation_summary_output_consistency,
+    _validate_calculation_table_row_label_binding,
     _validate_calculation_variable_period_binding,
     _validate_calculation_result_semantics,
     _validate_insurance_surrender_rate_binding,
+    _validate_raw_amount_ratio_dependency,
 )
 from afa_agent.client import LLMResponse
 from afa_agent.config import ModelConfig, RunConfig
@@ -595,6 +597,225 @@ class BBoardRunnerModeTests(unittest.TestCase):
             {"decision_summary": "最终同比增速为22.27%。"},
             ("22.27%",),
         )
+        plan = {
+            "decision_summary": (
+                "使用两年境外收入计算同比增幅，再计算占比提高百分点。"
+            )
+        }
+        normalization = _validate_calculation_summary_output_consistency(
+            plan,
+            ("40.05%", "10.10"),
+        )
+        self.assertEqual(
+            normalization["reason"],
+            "append_missing_replayed_outputs_to_summary",
+        )
+        self.assertIn("本地重放结果为：40.05%；10.10", plan["decision_summary"])
+
+    def test_requested_table_row_label_rejects_value_from_another_row(
+        self,
+    ) -> None:
+        question = BQuestion(
+            qid="fin_b_013",
+            domain="financial_reports",
+            split="B",
+            question=(
+                "查阅2024年和2025年分地区收入，计算境外收入同比增幅。"
+            ),
+            options={},
+            answer_format="calculation",
+            type="计算题",
+            answer_slots=1,
+            answer_slot_templates=("0.00",),
+        )
+        evidence = {
+            "u2025": (
+                "分地区\n境外 | 310,740,988,000.00 | 38.65%\n"
+                "分销售模式\n经销 | 436,754,096,000.00 | 54.33%"
+            ),
+            "u2024": (
+                "分地区\n境外 | 221,884,773,000.00 | 28.55%\n"
+                "分销售模式\n经销 | 403,946,439,000.00 | 51.98%"
+            ),
+        }
+        wrong_plan = {
+            "variables": [
+                {
+                    "name": "2025年境外收入",
+                    "value": "436754096000.00",
+                    "value_type": "decimal",
+                    "unit": "",
+                    "evidence_ids": ["u2025"],
+                },
+                {
+                    "name": "2024年境外收入",
+                    "value": "403946439000.00",
+                    "value_type": "decimal",
+                    "unit": "",
+                    "evidence_ids": ["u2024"],
+                },
+            ]
+        }
+        with self.assertRaisesRegex(
+            ValueError,
+            "literal value in the same cited table row",
+        ):
+            _validate_calculation_table_row_label_binding(
+                question,
+                wrong_plan,
+                evidence,
+            )
+
+        correct_plan = {
+            "variables": [
+                {
+                    "name": "2025年境外收入",
+                    "value": "310740988000.00",
+                    "value_type": "decimal",
+                    "unit": "",
+                    "evidence_ids": ["u2025"],
+                },
+                {
+                    "name": "2024年境外收入",
+                    "value": "221884773000.00",
+                    "value_type": "decimal",
+                    "unit": "",
+                    "evidence_ids": ["u2024"],
+                },
+            ]
+        }
+        _validate_calculation_table_row_label_binding(
+            question,
+            correct_plan,
+            evidence,
+        )
+
+    def test_table_row_query_terms_only_fire_for_explicit_table_scope(
+        self,
+    ) -> None:
+        self.assertIn(
+            "分地区",
+            _calculation_semantic_query_terms(
+                "计算2025年分地区境外收入同比增幅"
+            ),
+        )
+        self.assertNotIn(
+            "表格行标签",
+            _calculation_semantic_query_terms(
+                "公司境外收入增长的原因是什么"
+            ),
+        )
+
+    def test_raw_amount_share_delta_requires_div_dependencies(self) -> None:
+        question = BQuestion(
+            qid="fin_b_013",
+            domain="financial_reports",
+            split="B",
+            question=(
+                "使用原始金额计算境外收入占比提高了多少个百分点，"
+                "中间过程不四舍五入。"
+            ),
+            options={},
+            answer_format="calculation",
+            type="计算题",
+            answer_slots=1,
+            answer_slot_templates=("0.00",),
+        )
+        variables = [
+            {
+                "name": "2025境外收入",
+                "value": "310740988000",
+                "value_type": "decimal",
+                "unit": "",
+                "evidence_ids": ["u1"],
+            },
+            {
+                "name": "2025营业收入",
+                "value": "803964958000",
+                "value_type": "decimal",
+                "unit": "",
+                "evidence_ids": ["u1"],
+            },
+            {
+                "name": "2024境外收入",
+                "value": "221884773000",
+                "value_type": "decimal",
+                "unit": "",
+                "evidence_ids": ["u2"],
+            },
+            {
+                "name": "2024营业收入",
+                "value": "777102455000",
+                "value_type": "decimal",
+                "unit": "",
+                "evidence_ids": ["u2"],
+            },
+            {
+                "name": "2025报告占比",
+                "value": "38.65",
+                "value_type": "decimal",
+                "unit": "%",
+                "evidence_ids": ["u1"],
+            },
+            {
+                "name": "2024报告占比",
+                "value": "28.55",
+                "value_type": "decimal",
+                "unit": "%",
+                "evidence_ids": ["u2"],
+            },
+        ]
+        wrong_plan = {
+            "variables": variables,
+            "steps": [
+                {
+                    "id": "point_delta",
+                    "op": "pct_point_delta",
+                    "new": {"ref": "2025报告占比"},
+                    "old": {"ref": "2024报告占比"},
+                }
+            ],
+            "outputs": [
+                {"source": {"ref": "point_delta"}, "format": "decimal2"}
+            ],
+        }
+        with self.assertRaisesRegex(
+            ValueError,
+            "distinct div steps over original amount variables",
+        ):
+            _validate_raw_amount_ratio_dependency(question, wrong_plan)
+
+        correct_plan = {
+            "variables": variables,
+            "steps": [
+                {
+                    "id": "new_share",
+                    "op": "div",
+                    "args": [
+                        {"ref": "2025境外收入"},
+                        {"ref": "2025营业收入"},
+                    ],
+                },
+                {
+                    "id": "old_share",
+                    "op": "div",
+                    "args": [
+                        {"ref": "2024境外收入"},
+                        {"ref": "2024营业收入"},
+                    ],
+                },
+                {
+                    "id": "point_delta",
+                    "op": "pct_point_delta",
+                    "new": {"ref": "new_share"},
+                    "old": {"ref": "old_share"},
+                },
+            ],
+            "outputs": [
+                {"source": {"ref": "point_delta"}, "format": "decimal2"}
+            ],
+        }
+        _validate_raw_amount_ratio_dependency(question, correct_plan)
 
     def test_calculation_evidence_payload_expands_progressively(self) -> None:
         evidence = [

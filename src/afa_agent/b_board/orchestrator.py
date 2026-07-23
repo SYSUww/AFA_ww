@@ -394,6 +394,8 @@ class BBoardLoopOrchestrator:
             "b_actual_v15_auditable_transport",
             "b_actual_v16_aggregate_intensity_binding",
             "b_actual_v17_calculation_semantic_gate",
+            "b_actual_v18_table_row_label_binding",
+            "b_actual_v19_raw_amount_ratio_binding",
             "b_actual_composite_v1",
         }:
             raise BBoardLoopStateError("Existing B0 manifest runner identity mismatch")
