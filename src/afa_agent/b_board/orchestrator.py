@@ -401,6 +401,7 @@ class BBoardLoopOrchestrator:
             "b_actual_v22_required_sort_object_coverage",
             "b_actual_v23_full_year_dividend_binding",
             "b_actual_v24_duplicate_evidence_equivalence",
+            "b_actual_v25_reasoning_structured_output_fallback",
             "b_actual_composite_v1",
         }:
             raise BBoardLoopStateError("Existing B0 manifest runner identity mismatch")

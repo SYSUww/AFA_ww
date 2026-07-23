@@ -32491,3 +32491,234 @@
   ]
 }
 ```
+
+## b-loop-qwen37-reasoning-structured-output-hard-fallback-a1
+
+- recorded_at: `2026-07-23T21:21:25+00:00`
+
+```json
+{
+  "approach": "为submission reasoning新增submission_reasoning_v1 strict Schema；模型返回后先做不改变内容的确定性归一化（删除非契约字段、单槽冻结答案字符串转数组、status大小写空白规范化、supported时null missing_support转空数组），再过Schema、冻结答案和语义校验；仍失败时只用同一证据重试reasoning一次，不扩检索、不重跑answer。用fin_b_016既有冻结answer_artifact做reasoning-only实测。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_reasoning_structured_output_hard_fallback_a1",
+  "base_commit": "7ef4c42",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "7ef4c42"
+      },
+      "identity": {
+        "change_vector": {
+          "base_commit": "7ef4c42",
+          "local_hard_fallback": "deterministic_payload_normalization_v1",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reasoning_response_schema": "submission_reasoning_v1",
+          "reference_answer_access": false,
+          "retry_policy": "normalize_validate_then_reasoning_only_retry_no_retrieval",
+          "structured_output_mode": "native_json_schema_strict",
+          "workers": 1
+        },
+        "domains": [
+          "financial_reports"
+        ],
+        "hypothesis": "计算计划链已经使用原生strict schema与确定性归一化，但submission reasoning仍只用json_object且格式失败立即终止；为reasoning增加版本化strict schema、无语义本地归一化与格式专用重试，可在不重跑冻结答案、不扩检索的前提下降低格式失败。",
+        "pipeline_stage": "submission_reasoning_serialization",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "qwen37_reasoning_json_contract_failure",
+        "target_qids": [
+          "fin_b_016"
+        ]
+      }
+    },
+    "context_sha256": "320d2521868929759bbbc9a580c48d7ce2dce6edf3c33f1718147bf7dc4a27a8",
+    "direction_sha256": "7ab8d5d18882c3a1026c0cf547b4cb5a527da76c2ab41344b9c9001f2fd5f868",
+    "schema_version": 1,
+    "semantic_sha256": "4038d860af0fc0afcf0f96a89b1b5b100bbd1e984371cf3622bab439c5cd92d5",
+    "sha256": "ae0a99e7cd6169e7856fddd89b0b55a9362e53569a5074fede7e818bf5f54502"
+  },
+  "change_vector": {
+    "base_commit": "7ef4c42",
+    "local_hard_fallback": "deterministic_payload_normalization_v1",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reasoning_response_schema": "submission_reasoning_v1",
+    "reference_answer_access": false,
+    "retry_policy": "normalize_validate_then_reasoning_only_retry_no_retrieval",
+    "structured_output_mode": "native_json_schema_strict",
+    "workers": 1
+  },
+  "direction_id": "qwen37_reasoning_structured_output_hard_fallback",
+  "domains": [
+    "financial_reports"
+  ],
+  "effect": "线上实测answer阶段调用0次，reasoning仅1次完成；响应明确标记native_json_schema_strict，Schema版本submission_reasoning_v1，format_retry_count=0，冻结答案保持“宁德时代>美的集团>招商银行>中国建筑；76.92”。reasoning Token6057，较上一同题reasoning产物6293减少236（3.75%）。模拟格式badcase证明可本地修复时不调用第二次模型，不可修复时仅重试reasoning且不触发证据救援。",
+  "experiment_id": "b-loop-qwen37-reasoning-structured-output-hard-fallback-a1",
+  "failure_analysis": "真实Qwen响应本身已符合strict Schema，因此线上样本只验证原生Schema路径、冻结答案隔离和无额外Token；本地硬兜底及format retry由确定性单测验证，尚未在真实畸形线上响应中触发。单题Token下降可能来自生成波动，不能外推为全100题稳定降幅。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "7ef4c42"
+        },
+        "identity": {
+          "change_vector": {
+            "base_commit": "7ef4c42",
+            "local_hard_fallback": "deterministic_payload_normalization_v1",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reasoning_response_schema": "submission_reasoning_v1",
+            "reference_answer_access": false,
+            "retry_policy": "normalize_validate_then_reasoning_only_retry_no_retrieval",
+            "structured_output_mode": "native_json_schema_strict",
+            "workers": 1
+          },
+          "domains": [
+            "financial_reports"
+          ],
+          "hypothesis": "计算计划链已经使用原生strict schema与确定性归一化，但submission reasoning仍只用json_object且格式失败立即终止；为reasoning增加版本化strict schema、无语义本地归一化与格式专用重试，可在不重跑冻结答案、不扩检索的前提下降低格式失败。",
+          "pipeline_stage": "submission_reasoning_serialization",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "qwen37_reasoning_json_contract_failure",
+          "target_qids": [
+            "fin_b_016"
+          ]
+        }
+      },
+      "context_sha256": "320d2521868929759bbbc9a580c48d7ce2dce6edf3c33f1718147bf7dc4a27a8",
+      "direction_sha256": "7ab8d5d18882c3a1026c0cf547b4cb5a527da76c2ab41344b9c9001f2fd5f868",
+      "schema_version": 1,
+      "semantic_sha256": "4038d860af0fc0afcf0f96a89b1b5b100bbd1e984371cf3622bab439c5cd92d5",
+      "sha256": "ae0a99e7cd6169e7856fddd89b0b55a9362e53569a5074fede7e818bf5f54502"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "7ef4c42"
+          },
+          "identity": {
+            "change_vector": {
+              "base_commit": "7ef4c42",
+              "local_hard_fallback": "deterministic_payload_normalization_v1",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reasoning_response_schema": "submission_reasoning_v1",
+              "reference_answer_access": false,
+              "retry_policy": "normalize_validate_then_reasoning_only_retry_no_retrieval",
+              "structured_output_mode": "native_json_schema_strict",
+              "workers": 1
+            },
+            "domains": [
+              "financial_reports"
+            ],
+            "hypothesis": "计算计划链已经使用原生strict schema与确定性归一化，但submission reasoning仍只用json_object且格式失败立即终止；为reasoning增加版本化strict schema、无语义本地归一化与格式专用重试，可在不重跑冻结答案、不扩检索的前提下降低格式失败。",
+            "pipeline_stage": "submission_reasoning_serialization",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "qwen37_reasoning_json_contract_failure",
+            "target_qids": [
+              "fin_b_016"
+            ]
+          }
+        },
+        "context_sha256": "320d2521868929759bbbc9a580c48d7ce2dce6edf3c33f1718147bf7dc4a27a8",
+        "direction_sha256": "7ab8d5d18882c3a1026c0cf547b4cb5a527da76c2ab41344b9c9001f2fd5f868",
+        "schema_version": 1,
+        "semantic_sha256": "4038d860af0fc0afcf0f96a89b1b5b100bbd1e984371cf3622bab439c5cd92d5",
+        "sha256": "ae0a99e7cd6169e7856fddd89b0b55a9362e53569a5074fede7e818bf5f54502"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "339ab214cf86864237f82b7bf689cc36a1c1b79a172f5fea1acc292779f198b5",
+      "size": 1273819
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "61491b91da58c5edd394e20be6382ffd45eefc7c462477e8d39bb813db8db49a",
+      "size": 1042601
+    },
+    "related_log_sections": [
+      "B0-actual-evaluation",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a2",
+      "b-loop-qwen37-integrated-full100-candidate-a1",
+      "b-loop-qwen37-derived-rule-arithmetic-binding-a1",
+      "b-loop-qwen37-calculation-missing-input-gate-a1",
+      "b-loop-qwen37-calculation-missing-input-gate-a2",
+      "b-loop-qwen37-calculation-missing-input-gate-a3",
+      "b-loop-qwen37-duplicate-evidence-semantic-equivalence-a1"
+    ],
+    "reviewed_at": "2026-07-23T21:16:23+00:00"
+  },
+  "hypothesis": "计算计划链已经使用原生strict Schema与确定性归一化，但submission reasoning仍只用json_object且格式失败立即终止；为reasoning增加版本化strict Schema、无语义本地归一化与格式专用重试，可在不重跑冻结答案、不扩检索的前提下降低格式失败。",
+  "material_delta": {
+    "format_retry_scope": "reasoning_only_no_retrieval_v1",
+    "local_hard_fallback": "deterministic_payload_normalization_v1",
+    "reasoning_response_schema": "submission_reasoning_v1"
+  },
+  "metrics": {
+    "answer_parts_preserved": true,
+    "answer_stage_api_call_count": 0,
+    "compileall_passed": true,
+    "format_retry_count": 0,
+    "git_diff_check_passed": true,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "official_upload_performed": false,
+    "payload_normalization_count": 0,
+    "previous_reasoning_token_total": 6293,
+    "reasoning_grounding_status": "supported",
+    "reasoning_schema_version": "submission_reasoning_v1",
+    "reasoning_stage_api_call_count": 1,
+    "reasoning_structured_output_mode": "native_json_schema_strict",
+    "reasoning_token_delta": -236,
+    "reasoning_token_reduction_percent": 3.75,
+    "reasoning_token_total": 6057,
+    "synthetic_hard_fallback_without_retry_verified": true,
+    "synthetic_reasoning_only_retry_without_retrieval_verified": true,
+    "tests_passed": 324,
+    "usage_complete": true
+  },
+  "next_step": "该方向有效，创建独立分支并推送。后续全100题重建时统计reasoning response_format_mode、payload_normalizations、format_retry_count与失败类型，若出现真实格式badcase再做最多2轮定向扩展；不要把证据不足误分类为格式失败。",
+  "pipeline_stage": "submission_reasoning_serialization",
+  "promotion_result": "effective_branch_and_push_pending",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T21:21:25+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "qwen37_reasoning_json_contract_failure",
+  "status": "completed_effective",
+  "submission_effect": "reasoning_only_local_generation_not_officially_uploaded",
+  "target_qids": [
+    "fin_b_016"
+  ]
+}
+```

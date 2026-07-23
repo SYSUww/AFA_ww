@@ -93,13 +93,25 @@ class _QueuedClient:
     def __init__(self, responses: list[LLMResponse]) -> None:
         self.responses = list(responses)
         self.messages: list[list[dict[str, str]]] = []
+        self.kwargs: list[dict[str, object]] = []
 
-    def chat_json(self, messages: list[dict[str, str]]) -> LLMResponse:
+    def chat_json(
+        self,
+        messages: list[dict[str, str]],
+        **kwargs: object,
+    ) -> LLMResponse:
         self.messages.append(messages)
+        self.kwargs.append(dict(kwargs))
         return self.responses.pop(0)
 
 
-def _response(content: str, prompt: int, completion: int) -> LLMResponse:
+def _response(
+    content: str,
+    prompt: int,
+    completion: int,
+    *,
+    response_format_mode: str = "json_object_local_schema",
+) -> LLMResponse:
     return LLMResponse(
         content=content,
         token_usage=TokenUsage(
@@ -108,6 +120,7 @@ def _response(content: str, prompt: int, completion: int) -> LLMResponse:
             total_tokens=prompt + completion,
         ),
         raw_payload={},
+        response_format_mode=response_format_mode,
     )
 
 
@@ -1342,6 +1355,133 @@ class BBoardRunnerModeTests(unittest.TestCase):
         self.assertEqual(
             trace["token_usage"],
             {"prompt_tokens": 10, "completion_tokens": 2, "total_tokens": 12},
+        )
+
+    def test_reasoning_hard_fallback_repairs_representation_without_retry(
+        self,
+    ) -> None:
+        runner = object.__new__(BBoardActualRunner)
+        runner.config = SimpleNamespace(
+            model=SimpleNamespace(model_name="qwen3.7-plus")
+        )
+        runner.client = _QueuedClient(
+            [
+                _response(
+                    '{"answer_parts":"A","grounding_status":" Supported ",'
+                    '"missing_support":null,"reasoning":"定位监管要求后，证据明确给出'
+                    '适用条件，该条件与题干陈述一致，因而判断成立，最终答案为A。",'
+                    '"comment":"非契约字段"}',
+                    10,
+                    2,
+                )
+            ]
+        )
+
+        result = runner._attach_submission_reasoning(
+            _question(),
+            _artifact(),
+        )
+
+        self.assertEqual(result.answer_parts, ["A"])
+        self.assertEqual(len(runner.client.messages), 1)
+        trace = result.decision_trace["submission_reasoning"]
+        self.assertEqual(trace["format_retry_count"], 0)
+        self.assertEqual(
+            {
+                item["reason"]
+                for item in trace["payload_normalizations"]
+            },
+            {
+                "drop_noncontract_fields",
+                "normalize_grounding_status_whitespace_case",
+                "single_frozen_answer_string_to_array",
+                "supported_null_missing_support_to_empty_array",
+            },
+        )
+
+    def test_reasoning_contract_failure_retries_only_reasoning_without_rescue(
+        self,
+    ) -> None:
+        runner = object.__new__(BBoardActualRunner)
+        runner.config = SimpleNamespace(
+            model=SimpleNamespace(model_name="qwen3.7-plus")
+        )
+        runner.client = _QueuedClient(
+            [
+                _response(
+                    '{"answer_parts":["B"],"grounding_status":"supported",'
+                    '"missing_support":[],"reasoning":"这段摘要错误改动冻结答案，'
+                    '必须由契约门禁拒绝且不能进入证据扩检索。"}',
+                    10,
+                    2,
+                ),
+                _response(
+                    '{"answer_parts":["A"],"grounding_status":"supported",'
+                    '"missing_support":[],"reasoning":"定位监管要求后，证据明确给出'
+                    '适用条件，该条件与题干陈述一致，因而判断成立，最终答案为A。"}',
+                    11,
+                    3,
+                ),
+            ]
+        )
+        runner._rescue_submission_reasoning_evidence = (
+            lambda *_args: self.fail("format retry must not rescue evidence")
+        )
+
+        result = runner._attach_submission_reasoning(
+            _question(),
+            _artifact(),
+        )
+
+        self.assertEqual(result.answer_parts, ["A"])
+        self.assertEqual(len(runner.client.messages), 2)
+        self.assertIn("上一次响应未通过结构", runner.client.messages[1][1]["content"])
+        trace = result.decision_trace["submission_reasoning"]
+        self.assertEqual(trace["attempt_count"], 1)
+        self.assertEqual(trace["api_call_count"], 2)
+        self.assertEqual(trace["format_retry_count"], 1)
+        self.assertEqual(
+            result.token_usage,
+            {"prompt_tokens": 31, "completion_tokens": 10, "total_tokens": 41},
+        )
+
+    def test_reasoning_native_mode_sends_strict_schema(self) -> None:
+        runner = object.__new__(BBoardActualRunner)
+        runner.config = SimpleNamespace(
+            model=SimpleNamespace(
+                model_name="qwen3.7-plus",
+                structured_output_mode="native_json_schema_strict",
+            )
+        )
+        runner.client = _QueuedClient(
+            [
+                _response(
+                    '{"answer_parts":["A"],"grounding_status":"supported",'
+                    '"missing_support":[],"reasoning":"定位监管要求后，证据明确给出'
+                    '适用条件，该条件与题干陈述一致，因而判断成立，最终答案为A。"}',
+                    10,
+                    2,
+                    response_format_mode="native_json_schema_strict",
+                )
+            ]
+        )
+
+        result = runner._attach_submission_reasoning(
+            _question(),
+            _artifact(),
+        )
+
+        self.assertEqual(result.answer_parts, ["A"])
+        self.assertEqual(
+            runner.client.kwargs[0]["schema_name"],
+            "submission_reasoning_v1",
+        )
+        self.assertIn("response_schema", runner.client.kwargs[0])
+        self.assertEqual(
+            result.decision_trace["submission_reasoning"][
+                "response_format_modes"
+            ],
+            ["native_json_schema_strict"],
         )
 
     def test_reasoning_generation_rescues_once_after_insufficient_evidence(self) -> None:

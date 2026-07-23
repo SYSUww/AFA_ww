@@ -21,6 +21,13 @@ from afa_agent.b_board.calculation_schema import (
     CALCULATION_PLAN_SCHEMA_VERSION,
     validate_calculation_plan_schema,
 )
+from afa_agent.b_board.reasoning_schema import (
+    SUBMISSION_REASONING_NORMALIZATION_VERSION,
+    SUBMISSION_REASONING_SCHEMA,
+    SUBMISSION_REASONING_SCHEMA_VERSION,
+    normalize_submission_reasoning_payload,
+    validate_submission_reasoning_schema,
+)
 from afa_agent.b_board.io import (
     BAnswer,
     BQuestion,
@@ -107,10 +114,11 @@ reasoning 按“定位—关键事实—推导—结论”形成闭环：
 - 单选/判断题说明决定结论的关键条件；多选题逐一覆盖每个选中项，并说明至少一个关键未选项；计算题写必要公式、原始数值、单位/口径、代入关系和结果；多空题按答案槽顺序说明。
 - 最后显式写出与 frozen_answer_parts 完全一致的答案。
 避免“根据材料可知”“综合分析得出”等空泛模板，不堆叠无关事实，不输出内部 evidence_id、unit_id、JSON 路径、Markdown 或程序字段名。选择题通常 120-220 个中文字符，计算题通常 160-260 个中文字符，且去除空白后不少于 20 字。
-只输出合法 JSON：
+只输出合法 JSON，字段严格为 answer_parts、grounding_status、missing_support、
+reasoning，不得增删字段；answer_parts 和 missing_support 必须是 JSON 数组：
 支持时：{{"answer_parts":["逐字复制冻结答案"],"grounding_status":"supported","missing_support":[],"reasoning":"推理摘要"}}
 不足时：{{"answer_parts":["逐字复制冻结答案"],"grounding_status":"insufficient","missing_support":["缺失的具体事实或计算变量"],"reasoning":""}}
-prompt_version={SUBMISSION_REASONING_PROMPT_VERSION}, schema_version=1。"""
+prompt_version={SUBMISSION_REASONING_PROMPT_VERSION}, schema_version={SUBMISSION_REASONING_SCHEMA_VERSION}。"""
 
 SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION = "b_submission_reasoning_feedback_v2_prioritized"
 SUBMISSION_REASONING_FEEDBACK_SYSTEM_PROMPT = f"""你是金融长文问答的推理摘要质检器。只使用给定题目、冻结答案、摘要草稿和证据，不补充外部事实，不得建议改变答案。
@@ -128,7 +136,7 @@ SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推�
 4. 显式写出与 answer_parts 完全一致的最终答案。
 不得提及“质检”、“反馈”、“草稿”或修订过程，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。只输出 JSON。prompt_version={SUBMISSION_REASONING_REFINE_PROMPT_VERSION}。"""
 
-RUNNER_VERSION = "b_actual_v24_duplicate_evidence_equivalence"
+RUNNER_VERSION = "b_actual_v25_reasoning_structured_output_fallback"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 CALCULATION_PLAN_NORMALIZATION_VERSION = "qwen37_structure_contract_v3_schema"
 CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
@@ -1094,6 +1102,9 @@ class BBoardActualRunner:
         }
         diagnostics: list[dict[str, Any]] = []
         rescued_evidence_ids: list[str] = []
+        payload_normalizations: list[dict[str, Any]] = []
+        format_retry_count = 0
+        response_format_modes: list[str] = []
         reasoning_evidence_items = [
             dict(item) for item in artifact.evidence_items
         ]
@@ -1102,7 +1113,7 @@ class BBoardActualRunner:
                 reasoning_evidence_items,
                 limit=12 if attempt_number == 1 else 18,
             )
-            messages = [
+            base_messages = [
                 {"role": "system", "content": SUBMISSION_REASONING_SYSTEM_PROMPT},
                 {
                     "role": "user",
@@ -1123,75 +1134,124 @@ class BBoardActualRunner:
                     ),
                 },
             ]
-            response = self.client.chat_json(messages)
-            reasoning_usage = _add_token_usage(
-                reasoning_usage,
-                response.token_usage.to_dict(),
-            )
-            diagnostic: dict[str, Any] = {
-                "stage": "submission_reasoning",
-                "attempt": attempt_number,
-                "prompt_version": SUBMISSION_REASONING_PROMPT_VERSION,
-                "response_preview": response.content[:1000],
-                "token_usage": response.token_usage.to_dict(),
-            }
-            diagnostics.append(diagnostic)
-            try:
-                payload = extract_json_object(response.content)
-                answer_parts = payload.get("answer_parts")
+            payload: dict[str, Any] | None = None
+            grounding_status = ""
+            missing_support: list[str] = []
+            reasoning = ""
+            for format_attempt in range(1, 3):
+                messages = base_messages
+                if format_attempt > 1:
+                    messages = [
+                        base_messages[0],
+                        {
+                            "role": "user",
+                            "content": (
+                                base_messages[1]["content"]
+                                + "\n\n上一次响应未通过结构或冻结答案契约。"
+                                "不要改变 frozen_answer_parts；只输出 Schema 要求的"
+                                "四个字段，answer_parts 和 missing_support 必须为数组。"
+                            ),
+                        },
+                    ]
                 if (
-                    not isinstance(answer_parts, list)
-                    or [str(item) for item in answer_parts] != artifact.answer_parts
+                    getattr(
+                        self.config.model,
+                        "structured_output_mode",
+                        "",
+                    )
+                    == STRUCTURED_OUTPUT_NATIVE
                 ):
-                    raise ValueError(
-                        "submission reasoning response changed answer_parts"
+                    response = self.client.chat_json(
+                        messages,
+                        response_schema=SUBMISSION_REASONING_SCHEMA,
+                        schema_name=SUBMISSION_REASONING_SCHEMA_VERSION,
                     )
-                if (
-                    response.token_usage.prompt_tokens <= 0
-                    or response.token_usage.completion_tokens <= 0
-                ):
-                    raise ValueError(
-                        "submission reasoning API response is missing positive raw usage"
-                    )
-                grounding_status = str(payload.get("grounding_status", "")).strip()
-                missing_support = payload.get("missing_support")
-                if grounding_status not in {"supported", "insufficient"}:
-                    raise ValueError(
-                        "submission reasoning response has invalid grounding_status"
-                    )
-                if not isinstance(missing_support, list) or any(
-                    not isinstance(item, str) for item in missing_support
-                ):
-                    raise ValueError(
-                        "submission reasoning response has invalid missing_support"
-                    )
-                reasoning = str(payload.get("reasoning", "")).strip()
-                if grounding_status == "supported":
-                    if missing_support:
-                        raise ValueError(
-                            "supported submission reasoning reported missing_support"
-                        )
-                    if len(re.sub(r"\s+", "", reasoning)) < 20:
-                        raise ValueError(
-                            "submission reasoning is shorter than 20 non-whitespace characters"
-                        )
                 else:
-                    if reasoning:
-                        raise ValueError(
-                            "insufficient submission reasoning must be empty"
+                    response = self.client.chat_json(messages)
+                response_format_modes.append(response.response_format_mode)
+                reasoning_usage = _add_token_usage(
+                    reasoning_usage,
+                    response.token_usage.to_dict(),
+                )
+                diagnostic: dict[str, Any] = {
+                    "stage": "submission_reasoning",
+                    "attempt": attempt_number,
+                    "format_attempt": format_attempt,
+                    "prompt_version": SUBMISSION_REASONING_PROMPT_VERSION,
+                    "schema_version": SUBMISSION_REASONING_SCHEMA_VERSION,
+                    "response_format_mode": response.response_format_mode,
+                    "response_preview": response.content[:1000],
+                    "token_usage": response.token_usage.to_dict(),
+                }
+                diagnostics.append(diagnostic)
+                current_normalizations: list[dict[str, Any]] = []
+                try:
+                    raw_payload = extract_json_object(response.content)
+                    payload, current_normalizations = (
+                        normalize_submission_reasoning_payload(
+                            raw_payload,
+                            frozen_answer_parts=artifact.answer_parts,
                         )
-                    if not missing_support:
+                    )
+                    diagnostic["payload_normalizations"] = (
+                        current_normalizations
+                    )
+                    validate_submission_reasoning_schema(payload)
+                    answer_parts = payload["answer_parts"]
+                    if (
+                        [str(item) for item in answer_parts]
+                        != artifact.answer_parts
+                    ):
                         raise ValueError(
-                            "insufficient submission reasoning omitted missing_support"
+                            "submission reasoning response changed answer_parts"
                         )
-            except Exception as exc:
-                diagnostic["error_type"] = exc.__class__.__name__
-                diagnostic["error"] = str(exc)[:1000]
-                raise BAnswerGenerationError(
-                    f"Submission reasoning finalization failed: {exc}",
-                    token_usage=reasoning_usage,
-                    diagnostics=diagnostics,
-                ) from exc
+                    if (
+                        response.token_usage.prompt_tokens <= 0
+                        or response.token_usage.completion_tokens <= 0
+                    ):
+                        raise ValueError(
+                            "submission reasoning API response is missing positive raw usage"
+                        )
+                    grounding_status = str(payload["grounding_status"])
+                    missing_support = list(payload["missing_support"])
+                    reasoning = str(payload["reasoning"]).strip()
+                    if grounding_status == "supported":
+                        if missing_support:
+                            raise ValueError(
+                                "supported submission reasoning reported missing_support"
+                            )
+                        if len(re.sub(r"\s+", "", reasoning)) < 20:
+                            raise ValueError(
+                                "submission reasoning is shorter than 20 non-whitespace characters"
+                            )
+                    else:
+                        if reasoning:
+                            raise ValueError(
+                                "insufficient submission reasoning must be empty"
+                            )
+                        if not missing_support:
+                            raise ValueError(
+                                "insufficient submission reasoning omitted missing_support"
+                            )
+                except Exception as exc:
+                    diagnostic["error_type"] = exc.__class__.__name__
+                    diagnostic["error"] = str(exc)[:1000]
+                    retryable = (
+                        "missing positive raw usage" not in str(exc)
+                    )
+                    if format_attempt == 1 and retryable:
+                        format_retry_count += 1
+                        diagnostic["retry_action"] = (
+                            "reasoning_only_same_evidence_no_retrieval"
+                        )
+                        continue
+                    raise BAnswerGenerationError(
+                        f"Submission reasoning finalization failed: {exc}",
+                        token_usage=reasoning_usage,
+                        diagnostics=diagnostics,
+                    ) from exc
+                payload_normalizations.extend(current_normalizations)
+                break
 
             diagnostic["grounding_status"] = grounding_status
             diagnostic["missing_support"] = list(missing_support)
@@ -1208,8 +1268,13 @@ class BBoardActualRunner:
                     **artifact.decision_trace,
                     "submission_reasoning": {
                         "prompt_version": SUBMISSION_REASONING_PROMPT_VERSION,
+                        "schema_version": SUBMISSION_REASONING_SCHEMA_VERSION,
                         "model_name": self.config.model.model_name,
                         "attempt_count": attempt_number,
+                        "api_call_count": len(diagnostics),
+                        "format_retry_count": format_retry_count,
+                        "response_format_modes": response_format_modes,
+                        "payload_normalizations": payload_normalizations,
                         "grounding_status": grounding_status,
                         "rescued_evidence_ids": rescued_evidence_ids,
                         "token_usage": {
@@ -1519,6 +1584,26 @@ class BBoardActualRunner:
                         separators=(",", ":"),
                     ).encode("utf-8")
                 ).hexdigest(),
+            },
+            "submission_reasoning_contract": {
+                "prompt_sha256": hashlib.sha256(
+                    SUBMISSION_REASONING_SYSTEM_PROMPT.encode("utf-8")
+                ).hexdigest(),
+                "schema_version": SUBMISSION_REASONING_SCHEMA_VERSION,
+                "schema_sha256": hashlib.sha256(
+                    json.dumps(
+                        SUBMISSION_REASONING_SCHEMA,
+                        ensure_ascii=False,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                ).hexdigest(),
+                "normalization_version": (
+                    SUBMISSION_REASONING_NORMALIZATION_VERSION
+                ),
+                "retry_policy": (
+                    "normalize_validate_then_reasoning_only_retry_no_retrieval"
+                ),
             },
         }
         return build_run_fingerprint(
