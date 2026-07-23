@@ -20327,3 +20327,227 @@
   "target_qids": []
 }
 ```
+
+## b-loop-official97-boundary-d-option-rollback-a1-joint
+
+- recorded_at: `2026-07-23T03:50:17+00:00`
+
+```json
+{
+  "approach": "以官网97%八列submit.csv为唯一基线，只将fc_b_019和ins_b_017的answer_1由ABCD收窄为ABC；不增加reasoning，不重新生成Token，写后逐字段对照并冻结其余98题。",
+  "artifact_path": "artifacts/b_board_actual/candidates/i031_accuracy_boundary_d_rollback/fc019_ins017_drop_d_v1/submit.csv",
+  "base_commit": "8f2539d1d04a46646ad2d41ba6f9eef639c2e494",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "8f2539d1d04a46646ad2d41ba6f9eef639c2e494"
+      },
+      "identity": {
+        "change_vector": {
+          "answer_only": true,
+          "fc_b_019": "ABCD->ABC",
+          "frozen_other_qids": 98,
+          "ins_b_017": "ABCD->ABC",
+          "reasoning_column": false
+        },
+        "domains": [
+          "financial_contracts",
+          "insurance"
+        ],
+        "hypothesis": "97%版本净增3分最可能由三道强证据题贡献；fc_b_019与ins_b_017的d项超出官方题干口径。仅将两题abcd改为abc、冻结其余98题，预期准确率由97%提升至99%，最差合理情形保持97%。",
+        "pipeline_stage": "answer_badcase_optimization",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "multi_choice_scope_boundary_overselection",
+        "target_qids": [
+          "fc_b_019",
+          "ins_b_017"
+        ]
+      }
+    },
+    "context_sha256": "443515e7256f456dca9e4582e1fbd98ac63c5b0f9322bdb43a1461827d3667e8",
+    "direction_sha256": "9151b4200e5775028251eed13ba2daf3b9eb54b73316a9407092b3f8c3e913ef",
+    "schema_version": 1,
+    "semantic_sha256": "b0f3837ad6e91abab92b12415c00318b935062ead1943d25ef6d2b694c19af40",
+    "sha256": "2bbf2a60c54e6f978973d84f570a9d1a332c86a0ba11ce4ddae78bcc3b1b5b4f"
+  },
+  "change_vector": {
+    "answer_only": true,
+    "fc_b_019": "ABCD->ABC",
+    "frozen_other_qids": 98,
+    "ins_b_017": "ABCD->ABC",
+    "reasoning_column": false
+  },
+  "direction_id": "official97_boundary_d_option_rollback",
+  "domains": [
+    "financial_contracts",
+    "insurance"
+  ],
+  "effect": "已生成100题纯答案候选；表头与97%文件完全一致，无reasoning列，观测到且仅观测到两处预期答案变化。官网准确率尚未提交验证。",
+  "experiment_id": "b-loop-official97-boundary-d-option-rollback-a1-joint",
+  "failure_analysis": "97%只有整卷聚合反馈，无法确认两题逐题真值；固定评测此前偏好ABCD但与官网净增仅3分存在冲突。严格结果可能为95%到99%，主预测99%不能当作已实现。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "8f2539d1d04a46646ad2d41ba6f9eef639c2e494"
+        },
+        "identity": {
+          "change_vector": {
+            "answer_only": true,
+            "fc_b_019": "ABCD->ABC",
+            "frozen_other_qids": 98,
+            "ins_b_017": "ABCD->ABC",
+            "reasoning_column": false
+          },
+          "domains": [
+            "financial_contracts",
+            "insurance"
+          ],
+          "hypothesis": "97%版本净增3分最可能由三道强证据题贡献；fc_b_019与ins_b_017的d项超出官方题干口径。仅将两题abcd改为abc、冻结其余98题，预期准确率由97%提升至99%，最差合理情形保持97%。",
+          "pipeline_stage": "answer_badcase_optimization",
+          "question_types": [
+            "multi"
+          ],
+          "root_cause_cluster": "multi_choice_scope_boundary_overselection",
+          "target_qids": [
+            "fc_b_019",
+            "ins_b_017"
+          ]
+        }
+      },
+      "context_sha256": "443515e7256f456dca9e4582e1fbd98ac63c5b0f9322bdb43a1461827d3667e8",
+      "direction_sha256": "9151b4200e5775028251eed13ba2daf3b9eb54b73316a9407092b3f8c3e913ef",
+      "schema_version": 1,
+      "semantic_sha256": "b0f3837ad6e91abab92b12415c00318b935062ead1943d25ef6d2b694c19af40",
+      "sha256": "2bbf2a60c54e6f978973d84f570a9d1a332c86a0ba11ce4ddae78bcc3b1b5b4f"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "8f2539d1d04a46646ad2d41ba6f9eef639c2e494"
+          },
+          "identity": {
+            "change_vector": {
+              "answer_only": true,
+              "fc_b_019": "ABCD->ABC",
+              "frozen_other_qids": 98,
+              "ins_b_017": "ABCD->ABC",
+              "reasoning_column": false
+            },
+            "domains": [
+              "financial_contracts",
+              "insurance"
+            ],
+            "hypothesis": "97%版本净增3分最可能由三道强证据题贡献；fc_b_019与ins_b_017的d项超出官方题干口径。仅将两题abcd改为abc、冻结其余98题，预期准确率由97%提升至99%，最差合理情形保持97%。",
+            "pipeline_stage": "answer_badcase_optimization",
+            "question_types": [
+              "multi"
+            ],
+            "root_cause_cluster": "multi_choice_scope_boundary_overselection",
+            "target_qids": [
+              "fc_b_019",
+              "ins_b_017"
+            ]
+          }
+        },
+        "context_sha256": "443515e7256f456dca9e4582e1fbd98ac63c5b0f9322bdb43a1461827d3667e8",
+        "direction_sha256": "9151b4200e5775028251eed13ba2daf3b9eb54b73316a9407092b3f8c3e913ef",
+        "schema_version": 1,
+        "semantic_sha256": "b0f3837ad6e91abab92b12415c00318b935062ead1943d25ef6d2b694c19af40",
+        "sha256": "2bbf2a60c54e6f978973d84f570a9d1a332c86a0ba11ce4ddae78bcc3b1b5b4f"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "9b398252ffc519dd8db34014e5dd8f27c0ed29633c80fd401cfb74543d242426",
+      "size": 730121
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "a9a220b374ada1e15914227267cc03d19a558d5f14e561e441dbe0f56209c8d4",
+      "size": 593126
+    },
+    "related_log_sections": [
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i024-remaining93-direct-source-five-v1",
+      "b-loop-reasoning-structured-summary-a1"
+    ],
+    "reviewed_at": "2026-07-23T03:50:17+00:00"
+  },
+  "hypothesis": "97%版本净增3分最可能由三道强证据题贡献；fc_b_019与ins_b_017的D项超出官方题干口径。仅将两题ABCD改为ABC、冻结其余98题，预期准确率由97%提升至99%，最差合理情形保持97%。",
+  "metrics": {
+    "answer_change_count": 2,
+    "answer_changes": {
+      "fc_b_019": {
+        "after": "ABC",
+        "before": "ABCD"
+      },
+      "ins_b_017": {
+        "after": "ABC",
+        "before": "ABCD"
+      }
+    },
+    "answer_row_count": 100,
+    "baseline_official_accuracy": 97.0,
+    "candidate_sha256": "8ffbb397799e33f342149f5be392b9e46c3d841bcda19fd0e4e944a40e9304c6",
+    "frozen_answer_count": 98,
+    "full_test_count": 254,
+    "full_test_failures": 0,
+    "predicted_accuracy": 99.0,
+    "reasoning_column_present": false,
+    "strict_possible_accuracy_range": [
+      95.0,
+      99.0
+    ],
+    "token_field_change_count": 0
+  },
+  "next_step": "上传本轮submit.csv并回填官网准确率：99%则方向有效并封盘；97%则两题拆分提交归因；95%或96%则立即回滚到97%基线。",
+  "pipeline_stage": "answer_badcase_optimization",
+  "question_types": [
+    "multi"
+  ],
+  "recorded_at": "2026-07-23T03:50:17+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "multi_choice_scope_boundary_overselection",
+  "status": "candidate_ready",
+  "submission_effect": "candidate_ready_not_submitted",
+  "target_qids": [
+    "fc_b_019",
+    "ins_b_017"
+  ]
+}
+```
