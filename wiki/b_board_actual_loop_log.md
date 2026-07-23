@@ -37438,3 +37438,308 @@
   ]
 }
 ```
+
+## b-loop-qwen37-reasoning-nonthinking-stage-a3-financial-multi
+
+- recorded_at: `2026-07-23T23:53:08+00:00`
+
+```json
+{
+  "accepted_patch_artifact_path": "artifacts/b_board_actual/qwen37_reasoning_nonthinking_a3_accepted2",
+  "approach": "第三轮选择剩余completion Token最高、且冻结summary包含完整选项事实的4道财务选择题；仅reasoning关闭thinking，GPT-5.6离线复评并逐题门禁。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_integrated_full100_candidate_a11_nonthinking7",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "answer_stage_thinking_mode": "unchanged",
+          "base_commit": "63b4c07",
+          "evidence_char_limit": 1800,
+          "model": "qwen3.7-plus-2026-05-26",
+          "reasoning_stage_enable_thinking": false,
+          "reference_answer_access": false,
+          "selection_gate": "per_qid_final_formula_delta_positive",
+          "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json",
+          "structured_output_mode": "native_json_schema_strict",
+          "target_batch": "top_remaining_financial_multiple_choice_completion"
+        },
+        "domains": [
+          "financial"
+        ],
+        "hypothesis": "第三轮聚焦剩余completion token最高且验证summary包含完整选项事实的财务选择题；仅reasoning阶段关闭thinking并逐题门禁，规避a2计算变量遗漏风险。",
+        "pipeline_stage": "submission_reasoning_generation",
+        "question_types": [
+          "multiple_choice"
+        ],
+        "root_cause_cluster": "default_thinking_token_overhead_on_frozen_summary_task",
+        "target_qids": [
+          "fin_b_001",
+          "fin_b_005",
+          "fin_b_008",
+          "fin_b_012"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "a7d610f94f13c85fff1da7c05fa324e653d356d0c3301290bf08059a55c29077",
+    "schema_version": 1,
+    "semantic_sha256": "d41a85a76da0e54333e955285a9797ee3310ee400dcc7863246aff3dd4b6c4cd",
+    "sha256": "ca1259012d3fdabb4ceab2fae5e72b19c9773cbbf5a69e0a928fb34d656b32e8"
+  },
+  "change_vector": {
+    "answer_stage_thinking_mode": "unchanged",
+    "base_commit": "63b4c07",
+    "evidence_char_limit": 1800,
+    "model": "qwen3.7-plus-2026-05-26",
+    "reasoning_stage_enable_thinking": false,
+    "reference_answer_access": false,
+    "selection_gate": "per_qid_final_formula_delta_positive",
+    "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json",
+    "structured_output_mode": "native_json_schema_strict",
+    "target_batch": "top_remaining_financial_multiple_choice_completion"
+  },
+  "direction_id": "qwen37_reasoning_non_thinking_stage",
+  "domains": [
+    "financial"
+  ],
+  "effect": "4题reasoning Token 20990→13044，节省7946。接受fin_b_001、fin_b_008；A11相对A10 reasoning 95.7800→95.7567、Token 1313819→1309514，同accuracy下代理总分净增0.010220。",
+  "experiment_id": "b-loop-qwen37-reasoning-nonthinking-stage-a3-financial-multi",
+  "failure_analysis": "fin_b_005净降0.000248、fin_b_012净降0.007188，拒绝。即便冻结summary完整，非thinking输出仍有完整性波动，不能继续批量扩展或设为全局默认。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "answer_stage_thinking_mode": "unchanged",
+            "base_commit": "63b4c07",
+            "evidence_char_limit": 1800,
+            "model": "qwen3.7-plus-2026-05-26",
+            "reasoning_stage_enable_thinking": false,
+            "reference_answer_access": false,
+            "selection_gate": "per_qid_final_formula_delta_positive",
+            "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json",
+            "structured_output_mode": "native_json_schema_strict",
+            "target_batch": "top_remaining_financial_multiple_choice_completion"
+          },
+          "domains": [
+            "financial"
+          ],
+          "hypothesis": "第三轮聚焦剩余completion token最高且验证summary包含完整选项事实的财务选择题；仅reasoning阶段关闭thinking并逐题门禁，规避a2计算变量遗漏风险。",
+          "pipeline_stage": "submission_reasoning_generation",
+          "question_types": [
+            "multiple_choice"
+          ],
+          "root_cause_cluster": "default_thinking_token_overhead_on_frozen_summary_task",
+          "target_qids": [
+            "fin_b_001",
+            "fin_b_005",
+            "fin_b_008",
+            "fin_b_012"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "a7d610f94f13c85fff1da7c05fa324e653d356d0c3301290bf08059a55c29077",
+      "schema_version": 1,
+      "semantic_sha256": "d41a85a76da0e54333e955285a9797ee3310ee400dcc7863246aff3dd4b6c4cd",
+      "sha256": "ca1259012d3fdabb4ceab2fae5e72b19c9773cbbf5a69e0a928fb34d656b32e8"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "answer_stage_thinking_mode": "unchanged",
+              "base_commit": "63b4c07",
+              "evidence_char_limit": 1800,
+              "model": "qwen3.7-plus-2026-05-26",
+              "reasoning_stage_enable_thinking": false,
+              "reference_answer_access": false,
+              "selection_gate": "per_qid_final_formula_delta_positive",
+              "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json",
+              "structured_output_mode": "native_json_schema_strict",
+              "target_batch": "top_remaining_financial_multiple_choice_completion"
+            },
+            "domains": [
+              "financial"
+            ],
+            "hypothesis": "第三轮聚焦剩余completion token最高且验证summary包含完整选项事实的财务选择题；仅reasoning阶段关闭thinking并逐题门禁，规避a2计算变量遗漏风险。",
+            "pipeline_stage": "submission_reasoning_generation",
+            "question_types": [
+              "multiple_choice"
+            ],
+            "root_cause_cluster": "default_thinking_token_overhead_on_frozen_summary_task",
+            "target_qids": [
+              "fin_b_001",
+              "fin_b_005",
+              "fin_b_008",
+              "fin_b_012"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "a7d610f94f13c85fff1da7c05fa324e653d356d0c3301290bf08059a55c29077",
+        "schema_version": 1,
+        "semantic_sha256": "d41a85a76da0e54333e955285a9797ee3310ee400dcc7863246aff3dd4b6c4cd",
+        "sha256": "ca1259012d3fdabb4ceab2fae5e72b19c9773cbbf5a69e0a928fb34d656b32e8"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "Related history is inconclusive, so executing will add information",
+      "related_experiment_ids": [
+        "b-loop-qwen37-reasoning-nonthinking-stage-a2-top-completion",
+        "b-loop-qwen37-reasoning-nonthinking-stage-a1"
+      ],
+      "similarity": 0.843254
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "2c5c2f4797abce0fc3fe8f4fd08f8ae9b779cfa3c2675f2675414f606329ba66",
+      "size": 1510216
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "6bb334a7de14d28eaead29e6871172beb87a46d7abdf2459de54046401252962",
+      "size": 1242482
+    },
+    "related_log_sections": [
+      "B0-actual-evaluation",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-financial-reports-full-year-dividend-evidence-aggregation-a1-fin005",
+      "b-loop-submission-schema-empty-reasoning-compat-a1-fin005",
+      "b-loop-fin005-single-ablation-official-result-a1",
+      "b-loop-adaptive-second-submission-ins012-single-a1",
+      "b-loop-last-error-minimal-candidate-set-official-history-a1",
+      "b-loop-qwen37-compliance-and-score-loop-scaffold-a2",
+      "b-loop-qwen37-integrated-full100-candidate-a2",
+      "b-loop-qwen37-reasoning-structured-output-hard-fallback-a2",
+      "b-loop-qwen37-reasoning-structured-output-hard-fallback-a3",
+      "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a1",
+      "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a2-date-boundary",
+      "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a1",
+      "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a2",
+      "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a3",
+      "b-loop-qwen37-reasoning-evidence-payload-compression-a1-global900-probe",
+      "b-loop-qwen37-reasoning-evidence-payload-compression-a2-parameterized-repro",
+      "b-loop-qwen37-reasoning-evidence-payload-compression-a3-res013-1200",
+      "b-loop-qwen37-reasoning-nonthinking-stage-a1",
+      "b-loop-qwen37-reasoning-nonthinking-stage-a2-top-completion"
+    ],
+    "reviewed_at": "2026-07-23T23:50:59+00:00"
+  },
+  "hypothesis": "第三轮聚焦剩余completion Token最高且验证summary包含完整选项事实的财务选择题；仅reasoning阶段关闭thinking并逐题门禁，规避A2计算变量遗漏风险。",
+  "metrics": {
+    "accepted_qids": [
+      "fin_b_001",
+      "fin_b_008"
+    ],
+    "answer_parts_changed_count": 0,
+    "answer_stage_api_call_count": 0,
+    "direction_attempt_count": 3,
+    "full100_reasoning_score_after": 95.75666666666666,
+    "full100_reasoning_score_before": 95.78,
+    "full100_token_after": 1309514,
+    "full100_token_before": 1313819,
+    "full100_token_efficiency_after": 73.80972,
+    "official_accuracy": null,
+    "official_total_score": null,
+    "official_upload_performed": false,
+    "per_qid": {
+      "fin_b_001": {
+        "proxy_total_delta": 0.002999999999999999,
+        "reasoning_score_after": 95.66666666666667,
+        "reasoning_score_before": 97.66666666666667,
+        "reasoning_score_delta": -2.0,
+        "reasoning_token_after": 2866,
+        "reasoning_token_before": 5116,
+        "reasoning_token_delta": -2250
+      },
+      "fin_b_005": {
+        "proxy_total_delta": -0.00024800000000002945,
+        "reasoning_score_after": 95.33333333333333,
+        "reasoning_score_before": 97.66666666666667,
+        "reasoning_score_delta": -2.333333333333343,
+        "reasoning_token_after": 3311,
+        "reasoning_token_before": 4999,
+        "reasoning_token_delta": -1688
+      },
+      "fin_b_008": {
+        "proxy_total_delta": 0.007219999999999971,
+        "reasoning_score_after": 94.33333333333333,
+        "reasoning_score_before": 94.66666666666667,
+        "reasoning_score_delta": -0.3333333333333428,
+        "reasoning_token_after": 4025,
+        "reasoning_token_before": 6080,
+        "reasoning_token_delta": -2055
+      },
+      "fin_b_012": {
+        "proxy_total_delta": -0.007188,
+        "reasoning_score_after": 91.66666666666667,
+        "reasoning_score_before": 96.66666666666667,
+        "reasoning_score_delta": -5.0,
+        "reasoning_token_after": 2842,
+        "reasoning_token_before": 4795,
+        "reasoning_token_delta": -1953
+      }
+    },
+    "proxy_total_delta_accuracy_invariant": 0.010220000000003893,
+    "reasoning_judge_model": "gpt-5.6",
+    "reasoning_judge_offline_only": true,
+    "reasoning_patch_token_after": 13044,
+    "reasoning_patch_token_before": 20990,
+    "reasoning_patch_token_saved": 7946,
+    "reasoning_stage_enable_thinking": false,
+    "rejected_qids": [
+      "fin_b_005",
+      "fin_b_012"
+    ],
+    "submission_valid": true,
+    "target_qids": [
+      "fin_b_001",
+      "fin_b_008",
+      "fin_b_012",
+      "fin_b_005"
+    ],
+    "tests_passed": 340
+  },
+  "next_step": "方向达到三轮上限并封闭。A11为当前最佳本地因果候选；停止新增非thinking覆盖。汇总全轮结果和剩余官方锁风险，不做官网上传。",
+  "pipeline_stage": "submission_reasoning_generation",
+  "probe_artifact_path": "artifacts/b_board_actual/qwen37_reasoning_nonthinking_a3_fin_multi4",
+  "promotion_result": "effective_same_direction_branch_push_pending",
+  "question_types": [
+    "multiple_choice"
+  ],
+  "recorded_at": "2026-07-23T23:53:08+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "default_thinking_token_overhead_on_frozen_summary_task",
+  "status": "completed_effective_direction_exhausted",
+  "submission_effect": "local_reasoning_candidate_not_officially_uploaded",
+  "target_qids": [
+    "fin_b_001",
+    "fin_b_008",
+    "fin_b_012",
+    "fin_b_005"
+  ]
+}
+```
