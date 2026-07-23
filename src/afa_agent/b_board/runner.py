@@ -108,7 +108,12 @@ format 仅 raw,decimal0,decimal1,decimal2,percent2,date_cn,text。中间过程�
 格式优先级为：题干具体要求 > README通用规则 > 提交模板占位。题干未规定时，README要求百分数答案带%并保留两位小数，其他数值不带单位并保留两位小数。
 证据 ID 必须原样使用给定 evidence_id。题目本身给出的数值可引用 question:<qid>。只输出 JSON。"""
 
-SUBMISSION_REASONING_PROMPT_VERSION = "b_submission_reasoning_v3_qwen37_grounded"
+SUBMISSION_REASONING_PROMPT_VERSION = (
+    "b_submission_reasoning_v4_grounded_date_boundary_hint"
+)
+SUBMISSION_REASONING_STYLE_HINT_VERSION = (
+    "question_derived_date_natural_day_boundary_v1"
+)
 SUBMISSION_REASONING_SYSTEM_PROMPT = f"""你是金融长文问答的提交推理摘要生成器。你的任务不是重新解题，而是基于用户提供的题目、冻结答案、检索证据和已验证求解结果，生成能够支持冻结答案的中文 reasoning 摘要。
 最高优先级约束：
 1. frozen_answer_parts 是冻结答案，禁止修改、增删、重新排序或重新选择。
@@ -121,6 +126,7 @@ reasoning 按“定位—关键事实—推导—结论”形成闭环：
 - 从证据提取直接支持答案的具体事实、数值、条件或限制，保持单位、期间和口径一致。
 - 单选/判断题说明决定结论的关键条件；多选题逐一覆盖每个选中项，并说明至少一个关键未选项；计算题写必要公式、原始数值、单位/口径、代入关系和结果；多空题按答案槽顺序说明。
 - 最后显式写出与 frozen_answer_parts 完全一致的答案。
+用户载荷中的 reasoning_style_hint 若非空，只是由题面确定、且不包含答案的核验要求；在不违背证据和冻结答案的前提下执行它。
 避免“根据材料可知”“综合分析得出”等空泛模板，不堆叠无关事实，不输出内部 evidence_id、unit_id、JSON 路径、Markdown 或程序字段名。选择题通常 120-220 个中文字符，计算题通常 160-260 个中文字符，且去除空白后不少于 20 字。
 只输出合法 JSON，字段严格为 answer_parts、grounding_status、missing_support、
 reasoning，不得增删字段；answer_parts 和 missing_support 必须是 JSON 数组：
@@ -1193,6 +1199,7 @@ class BBoardActualRunner:
         reasoning_evidence_items = [
             dict(item) for item in artifact.evidence_items
         ]
+        reasoning_style_hint = _submission_reasoning_style_hint(question)
         for attempt_number in range(1, 3):
             evidence_payload = _reasoning_evidence_payload(
                 reasoning_evidence_items,
@@ -1209,6 +1216,7 @@ class BBoardActualRunner:
                             "answer_format": question.answer_format,
                             "question": question.question,
                             "options": question.options,
+                            "reasoning_style_hint": reasoning_style_hint,
                             "frozen_answer_parts": artifact.answer_parts,
                             "verified_solution_summary": artifact.decision_summary,
                             "verified_calculation_trace": artifact.calculation_trace,
@@ -1354,6 +1362,10 @@ class BBoardActualRunner:
                     "submission_reasoning": {
                         "prompt_version": SUBMISSION_REASONING_PROMPT_VERSION,
                         "schema_version": SUBMISSION_REASONING_SCHEMA_VERSION,
+                        "style_hint_version": (
+                            SUBMISSION_REASONING_STYLE_HINT_VERSION
+                        ),
+                        "reasoning_style_hint": reasoning_style_hint,
                         "model_name": self.config.model.model_name,
                         "attempt_count": attempt_number,
                         "api_call_count": len(diagnostics),
@@ -1860,6 +1872,9 @@ class BBoardActualRunner:
                 ).hexdigest(),
                 "normalization_version": (
                     SUBMISSION_REASONING_NORMALIZATION_VERSION
+                ),
+                "style_hint_version": (
+                    SUBMISSION_REASONING_STYLE_HINT_VERSION
                 ),
                 "retry_policy": (
                     "normalize_validate_then_reasoning_only_retry_no_retrieval"
@@ -3917,6 +3932,23 @@ def _diagnostic_phrase_evidence(
 
 def _compact_text(value: str) -> str:
     return re.sub(r"\s+", "", str(value)).replace(",", "")
+
+
+def _submission_reasoning_style_hint(question: BQuestion) -> str:
+    """Derive an answer-blind reasoning check from explicit question wording."""
+
+    compact = _compact_text(question.question)
+    if (
+        question.answer_format == "calculation"
+        and "提前" in compact
+        and "自然日" in compact
+        and re.search(r"20\d{2}年\d{1,2}月\d{1,2}日", compact)
+    ):
+        return (
+            "日期计算需写清起止边界和自然日口径，并用一句区间计数"
+            "复核结果；不要只写“往前推若干日”。"
+        )
+    return ""
 
 
 def _reasoning_evidence_payload(

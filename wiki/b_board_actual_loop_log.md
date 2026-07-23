@@ -34651,3 +34651,474 @@
   ]
 }
 ```
+
+## b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a1
+
+- recorded_at: `2026-07-23T23:01:45+00:00`
+
+```json
+{
+  "approach": "从A2的干净answer_artifacts读取res_b_009与reg_b_018冻结checkpoint，更新reasoning Prompt为v4因果精简版后，每题仅调用一次Qwen3.7原生strict reasoning；不调用答案阶段、不继承旧reasoning Token、不调用feedback/refine。随后用固定GPT-5.6逐题重评。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_reasoning_causal_minimal_clean_a1_lowtail2",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "base_commit": "e1f8fc7",
+          "feedback_refine_calls": false,
+          "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+          "model": "qwen3.7-plus-2026-05-26",
+          "old_reasoning_tokens_in_candidate": false,
+          "reasoning_prompt": "b_submission_reasoning_v4_causal_minimal",
+          "reference_answer_access": false,
+          "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+        },
+        "domains": [
+          "regulatory",
+          "research"
+        ],
+        "hypothesis": "从干净冻结答案checkpoint用qwen3.7单次重生reasoning，并强化“必要事实到结论的短因果链”和日期边界复核，可在不累计旧reasoning及feedback token的前提下改善低尾逻辑/完整性与token效率。",
+        "pipeline_stage": "submission_reasoning_generation",
+        "question_types": [
+          "calculation",
+          "multi"
+        ],
+        "root_cause_cluster": "reasoning_lowtail_causal_chain_and_token_efficiency",
+        "target_qids": [
+          "reg_b_018",
+          "res_b_009"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "8ec2eedf89ffb5c20122e7101a6eb7136e0629cad4e63b3ce4366cbc402ee746",
+    "schema_version": 1,
+    "semantic_sha256": "05b0939663b5dbc8879fbddbdbd0a89d48d394d1049b860bd8b18afe65337d47",
+    "sha256": "f764beb5e503f6753554a5db9486296885d5189b8993a6e7091b85bff2d88789"
+  },
+  "change_vector": {
+    "base_commit": "e1f8fc7",
+    "feedback_refine_calls": false,
+    "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+    "model": "qwen3.7-plus-2026-05-26",
+    "old_reasoning_tokens_in_candidate": false,
+    "reasoning_prompt": "b_submission_reasoning_v4_causal_minimal",
+    "reference_answer_access": false,
+    "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+  },
+  "direction_id": "qwen37_reasoning_causal_minimal_clean_regeneration",
+  "domains": [
+    "research",
+    "regulatory"
+  ],
+  "effect": "两题答案签名均保持；2次Qwen调用均native strict，格式重试0。reg_b_018由88.6667升至95.3333且新reasoning仅2497 Token（较旧2330多167）；res_b_009由84.6667降至78.0000且新reasoning9730 Token（较旧9122多608）。两题reasoning均值保持86.6667，但Token增加775，整组无净收益。",
+  "experiment_id": "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a1",
+  "failure_analysis": "统一“因果精简”提示对日期计算有效，却把跨行业多选res_b_009压缩得过度：逻辑维持76，但完整性88降72、清晰度90降86。说明两类低分根因不同，不能用一个全局风格改动覆盖。若同时替换两题，full100 reasoning不变、Token效率72.51542降至72.49992。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "base_commit": "e1f8fc7",
+            "feedback_refine_calls": false,
+            "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+            "model": "qwen3.7-plus-2026-05-26",
+            "old_reasoning_tokens_in_candidate": false,
+            "reasoning_prompt": "b_submission_reasoning_v4_causal_minimal",
+            "reference_answer_access": false,
+            "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+          },
+          "domains": [
+            "regulatory",
+            "research"
+          ],
+          "hypothesis": "从干净冻结答案checkpoint用qwen3.7单次重生reasoning，并强化“必要事实到结论的短因果链”和日期边界复核，可在不累计旧reasoning及feedback token的前提下改善低尾逻辑/完整性与token效率。",
+          "pipeline_stage": "submission_reasoning_generation",
+          "question_types": [
+            "calculation",
+            "multi"
+          ],
+          "root_cause_cluster": "reasoning_lowtail_causal_chain_and_token_efficiency",
+          "target_qids": [
+            "reg_b_018",
+            "res_b_009"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "8ec2eedf89ffb5c20122e7101a6eb7136e0629cad4e63b3ce4366cbc402ee746",
+      "schema_version": 1,
+      "semantic_sha256": "05b0939663b5dbc8879fbddbdbd0a89d48d394d1049b860bd8b18afe65337d47",
+      "sha256": "f764beb5e503f6753554a5db9486296885d5189b8993a6e7091b85bff2d88789"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "base_commit": "e1f8fc7",
+              "feedback_refine_calls": false,
+              "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+              "model": "qwen3.7-plus-2026-05-26",
+              "old_reasoning_tokens_in_candidate": false,
+              "reasoning_prompt": "b_submission_reasoning_v4_causal_minimal",
+              "reference_answer_access": false,
+              "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+            },
+            "domains": [
+              "regulatory",
+              "research"
+            ],
+            "hypothesis": "从干净冻结答案checkpoint用qwen3.7单次重生reasoning，并强化“必要事实到结论的短因果链”和日期边界复核，可在不累计旧reasoning及feedback token的前提下改善低尾逻辑/完整性与token效率。",
+            "pipeline_stage": "submission_reasoning_generation",
+            "question_types": [
+              "calculation",
+              "multi"
+            ],
+            "root_cause_cluster": "reasoning_lowtail_causal_chain_and_token_efficiency",
+            "target_qids": [
+              "reg_b_018",
+              "res_b_009"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "8ec2eedf89ffb5c20122e7101a6eb7136e0629cad4e63b3ce4366cbc402ee746",
+        "schema_version": 1,
+        "semantic_sha256": "05b0939663b5dbc8879fbddbdbd0a89d48d394d1049b860bd8b18afe65337d47",
+        "sha256": "f764beb5e503f6753554a5db9486296885d5189b8993a6e7091b85bff2d88789"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "44b17e8b1dc6e37542091277e347b2ae7fbb1bf26d7dbe0da900f86c15ef002c",
+      "size": 1376340
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "473274f2c2dc7f2c03cf8609beee5fb20dbd44f1282bfbd6a5bdaff57dcd48b0",
+      "size": 1129035
+    },
+    "related_log_sections": [
+      "b-loop-i023-gpt56-answer-error-audit-v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-b1",
+      "b-loop-research-structural-cost-reduction-res-b-009-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-suspect-case-optimization-v3",
+      "b-loop-answer-reasoning-stage-decoupling-a1",
+      "b-loop-qwen37-integrated-full100-candidate-a3",
+      "b-loop-qwen37-reasoning-refinement-structured-output-contract-a1"
+    ],
+    "reviewed_at": "2026-07-23T22:57:32+00:00"
+  },
+  "hypothesis": "从干净冻结答案checkpoint用Qwen3.7单次重生reasoning，并强化“必要事实到结论的短因果链”和日期边界复核，可在不累计旧reasoning及feedback Token的前提下改善低尾逻辑/完整性与Token效率。",
+  "material_delta": {
+    "causal_minimal_prompt": true,
+    "clean_checkpoint_regeneration": true,
+    "token_accounting_replaces_old_reasoning": true
+  },
+  "metrics": {
+    "answer_parts_changed_count": 0,
+    "answer_stage_api_call_count": 0,
+    "compileall_passed": true,
+    "format_retry_count": 0,
+    "full100_token_efficiency_if_both_applied": 72.49992,
+    "full100_token_if_both_applied": 1375004,
+    "git_diff_check_passed": true,
+    "native_strict_call_count": 2,
+    "new_reasoning_token_total": 12227,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "official_total_score": null,
+    "official_upload_performed": false,
+    "reasoning_api_call_count": 2,
+    "reg_b_018_new_reasoning_tokens": 2497,
+    "reg_b_018_old_reasoning_tokens": 2330,
+    "reg_b_018_score_after": 95.33333333333333,
+    "reg_b_018_score_before": 88.66666666666667,
+    "reg_b_018_score_delta": 6.666666666666657,
+    "res_b_009_new_reasoning_tokens": 9730,
+    "res_b_009_old_reasoning_tokens": 9122,
+    "res_b_009_score_after": 78.0,
+    "res_b_009_score_before": 84.66666666666667,
+    "res_b_009_score_delta": -6.666666666666671,
+    "target_reasoning_score_after": 86.66666666666666,
+    "target_reasoning_score_before": 86.66666666666667,
+    "targeted_tests_passed": 52,
+    "usage_complete": true
+  },
+  "next_step": "A2仅保留答案盲的日期计算条件提示：当题面同时包含提前、自然日和日期时，要求写起止边界及区间计数；恢复其他题的v3通用Prompt，不再重生res_b_009。只重跑reg_b_018验证可泛化日期提示，若提升与Token净贡献复现则晋级该单题patch。",
+  "pipeline_stage": "submission_reasoning_generation",
+  "promotion_result": "reject_combined_patch_refine_date_only",
+  "question_types": [
+    "multi",
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T23:01:45+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "reasoning_lowtail_causal_chain_and_token_efficiency",
+  "status": "completed_not_effective_mixed_qids",
+  "submission_effect": "local_reasoning_patch_rejected_not_officially_uploaded",
+  "target_qids": [
+    "res_b_009",
+    "reg_b_018"
+  ]
+}
+```
+
+## b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a2-date-boundary
+
+- recorded_at: `2026-07-23T23:06:13+00:00`
+
+```json
+{
+  "approach": "重读A1日志后撤销全局跨行业因果精简，只保留题面条件触发的日期边界style_hint：仅当计算题含“提前”“自然日”和明确日期时，要求写起止边界与区间计数。基于同一reg_b_018干净答案checkpoint单次生成Qwen3.7 reasoning，组装为只替换该题的100题候选，并对99题未变文本继承已封存GPT-5.6分数。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_reasoning_date_boundary_clean_a2_reg018",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "base_commit": "e1f8fc7",
+          "feedback_refine_calls": false,
+          "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+          "model": "qwen3.7-plus-2026-05-26",
+          "old_reasoning_tokens_in_candidate": false,
+          "reasoning_prompt": "b_submission_reasoning_v4_grounded_date_boundary_hint",
+          "reference_answer_access": false,
+          "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json",
+          "style_hint_policy": "question_derived_date_natural_day_boundary_v1"
+        },
+        "domains": [
+          "regulatory"
+        ],
+        "hypothesis": "将a1全局因果精简收敛为仅由题面触发的日期边界提示，并从同一干净冻结答案checkpoint单次生成，可复现reg_b_018完整性提升，同时避免res_b_009跨行业多选回退。",
+        "pipeline_stage": "submission_reasoning_generation",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "reasoning_lowtail_causal_chain_and_token_efficiency",
+        "target_qids": [
+          "reg_b_018"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "cb1a9c2f67ad0b87c03c82799f8bf62eb4c5c7219745d404d294db38570d191e",
+    "schema_version": 1,
+    "semantic_sha256": "7a36291872d63d8da2e06f16d5e306b2a496e930bca2c09102415bf14b9f18cb",
+    "sha256": "0ca9f3dac5ba887a1ab148142e3b045e06d4c96737e7375529c5a13b4343f9f4"
+  },
+  "change_vector": {
+    "base_commit": "e1f8fc7",
+    "feedback_refine_calls": false,
+    "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+    "model": "qwen3.7-plus-2026-05-26",
+    "old_reasoning_tokens_in_candidate": false,
+    "reasoning_prompt": "b_submission_reasoning_v4_grounded_date_boundary_hint",
+    "reference_answer_access": false,
+    "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json",
+    "style_hint_policy": "question_derived_date_natural_day_boundary_v1"
+  },
+  "direction_id": "qwen37_reasoning_causal_minimal_clean_regeneration",
+  "domains": [
+    "regulatory"
+  ],
+  "effect": "reg_b_018 reasoning从88.6667提升到97.0000（逻辑90→97、完整性82→96、清晰度94→98）；答案签名不变，Qwen仅1次native strict调用、格式重试0。新reasoning 2567 Token，较旧2330仅增加237。完整100题reasoning 95.7333→95.8167，Token效率72.51542→72.51068；任意相同accuracy假设下代理总分净增0.024052。",
+  "experiment_id": "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a2-date-boundary",
+  "failure_analysis": "收益来自日期边界与4月1日至4月30日共30个自然日的显式复核，提示完全由题面生成且不包含答案。代价是单题Token增加237；但0.3×reasoning增益显著覆盖0.2×Token损失。候选仍受ins_b_016官方锁与证据冲突阻塞，不能把本地代理增益当作官网总分。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "base_commit": "e1f8fc7",
+            "feedback_refine_calls": false,
+            "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+            "model": "qwen3.7-plus-2026-05-26",
+            "old_reasoning_tokens_in_candidate": false,
+            "reasoning_prompt": "b_submission_reasoning_v4_grounded_date_boundary_hint",
+            "reference_answer_access": false,
+            "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json",
+            "style_hint_policy": "question_derived_date_natural_day_boundary_v1"
+          },
+          "domains": [
+            "regulatory"
+          ],
+          "hypothesis": "将a1全局因果精简收敛为仅由题面触发的日期边界提示，并从同一干净冻结答案checkpoint单次生成，可复现reg_b_018完整性提升，同时避免res_b_009跨行业多选回退。",
+          "pipeline_stage": "submission_reasoning_generation",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "reasoning_lowtail_causal_chain_and_token_efficiency",
+          "target_qids": [
+            "reg_b_018"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "cb1a9c2f67ad0b87c03c82799f8bf62eb4c5c7219745d404d294db38570d191e",
+      "schema_version": 1,
+      "semantic_sha256": "7a36291872d63d8da2e06f16d5e306b2a496e930bca2c09102415bf14b9f18cb",
+      "sha256": "0ca9f3dac5ba887a1ab148142e3b045e06d4c96737e7375529c5a13b4343f9f4"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "base_commit": "e1f8fc7",
+              "feedback_refine_calls": false,
+              "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+              "model": "qwen3.7-plus-2026-05-26",
+              "old_reasoning_tokens_in_candidate": false,
+              "reasoning_prompt": "b_submission_reasoning_v4_grounded_date_boundary_hint",
+              "reference_answer_access": false,
+              "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json",
+              "style_hint_policy": "question_derived_date_natural_day_boundary_v1"
+            },
+            "domains": [
+              "regulatory"
+            ],
+            "hypothesis": "将a1全局因果精简收敛为仅由题面触发的日期边界提示，并从同一干净冻结答案checkpoint单次生成，可复现reg_b_018完整性提升，同时避免res_b_009跨行业多选回退。",
+            "pipeline_stage": "submission_reasoning_generation",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "reasoning_lowtail_causal_chain_and_token_efficiency",
+            "target_qids": [
+              "reg_b_018"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "cb1a9c2f67ad0b87c03c82799f8bf62eb4c5c7219745d404d294db38570d191e",
+        "schema_version": 1,
+        "semantic_sha256": "7a36291872d63d8da2e06f16d5e306b2a496e930bca2c09102415bf14b9f18cb",
+        "sha256": "0ca9f3dac5ba887a1ab148142e3b045e06d4c96737e7375529c5a13b4343f9f4"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a1"
+      ],
+      "similarity": 0.838298
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "e9ce36a5857c7227f20d49c512fa1adfd50626d291d8bb0e879c1debfe3aa33e",
+      "size": 1388192
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "6c9868e94a64663720997bdb0dc983cd04ffe7d6a6689a1e3d9555f5e8d7d8fc",
+      "size": 1139145
+    },
+    "related_log_sections": [
+      "B0-actual-evaluation",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-answer-reasoning-stage-decoupling-a1",
+      "b-loop-qwen37-integrated-full100-candidate-a3",
+      "b-loop-qwen37-reasoning-refinement-structured-output-contract-a1",
+      "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a1"
+    ],
+    "reviewed_at": "2026-07-23T23:02:00+00:00"
+  },
+  "hypothesis": "将A1全局因果精简收敛为仅由题面触发的日期边界提示，并从同一干净冻结答案checkpoint单次生成，可复现reg_b_018完整性提升，同时避免res_b_009跨行业多选回退。",
+  "material_delta": {
+    "date_hint_question_conditioned": true,
+    "global_cross_industry_prompt_removed": true,
+    "target_scope": "reg_b_018_only"
+  },
+  "metrics": {
+    "answer_parts_changed_count": 0,
+    "answer_stage_api_call_count": 0,
+    "compileall_passed": true,
+    "format_retry_count": 0,
+    "full100_reasoning_score_after": 95.81666666666666,
+    "full100_reasoning_score_before": 95.73333333333333,
+    "full100_token_after": 1374466,
+    "full100_token_before": 1374229,
+    "full100_token_efficiency_after": 72.51068,
+    "full100_token_efficiency_before": 72.51542,
+    "git_diff_check_passed": true,
+    "native_strict_call_count": 1,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "official_total_score": null,
+    "official_upload_performed": false,
+    "proxy_total_delta_accuracy_invariant": 0.024052,
+    "reasoning_api_call_count": 1,
+    "reasoning_new_token_total": 2567,
+    "reasoning_old_token_total": 2330,
+    "reasoning_token_delta": 237,
+    "reg_b_018_reasoning_score_after": 97.0,
+    "reg_b_018_reasoning_score_before": 88.66666666666667,
+    "reg_b_018_reasoning_score_delta": 8.333333333333329,
+    "target_qids": [
+      "reg_b_018"
+    ],
+    "tests_passed": 337,
+    "usage_complete": true
+  },
+  "next_step": "该方向A2有效，停止追加轮次，创建独立分支推送。保留A3完整候选其余99题reasoning，只替换reg_b_018。随后进入新的Token效率方向，优先寻找不降低已封存reasoning分且可减少生成Token的确定性机会；不做官网上传。",
+  "pipeline_stage": "submission_reasoning_generation",
+  "promotion_result": "effective_push_pending",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T23:06:13+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "reasoning_lowtail_causal_chain_and_token_efficiency",
+  "status": "completed_effective",
+  "submission_effect": "local_reasoning_candidate_not_officially_uploaded",
+  "target_qids": [
+    "reg_b_018"
+  ]
+}
+```

@@ -31,6 +31,7 @@ from afa_agent.b_board.runner import (
     _is_calculation_plan_structure_error,
     _normalize_calculation_plan_structure,
     _normalize_calculation_numeric_literals,
+    _submission_reasoning_style_hint,
     _validate_aggregate_intensity_plan_binding,
     _validate_calculation_summary_output_consistency,
     _validate_calculation_plan_has_required_inputs,
@@ -1319,11 +1320,38 @@ class BBoardRunnerModeTests(unittest.TestCase):
     def test_reasoning_prompt_requires_explicit_auditable_structure(self) -> None:
         self.assertEqual(
             SUBMISSION_REASONING_PROMPT_VERSION,
-            "b_submission_reasoning_v3_qwen37_grounded",
+            "b_submission_reasoning_v4_grounded_date_boundary_hint",
         )
         self.assertIn("定位—关键事实—推导—结论", SUBMISSION_REASONING_SYSTEM_PROMPT)
         self.assertIn("frozen_answer_parts", SUBMISSION_REASONING_SYSTEM_PROMPT)
         self.assertIn('grounding_status="insufficient"', SUBMISSION_REASONING_SYSTEM_PROMPT)
+        self.assertIn("reasoning_style_hint", SUBMISSION_REASONING_SYSTEM_PROMPT)
+
+    def test_reasoning_style_hint_is_question_derived_and_date_specific(
+        self,
+    ) -> None:
+        date_question = BQuestion(
+            qid="date",
+            domain="regulatory",
+            split="B",
+            question=(
+                "收费调整拟于2026年5月1日施行，按至少提前30个自然日"
+                "持续公示，最晚应从何时开始公示？"
+            ),
+            options={},
+            answer_format="calculation",
+            type="计算题",
+            answer_slots=1,
+            answer_slot_templates=("9999年9月9日",),
+        )
+        self.assertIn(
+            "起止边界",
+            _submission_reasoning_style_hint(date_question),
+        )
+        self.assertEqual(
+            _submission_reasoning_style_hint(_question()),
+            "",
+        )
 
     def test_reasoning_generation_preserves_answer_and_receives_verified_trace(self) -> None:
         runner = object.__new__(BBoardActualRunner)
