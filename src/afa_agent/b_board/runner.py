@@ -6,7 +6,7 @@ import json
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -100,7 +100,7 @@ SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推�
 4. 显式写出与 answer_parts 完全一致的最终答案。
 不得提及“质检”、“反馈”、“草稿”或修订过程，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。只输出 JSON。prompt_version={SUBMISSION_REASONING_REFINE_PROMPT_VERSION}。"""
 
-RUNNER_VERSION = "b_actual_v10_reasoning_audit"
+RUNNER_VERSION = "b_actual_v11_staged_answer_reasoning"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 RUN_MODE_SUBMISSION = "submission"
 RUN_MODE_RESEARCH = "research"
@@ -121,6 +121,7 @@ class BAnswerArtifact:
     calculation_trace: dict[str, Any]
     token_usage: dict[str, int]
     locator: dict[str, Any]
+    reasoning_evidence_items: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -136,6 +137,7 @@ class BAnswerArtifact:
             "calculation_trace": self.calculation_trace,
             "token_usage": self.token_usage,
             "locator": self.locator,
+            "reasoning_evidence_items": self.reasoning_evidence_items,
         }
 
     def to_submission_answer(self) -> BAnswer:
@@ -235,12 +237,77 @@ class BBoardActualRunner:
         artifact.token_usage = ledger_total
         artifact.decision_trace = {
             **artifact.decision_trace,
+            "answer_stage": {
+                "status": "complete",
+                "answer_parts_frozen": True,
+                "decision_summary": artifact.decision_summary,
+            },
+            "answer_api_usage_ledger": {
+                "call_count": len(usage_ledger.calls),
+                "calls": usage_ledger.calls,
+            },
             "api_usage_ledger": {
                 "call_count": len(usage_ledger.calls),
                 "calls": usage_ledger.calls,
             },
         }
         return artifact
+
+    def reasoning_one(
+        self,
+        question: BQuestion,
+        answer_artifact: BAnswerArtifact,
+    ) -> BAnswerArtifact:
+        frozen = _artifact_from_dict(answer_artifact.to_dict())
+        frozen_signature = _answer_artifact_signature(frozen)
+        with capture_llm_usage() as usage_ledger:
+            try:
+                artifact = self._attach_submission_reasoning(question, frozen)
+            except Exception as exc:
+                diagnostics = list(getattr(exc, "diagnostics", []))
+                diagnostics.append(
+                    {
+                        "stage": "api_usage_ledger",
+                        "pipeline_stage": "reasoning",
+                        "calls": usage_ledger.calls,
+                    }
+                )
+                raise BAnswerGenerationError(
+                    str(exc),
+                    token_usage=usage_ledger.total(),
+                    diagnostics=diagnostics,
+                ) from exc
+
+        if _answer_artifact_signature(artifact) != frozen_signature:
+            raise BAnswerGenerationError(
+                "Submission reasoning mutated the frozen answer artifact",
+                token_usage=usage_ledger.total(),
+                diagnostics=[
+                    {
+                        "stage": "api_usage_ledger",
+                        "pipeline_stage": "reasoning",
+                        "calls": usage_ledger.calls,
+                    }
+                ],
+            )
+        reasoning_usage = usage_ledger.total()
+        artifact.token_usage = _add_token_usage(
+            answer_artifact.token_usage,
+            reasoning_usage,
+        )
+        artifact.decision_trace = {
+            **artifact.decision_trace,
+            "reasoning_stage": {
+                "status": "complete",
+                "answer_artifact_frozen": True,
+                "answer_artifact_sha256": frozen_signature,
+            },
+            "reasoning_api_usage_ledger": {
+                "call_count": len(usage_ledger.calls),
+                "calls": usage_ledger.calls,
+            },
+        }
+        return _refresh_combined_api_usage_ledger(artifact)
 
     def run(
         self,
@@ -253,58 +320,235 @@ class BBoardActualRunner:
         selected = self.questions if qids is None else [self.question_by_qid[qid] for qid in qids]
         run_dir = Path(run_dir).resolve()
         fingerprint = self._build_fingerprint(selected, workers)
-        existing = self._prepare_run(run_dir, fingerprint, force=force)
-        artifacts_by_qid = {row["qid"]: _artifact_from_dict(row) for row in existing}
-        remaining = [item for item in selected if item.qid not in artifacts_by_qid]
-        locator_by_qid = self.locate(selected)
-        write_jsonl(run_dir / "locator.jsonl", [locator_by_qid[item.qid] for item in selected])
-        failures = _read_failure_history(run_dir / "failures.jsonl")
+        self._prepare_run(run_dir, fingerprint, force=force)
+        answer_artifacts_path = run_dir / "answer_artifacts.json"
+        final_artifacts_path = run_dir / "answers.json"
+        answer_failures_path = run_dir / "answer_failures.jsonl"
+        reasoning_failures_path = run_dir / "reasoning_failures.jsonl"
+        answer_ledger_path = run_dir / "answer_usage_ledger.jsonl"
+        reasoning_ledger_path = run_dir / "reasoning_usage_ledger.jsonl"
+        usage_ledger_path = run_dir / "usage_ledger.jsonl"
 
-        def persist() -> None:
-            ordered_artifacts = [
-                artifacts_by_qid[item.qid]
+        answer_artifacts_by_qid = {
+            str(row["qid"]): _artifact_from_dict(row)
+            for row in (
+                read_json(answer_artifacts_path)
+                if answer_artifacts_path.exists()
+                else []
+            )
+        }
+        final_artifacts_by_qid = {
+            str(row["qid"]): _artifact_from_dict(row)
+            for row in (
+                read_json(final_artifacts_path)
+                if final_artifacts_path.exists()
+                else []
+            )
+        }
+        if not set(final_artifacts_by_qid).issubset(answer_artifacts_by_qid):
+            raise RunFingerprintError(
+                "Final reasoning artifacts exist without frozen answer artifacts"
+            )
+        answer_failures = _read_failure_history(answer_failures_path)
+        reasoning_failures = _read_failure_history(reasoning_failures_path)
+
+        def ordered(
+            artifacts: Mapping[str, BAnswerArtifact],
+        ) -> list[BAnswerArtifact]:
+            return [
+                artifacts[item.qid]
                 for item in selected
-                if item.qid in artifacts_by_qid
+                if item.qid in artifacts
             ]
+
+        def persist_stage_state() -> None:
+            answer_artifacts = ordered(answer_artifacts_by_qid)
+            final_artifacts = ordered(final_artifacts_by_qid)
             write_json(
-                run_dir / "answers.json",
-                [item.to_dict() for item in ordered_artifacts],
+                answer_artifacts_path,
+                [item.to_dict() for item in answer_artifacts],
+            )
+            write_json(
+                final_artifacts_path,
+                [item.to_dict() for item in final_artifacts],
+            )
+            write_jsonl(answer_failures_path, answer_failures)
+            write_jsonl(reasoning_failures_path, reasoning_failures)
+            write_jsonl(
+                run_dir / "failures.jsonl",
+                [
+                    *[_with_failure_stage(item, "answer") for item in answer_failures],
+                    *[
+                        _with_failure_stage(item, "reasoning")
+                        for item in reasoning_failures
+                    ],
+                ],
             )
             write_jsonl(
-                run_dir / "usage_ledger.jsonl",
-                _usage_ledger_rows(ordered_artifacts, failures),
+                answer_ledger_path,
+                _usage_ledger_rows(
+                    answer_artifacts,
+                    answer_failures,
+                    trace_key="answer_api_usage_ledger",
+                ),
+            )
+            write_jsonl(
+                reasoning_ledger_path,
+                _reasoning_usage_ledger_rows(
+                    final_artifacts,
+                    reasoning_failures,
+                ),
+            )
+            write_jsonl(
+                usage_ledger_path,
+                _combined_usage_ledger_rows(
+                    selected,
+                    answer_artifacts_by_qid,
+                    final_artifacts_by_qid,
+                    answer_failures,
+                    reasoning_failures,
+                ),
             )
 
-        if workers > 1 and remaining:
+        remaining_answers = [
+            item for item in selected if item.qid not in answer_artifacts_by_qid
+        ]
+        locator_by_qid: dict[str, dict[str, Any]] = {}
+        locator_path = run_dir / "locator.jsonl"
+        if locator_path.exists():
+            locator_by_qid.update(
+                {
+                    str(row["qid"]): dict(row)
+                    for row in _read_jsonl_objects(locator_path)
+                }
+            )
+        if remaining_answers:
+            located = self.locate(remaining_answers)
+            locator_by_qid.update(located)
+            write_jsonl(
+                locator_path,
+                [
+                    locator_by_qid[item.qid]
+                    for item in selected
+                    if item.qid in locator_by_qid
+                ],
+            )
+
+        def store_answer(item: BQuestion, artifact: BAnswerArtifact) -> None:
+            artifact = _merge_prior_failure_usage(
+                artifact,
+                answer_failures,
+                trace_key="answer_api_usage_ledger",
+                retry_history_key="answer_retry_failure_history",
+            )
+            artifact = _refresh_combined_api_usage_ledger(artifact)
+            validate_b_answer(item, artifact.to_submission_answer())
+            answer_artifacts_by_qid[item.qid] = artifact
+            persist_stage_state()
+
+        if workers > 1 and remaining_answers:
             with ThreadPoolExecutor(max_workers=workers) as executor:
-                futures = {executor.submit(self.answer_one, item, locator_by_qid[item.qid]): item for item in remaining}
+                futures = {
+                    executor.submit(
+                        self.answer_one,
+                        item,
+                        locator_by_qid[item.qid],
+                    ): item
+                    for item in remaining_answers
+                }
                 for future in as_completed(futures):
                     item = futures[future]
                     try:
-                        artifact = future.result()
-                        artifact = _merge_prior_failure_usage(artifact, failures)
-                        validate_b_answer(item, artifact.to_submission_answer())
-                        artifacts_by_qid[item.qid] = artifact
-                        persist()
+                        store_answer(item, future.result())
                     except Exception as exc:
-                        failures.append(_failure_record(item.qid, exc))
-                        write_jsonl(run_dir / "failures.jsonl", failures)
-                        persist()
+                        answer_failures.append(
+                            _failure_record(item.qid, exc, stage="answer")
+                        )
+                        persist_stage_state()
         else:
-            for item in remaining:
+            for item in remaining_answers:
                 try:
-                    artifact = self.answer_one(item, locator_by_qid[item.qid])
-                    artifact = _merge_prior_failure_usage(artifact, failures)
-                    validate_b_answer(item, artifact.to_submission_answer())
-                    artifacts_by_qid[item.qid] = artifact
-                    persist()
+                    store_answer(
+                        item,
+                        self.answer_one(item, locator_by_qid[item.qid]),
+                    )
                 except Exception as exc:
-                    failures.append(_failure_record(item.qid, exc))
-                    write_jsonl(run_dir / "failures.jsonl", failures)
-                    persist()
+                    answer_failures.append(
+                        _failure_record(item.qid, exc, stage="answer")
+                    )
+                    persist_stage_state()
 
-        ordered_artifacts = [artifacts_by_qid[item.qid] for item in selected if item.qid in artifacts_by_qid]
-        missing = [item.qid for item in selected if item.qid not in artifacts_by_qid]
+        remaining_reasoning = [
+            item
+            for item in selected
+            if item.qid in answer_artifacts_by_qid
+            and item.qid not in final_artifacts_by_qid
+        ]
+
+        def store_reasoning(
+            item: BQuestion,
+            artifact: BAnswerArtifact,
+        ) -> None:
+            artifact = _merge_prior_failure_usage(
+                artifact,
+                reasoning_failures,
+                trace_key="reasoning_api_usage_ledger",
+                retry_history_key="reasoning_retry_failure_history",
+            )
+            artifact = _refresh_combined_api_usage_ledger(artifact)
+            validate_b_answer(item, artifact.to_submission_answer())
+            final_artifacts_by_qid[item.qid] = artifact
+            persist_stage_state()
+
+        if workers > 1 and remaining_reasoning:
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                futures = {
+                    executor.submit(
+                        self.reasoning_one,
+                        item,
+                        answer_artifacts_by_qid[item.qid],
+                    ): item
+                    for item in remaining_reasoning
+                }
+                for future in as_completed(futures):
+                    item = futures[future]
+                    try:
+                        store_reasoning(item, future.result())
+                    except Exception as exc:
+                        reasoning_failures.append(
+                            _failure_record(item.qid, exc, stage="reasoning")
+                        )
+                        persist_stage_state()
+        else:
+            for item in remaining_reasoning:
+                try:
+                    store_reasoning(
+                        item,
+                        self.reasoning_one(
+                            item,
+                            answer_artifacts_by_qid[item.qid],
+                        ),
+                    )
+                except Exception as exc:
+                    reasoning_failures.append(
+                        _failure_record(item.qid, exc, stage="reasoning")
+                    )
+                    persist_stage_state()
+
+        answer_artifacts = ordered(answer_artifacts_by_qid)
+        final_artifacts = ordered(final_artifacts_by_qid)
+        missing_answers = [
+            item.qid for item in selected if item.qid not in answer_artifacts_by_qid
+        ]
+        missing_reasoning = [
+            item.qid
+            for item in selected
+            if item.qid in answer_artifacts_by_qid
+            and item.qid not in final_artifacts_by_qid
+        ]
+        missing = [
+            item.qid for item in selected if item.qid not in final_artifacts_by_qid
+        ]
         output_path = run_dir / (
             "submit.csv" if self.run_mode == RUN_MODE_SUBMISSION else "research_submit.csv"
         )
@@ -312,22 +556,32 @@ class BBoardActualRunner:
             write_b_submission(
                 output_path,
                 selected,
-                [item.to_submission_answer() for item in ordered_artifacts],
+                [item.to_submission_answer() for item in final_artifacts],
                 audit_ready=True,
             )
-        write_json(run_dir / "answers.json", [item.to_dict() for item in ordered_artifacts])
-        write_jsonl(run_dir / "failures.jsonl", failures)
-        usage_ledger_path = run_dir / "usage_ledger.jsonl"
-        write_jsonl(
-            usage_ledger_path,
-            _usage_ledger_rows(ordered_artifacts, failures),
-        )
-        totals = _sum_tokens(ordered_artifacts)
-        resolved_qids = set(artifacts_by_qid)
-        unresolved_failures = [
-            item for item in failures if str(item.get("qid", "")) not in resolved_qids
+        persist_stage_state()
+
+        totals = _sum_tokens(final_artifacts)
+        answer_totals = _sum_tokens(answer_artifacts)
+        reasoning_totals = _sum_reasoning_tokens(final_artifacts)
+        unresolved_answer_failures = [
+            item
+            for item in answer_failures
+            if str(item.get("qid", "")) not in answer_artifacts_by_qid
         ]
-        failed_totals = _sum_failure_tokens(unresolved_failures)
+        unresolved_reasoning_failures = [
+            item
+            for item in reasoning_failures
+            if str(item.get("qid", "")) not in final_artifacts_by_qid
+        ]
+        failed_totals = _add_token_usage(
+            _sum_failure_tokens(unresolved_answer_failures),
+            _sum_failure_tokens(unresolved_reasoning_failures),
+        )
+        generation_totals = _add_token_usage(
+            _add_token_usage(answer_totals, reasoning_totals),
+            failed_totals,
+        )
         ineligibility_reasons = self._submission_ineligibility_reasons(missing)
         manifest = read_json(run_dir / "run_manifest.json")
         manifest.update(
@@ -335,12 +589,32 @@ class BBoardActualRunner:
                 "status": "complete" if not missing else "incomplete",
                 "completed_at": datetime.now().isoformat(timespec="seconds"),
                 "expected_question_count": len(selected),
-                "answered_question_count": len(ordered_artifacts),
+                "answered_question_count": len(answer_artifacts),
+                "answer_completed_count": len(answer_artifacts),
+                "reasoning_completed_count": len(final_artifacts),
+                "answer_failed_qids": missing_answers,
+                "reasoning_failed_qids": missing_reasoning,
                 "failed_qids": missing,
                 "token_usage": totals,
+                "answer_token_usage": answer_totals,
+                "reasoning_token_usage": reasoning_totals,
                 "failed_token_usage": failed_totals,
-                "generation_token_usage": _add_token_usage(totals, failed_totals),
-                "retry_failure_count": len(failures) - len(unresolved_failures),
+                "generation_token_usage": generation_totals,
+                "answer_retry_failure_count": len(answer_failures)
+                - len(unresolved_answer_failures),
+                "reasoning_retry_failure_count": len(reasoning_failures)
+                - len(unresolved_reasoning_failures),
+                "retry_failure_count": (
+                    len(answer_failures)
+                    + len(reasoning_failures)
+                    - len(unresolved_answer_failures)
+                    - len(unresolved_reasoning_failures)
+                ),
+                "answer_artifacts_path": str(answer_artifacts_path),
+                "answer_failures_path": str(answer_failures_path),
+                "reasoning_failures_path": str(reasoning_failures_path),
+                "answer_usage_ledger_path": str(answer_ledger_path),
+                "reasoning_usage_ledger_path": str(reasoning_ledger_path),
                 "usage_ledger_path": str(usage_ledger_path),
                 "run_mode": self.run_mode,
                 "submission_eligible": not ineligibility_reasons,
@@ -402,7 +676,8 @@ class BBoardActualRunner:
             token_usage=result.token_usage.to_dict(),
             locator={**dict(locator), "selected_doc_ids": candidate_doc_ids},
         )
-        return self._attach_submission_reasoning(question, artifact)
+        validate_b_answer(question, artifact.to_submission_answer())
+        return artifact
 
     def _answer_calculation(
         self,
@@ -504,7 +779,6 @@ class BBoardActualRunner:
                         "calculation_retrieval_rounds": retrieval_rounds,
                     },
                 )
-                artifact = self._attach_submission_reasoning(question, artifact)
                 validate_b_answer(question, artifact.to_submission_answer())
                 return artifact
             except Exception as exc:
@@ -585,12 +859,19 @@ class BBoardActualRunner:
         question: BQuestion,
         artifact: BAnswerArtifact,
     ) -> BAnswerArtifact:
-        combined_usage = dict(artifact.token_usage)
+        reasoning_usage = {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+        }
         diagnostics: list[dict[str, Any]] = []
         rescued_evidence_ids: list[str] = []
+        reasoning_evidence_items = [
+            dict(item) for item in artifact.evidence_items
+        ]
         for attempt_number in range(1, 3):
             evidence_payload = _reasoning_evidence_payload(
-                artifact.evidence_items,
+                reasoning_evidence_items,
                 limit=12 if attempt_number == 1 else 18,
             )
             messages = [
@@ -615,8 +896,9 @@ class BBoardActualRunner:
                 },
             ]
             response = self.client.chat_json(messages)
-            combined_usage = _add_token_usage(
-                combined_usage, response.token_usage.to_dict()
+            reasoning_usage = _add_token_usage(
+                reasoning_usage,
+                response.token_usage.to_dict(),
             )
             diagnostic: dict[str, Any] = {
                 "stage": "submission_reasoning",
@@ -679,7 +961,7 @@ class BBoardActualRunner:
                 diagnostic["error"] = str(exc)[:1000]
                 raise BAnswerGenerationError(
                     f"Submission reasoning finalization failed: {exc}",
-                    token_usage=combined_usage,
+                    token_usage=reasoning_usage,
                     diagnostics=diagnostics,
                 ) from exc
 
@@ -687,7 +969,13 @@ class BBoardActualRunner:
             diagnostic["missing_support"] = list(missing_support)
             if grounding_status == "supported":
                 artifact.decision_summary = reasoning
-                artifact.token_usage = combined_usage
+                artifact.reasoning_evidence_items = reasoning_evidence_items[
+                    : 12 if attempt_number == 1 else 18
+                ]
+                artifact.token_usage = _add_token_usage(
+                    artifact.token_usage,
+                    reasoning_usage,
+                )
                 artifact.decision_trace = {
                     **artifact.decision_trace,
                     "submission_reasoning": {
@@ -725,17 +1013,17 @@ class BBoardActualRunner:
                 if not additions:
                     raise BAnswerGenerationError(
                         "Submission reasoning evidence rescue found no new evidence",
-                        token_usage=combined_usage,
+                        token_usage=reasoning_usage,
                         diagnostics=diagnostics,
                     )
-                artifact.evidence_items = _merge_reasoning_evidence(
-                    artifact.evidence_items[:12],
+                reasoning_evidence_items = _merge_reasoning_evidence(
+                    reasoning_evidence_items[:12],
                     additions,
                     max_items=18,
                 )
                 merged_ids = {
                     str(item.get("unit_id", ""))
-                    for item in artifact.evidence_items
+                    for item in reasoning_evidence_items
                 }
                 rescued_evidence_ids = [
                     str(item.get("unit_id", ""))
@@ -746,7 +1034,7 @@ class BBoardActualRunner:
 
         raise BAnswerGenerationError(
             "Submission reasoning remained insufficient after one evidence rescue",
-            token_usage=combined_usage,
+            token_usage=reasoning_usage,
             diagnostics=diagnostics,
         )
 
@@ -993,9 +1281,14 @@ class BBoardActualRunner:
             model_settings=public_model,
         )
 
-    def _prepare_run(self, run_dir: Path, fingerprint: Mapping[str, Any], *, force: bool) -> list[dict[str, Any]]:
+    def _prepare_run(
+        self,
+        run_dir: Path,
+        fingerprint: Mapping[str, Any],
+        *,
+        force: bool,
+    ) -> None:
         manifest_path = run_dir / "run_manifest.json"
-        answers_path = run_dir / "answers.json"
         if run_dir.exists() and any(run_dir.iterdir()):
             if force:
                 raise RunFingerprintError(
@@ -1005,7 +1298,7 @@ class BBoardActualRunner:
                 raise RunFingerprintError("Existing B run has no run_manifest.json")
             manifest = read_json(manifest_path)
             validate_resume_fingerprint(manifest, dict(fingerprint))
-            return read_json(answers_path) if answers_path.exists() else []
+            return
         ensure_dir(run_dir)
         write_json(
             manifest_path,
@@ -1029,7 +1322,7 @@ class BBoardActualRunner:
                 "locator_attempt_id": self.locator_attempt_id,
             },
         )
-        return []
+        return
 
     def _submission_ineligibility_reasons(self, missing: Sequence[str]) -> list[str]:
         reasons: list[str] = []
@@ -1349,6 +1642,9 @@ def _artifact_from_dict(row: Mapping[str, Any]) -> BAnswerArtifact:
         calculation_trace=dict(row.get("calculation_trace", {})),
         token_usage={key: int(value) for key, value in dict(row.get("token_usage", {})).items()},
         locator=dict(row.get("locator", {})),
+        reasoning_evidence_items=[
+            dict(item) for item in row.get("reasoning_evidence_items", [])
+        ],
     )
 
 
@@ -1358,9 +1654,15 @@ def _sum_tokens(artifacts: Sequence[BAnswerArtifact]) -> dict[str, int]:
     return {"prompt_tokens": prompt, "completion_tokens": completion, "total_tokens": prompt + completion}
 
 
-def _failure_record(qid: str, exc: Exception) -> dict[str, Any]:
+def _failure_record(
+    qid: str,
+    exc: Exception,
+    *,
+    stage: str = "answer",
+) -> dict[str, Any]:
     record: dict[str, Any] = {
         "qid": qid,
+        "stage": stage,
         "error_type": exc.__class__.__name__,
         "error": str(exc)[:2000],
     }
@@ -1371,6 +1673,10 @@ def _failure_record(qid: str, exc: Exception) -> dict[str, Any]:
 
 
 def _read_failure_history(path: Path) -> list[dict[str, Any]]:
+    return _read_jsonl_objects(path)
+
+
+def _read_jsonl_objects(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
         return []
     rows: list[dict[str, Any]] = []
@@ -1382,10 +1688,17 @@ def _read_failure_history(path: Path) -> list[dict[str, Any]]:
         payload = json.loads(line)
         if not isinstance(payload, dict):
             raise RunFingerprintError(
-                f"{path}: failure row {line_number} is not a JSON object"
+                f"{path}: row {line_number} is not a JSON object"
             )
         rows.append(payload)
     return rows
+
+
+def _with_failure_stage(
+    failure: Mapping[str, Any],
+    stage: str,
+) -> dict[str, Any]:
+    return {**dict(failure), "stage": stage}
 
 
 def _failure_calls(failure: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -1405,6 +1718,9 @@ def _failure_calls(failure: Mapping[str, Any]) -> list[dict[str, Any]]:
 def _merge_prior_failure_usage(
     artifact: BAnswerArtifact,
     failures: Sequence[Mapping[str, Any]],
+    *,
+    trace_key: str = "api_usage_ledger",
+    retry_history_key: str = "retry_failure_history",
 ) -> BAnswerArtifact:
     prior = [
         item for item in failures if str(item.get("qid", "")) == artifact.qid
@@ -1413,9 +1729,11 @@ def _merge_prior_failure_usage(
         return artifact
     prior_usage = _sum_failure_tokens(prior)
     artifact.token_usage = _add_token_usage(prior_usage, artifact.token_usage)
-    current_ledger = dict(
-        artifact.decision_trace.get("api_usage_ledger") or {}
-    )
+    current_ledger = dict(artifact.decision_trace.get(trace_key) or {})
+    if not current_ledger and trace_key == "answer_api_usage_ledger":
+        current_ledger = dict(
+            artifact.decision_trace.get("api_usage_ledger") or {}
+        )
     calls = [
         *[
             call
@@ -1432,11 +1750,11 @@ def _merge_prior_failure_usage(
         call["call_index"] = index
     artifact.decision_trace = {
         **artifact.decision_trace,
-        "api_usage_ledger": {
+        trace_key: {
             "call_count": len(calls),
             "calls": calls,
         },
-        "retry_failure_history": [
+        retry_history_key: [
             {
                 "error_type": str(item.get("error_type", "")),
                 "token_usage": dict(item.get("token_usage") or {}),
@@ -1459,11 +1777,17 @@ def _sum_failure_tokens(failures: Sequence[Mapping[str, Any]]) -> dict[str, int]
 def _usage_ledger_rows(
     artifacts: Sequence[BAnswerArtifact],
     failures: Sequence[Mapping[str, Any]],
+    *,
+    trace_key: str = "api_usage_ledger",
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     resolved_qids = {artifact.qid for artifact in artifacts}
     for artifact in artifacts:
-        ledger = dict(artifact.decision_trace.get("api_usage_ledger") or {})
+        ledger = dict(artifact.decision_trace.get(trace_key) or {})
+        if not ledger and trace_key == "answer_api_usage_ledger":
+            ledger = dict(
+                artifact.decision_trace.get("api_usage_ledger") or {}
+            )
         calls = list(ledger.get("calls") or [])
         rows.append(
             {
@@ -1474,20 +1798,300 @@ def _usage_ledger_rows(
                 "token_usage": dict(artifact.token_usage),
             }
         )
-    for failure in failures:
-        if str(failure.get("qid", "")) in resolved_qids:
+    failure_by_qid = _failures_by_qid(failures)
+    for qid, qid_failures in failure_by_qid.items():
+        if qid in resolved_qids:
             continue
-        calls = _failure_calls(failure)
+        calls = _reindex_calls(
+            [
+                call
+                for failure in qid_failures
+                for call in _failure_calls(failure)
+            ]
+        )
         rows.append(
             {
-                "qid": str(failure.get("qid", "")),
+                "qid": qid,
                 "status": "failure",
                 "call_count": len(calls),
                 "calls": calls,
-                "token_usage": dict(failure.get("token_usage") or {}),
+                "token_usage": _sum_failure_tokens(qid_failures),
             }
         )
     return rows
+
+
+def _reasoning_usage_ledger_rows(
+    artifacts: Sequence[BAnswerArtifact],
+    failures: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    resolved_qids = {artifact.qid for artifact in artifacts}
+    for artifact in artifacts:
+        ledger = dict(
+            artifact.decision_trace.get("reasoning_api_usage_ledger") or {}
+        )
+        calls = [
+            dict(item)
+            for item in ledger.get("calls", [])
+            if isinstance(item, Mapping)
+        ]
+        rows.append(
+            {
+                "qid": artifact.qid,
+                "status": "success",
+                "call_count": len(calls),
+                "calls": calls,
+                "token_usage": _sum_call_tokens(calls),
+            }
+        )
+    for qid, qid_failures in _failures_by_qid(failures).items():
+        if qid in resolved_qids:
+            continue
+        calls = _reindex_calls(
+            [
+                call
+                for failure in qid_failures
+                for call in _failure_calls(failure)
+            ]
+        )
+        rows.append(
+            {
+                "qid": qid,
+                "status": "failure",
+                "call_count": len(calls),
+                "calls": calls,
+                "token_usage": _sum_failure_tokens(qid_failures),
+            }
+        )
+    return rows
+
+
+def _combined_usage_ledger_rows(
+    questions: Sequence[BQuestion],
+    answer_artifacts: Mapping[str, BAnswerArtifact],
+    final_artifacts: Mapping[str, BAnswerArtifact],
+    answer_failures: Sequence[Mapping[str, Any]],
+    reasoning_failures: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    answer_failures_by_qid = _failures_by_qid(answer_failures)
+    reasoning_failures_by_qid = _failures_by_qid(reasoning_failures)
+    rows: list[dict[str, Any]] = []
+    for question in questions:
+        qid = question.qid
+        if qid in final_artifacts:
+            artifact = final_artifacts[qid]
+            ledger = dict(
+                artifact.decision_trace.get("api_usage_ledger") or {}
+            )
+            calls = [
+                dict(item)
+                for item in ledger.get("calls", [])
+                if isinstance(item, Mapping)
+            ]
+            rows.append(
+                {
+                    "qid": qid,
+                    "status": "success",
+                    "call_count": len(calls),
+                    "calls": calls,
+                    "token_usage": dict(artifact.token_usage),
+                }
+            )
+            continue
+
+        if qid in answer_artifacts:
+            artifact = answer_artifacts[qid]
+            answer_ledger = dict(
+                artifact.decision_trace.get("answer_api_usage_ledger")
+                or artifact.decision_trace.get("api_usage_ledger")
+                or {}
+            )
+            reasoning_qid_failures = reasoning_failures_by_qid.get(qid, [])
+            calls = _reindex_calls(
+                [
+                    *[
+                        dict(item)
+                        for item in answer_ledger.get("calls", [])
+                        if isinstance(item, Mapping)
+                    ],
+                    *[
+                        call
+                        for failure in reasoning_qid_failures
+                        for call in _failure_calls(failure)
+                    ],
+                ]
+            )
+            rows.append(
+                {
+                    "qid": qid,
+                    "status": "reasoning_failure",
+                    "call_count": len(calls),
+                    "calls": calls,
+                    "token_usage": _add_token_usage(
+                        artifact.token_usage,
+                        _sum_failure_tokens(reasoning_qid_failures),
+                    ),
+                }
+            )
+            continue
+
+        answer_qid_failures = answer_failures_by_qid.get(qid, [])
+        calls = _reindex_calls(
+            [
+                call
+                for failure in answer_qid_failures
+                for call in _failure_calls(failure)
+            ]
+        )
+        rows.append(
+            {
+                "qid": qid,
+                "status": "answer_failure",
+                "call_count": len(calls),
+                "calls": calls,
+                "token_usage": _sum_failure_tokens(answer_qid_failures),
+            }
+        )
+    return rows
+
+
+def _answer_artifact_signature(artifact: BAnswerArtifact) -> str:
+    mutable_reasoning_keys = {
+        "api_usage_ledger",
+        "reasoning_api_usage_ledger",
+        "reasoning_retry_failure_history",
+        "reasoning_stage",
+        "submission_reasoning",
+        "submission_reasoning_refinement",
+    }
+    answer_trace = {
+        key: value
+        for key, value in artifact.decision_trace.items()
+        if key not in mutable_reasoning_keys
+    }
+    frozen_payload = {
+        "qid": artifact.qid,
+        "domain": artifact.domain,
+        "answer_format": artifact.answer_format,
+        "answer_slot_count": artifact.answer_slot_count,
+        "answer_parts": artifact.answer_parts,
+        "used_evidence_ids": artifact.used_evidence_ids,
+        "evidence_items": artifact.evidence_items,
+        "decision_trace": answer_trace,
+        "calculation_trace": artifact.calculation_trace,
+        "locator": artifact.locator,
+    }
+    encoded = json.dumps(
+        frozen_payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _refresh_combined_api_usage_ledger(
+    artifact: BAnswerArtifact,
+) -> BAnswerArtifact:
+    answer_ledger = dict(
+        artifact.decision_trace.get("answer_api_usage_ledger") or {}
+    )
+    reasoning_ledger = dict(
+        artifact.decision_trace.get("reasoning_api_usage_ledger") or {}
+    )
+    if not answer_ledger:
+        answer_ledger = dict(
+            artifact.decision_trace.get("api_usage_ledger") or {}
+        )
+    calls = _reindex_calls(
+        [
+            *[
+                dict(item)
+                for item in answer_ledger.get("calls", [])
+                if isinstance(item, Mapping)
+            ],
+            *[
+                dict(item)
+                for item in reasoning_ledger.get("calls", [])
+                if isinstance(item, Mapping)
+            ],
+        ]
+    )
+    artifact.decision_trace = {
+        **artifact.decision_trace,
+        "answer_api_usage_ledger": {
+            "call_count": len(answer_ledger.get("calls", [])),
+            "calls": [
+                dict(item)
+                for item in answer_ledger.get("calls", [])
+                if isinstance(item, Mapping)
+            ],
+        },
+        "api_usage_ledger": {
+            "call_count": len(calls),
+            "calls": calls,
+        },
+    }
+    return artifact
+
+
+def _sum_reasoning_tokens(
+    artifacts: Sequence[BAnswerArtifact],
+) -> dict[str, int]:
+    total = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+    for artifact in artifacts:
+        ledger = dict(
+            artifact.decision_trace.get("reasoning_api_usage_ledger") or {}
+        )
+        total = _add_token_usage(
+            total,
+            _sum_call_tokens(
+                [
+                    item
+                    for item in ledger.get("calls", [])
+                    if isinstance(item, Mapping)
+                ]
+            ),
+        )
+    return total
+
+
+def _failures_by_qid(
+    failures: Sequence[Mapping[str, Any]],
+) -> dict[str, list[Mapping[str, Any]]]:
+    grouped: dict[str, list[Mapping[str, Any]]] = {}
+    for failure in failures:
+        qid = str(failure.get("qid", ""))
+        grouped.setdefault(qid, []).append(failure)
+    return grouped
+
+
+def _reindex_calls(
+    calls: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    normalized = [dict(item) for item in calls]
+    for index, call in enumerate(normalized, start=1):
+        call["call_index"] = index
+    return normalized
+
+
+def _sum_call_tokens(
+    calls: Sequence[Mapping[str, Any]],
+) -> dict[str, int]:
+    prompt = sum(
+        int(dict(item.get("token_usage") or {}).get("prompt_tokens", 0))
+        for item in calls
+    )
+    completion = sum(
+        int(dict(item.get("token_usage") or {}).get("completion_tokens", 0))
+        for item in calls
+    )
+    return {
+        "prompt_tokens": prompt,
+        "completion_tokens": completion,
+        "total_tokens": prompt + completion,
+    }
 
 
 def _add_token_usage(left: Mapping[str, int], right: Mapping[str, int]) -> dict[str, int]:

@@ -146,7 +146,15 @@ def evaluate_candidate_run(
             for item in reasoning_trace.get("rescued_evidence_ids") or []
             if str(item).strip()
         }
-        if rescued_ids - evidence_ids:
+        reasoning_evidence_rows = answer.get("reasoning_evidence_items")
+        if not isinstance(reasoning_evidence_rows, list) or not reasoning_evidence_rows:
+            reasoning_evidence_rows = answer.get("evidence_items") or []
+        reasoning_evidence_ids = {
+            str(item.get("unit_id", "")).strip()
+            for item in reasoning_evidence_rows
+            if isinstance(item, Mapping) and str(item.get("unit_id", "")).strip()
+        }
+        if rescued_ids - reasoning_evidence_ids:
             failures.append(f"{qid}:rescued_evidence_is_not_in_final_evidence")
         if answer.get("answer_format") == "calculation":
             calculation_trace = dict(answer.get("calculation_trace") or {})

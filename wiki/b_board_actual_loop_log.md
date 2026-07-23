@@ -25434,3 +25434,535 @@
   ]
 }
 ```
+
+## b-loop-qwen37-full100-independent-baseline-a1
+
+- recorded_at: `2026-07-23T16:12:59+00:00`
+
+```json
+{
+  "approach": "先重读实验日志，在有效计算字面量修复分支b4cc664上固定qwen3.7-plus-2026-05-26、attempt_43和workers=4，独立运行全部100题；不注入pseudo99或答案锁，不上传官网，保留成功与失败的全部原始usage。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_full100_baseline_v1",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "locator": "attempt_43",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reasoning_prompt": "b_submission_reasoning_v3_qwen37_grounded",
+          "scope": "all_100",
+          "workers": 4
+        },
+        "domains": [
+          "financial_contracts",
+          "financial_reports",
+          "insurance",
+          "regulatory",
+          "research"
+        ],
+        "hypothesis": "固定qwen3.7快照独立运行100题，可建立不依赖gpt答案覆盖的合规准确率保持、reasoning质量和token效率基线。",
+        "pipeline_stage": "qwen37_full_submission_baseline",
+        "question_types": [
+          "calculation",
+          "extraction",
+          "mcq",
+          "multi",
+          "tf"
+        ],
+        "root_cause_cluster": "compliant_qwen37_baseline_unknown",
+        "target_qids": [
+          "all_100"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "2d0c09e2bfc28cbb7e3e461fe3cd51d9949e04144a143b1cbc2e3e3a7f61fa6e",
+    "schema_version": 1,
+    "semantic_sha256": "760bd700e3fa7f767bb96d471e236ea2d0a0392dca1fe6d5634afd9ae9046885",
+    "sha256": "1159dbf5d18c71a24feb02749bece243cf6e62203e69ae813d3d1dd0b9452f8f"
+  },
+  "change_vector": {
+    "locator": "attempt_43",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reasoning_prompt": "b_submission_reasoning_v3_qwen37_grounded",
+    "scope": "all_100",
+    "workers": 4
+  },
+  "direction_id": "qwen37_full100_independent_baseline",
+  "domains": [
+    "financial_contracts",
+    "financial_reports",
+    "insurance",
+    "regulatory",
+    "research"
+  ],
+  "effect": "首轮收口为80题成功、20题失败，因不完整未生成submit.csv，不能计算准确率、reasoning影子分或总分。80个已回答题中77题与pseudo99参考一致；3个差异为ins_b_003、ins_b_016、reg_b_015。9个官网答案锁中8个匹配，ins_b_016输出ABD而锁为BD。",
+  "experiment_id": "b-loop-qwen37-full100-independent-baseline-a1",
+  "failure_analysis": "20题分为：12题派生量或无证据单位误放variables，2题运算参数schema错误，1题literal字段schema错误，4题reasoning一次救援后仍insufficient，1题API read timeout。失败题消耗817900 Token，占全调用1725071的47.4115%，结构失败的三轮扩检索重试是主要Token损失。pseudo99匹配只是参考保持，不是官方准确率。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "locator": "attempt_43",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reasoning_prompt": "b_submission_reasoning_v3_qwen37_grounded",
+            "scope": "all_100",
+            "workers": 4
+          },
+          "domains": [
+            "financial_contracts",
+            "financial_reports",
+            "insurance",
+            "regulatory",
+            "research"
+          ],
+          "hypothesis": "固定qwen3.7快照独立运行100题，可建立不依赖gpt答案覆盖的合规准确率保持、reasoning质量和token效率基线。",
+          "pipeline_stage": "qwen37_full_submission_baseline",
+          "question_types": [
+            "calculation",
+            "extraction",
+            "mcq",
+            "multi",
+            "tf"
+          ],
+          "root_cause_cluster": "compliant_qwen37_baseline_unknown",
+          "target_qids": [
+            "all_100"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "2d0c09e2bfc28cbb7e3e461fe3cd51d9949e04144a143b1cbc2e3e3a7f61fa6e",
+      "schema_version": 1,
+      "semantic_sha256": "760bd700e3fa7f767bb96d471e236ea2d0a0392dca1fe6d5634afd9ae9046885",
+      "sha256": "1159dbf5d18c71a24feb02749bece243cf6e62203e69ae813d3d1dd0b9452f8f"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "locator": "attempt_43",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reasoning_prompt": "b_submission_reasoning_v3_qwen37_grounded",
+              "scope": "all_100",
+              "workers": 4
+            },
+            "domains": [
+              "financial_contracts",
+              "financial_reports",
+              "insurance",
+              "regulatory",
+              "research"
+            ],
+            "hypothesis": "固定qwen3.7快照独立运行100题，可建立不依赖gpt答案覆盖的合规准确率保持、reasoning质量和token效率基线。",
+            "pipeline_stage": "qwen37_full_submission_baseline",
+            "question_types": [
+              "calculation",
+              "extraction",
+              "mcq",
+              "multi",
+              "tf"
+            ],
+            "root_cause_cluster": "compliant_qwen37_baseline_unknown",
+            "target_qids": [
+              "all_100"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "2d0c09e2bfc28cbb7e3e461fe3cd51d9949e04144a143b1cbc2e3e3a7f61fa6e",
+        "schema_version": 1,
+        "semantic_sha256": "760bd700e3fa7f767bb96d471e236ea2d0a0392dca1fe6d5634afd9ae9046885",
+        "sha256": "1159dbf5d18c71a24feb02749bece243cf6e62203e69ae813d3d1dd0b9452f8f"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "91351a0facf6d51f033e18b30d2e07ad03b67ba3b2288710e216c8382df9f26d",
+      "size": 954632
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "b8f4cbb9a8b743a84b988d52f4362cc0bc30e2870f9dde2723fecc64282faed4",
+      "size": 775072
+    },
+    "related_log_sections": [
+      "b-loop-qwen37-compliance-and-score-loop-scaffold-a1",
+      "b-loop-qwen37-compliance-and-score-loop-scaffold-a2"
+    ],
+    "reviewed_at": "2026-07-23T16:12:59+00:00"
+  },
+  "hypothesis": "固定Qwen3.7快照独立运行100题，可建立不依赖GPT答案覆盖的合规准确率保持、reasoning质量和Token效率基线。",
+  "metrics": {
+    "answered_question_count": 80,
+    "answered_reference_match_count": 77,
+    "answered_reference_mismatch_count": 3,
+    "answered_reference_mismatches": [
+      "ins_b_003",
+      "ins_b_016",
+      "reg_b_015"
+    ],
+    "expected_question_count": 100,
+    "failed_completion_tokens": 188913,
+    "failed_prompt_tokens": 628987,
+    "failed_question_count": 20,
+    "failed_token_share_percent": 47.4115,
+    "failed_token_total": 817900,
+    "failure_clusters": {
+      "api_read_timeout": 1,
+      "derived_or_ungrounded_variables": 12,
+      "literal_schema": 1,
+      "operation_argument_schema": 2,
+      "reasoning_insufficient_after_rescue": 4
+    },
+    "generation_completion_tokens": 385235,
+    "generation_prompt_tokens": 1339836,
+    "generation_token_total": 1725071,
+    "official_accuracy": null,
+    "official_answer_lock_match_count": 8,
+    "official_answer_lock_regression_count": 1,
+    "official_answer_lock_regressions": {
+      "ins_b_016": {
+        "candidate": "ABD",
+        "locked": "BD"
+      }
+    },
+    "official_submission_count": 0,
+    "proxy_total_score": null,
+    "reasoning_shadow_score": null,
+    "submission_eligible": false,
+    "submission_generated": false,
+    "successful_completion_tokens": 196322,
+    "successful_prompt_tokens": 710849,
+    "successful_token_total": 907171
+  },
+  "next_step": "优先做计算计划结构A1：强化原始变量/派生steps边界与合法参数例子，对确定性schema错误定向反馈而非扩检索；先在15个计算结构badcase加res_b_005超时题上复跑，最多3轮。随后处理4个reasoning insufficient题和3个答案差异，完整100题后才运行GPT-5.6冻结reasoning影子评测。",
+  "pipeline_stage": "qwen37_full_submission_baseline",
+  "question_types": [
+    "calculation",
+    "extraction",
+    "mcq",
+    "multi",
+    "tf"
+  ],
+  "recorded_at": "2026-07-23T16:12:59+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "compliant_qwen37_baseline_unknown",
+  "status": "completed",
+  "submission_effect": "incomplete_local_baseline_not_submitted",
+  "target_qids": [
+    "all_100"
+  ]
+}
+```
+
+## b-loop-qwen37-full100-independent-baseline-a1-metric-correction
+
+- recorded_at: `2026-07-23T16:34:44+00:00`
+
+```json
+{
+  "approach": "复核首轮100题基线的失败Token占比算式：817900/1725071*100。",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {},
+        "domains": [],
+        "hypothesis": "",
+        "pipeline_stage": "experiment_record_correction",
+        "question_types": [],
+        "root_cause_cluster": "arithmetic_transcription_error",
+        "target_qids": [
+          "all_100"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "3ffec4f0328b7568e0eb822373f08eb8d40bb315855e0ddd678d4d263d4e17d2",
+    "schema_version": 1,
+    "semantic_sha256": "f4716add52eaae3aa66bb863779036b660f709d9cde42e58fbae894d59228beb",
+    "sha256": "cdec0f3005a058b9d57d60db5e5309aec6e5e31816e7364c4c356b4981ce083f"
+  },
+  "direction_id": "qwen37_full100_baseline_metric_correction",
+  "effect": "原日志47.4115%为抄录误差，正确值为47.4125%；原始Token计数和其他结论不变。",
+  "experiment_id": "b-loop-qwen37-full100-independent-baseline-a1-metric-correction",
+  "failure_analysis": "仅修正派生百分比，不代表新增实验，不改变基线完成度、答案结果或方向轮次。",
+  "metrics": {
+    "failed_token_share_percent_corrected": 47.4125,
+    "failed_token_share_percent_previous": 47.4115,
+    "failed_token_total": 817900,
+    "generation_token_total": 1725071
+  },
+  "next_step": "后续引用失败Token占比统一使用47.4125%。",
+  "pipeline_stage": "experiment_record_correction",
+  "recorded_at": "2026-07-23T16:34:44+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "arithmetic_transcription_error",
+  "status": "correction",
+  "submission_effect": "not_submitted",
+  "target_qids": [
+    "all_100"
+  ]
+}
+```
+
+## b-loop-answer-reasoning-stage-decoupling-a1
+
+- recorded_at: `2026-07-23T16:34:45+00:00`
+
+```json
+{
+  "approach": "把生产链拆为Stage A答案及证据链和Stage B冻结答案上的reasoning；新增answer_artifacts、分阶段失败/usage账本、答案指纹门禁和分阶段断点续跑，reasoning救援证据单独存储。",
+  "artifact_path": "src/afa_agent/b_board/runner.py",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "answer_artifact": "frozen_and_persisted",
+          "reasoning_rescue_evidence": "separate_from_answer_evidence",
+          "reasoning_retry": "independent_resume",
+          "runner": "b_actual_v11_staged_answer_reasoning",
+          "usage_ledgers": "answer_reasoning_combined"
+        },
+        "domains": [
+          "financial_contracts",
+          "financial_reports",
+          "insurance",
+          "regulatory",
+          "research"
+        ],
+        "hypothesis": "将答案与证据链、reasoning拆成顺序独立阶段并分别持久化，可使reasoning失败只重试reasoning，避免丢失或改写已完成答案。",
+        "pipeline_stage": "qwen37_production_pipeline_state",
+        "question_types": [
+          "calculation",
+          "extraction",
+          "mcq",
+          "multi",
+          "tf"
+        ],
+        "root_cause_cluster": "reasoning_failure_invalidates_completed_answer",
+        "target_qids": [
+          "fc_b_005",
+          "fin_b_007",
+          "ins_b_002",
+          "reg_b_018"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "47c204e2ad5df1f44db3bc67e1920ff0b76bb98bb204ba691c942c59e4b2c8d9",
+    "schema_version": 1,
+    "semantic_sha256": "76965bdb0c37aa2de58e3cf06820e901679237a2ab6ac8f10d3ae5ee7a01ee7c",
+    "sha256": "cc268daa32ea313b0e246cb45651c029b05755ce361c7467e431a860cb469ed2"
+  },
+  "change_vector": {
+    "answer_artifact": "frozen_and_persisted",
+    "reasoning_rescue_evidence": "separate_from_answer_evidence",
+    "reasoning_retry": "independent_resume",
+    "runner": "b_actual_v11_staged_answer_reasoning",
+    "usage_ledgers": "answer_reasoning_combined"
+  },
+  "direction_id": "answer_reasoning_stage_decoupling",
+  "domains": [
+    "financial_contracts",
+    "financial_reports",
+    "insurance",
+    "regulatory",
+    "research"
+  ],
+  "effect": "确定性测试证明reasoning首次失败后，恢复运行不会再次调用答案阶段；最终合并3次原始调用和28 Token测试账本完全一致。完整281项测试通过。该方向改善执行可靠性和失败Token隔离，尚未产生新的Qwen实跑分数。",
+  "experiment_id": "b-loop-answer-reasoning-stage-decoupling-a1",
+  "failure_analysis": "旧流程在answer_one内部生成reasoning，4个reasoning insufficient会让已完成答案一起进入失败集合；恢复时只能整题重跑。新流程已消除该耦合，但尚需用真实Qwen badcase验证线上调用与断点文件。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "answer_artifact": "frozen_and_persisted",
+            "reasoning_rescue_evidence": "separate_from_answer_evidence",
+            "reasoning_retry": "independent_resume",
+            "runner": "b_actual_v11_staged_answer_reasoning",
+            "usage_ledgers": "answer_reasoning_combined"
+          },
+          "domains": [
+            "financial_contracts",
+            "financial_reports",
+            "insurance",
+            "regulatory",
+            "research"
+          ],
+          "hypothesis": "将答案与证据链、reasoning拆成顺序独立阶段并分别持久化，可使reasoning失败只重试reasoning，避免丢失或改写已完成答案。",
+          "pipeline_stage": "qwen37_production_pipeline_state",
+          "question_types": [
+            "calculation",
+            "extraction",
+            "mcq",
+            "multi",
+            "tf"
+          ],
+          "root_cause_cluster": "reasoning_failure_invalidates_completed_answer",
+          "target_qids": [
+            "fc_b_005",
+            "fin_b_007",
+            "ins_b_002",
+            "reg_b_018"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "47c204e2ad5df1f44db3bc67e1920ff0b76bb98bb204ba691c942c59e4b2c8d9",
+      "schema_version": 1,
+      "semantic_sha256": "76965bdb0c37aa2de58e3cf06820e901679237a2ab6ac8f10d3ae5ee7a01ee7c",
+      "sha256": "cc268daa32ea313b0e246cb45651c029b05755ce361c7467e431a860cb469ed2"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "answer_artifact": "frozen_and_persisted",
+              "reasoning_rescue_evidence": "separate_from_answer_evidence",
+              "reasoning_retry": "independent_resume",
+              "runner": "b_actual_v11_staged_answer_reasoning",
+              "usage_ledgers": "answer_reasoning_combined"
+            },
+            "domains": [
+              "financial_contracts",
+              "financial_reports",
+              "insurance",
+              "regulatory",
+              "research"
+            ],
+            "hypothesis": "将答案与证据链、reasoning拆成顺序独立阶段并分别持久化，可使reasoning失败只重试reasoning，避免丢失或改写已完成答案。",
+            "pipeline_stage": "qwen37_production_pipeline_state",
+            "question_types": [
+              "calculation",
+              "extraction",
+              "mcq",
+              "multi",
+              "tf"
+            ],
+            "root_cause_cluster": "reasoning_failure_invalidates_completed_answer",
+            "target_qids": [
+              "fc_b_005",
+              "fin_b_007",
+              "ins_b_002",
+              "reg_b_018"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "47c204e2ad5df1f44db3bc67e1920ff0b76bb98bb204ba691c942c59e4b2c8d9",
+        "schema_version": 1,
+        "semantic_sha256": "76965bdb0c37aa2de58e3cf06820e901679237a2ab6ac8f10d3ae5ee7a01ee7c",
+        "sha256": "cc268daa32ea313b0e246cb45651c029b05755ce361c7467e431a860cb469ed2"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "6830a440e3da2bd3ac29c12bec91514516dbc84b3d5f42dce3ffc121f723fe47",
+      "size": 965722
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "4675bced215f8dd030de30ae7192fefaac7ac220e21b9cc4b8e39c408f2e3e16",
+      "size": 784110
+    },
+    "related_log_sections": [
+      "B0-actual-integrity",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a1-diagnostic-query-v1",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1"
+    ],
+    "reviewed_at": "2026-07-23T16:34:45+00:00"
+  },
+  "hypothesis": "将答案与证据链、reasoning拆成顺序独立阶段并分别持久化，可使reasoning失败只重试reasoning，避免丢失或改写已完成答案。",
+  "metrics": {
+    "baseline_reasoning_failure_qid_count": 4,
+    "frozen_answer_mutation_count": 0,
+    "full_regression_failure_count": 0,
+    "full_regression_test_count": 281,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "proxy_total_score": null,
+    "reasoning_shadow_score": null,
+    "staged_resume_actual_token_total": 28,
+    "staged_resume_answer_call_count": 1,
+    "staged_resume_expected_token_total": 28,
+    "staged_resume_reasoning_attempt_count": 2
+  },
+  "next_step": "在新分支推送后，先对首轮计算结构badcase运行A1；再仅对4个reasoning insufficient题验证Stage B重试，不重复Stage A。",
+  "pipeline_stage": "qwen37_production_pipeline_state",
+  "promotion_result": "effective",
+  "question_types": [
+    "calculation",
+    "extraction",
+    "mcq",
+    "multi",
+    "tf"
+  ],
+  "recorded_at": "2026-07-23T16:34:45+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "reasoning_failure_invalidates_completed_answer",
+  "status": "effective",
+  "submission_effect": "effective_infrastructure_not_submitted",
+  "target_qids": [
+    "fc_b_005",
+    "fin_b_007",
+    "ins_b_002",
+    "reg_b_018"
+  ]
+}
+```

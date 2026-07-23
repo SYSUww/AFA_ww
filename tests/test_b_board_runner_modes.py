@@ -23,6 +23,7 @@ from afa_agent.b_board.runner import (
     BAnswerArtifact,
     BAnswerGenerationError,
     BBoardActualRunner,
+    _artifact_from_dict,
     _normalize_calculation_numeric_literals,
 )
 from afa_agent.client import LLMResponse
@@ -231,6 +232,14 @@ class BBoardRunnerModeTests(unittest.TestCase):
 
         self.assertEqual(len(runner.client.messages), 2)
         self.assertNotIn("u2", result.used_evidence_ids)
+        self.assertEqual(
+            [item["unit_id"] for item in result.evidence_items],
+            ["u1"],
+        )
+        self.assertEqual(
+            [item["unit_id"] for item in result.reasoning_evidence_items],
+            ["u1", "u2"],
+        )
         self.assertEqual(
             result.token_usage,
             {"prompt_tokens": 32, "completion_tokens": 10, "total_tokens": 42},
@@ -546,6 +555,142 @@ class BBoardRunnerModeTests(unittest.TestCase):
             {"prompt_tokens": 15, "completion_tokens": 7, "total_tokens": 22},
         )
 
+    def test_reasoning_failure_resume_does_not_rerun_frozen_answer_stage(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory) / "reasoning-resume"
+            answer_call_count = 0
+            first_runner = self._lightweight_runner(
+                RUN_MODE_SUBMISSION, "qwen3.7-plus"
+            )
+            answer_artifact = _artifact()
+            answer_artifact.decision_trace = {
+                "answer_api_usage_ledger": {
+                    "call_count": 1,
+                    "calls": [
+                        {
+                            "call_index": 1,
+                            "model_name": "qwen3.7-plus",
+                            "token_usage": dict(answer_artifact.token_usage),
+                        }
+                    ],
+                }
+            }
+
+            def answer_once(*_args):
+                nonlocal answer_call_count
+                answer_call_count += 1
+                return _artifact_from_dict(answer_artifact.to_dict())
+
+            reasoning_failure_call = {
+                "call_index": 1,
+                "model_name": "qwen3.7-plus",
+                "token_usage": {
+                    "prompt_tokens": 4,
+                    "completion_tokens": 1,
+                    "total_tokens": 5,
+                },
+            }
+
+            def fail_reasoning(*_args):
+                raise BAnswerGenerationError(
+                    "reasoning evidence insufficient",
+                    token_usage={
+                        "prompt_tokens": 4,
+                        "completion_tokens": 1,
+                        "total_tokens": 5,
+                    },
+                    diagnostics=[
+                        {
+                            "stage": "api_usage_ledger",
+                            "pipeline_stage": "reasoning",
+                            "calls": [reasoning_failure_call],
+                        }
+                    ],
+                )
+
+            first_runner.answer_one = answer_once
+            first_runner.reasoning_one = fail_reasoning
+            first_manifest = first_runner.run(run_dir=run_dir, workers=1)
+
+            self.assertEqual(first_manifest["status"], "incomplete")
+            self.assertEqual(first_manifest["answer_completed_count"], 1)
+            self.assertEqual(first_manifest["reasoning_completed_count"], 0)
+            self.assertEqual(first_manifest["reasoning_failed_qids"], ["q1"])
+            self.assertEqual(answer_call_count, 1)
+            self.assertEqual(
+                len(
+                    json.loads(
+                        (run_dir / "answer_artifacts.json").read_text()
+                    )
+                ),
+                1,
+            )
+            self.assertEqual(json.loads((run_dir / "answers.json").read_text()), [])
+            self.assertFalse((run_dir / "submit.csv").exists())
+
+            second_runner = self._lightweight_runner(
+                RUN_MODE_SUBMISSION, "qwen3.7-plus"
+            )
+
+            def must_not_rerun_answer(*_args):
+                raise AssertionError("frozen answer stage was rerun")
+
+            def finish_reasoning(_question, frozen):
+                result = _artifact_from_dict(frozen.to_dict())
+                current_usage = {
+                    "prompt_tokens": 6,
+                    "completion_tokens": 2,
+                    "total_tokens": 8,
+                }
+                result.token_usage = {
+                    "prompt_tokens": frozen.token_usage["prompt_tokens"] + 6,
+                    "completion_tokens": frozen.token_usage["completion_tokens"] + 2,
+                    "total_tokens": frozen.token_usage["total_tokens"] + 8,
+                }
+                result.decision_trace = {
+                    **result.decision_trace,
+                    "reasoning_api_usage_ledger": {
+                        "call_count": 1,
+                        "calls": [
+                            {
+                                "call_index": 1,
+                                "model_name": "qwen3.7-plus",
+                                "token_usage": current_usage,
+                            }
+                        ],
+                    },
+                }
+                return result
+
+            second_runner.answer_one = must_not_rerun_answer
+            second_runner.reasoning_one = finish_reasoning
+            with mock.patch(
+                "afa_agent.b_board.runner.validate_resume_fingerprint"
+            ):
+                final_manifest = second_runner.run(run_dir=run_dir, workers=1)
+            ledger_rows = [
+                json.loads(line)
+                for line in (run_dir / "usage_ledger.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+                if line.strip()
+            ]
+
+        self.assertEqual(answer_call_count, 1)
+        self.assertEqual(final_manifest["status"], "complete")
+        self.assertEqual(final_manifest["answer_retry_failure_count"], 0)
+        self.assertEqual(final_manifest["reasoning_retry_failure_count"], 1)
+        self.assertEqual(
+            final_manifest["generation_token_usage"],
+            {"prompt_tokens": 20, "completion_tokens": 8, "total_tokens": 28},
+        )
+        self.assertEqual(ledger_rows[0]["status"], "success")
+        self.assertEqual(ledger_rows[0]["call_count"], 3)
+        self.assertEqual(
+            ledger_rows[0]["token_usage"],
+            {"prompt_tokens": 20, "completion_tokens": 8, "total_tokens": 28},
+        )
+
     def test_run_mode_changes_fingerprint_and_blocks_resume(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -601,6 +746,9 @@ class BBoardRunnerModeTests(unittest.TestCase):
         runner.config = SimpleNamespace(model=_model(model_name))
         runner.locate = lambda _questions: {question.qid: {"qid": question.qid}}
         runner.answer_one = lambda _question, _locator: _artifact()
+        runner.reasoning_one = (
+            lambda _question, artifact: _artifact_from_dict(artifact.to_dict())
+        )
         runner._build_fingerprint = lambda _questions, _workers: {
             "schema_version": 1,
             "sha256": "unit-test",

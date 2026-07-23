@@ -74,6 +74,34 @@ class CandidateScorecardTests(unittest.TestCase):
         self.assertFalse(scorecard["compliance_passed"])
         self.assertIn("submission_csv_is_missing", scorecard["compliance_failures"])
 
+    def test_reasoning_rescue_evidence_does_not_mutate_answer_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run_dir, reference_manifest, locks, reasoning_dir = self._build_fixture(root)
+            answers_path = run_dir / "answers.json"
+            answers = json.loads(answers_path.read_text(encoding="utf-8"))
+            answers[0]["decision_trace"]["submission_reasoning"][
+                "rescued_evidence_ids"
+            ] = ["q1:r1"]
+            answers[0]["reasoning_evidence_items"] = [
+                *answers[0]["evidence_items"],
+                {"unit_id": "q1:r1", "text": "仅供 reasoning 补强的证据"},
+            ]
+            answers_path.write_text(json.dumps(answers), encoding="utf-8")
+
+            scorecard = evaluate_candidate_run(
+                run_dir=run_dir,
+                reference_manifest_path=reference_manifest,
+                official_locks_path=locks,
+                reasoning_evaluation_dir=reasoning_dir,
+            )
+
+        self.assertTrue(scorecard["compliance_passed"])
+        self.assertEqual(
+            [item["unit_id"] for item in answers[0]["evidence_items"]],
+            ["q1:e1"],
+        )
+
     def test_reasoning_score_must_be_sealed_to_exact_submission(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
