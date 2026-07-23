@@ -32722,3 +32722,587 @@
   ]
 }
 ```
+
+## b-loop-qwen37-integrated-full100-candidate-a2
+
+- recorded_at: `2026-07-23T22:02:00+00:00`
+
+```json
+{
+  "approach": "在提交160f0ce上固定Qwen3.7快照、attempt_43、workers=4与native strict，独立重跑100题；生产链不访问pseudo99或答案锁，answer完成即冻结，reasoning使用submission_reasoning_v1及格式专用重试，不上传官网。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_integrated_full100_candidate_a2",
+  "base_commit": "160f0ce",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "160f0ce"
+      },
+      "identity": {
+        "change_vector": {
+          "base_commit": "160f0ce",
+          "derived_rule_arithmetic": "v1",
+          "full_year_dividend_binding": "same_doc_same_value_v1",
+          "locator": "attempt_43",
+          "model": "qwen3.7-plus-2026-05-26",
+          "official_answer_lock_injection": false,
+          "reasoning_hard_fallback": "deterministic_payload_normalization_v1",
+          "reasoning_schema": "submission_reasoning_v1",
+          "reference_answer_access": false,
+          "structured_output_mode": "native_json_schema_strict",
+          "workers": 4
+        },
+        "domains": [
+          "financial_contracts",
+          "financial_reports",
+          "insurance",
+          "regulatory",
+          "research"
+        ],
+        "hypothesis": "在上一全100题99答案/96reasoning基础上，集成已验证的reg_b_014派生规则、fin_b_013原始金额、fin_b_016全年分红证据绑定和reasoning strict schema硬兜底后，独立重跑100题可收口完整产物，并减少结构失败而不回退已冻结的合规约束。",
+        "pipeline_stage": "integrated_answer_and_reasoning_generation",
+        "question_types": [
+          "calculation",
+          "extraction",
+          "mcq",
+          "multi",
+          "tf"
+        ],
+        "root_cause_cluster": "integrated_qwen37_accuracy_reasoning_token_tradeoff",
+        "target_qids": [
+          "all_100"
+        ]
+      }
+    },
+    "context_sha256": "4e8159be9aac7e3d80d92504abfabc47a7c6d49893bb4bf470708b634a0d5350",
+    "direction_sha256": "b9004a375163baa9e3137918fdeff84b89326682adc2411d49ad2eeb02c24c49",
+    "schema_version": 1,
+    "semantic_sha256": "576e1b8eb346b250ff2e2d3c2d4e95ad18775520a2810134d2365c2e9381e07b",
+    "sha256": "27c1fb5a5232d58bf053af7ae0669e005be6ed13acf35cfbe312057fac20aa9a"
+  },
+  "change_vector": {
+    "base_commit": "160f0ce",
+    "derived_rule_arithmetic": "v1",
+    "full_year_dividend_binding": "same_doc_same_value_v1",
+    "locator": "attempt_43",
+    "model": "qwen3.7-plus-2026-05-26",
+    "official_answer_lock_injection": false,
+    "reasoning_hard_fallback": "deterministic_payload_normalization_v1",
+    "reasoning_schema": "submission_reasoning_v1",
+    "reference_answer_access": false,
+    "structured_output_mode": "native_json_schema_strict",
+    "workers": 4
+  },
+  "direction_id": "qwen37_integrated_full100_candidate",
+  "domains": [
+    "financial_contracts",
+    "financial_reports",
+    "insurance",
+    "regulatory",
+    "research"
+  ],
+  "effect": "Stage A完成99/100，唯一答案失败仍为res_b_005读超时；99个冻结答案中94个与pseudo99代理等价，fin_b_016、ins_b_002、reg_b_014相对上一全量已恢复，但fc_b_014新增代理漂移。Stage B仅完成90/99：82题零格式重试，8题一次格式重试后成功，9题两次均因answer_parts把单槽多选“AB”拆成[\"A\",\"B\"]而失败。所有reasoning响应均为native strict，无JSON/Schema解析失败。总生成Token1408640，条件Token效率74.88956；运行不完整，不能生成submit或总分。",
+  "experiment_id": "b-loop-qwen37-integrated-full100-candidate-a2",
+  "failure_analysis": "strict Schema只能约束answer_parts是字符串数组，不能表达“一个提交槽内的多选字母必须合并成一个字符串”。9个失败中8个reasoning正文与冻结答案一致，只是返回槽表示拆分；reg_b_015同样拆槽但还报告证据不足且指出B与证据冲突。现有硬兜底只处理answer_parts为单个字符串，未处理同一单槽被拆成多个字符串，导致17题先消耗一次格式重试，其中9题最终失败。res_b_005是360秒读超时，不是格式问题。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "160f0ce"
+        },
+        "identity": {
+          "change_vector": {
+            "base_commit": "160f0ce",
+            "derived_rule_arithmetic": "v1",
+            "full_year_dividend_binding": "same_doc_same_value_v1",
+            "locator": "attempt_43",
+            "model": "qwen3.7-plus-2026-05-26",
+            "official_answer_lock_injection": false,
+            "reasoning_hard_fallback": "deterministic_payload_normalization_v1",
+            "reasoning_schema": "submission_reasoning_v1",
+            "reference_answer_access": false,
+            "structured_output_mode": "native_json_schema_strict",
+            "workers": 4
+          },
+          "domains": [
+            "financial_contracts",
+            "financial_reports",
+            "insurance",
+            "regulatory",
+            "research"
+          ],
+          "hypothesis": "在上一全100题99答案/96reasoning基础上，集成已验证的reg_b_014派生规则、fin_b_013原始金额、fin_b_016全年分红证据绑定和reasoning strict schema硬兜底后，独立重跑100题可收口完整产物，并减少结构失败而不回退已冻结的合规约束。",
+          "pipeline_stage": "integrated_answer_and_reasoning_generation",
+          "question_types": [
+            "calculation",
+            "extraction",
+            "mcq",
+            "multi",
+            "tf"
+          ],
+          "root_cause_cluster": "integrated_qwen37_accuracy_reasoning_token_tradeoff",
+          "target_qids": [
+            "all_100"
+          ]
+        }
+      },
+      "context_sha256": "4e8159be9aac7e3d80d92504abfabc47a7c6d49893bb4bf470708b634a0d5350",
+      "direction_sha256": "b9004a375163baa9e3137918fdeff84b89326682adc2411d49ad2eeb02c24c49",
+      "schema_version": 1,
+      "semantic_sha256": "576e1b8eb346b250ff2e2d3c2d4e95ad18775520a2810134d2365c2e9381e07b",
+      "sha256": "27c1fb5a5232d58bf053af7ae0669e005be6ed13acf35cfbe312057fac20aa9a"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "160f0ce"
+          },
+          "identity": {
+            "change_vector": {
+              "base_commit": "160f0ce",
+              "derived_rule_arithmetic": "v1",
+              "full_year_dividend_binding": "same_doc_same_value_v1",
+              "locator": "attempt_43",
+              "model": "qwen3.7-plus-2026-05-26",
+              "official_answer_lock_injection": false,
+              "reasoning_hard_fallback": "deterministic_payload_normalization_v1",
+              "reasoning_schema": "submission_reasoning_v1",
+              "reference_answer_access": false,
+              "structured_output_mode": "native_json_schema_strict",
+              "workers": 4
+            },
+            "domains": [
+              "financial_contracts",
+              "financial_reports",
+              "insurance",
+              "regulatory",
+              "research"
+            ],
+            "hypothesis": "在上一全100题99答案/96reasoning基础上，集成已验证的reg_b_014派生规则、fin_b_013原始金额、fin_b_016全年分红证据绑定和reasoning strict schema硬兜底后，独立重跑100题可收口完整产物，并减少结构失败而不回退已冻结的合规约束。",
+            "pipeline_stage": "integrated_answer_and_reasoning_generation",
+            "question_types": [
+              "calculation",
+              "extraction",
+              "mcq",
+              "multi",
+              "tf"
+            ],
+            "root_cause_cluster": "integrated_qwen37_accuracy_reasoning_token_tradeoff",
+            "target_qids": [
+              "all_100"
+            ]
+          }
+        },
+        "context_sha256": "4e8159be9aac7e3d80d92504abfabc47a7c6d49893bb4bf470708b634a0d5350",
+        "direction_sha256": "b9004a375163baa9e3137918fdeff84b89326682adc2411d49ad2eeb02c24c49",
+        "schema_version": 1,
+        "semantic_sha256": "576e1b8eb346b250ff2e2d3c2d4e95ad18775520a2810134d2365c2e9381e07b",
+        "sha256": "27c1fb5a5232d58bf053af7ae0669e005be6ed13acf35cfbe312057fac20aa9a"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-qwen37-integrated-full100-candidate-a1"
+      ],
+      "similarity": 0.7
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "6bfe6d96f609991914107af9fbfab8534b5226978de576f85228988f04f283df",
+      "size": 1285869
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "2cf0691bb0ef6ad5266ce5e7199d0392d6f33993e37d37df534a8e52cd662839",
+      "size": 1052985
+    },
+    "related_log_sections": [
+      "b-loop-qwen37-compliance-and-score-loop-scaffold-a1",
+      "b-loop-qwen37-compliance-and-score-loop-scaffold-a2",
+      "b-loop-qwen37-full100-independent-baseline-a1",
+      "b-loop-qwen37-full100-independent-baseline-a1-metric-correction",
+      "b-loop-qwen37-structured-output-contract-a2-full100",
+      "b-loop-qwen37-integrated-full100-candidate-a1"
+    ],
+    "reviewed_at": "2026-07-23T21:22:17+00:00"
+  },
+  "hypothesis": "在上一全100题99答案/96reasoning基础上，集成已验证的reg_b_014派生规则、fin_b_013原始金额、fin_b_016全年分红证据绑定和reasoning strict Schema硬兜底后，独立重跑100题可收口完整产物，并减少结构失败而不回退已冻结的合规约束。",
+  "material_delta": {
+    "coverage_validation": "single_qids_to_full100",
+    "full_year_dividend_binding": "same_doc_same_value_v1",
+    "reasoning_schema": "submission_reasoning_v1"
+  },
+  "metrics": {
+    "answer_completed_count": 99,
+    "answer_failed_qids": [
+      "res_b_005"
+    ],
+    "answer_reference_equivalent_match_count": 94,
+    "answer_reference_mismatch_qids": [
+      "fc_b_014",
+      "fin_b_018",
+      "ins_b_003",
+      "ins_b_016",
+      "reg_b_015",
+      "res_b_005"
+    ],
+    "conditional_token_efficiency_score": 74.88956,
+    "failed_reasoning_two_format_attempt_count": 9,
+    "generation_token_delta": 103832,
+    "generation_token_increase_percent": 7.96,
+    "generation_token_total": 1408640,
+    "official_accuracy": null,
+    "official_answer_lock_regressions": [
+      "ins_b_016"
+    ],
+    "official_submission_count": 0,
+    "official_upload_performed": false,
+    "previous_generation_token_total": 1304808,
+    "proxy_total_score": null,
+    "reasoning_completed_count": 90,
+    "reasoning_failed_qids": [
+      "fc_b_010",
+      "fin_b_004",
+      "fin_b_011",
+      "fin_b_012",
+      "ins_b_010",
+      "reg_b_005",
+      "reg_b_015",
+      "res_b_006",
+      "res_b_018"
+    ],
+    "reasoning_json_or_schema_parse_failure_count": 0,
+    "reasoning_native_strict_call_count": 117,
+    "reasoning_payload_normalization_count": 0,
+    "split_single_slot_multi_failure_count": 9,
+    "successful_reasoning_one_format_retry_count": 8,
+    "successful_reasoning_zero_format_retry_count": 82,
+    "usage_complete": true
+  },
+  "next_step": "开启reasoning硬兜底A2：仅当冻结答案恰为单槽且返回字符串数组按顺序拼接后与冻结值逐字相等时，确定性合并为单槽；不改变字母、顺序或选择集合。随后先离线回放9个失败响应，再只重跑9个reasoning阶段；reg_b_015若归一化后仍insufficient，应进入证据救援而非当格式失败。",
+  "pipeline_stage": "integrated_answer_and_reasoning_generation",
+  "promotion_result": "not_effective",
+  "question_types": [
+    "calculation",
+    "extraction",
+    "mcq",
+    "multi",
+    "tf"
+  ],
+  "recorded_at": "2026-07-23T22:02:00+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "integrated_qwen37_accuracy_reasoning_token_tradeoff",
+  "status": "completed_not_effective_incomplete_reasoning_slot_shape",
+  "submission_effect": "not_submitted_incomplete",
+  "target_qids": [
+    "all_100"
+  ]
+}
+```
+
+## b-loop-qwen37-reasoning-structured-output-hard-fallback-a2
+
+- recorded_at: `2026-07-23T22:06:05+00:00`
+
+```json
+{
+  "approach": "扩展reasoning确定性归一化：当且仅当冻结答案只有一个槽、模型answer_parts为多个字符串且按原顺序逐字拼接后完全等于冻结槽时，合并回单槽；不改字母、顺序或选择集合。先离线回放全量A2的9个失败响应，再仅对9个冻结answer_artifact运行Stage B。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_reasoning_structured_output_hard_fallback_a2",
+  "base_commit": "160f0ce",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "160f0ce"
+      },
+      "identity": {
+        "change_vector": {
+          "base_commit": "160f0ce",
+          "local_hard_fallback": "deterministic_payload_normalization_v2_single_slot_join",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reasoning_response_schema": "submission_reasoning_v1",
+          "reference_answer_access": false,
+          "retry_policy": "normalize_validate_then_reasoning_only_retry_no_retrieval",
+          "structured_output_mode": "native_json_schema_strict",
+          "workers": 1
+        },
+        "domains": [
+          "financial_contracts",
+          "financial_reports",
+          "insurance",
+          "regulatory",
+          "research"
+        ],
+        "hypothesis": "全100题暴露17题把单槽多选答案拆成多个answer_parts，9题最终失败；当且仅当冻结答案只有一个槽且返回字符串数组顺序拼接后与冻结槽逐字相等时，本地合并是无语义变换，可避免无效reasoning重试并让真正insufficient进入证据救援。",
+        "pipeline_stage": "submission_reasoning_serialization",
+        "question_types": [
+          "mcq",
+          "multi"
+        ],
+        "root_cause_cluster": "qwen37_reasoning_json_contract_failure",
+        "target_qids": [
+          "fc_b_010",
+          "fin_b_004",
+          "fin_b_011",
+          "fin_b_012",
+          "ins_b_010",
+          "reg_b_005",
+          "reg_b_015",
+          "res_b_006",
+          "res_b_018"
+        ]
+      }
+    },
+    "context_sha256": "4e8159be9aac7e3d80d92504abfabc47a7c6d49893bb4bf470708b634a0d5350",
+    "direction_sha256": "b231cb1499ca01fe4408e35a94a67384ff3e48cc77bc3ab067726f24ef36bdd6",
+    "schema_version": 1,
+    "semantic_sha256": "09fbea7bba0c52b6142a401ec5eb6b82a4a7911a6431784f523a2c4fc8776cd1",
+    "sha256": "936603ddfff7ffe1ee4ad1b659eba032138eca45fee53d5b38ae208f251a3391"
+  },
+  "change_vector": {
+    "base_commit": "160f0ce",
+    "local_hard_fallback": "deterministic_payload_normalization_v2_single_slot_join",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reasoning_response_schema": "submission_reasoning_v1",
+    "reference_answer_access": false,
+    "retry_policy": "normalize_validate_then_reasoning_only_retry_no_retrieval",
+    "structured_output_mode": "native_json_schema_strict",
+    "workers": 1
+  },
+  "direction_id": "qwen37_reasoning_structured_output_hard_fallback",
+  "domains": [
+    "financial_contracts",
+    "financial_reports",
+    "insurance",
+    "regulatory",
+    "research"
+  ],
+  "effect": "离线回放9/9通过Schema、冻结答案与语义契约：8题可直接完成，reg_b_015进入证据救援。线上reasoning-only重跑完成8/9，answer调用0，8个answer_parts全部保持冻结，格式重试0；其中4题真实触发split-slot本地合并，另4题本轮原生返回单槽。恢复8题Token40552，较上轮相同8题失败Token85420减少44868（52.53%）。",
+  "experiment_id": "b-loop-qwen37-reasoning-structured-output-hard-fallback-a2",
+  "failure_analysis": "reg_b_015在本地合并后两轮均grounding_status=insufficient：Qwen明确指出冻结答案AB中的B“可以直接按登记信息免识别”与证据要求的差异反馈及核实义务冲突；证据救援也未改变结论。它是答案/证据冲突，不是格式问题，不应继续在本方向重试。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "160f0ce"
+        },
+        "identity": {
+          "change_vector": {
+            "base_commit": "160f0ce",
+            "local_hard_fallback": "deterministic_payload_normalization_v2_single_slot_join",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reasoning_response_schema": "submission_reasoning_v1",
+            "reference_answer_access": false,
+            "retry_policy": "normalize_validate_then_reasoning_only_retry_no_retrieval",
+            "structured_output_mode": "native_json_schema_strict",
+            "workers": 1
+          },
+          "domains": [
+            "financial_contracts",
+            "financial_reports",
+            "insurance",
+            "regulatory",
+            "research"
+          ],
+          "hypothesis": "全100题暴露17题把单槽多选答案拆成多个answer_parts，9题最终失败；当且仅当冻结答案只有一个槽且返回字符串数组顺序拼接后与冻结槽逐字相等时，本地合并是无语义变换，可避免无效reasoning重试并让真正insufficient进入证据救援。",
+          "pipeline_stage": "submission_reasoning_serialization",
+          "question_types": [
+            "mcq",
+            "multi"
+          ],
+          "root_cause_cluster": "qwen37_reasoning_json_contract_failure",
+          "target_qids": [
+            "fc_b_010",
+            "fin_b_004",
+            "fin_b_011",
+            "fin_b_012",
+            "ins_b_010",
+            "reg_b_005",
+            "reg_b_015",
+            "res_b_006",
+            "res_b_018"
+          ]
+        }
+      },
+      "context_sha256": "4e8159be9aac7e3d80d92504abfabc47a7c6d49893bb4bf470708b634a0d5350",
+      "direction_sha256": "b231cb1499ca01fe4408e35a94a67384ff3e48cc77bc3ab067726f24ef36bdd6",
+      "schema_version": 1,
+      "semantic_sha256": "09fbea7bba0c52b6142a401ec5eb6b82a4a7911a6431784f523a2c4fc8776cd1",
+      "sha256": "936603ddfff7ffe1ee4ad1b659eba032138eca45fee53d5b38ae208f251a3391"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "160f0ce"
+          },
+          "identity": {
+            "change_vector": {
+              "base_commit": "160f0ce",
+              "local_hard_fallback": "deterministic_payload_normalization_v2_single_slot_join",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reasoning_response_schema": "submission_reasoning_v1",
+              "reference_answer_access": false,
+              "retry_policy": "normalize_validate_then_reasoning_only_retry_no_retrieval",
+              "structured_output_mode": "native_json_schema_strict",
+              "workers": 1
+            },
+            "domains": [
+              "financial_contracts",
+              "financial_reports",
+              "insurance",
+              "regulatory",
+              "research"
+            ],
+            "hypothesis": "全100题暴露17题把单槽多选答案拆成多个answer_parts，9题最终失败；当且仅当冻结答案只有一个槽且返回字符串数组顺序拼接后与冻结槽逐字相等时，本地合并是无语义变换，可避免无效reasoning重试并让真正insufficient进入证据救援。",
+            "pipeline_stage": "submission_reasoning_serialization",
+            "question_types": [
+              "mcq",
+              "multi"
+            ],
+            "root_cause_cluster": "qwen37_reasoning_json_contract_failure",
+            "target_qids": [
+              "fc_b_010",
+              "fin_b_004",
+              "fin_b_011",
+              "fin_b_012",
+              "ins_b_010",
+              "reg_b_005",
+              "reg_b_015",
+              "res_b_006",
+              "res_b_018"
+            ]
+          }
+        },
+        "context_sha256": "4e8159be9aac7e3d80d92504abfabc47a7c6d49893bb4bf470708b634a0d5350",
+        "direction_sha256": "b231cb1499ca01fe4408e35a94a67384ff3e48cc77bc3ab067726f24ef36bdd6",
+        "schema_version": 1,
+        "semantic_sha256": "09fbea7bba0c52b6142a401ec5eb6b82a4a7911a6431784f523a2c4fc8776cd1",
+        "sha256": "936603ddfff7ffe1ee4ad1b659eba032138eca45fee53d5b38ae208f251a3391"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-qwen37-reasoning-structured-output-hard-fallback-a1"
+      ],
+      "similarity": 0.776373
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "da5d5c04b3f5a11537e68791974e99be2a58762d1e253a41285664d43bee857d",
+      "size": 1298309
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "b269f464a31a634c449bb5a67261f35b8ec8853384387212fb75ff4bafecba56",
+      "size": 1063304
+    },
+    "related_log_sections": [
+      "B0-actual-evaluation",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-suspect-case-optimization-v3",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90",
+      "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+      "b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100",
+      "b-loop-qwen37-full100-independent-baseline-a1",
+      "b-loop-qwen37-structured-output-contract-a2-full100",
+      "b-loop-qwen37-structured-output-contract-a3-staged-retry",
+      "b-loop-qwen37-option-verdict-consistency-a1",
+      "b-loop-qwen37-option-verdict-consistency-a3",
+      "b-loop-qwen37-integrated-full100-candidate-a1",
+      "b-loop-qwen37-reasoning-structured-output-hard-fallback-a1",
+      "b-loop-qwen37-integrated-full100-candidate-a2"
+    ],
+    "reviewed_at": "2026-07-23T22:02:17+00:00"
+  },
+  "hypothesis": "全100题暴露17题把单槽多选答案拆成多个answer_parts，9题最终失败；当且仅当冻结答案只有一个槽且返回字符串数组顺序拼接后与冻结槽逐字相等时，本地合并是无语义变换，可避免无效reasoning重试并让真正insufficient进入证据救援。",
+  "material_delta": {
+    "offline_failure_replay": "9_responses",
+    "single_slot_split_answer_join": "exact_ordered_concat_v1"
+  },
+  "metrics": {
+    "answer_parts_preserved_count": 8,
+    "answer_stage_api_call_count": 0,
+    "compileall_passed": true,
+    "format_retry_count": 0,
+    "git_diff_check_passed": true,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "official_upload_performed": false,
+    "offline_exact_split_join_count": 9,
+    "offline_replayed_failure_count": 9,
+    "offline_semantic_contract_passed_count": 9,
+    "online_split_slot_normalization_count": 4,
+    "previous_same_qids_failed_token_total": 85420,
+    "reasoning_completed_count": 8,
+    "reasoning_failed_qids": [
+      "reg_b_015"
+    ],
+    "recorded_token_total": 55216,
+    "recovered_reasoning_token_total": 40552,
+    "reg_b_015_reasoning_token_total": 14664,
+    "tests_passed": 326,
+    "token_delta": -44868,
+    "token_reduction_percent": 52.53,
+    "usage_complete": true
+  },
+  "next_step": "该方向有效，提交并推送当前分支。全量产物可将A2的90个reasoning与本轮8个恢复reasoning合并为98个；剩余reg_b_015转入准确率/证据badcase，res_b_005转入长计算请求恢复。完成两题后再进行全100题GPT-5.6冻结reasoning影子评测。",
+  "pipeline_stage": "submission_reasoning_serialization",
+  "promotion_result": "effective_push_pending",
+  "question_types": [
+    "mcq",
+    "multi"
+  ],
+  "recorded_at": "2026-07-23T22:06:05+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "qwen37_reasoning_json_contract_failure",
+  "status": "completed_effective",
+  "submission_effect": "reasoning_only_local_generation_not_officially_uploaded",
+  "target_qids": [
+    "fc_b_010",
+    "fin_b_004",
+    "fin_b_011",
+    "fin_b_012",
+    "ins_b_010",
+    "reg_b_005",
+    "reg_b_015",
+    "res_b_006",
+    "res_b_018"
+  ]
+}
+```

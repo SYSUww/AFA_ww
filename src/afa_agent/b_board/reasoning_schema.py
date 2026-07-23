@@ -8,7 +8,7 @@ from jsonschema import Draft202012Validator
 
 SUBMISSION_REASONING_SCHEMA_VERSION = "submission_reasoning_v1"
 SUBMISSION_REASONING_NORMALIZATION_VERSION = (
-    "deterministic_payload_normalization_v1"
+    "deterministic_payload_normalization_v2_single_slot_join"
 )
 
 SUBMISSION_REASONING_SCHEMA: dict[str, Any] = {
@@ -75,6 +75,20 @@ def normalize_submission_reasoning_payload(
         normalized["answer_parts"] = [answer_parts]
         normalizations.append(
             {"reason": "single_frozen_answer_string_to_array"}
+        )
+    elif (
+        isinstance(answer_parts, list)
+        and len(expected) == 1
+        and len(answer_parts) > 1
+        and all(isinstance(item, str) for item in answer_parts)
+        and "".join(answer_parts) == expected[0]
+    ):
+        normalized["answer_parts"] = [expected[0]]
+        normalizations.append(
+            {
+                "reason": "join_exact_split_single_slot_answer_parts",
+                "part_count": len(answer_parts),
+            }
         )
 
     grounding_status = normalized.get("grounding_status")

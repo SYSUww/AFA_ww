@@ -42,6 +42,9 @@ from afa_agent.b_board.runner import (
     _validate_insurance_surrender_rate_binding,
     _validate_raw_amount_ratio_dependency,
 )
+from afa_agent.b_board.reasoning_schema import (
+    normalize_submission_reasoning_payload,
+)
 from afa_agent.client import LLMResponse
 from afa_agent.config import ModelConfig, RunConfig
 from afa_agent.models import TokenUsage
@@ -1398,6 +1401,62 @@ class BBoardRunnerModeTests(unittest.TestCase):
                 "supported_null_missing_support_to_empty_array",
             },
         )
+
+    def test_reasoning_hard_fallback_joins_exact_split_single_slot_answer(
+        self,
+    ) -> None:
+        runner = object.__new__(BBoardActualRunner)
+        runner.config = SimpleNamespace(
+            model=SimpleNamespace(model_name="qwen3.7-plus")
+        )
+        runner.client = _QueuedClient(
+            [
+                _response(
+                    '{"answer_parts":["A","B"],"grounding_status":"supported",'
+                    '"missing_support":[],"reasoning":"定位题目中的两个正确选项，'
+                    '证据分别支持A与B，并排除其余选项，因此最终答案为AB。"}',
+                    10,
+                    2,
+                )
+            ]
+        )
+        artifact = _artifact()
+        artifact.answer_parts = ["AB"]
+
+        result = runner._attach_submission_reasoning(
+            _question(),
+            artifact,
+        )
+
+        self.assertEqual(result.answer_parts, ["AB"])
+        self.assertEqual(len(runner.client.messages), 1)
+        trace = result.decision_trace["submission_reasoning"]
+        self.assertEqual(trace["format_retry_count"], 0)
+        self.assertEqual(
+            trace["payload_normalizations"],
+            [
+                {
+                    "reason": "join_exact_split_single_slot_answer_parts",
+                    "part_count": 2,
+                }
+            ],
+        )
+
+    def test_reasoning_hard_fallback_does_not_join_non_equivalent_parts(
+        self,
+    ) -> None:
+        normalized, changes = normalize_submission_reasoning_payload(
+            {
+                "answer_parts": ["A", "C"],
+                "grounding_status": "supported",
+                "missing_support": [],
+                "reasoning": "证据支持A和C。",
+            },
+            frozen_answer_parts=["AB"],
+        )
+
+        self.assertEqual(normalized["answer_parts"], ["A", "C"])
+        self.assertEqual(changes, [])
 
     def test_reasoning_contract_failure_retries_only_reasoning_without_rescue(
         self,

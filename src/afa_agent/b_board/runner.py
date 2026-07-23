@@ -136,7 +136,7 @@ SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推�
 4. 显式写出与 answer_parts 完全一致的最终答案。
 不得提及“质检”、“反馈”、“草稿”或修订过程，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。只输出 JSON。prompt_version={SUBMISSION_REASONING_REFINE_PROMPT_VERSION}。"""
 
-RUNNER_VERSION = "b_actual_v25_reasoning_structured_output_fallback"
+RUNNER_VERSION = "b_actual_v26_reasoning_single_slot_join"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 CALCULATION_PLAN_NORMALIZATION_VERSION = "qwen37_structure_contract_v3_schema"
 CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
