@@ -20764,3 +20764,219 @@
   ]
 }
 ```
+
+## b-loop-official97-boundary-d-option-rollback-a2-ins017-official-result
+
+- recorded_at: `2026-07-23T04:10:20+00:00`
+
+```json
+{
+  "approach": "回填用户反馈的综合得分64.2736；按更新后new.md权重accuracy×0.5+reasoning×0.3+token效率×0.2，结合无reasoning和Token总量931605反解答案准确率。",
+  "artifact_path": "artifacts/b_board_actual/candidates/i031_accuracy_boundary_d_rollback/ins017_drop_d_single_a2/submit.csv",
+  "base_commit": "413177a0c7947ddda54a085c38d5ef3d5437b5d3",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "413177a0c7947ddda54a085c38d5ef3d5437b5d3"
+      },
+      "identity": {
+        "change_vector": {
+          "answer_only": true,
+          "frozen_other_qids": 99,
+          "ins_b_017": "ABCD->ABC",
+          "reasoning_column": false,
+          "validation_only": true
+        },
+        "domains": [
+          "insurance"
+        ],
+        "hypothesis": "官网综合分可结合更新后的0.5/0.3/0.2权重、空reasoning和931605 token反解ins_b_017单题消融的真实准确率。",
+        "pipeline_stage": "official_validation",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "multi_choice_scope_boundary_overselection",
+        "target_qids": [
+          "ins_b_017"
+        ]
+      }
+    },
+    "context_sha256": "ca55a504c2899c7fe12e4bacbee55bf281f2935d0a8445f9858169ef720a43ca",
+    "direction_sha256": "af2db2c433c4ef1396e99f84bda44b05e563a1475e8744dee21f266b64efabb3",
+    "schema_version": 1,
+    "semantic_sha256": "dda4c7d77716d0360746364858ffe86f1a368099be34947d0d6ef82e4251893d",
+    "sha256": "ebe47bd44bcc3c3a33320e26a1b2954b5671859fc8fa9dbeba191385231ab036"
+  },
+  "change_vector": {
+    "answer_only": true,
+    "frozen_other_qids": 99,
+    "ins_b_017": "ABCD->ABC",
+    "reasoning_column": false,
+    "validation_only": true
+  },
+  "direction_id": "official97_boundary_d_option_rollback",
+  "domains": [
+    "insurance"
+  ],
+  "effect": "Token效率分81.3679、reasoning分0，反解accuracy=96%；相对97%基线下降1分，单题确认ins_b_017=ABCD正确、ABC错误。",
+  "experiment_id": "b-loop-official97-boundary-d-option-rollback-a2-ins017-official-result",
+  "failure_analysis": "此前把D项“放射性污染、核反应、核辐射”视为可能不满足题干口径并删除D，官网结果否定该判断；题干中的“等核风险免责”确实覆盖D项表述。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "413177a0c7947ddda54a085c38d5ef3d5437b5d3"
+        },
+        "identity": {
+          "change_vector": {
+            "answer_only": true,
+            "frozen_other_qids": 99,
+            "ins_b_017": "ABCD->ABC",
+            "reasoning_column": false,
+            "validation_only": true
+          },
+          "domains": [
+            "insurance"
+          ],
+          "hypothesis": "官网综合分可结合更新后的0.5/0.3/0.2权重、空reasoning和931605 token反解ins_b_017单题消融的真实准确率。",
+          "pipeline_stage": "official_validation",
+          "question_types": [
+            "multi"
+          ],
+          "root_cause_cluster": "multi_choice_scope_boundary_overselection",
+          "target_qids": [
+            "ins_b_017"
+          ]
+        }
+      },
+      "context_sha256": "ca55a504c2899c7fe12e4bacbee55bf281f2935d0a8445f9858169ef720a43ca",
+      "direction_sha256": "af2db2c433c4ef1396e99f84bda44b05e563a1475e8744dee21f266b64efabb3",
+      "schema_version": 1,
+      "semantic_sha256": "dda4c7d77716d0360746364858ffe86f1a368099be34947d0d6ef82e4251893d",
+      "sha256": "ebe47bd44bcc3c3a33320e26a1b2954b5671859fc8fa9dbeba191385231ab036"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "413177a0c7947ddda54a085c38d5ef3d5437b5d3"
+          },
+          "identity": {
+            "change_vector": {
+              "answer_only": true,
+              "frozen_other_qids": 99,
+              "ins_b_017": "ABCD->ABC",
+              "reasoning_column": false,
+              "validation_only": true
+            },
+            "domains": [
+              "insurance"
+            ],
+            "hypothesis": "官网综合分可结合更新后的0.5/0.3/0.2权重、空reasoning和931605 token反解ins_b_017单题消融的真实准确率。",
+            "pipeline_stage": "official_validation",
+            "question_types": [
+              "multi"
+            ],
+            "root_cause_cluster": "multi_choice_scope_boundary_overselection",
+            "target_qids": [
+              "ins_b_017"
+            ]
+          }
+        },
+        "context_sha256": "ca55a504c2899c7fe12e4bacbee55bf281f2935d0a8445f9858169ef720a43ca",
+        "direction_sha256": "af2db2c433c4ef1396e99f84bda44b05e563a1475e8744dee21f266b64efabb3",
+        "schema_version": 1,
+        "semantic_sha256": "dda4c7d77716d0360746364858ffe86f1a368099be34947d0d6ef82e4251893d",
+        "sha256": "ebe47bd44bcc3c3a33320e26a1b2954b5671859fc8fa9dbeba191385231ab036"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "Related history is inconclusive, so executing will add information",
+      "related_experiment_ids": [
+        "b-loop-official97-boundary-d-option-rollback-a1-joint",
+        "b-loop-official97-boundary-d-option-rollback-a2-ins017-single"
+      ],
+      "similarity": 0.7
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "82ed4acd7ef56c7891b110b891ef5b46ce3f81663f8a245c6e402c681665adb5",
+      "size": 749182
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "3659859fa6e38d77bd1068e050d825732692ce53432361f00ff5de61d19dee1f",
+      "size": 608981
+    },
+    "related_log_sections": [
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i024-remaining93-direct-source-five-v1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-official97-boundary-d-option-rollback-a1-joint",
+      "b-loop-official97-boundary-d-option-rollback-a2-ins017-single"
+    ],
+    "reviewed_at": "2026-07-23T04:10:20+00:00"
+  },
+  "hypothesis": "官网综合分可结合更新后的0.5/0.3/0.2权重、空reasoning和931605 Token反解ins_b_017单题消融的真实准确率。",
+  "material_delta": {
+    "new_answer_variant": false,
+    "validation_only": true
+  },
+  "metrics": {
+    "accuracy_weight": 0.5,
+    "baseline_official_accuracy": 97.0,
+    "candidate_sha256": "56cd46ae731ac75744f36f8bc682118ed619c7b99a57490d667117f96e414889",
+    "confirmed_correct_answer": {
+      "ins_b_017": "ABCD"
+    },
+    "confirmed_incorrect_answer": {
+      "ins_b_017": "ABC"
+    },
+    "derived_official_accuracy": 96.0,
+    "official_accuracy_delta": -1.0,
+    "official_total_score": 64.2736,
+    "reasoning_score": 0.0,
+    "reasoning_weight": 0.3,
+    "submission_token_total": 931605,
+    "token_efficiency_score": 81.3679,
+    "token_efficiency_weight": 0.2
+  },
+  "next_step": "所有后续候选恢复并锁定ins_b_017=ABCD；停止该题删D方向。继续寻找97%基线剩余badcase时不得把本题作为可变项。",
+  "pipeline_stage": "official_validation",
+  "question_types": [
+    "multi"
+  ],
+  "recorded_at": "2026-07-23T04:10:20+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "multi_choice_scope_boundary_overselection",
+  "status": "official_score_96",
+  "submission_effect": "official_accuracy_minus_1",
+  "target_qids": [
+    "ins_b_017"
+  ]
+}
+```
