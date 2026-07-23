@@ -65,6 +65,7 @@ variables 只能放证据或题目中逐字出现的原始输入，禁止放任�
 金额加减前必须显式统一尺度，禁止把亿元、万元、元的裸数直接相加减。可用乘除步骤换算，例如 1亿元=10000万元；人数与人均金额相乘时，1万人×1元=1万元。执行器会校验尺度但不会猜测或代做换算，跨尺度直接加减会触发重试。
 同一道题只能选择一套统一尺度：若统一为元，则1亿元乘100000000、1万人乘10000后再乘元；若统一为万元，则1亿元乘10000，而“万人×元”已经直接得到万元，禁止再把万人额外乘10000。不得只转换加减式的一侧。
 分段或保底规则必须逐情形执行证据条件；当条款规定差额小于等于0时给付为0，应使用 max(差额,0) 后再汇总，禁止把负给付额直接相加。
+按保单年度、年份、区间或档位给出的分段表必须逐行匹配边界，先确认题目目标落在哪一行，再使用该行数值；边界行不得套用相邻区间，例如“第五年”不得使用“第六年及以后”的费率。
 “全年”数值必须覆盖同一年度内所有应计组成部分。若年末方案明确是在扣除已实施中期金额后的剩余分配，则全年金额=中期已实施金额+年末剩余金额；若材料已明确给出全年合计，则不得重复相加。
 supporting_evidence_ids 用于记录决定公式或分段条件、但不直接提供数值变量的规则证据；必须原样填写已给 evidence_id。凡是使用保底、分段、门槛、“小于/大于等于”或“中期+年末”等规则时，必须把对应条款或说明加入 supporting_evidence_ids。
 证据缺变量时不要用“无法计算”等文本冒充数值输出；该题应让计划校验失败并等待重新检索。
@@ -123,9 +124,10 @@ SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推�
 4. 显式写出与 answer_parts 完全一致的最终答案。
 不得提及“质检”、“反馈”、“草稿”或修订过程，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。只输出 JSON。prompt_version={SUBMISSION_REASONING_REFINE_PROMPT_VERSION}。"""
 
-RUNNER_VERSION = "b_actual_v11_staged_answer_reasoning"
+RUNNER_VERSION = "b_actual_v12_evidence_bound_semantics"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 CALCULATION_PLAN_NORMALIZATION_VERSION = "qwen37_structure_contract_v3_schema"
+CALCULATION_EVIDENCE_SEMANTIC_VERSION = "insurance_surrender_rate_v1"
 RUN_MODE_SUBMISSION = "submission"
 RUN_MODE_RESEARCH = "research"
 RUN_MODES = (RUN_MODE_SUBMISSION, RUN_MODE_RESEARCH)
@@ -786,25 +788,28 @@ class BBoardActualRunner:
                 plan, numeric_normalizations = _normalize_calculation_numeric_literals(
                     plan
                 )
+                evidence_text_by_id = {
+                    str(item["unit_id"]): str(item.get("text", ""))
+                    for item in evidence_items
+                }
                 plan, structure_normalizations = _normalize_calculation_plan_structure(
                     plan,
-                    evidence_text_by_id={
-                        str(item["unit_id"]): str(item.get("text", ""))
-                        for item in evidence_items
-                    },
+                    evidence_text_by_id=evidence_text_by_id,
                 )
                 plan_normalizations = [
                     *numeric_normalizations,
                     *structure_normalizations,
                 ]
                 validate_calculation_plan_schema(plan)
+                _validate_insurance_surrender_rate_binding(
+                    question,
+                    plan,
+                    evidence_text_by_id,
+                )
                 result = self.calculator.execute(
                     plan,
                     expected_slots=question.answer_slots,
-                    evidence_text_by_id={
-                        str(item["unit_id"]): str(item.get("text", ""))
-                        for item in evidence_items
-                    },
+                    evidence_text_by_id=evidence_text_by_id,
                     expected_slot_templates=question.answer_slot_templates,
                     expected_numeric_decimal_places=infer_requested_decimal_places(
                         question.question
@@ -1395,6 +1400,9 @@ class BBoardActualRunner:
                 "iterative_retrieval_version": CALCULATION_RETRIEVAL_VERSION,
                 "plan_normalization_version": (
                     CALCULATION_PLAN_NORMALIZATION_VERSION
+                ),
+                "evidence_semantic_validation_version": (
+                    CALCULATION_EVIDENCE_SEMANTIC_VERSION
                 ),
                 "plan_schema_version": CALCULATION_PLAN_SCHEMA_VERSION,
                 "plan_schema_sha256": hashlib.sha256(
@@ -2390,6 +2398,116 @@ def _validate_calculation_result_semantics(
             raise CalculationPlanError(
                 "percentage-point output must have percent_points value_kind"
             )
+
+
+_CHINESE_YEAR_NUMERALS = {
+    1: "一",
+    2: "二",
+    3: "三",
+    4: "四",
+    5: "五",
+    6: "六",
+}
+
+
+def _validate_insurance_surrender_rate_binding(
+    question: BQuestion,
+    plan: Mapping[str, Any],
+    evidence_text_by_id: Mapping[str, str],
+) -> None:
+    """Reject a plan that crosses an explicit surrender-rate year boundary."""
+
+    compact_question = _compact_text(question.question)
+    if (
+        question.domain != "insurance"
+        or "国寿增益宝" not in compact_question
+        or not any(marker in compact_question for marker in ("退保", "解除"))
+    ):
+        return
+    match = re.search(
+        r"国寿增益宝(?:在)?第(\d+)个保单年度",
+        compact_question,
+    )
+    if match is None:
+        return
+    policy_year = int(match.group(1))
+    expected_rate = _insurance_surrender_rate_from_evidence(
+        policy_year,
+        evidence_text_by_id.values(),
+    )
+    if expected_rate is None:
+        return
+    plan_rates = _calculation_plan_percent_values(plan)
+    if expected_rate in plan_rates:
+        return
+    raise CalculationPlanError(
+        "insurance surrender rate mismatch: "
+        f"国寿增益宝第{policy_year}个保单年度的证据费率为{expected_rate}%，"
+        f"但计划未使用该费率；不得套用相邻年度区间"
+    )
+
+
+def _insurance_surrender_rate_from_evidence(
+    policy_year: int,
+    evidence_texts: Sequence[str],
+) -> str | None:
+    numeral = _CHINESE_YEAR_NUMERALS.get(policy_year)
+    labels = [f"第{policy_year}年"]
+    if numeral:
+        labels.append(f"第{numeral}年")
+    if policy_year >= 6:
+        labels.extend(("第六年及以后", "第6年及以后"))
+    for raw_text in evidence_texts:
+        compact = _compact_text(raw_text)
+        if (
+            "退保费用占个人账户价值的比例" not in compact
+            or "保单年度" not in compact
+        ):
+            continue
+        for label in labels:
+            match = re.search(
+                re.escape(label) + r"\|([+-]?\d+(?:\.\d+)?)%",
+                compact,
+            )
+            if match is not None:
+                return _normalize_decimal_text(match.group(1))
+    return None
+
+
+def _calculation_plan_percent_values(plan: Mapping[str, Any]) -> set[str]:
+    values: set[str] = set()
+
+    def visit(node: Any) -> None:
+        if isinstance(node, list):
+            for item in node:
+                visit(item)
+            return
+        if not isinstance(node, Mapping):
+            return
+        unit = _compact_text(str(node.get("unit", ""))).lower()
+        if unit in _PERCENT_UNITS:
+            raw_value = node.get("literal", node.get("value"))
+            if raw_value is not None:
+                normalized = _normalize_decimal_text(str(raw_value).rstrip("%"))
+                if normalized is not None:
+                    values.add(normalized)
+        for key, value in node.items():
+            if key not in {"decision_summary", "evidence_ids"}:
+                visit(value)
+
+    visit(plan.get("variables", []))
+    visit(plan.get("steps", []))
+    return values
+
+
+def _normalize_decimal_text(value: str) -> str | None:
+    compact = str(value).replace(",", "").strip()
+    if re.fullmatch(r"[+-]?\d+(?:\.\d+)?", compact) is None:
+        return None
+    normalized = compact.lstrip("+")
+    if "." in normalized:
+        normalized = normalized.rstrip("0").rstrip(".")
+    return normalized or "0"
 
 
 def _calculation_evidence_payload(

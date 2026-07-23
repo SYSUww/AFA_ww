@@ -29,6 +29,7 @@ from afa_agent.b_board.runner import (
     _normalize_calculation_plan_structure,
     _normalize_calculation_numeric_literals,
     _validate_calculation_result_semantics,
+    _validate_insurance_surrender_rate_binding,
 )
 from afa_agent.client import LLMResponse
 from afa_agent.config import ModelConfig, RunConfig
@@ -478,6 +479,86 @@ class BBoardRunnerModeTests(unittest.TestCase):
         _validate_calculation_result_semantics(
             question,
             {"outputs": [{"value_kind": "percent_points", "value": "10.00"}]},
+        )
+
+    def test_insurance_surrender_rate_rejects_adjacent_year_literal(self) -> None:
+        question = BQuestion(
+            qid="ins_b_019",
+            domain="insurance",
+            split="B",
+            question=(
+                "国寿增益宝在第5个保单年度解除，个人账户价值50万元，"
+                "犹豫期后退保可退还多少？"
+            ),
+            options={},
+            answer_format="freeform",
+            type="计算题",
+            answer_slots=1,
+            answer_slot_templates=("0.00",),
+        )
+        evidence = {
+            "u1": (
+                "退保费用占个人账户价值的比例为：保单年度 | 退保费用比例 "
+                "第四年 | 1% 第五年 | 1% 第六年及以后 | 0%"
+            )
+        }
+        wrong_plan = {
+            "variables": [
+                {
+                    "name": "国寿增益宝个人账户价值",
+                    "value": "50",
+                    "value_type": "decimal",
+                    "unit": "万元",
+                    "evidence_ids": ["question:ins_b_019"],
+                }
+            ],
+            "steps": [
+                {
+                    "id": "fee",
+                    "op": "mul",
+                    "args": [
+                        {"ref": "国寿增益宝个人账户价值"},
+                        {
+                            "literal": "0",
+                            "value_type": "decimal",
+                            "unit": "%",
+                        },
+                    ],
+                }
+            ],
+        }
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "第5个保单年度的证据费率为1%",
+        ):
+            _validate_insurance_surrender_rate_binding(
+                question,
+                wrong_plan,
+                evidence,
+            )
+
+        correct_plan = {
+            **wrong_plan,
+            "steps": [
+                {
+                    "id": "fee",
+                    "op": "mul",
+                    "args": [
+                        {"ref": "国寿增益宝个人账户价值"},
+                        {
+                            "literal": "1.00",
+                            "value_type": "decimal",
+                            "unit": "%",
+                        },
+                    ],
+                }
+            ],
+        }
+        _validate_insurance_surrender_rate_binding(
+            question,
+            correct_plan,
+            evidence,
         )
 
     def test_reasoning_prompt_requires_explicit_auditable_structure(self) -> None:
