@@ -8,7 +8,7 @@ from jsonschema import Draft202012Validator
 
 SUBMISSION_REASONING_SCHEMA_VERSION = "submission_reasoning_v1"
 SUBMISSION_REASONING_NORMALIZATION_VERSION = (
-    "deterministic_payload_normalization_v2_single_slot_join"
+    "deterministic_payload_normalization_v3_explicit_frozen_conclusion"
 )
 
 SUBMISSION_REASONING_SCHEMA: dict[str, Any] = {
@@ -112,6 +112,33 @@ def normalize_submission_reasoning_payload(
         normalizations.append(
             {"reason": "missing_support_string_to_array"}
         )
+
+    reasoning = normalized.get("reasoning")
+    if (
+        normalized.get("answer_parts") == expected
+        and grounding_status == "supported"
+        and isinstance(reasoning, str)
+        and reasoning.strip()
+    ):
+        compact_reasoning = "".join(reasoning.split()).replace(",", "")
+        missing_parts = [
+            part
+            for part in expected
+            if "".join(part.split()).replace(",", "") not in compact_reasoning
+        ]
+        if missing_parts:
+            separator = "" if reasoning.rstrip().endswith(("。", "！", "？", ";", "；")) else "。"
+            if len(expected) == 1:
+                conclusion = f"最终答案为{expected[0]}。"
+            else:
+                conclusion = f"最终答案依次为{'；'.join(expected)}。"
+            normalized["reasoning"] = f"{reasoning.rstrip()}{separator}{conclusion}"
+            normalizations.append(
+                {
+                    "reason": "append_exact_frozen_answer_conclusion",
+                    "missing_parts": missing_parts,
+                }
+            )
 
     return normalized, normalizations
 

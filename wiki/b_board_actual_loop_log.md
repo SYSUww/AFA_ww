@@ -33775,3 +33775,369 @@
   ]
 }
 ```
+
+## b-loop-qwen37-reasoning-structured-output-hard-fallback-a3
+
+- recorded_at: `2026-07-23T22:32:36+00:00`
+
+```json
+{
+  "approach": "读取完整100题代理终检后，保持冻结答案、Qwen原reasoning正文和原始逐调用usage不变；把reasoning normalizer扩展为v3：仅当grounding_status=supported、返回answer_parts已经与冻结槽完全相等且正文非空时，若正文未逐字包含冻结槽，则确定性追加‘最终答案为<冻结值>’。先对完整候选离线回放，再以28题覆盖源重新组装100题。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_reasoning_explicit_conclusion_a3",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "answer_parts_mutation": false,
+          "base_commit": "153ebe6",
+          "local_hard_fallback": "append_exact_frozen_answer_conclusion_v1",
+          "model": "qwen3.7-plus-2026-05-26",
+          "model_retry_after_fallback": false,
+          "reference_answer_access": false,
+          "token_usage_mutation": false
+        },
+        "domains": [
+          "financial_contracts",
+          "financial_reports",
+          "insurance",
+          "regulatory",
+          "research"
+        ],
+        "hypothesis": "完整100题中26个reasoning触发终检遗漏冻结多选答案，另2题虽可数值等价通过但同样未逐字输出冻结槽；在supported且正文非空、返回answer_parts已与冻结值完全相等时，由代码仅追加‘最终答案为<冻结值>’而不改原推理、答案或usage，可确定性修复内容终结格式，并避免无信息模型重试。",
+        "pipeline_stage": "submission_reasoning_serialization",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "qwen37_reasoning_json_contract_failure",
+        "target_qids": [
+          "fc_b_004",
+          "fc_b_007",
+          "fc_b_008",
+          "fc_b_011",
+          "fc_b_012",
+          "fc_b_013",
+          "fc_b_015",
+          "fin_b_001",
+          "fin_b_002",
+          "fin_b_010",
+          "ins_b_006",
+          "ins_b_010",
+          "ins_b_011",
+          "ins_b_012",
+          "ins_b_013",
+          "ins_b_014",
+          "ins_b_015",
+          "ins_b_016",
+          "ins_b_020",
+          "reg_b_009",
+          "reg_b_016",
+          "reg_b_017",
+          "reg_b_023",
+          "reg_b_025",
+          "res_b_008",
+          "res_b_015",
+          "res_b_017",
+          "res_b_018"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "cffed49669dd8b0dd1eec7ebd792ad89399d309f6efa8a1af9f708aba6ab2e61",
+    "schema_version": 1,
+    "semantic_sha256": "3e6af28174df6931a491f731fe25a736d0fb2cdef03a454e5222fc34c3849ce3",
+    "sha256": "f6d5c280380f6ed81a0752912ab3dcfa121071262e23bab09d422b15601bfaf1"
+  },
+  "change_vector": {
+    "answer_parts_mutation": false,
+    "base_commit": "153ebe6",
+    "local_hard_fallback": "append_exact_frozen_answer_conclusion_v1",
+    "model": "qwen3.7-plus-2026-05-26",
+    "model_retry_after_fallback": false,
+    "reference_answer_access": false,
+    "token_usage_mutation": false
+  },
+  "direction_id": "qwen37_reasoning_structured_output_hard_fallback",
+  "domains": [
+    "financial_contracts",
+    "financial_reports",
+    "insurance",
+    "regulatory",
+    "research"
+  ],
+  "effect": "离线识别28个逐字结论缺口，其中26个是终检报错项、2个原本依靠数值等价通过。28题全部仅追加冻结结论，answer_parts变化0、原reasoning正文改写0、逐调用usage变化0、新模型调用0。重新组装后reasoning_omits_frozen_answer_part从26降为0；总Token保持1374229。",
+  "experiment_id": "b-loop-qwen37-reasoning-structured-output-hard-fallback-a3",
+  "failure_analysis": "该兜底只补提交结论格式，不提升证据质量或推理事实本身；必须在模型已返回supported且answer_parts完全匹配冻结值后才执行，不能修复insufficient、错误答案或答案漂移。完整候选仍有唯一合规阻塞official_answer_lock_regression(ins_b_016 ABD vs BD)，它是平台标签与材料证据冲突，不属于本reasoning方向。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "answer_parts_mutation": false,
+            "base_commit": "153ebe6",
+            "local_hard_fallback": "append_exact_frozen_answer_conclusion_v1",
+            "model": "qwen3.7-plus-2026-05-26",
+            "model_retry_after_fallback": false,
+            "reference_answer_access": false,
+            "token_usage_mutation": false
+          },
+          "domains": [
+            "financial_contracts",
+            "financial_reports",
+            "insurance",
+            "regulatory",
+            "research"
+          ],
+          "hypothesis": "完整100题中26个reasoning触发终检遗漏冻结多选答案，另2题虽可数值等价通过但同样未逐字输出冻结槽；在supported且正文非空、返回answer_parts已与冻结值完全相等时，由代码仅追加‘最终答案为<冻结值>’而不改原推理、答案或usage，可确定性修复内容终结格式，并避免无信息模型重试。",
+          "pipeline_stage": "submission_reasoning_serialization",
+          "question_types": [
+            "multi"
+          ],
+          "root_cause_cluster": "qwen37_reasoning_json_contract_failure",
+          "target_qids": [
+            "fc_b_004",
+            "fc_b_007",
+            "fc_b_008",
+            "fc_b_011",
+            "fc_b_012",
+            "fc_b_013",
+            "fc_b_015",
+            "fin_b_001",
+            "fin_b_002",
+            "fin_b_010",
+            "ins_b_006",
+            "ins_b_010",
+            "ins_b_011",
+            "ins_b_012",
+            "ins_b_013",
+            "ins_b_014",
+            "ins_b_015",
+            "ins_b_016",
+            "ins_b_020",
+            "reg_b_009",
+            "reg_b_016",
+            "reg_b_017",
+            "reg_b_023",
+            "reg_b_025",
+            "res_b_008",
+            "res_b_015",
+            "res_b_017",
+            "res_b_018"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "cffed49669dd8b0dd1eec7ebd792ad89399d309f6efa8a1af9f708aba6ab2e61",
+      "schema_version": 1,
+      "semantic_sha256": "3e6af28174df6931a491f731fe25a736d0fb2cdef03a454e5222fc34c3849ce3",
+      "sha256": "f6d5c280380f6ed81a0752912ab3dcfa121071262e23bab09d422b15601bfaf1"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "answer_parts_mutation": false,
+              "base_commit": "153ebe6",
+              "local_hard_fallback": "append_exact_frozen_answer_conclusion_v1",
+              "model": "qwen3.7-plus-2026-05-26",
+              "model_retry_after_fallback": false,
+              "reference_answer_access": false,
+              "token_usage_mutation": false
+            },
+            "domains": [
+              "financial_contracts",
+              "financial_reports",
+              "insurance",
+              "regulatory",
+              "research"
+            ],
+            "hypothesis": "完整100题中26个reasoning触发终检遗漏冻结多选答案，另2题虽可数值等价通过但同样未逐字输出冻结槽；在supported且正文非空、返回answer_parts已与冻结值完全相等时，由代码仅追加‘最终答案为<冻结值>’而不改原推理、答案或usage，可确定性修复内容终结格式，并避免无信息模型重试。",
+            "pipeline_stage": "submission_reasoning_serialization",
+            "question_types": [
+              "multi"
+            ],
+            "root_cause_cluster": "qwen37_reasoning_json_contract_failure",
+            "target_qids": [
+              "fc_b_004",
+              "fc_b_007",
+              "fc_b_008",
+              "fc_b_011",
+              "fc_b_012",
+              "fc_b_013",
+              "fc_b_015",
+              "fin_b_001",
+              "fin_b_002",
+              "fin_b_010",
+              "ins_b_006",
+              "ins_b_010",
+              "ins_b_011",
+              "ins_b_012",
+              "ins_b_013",
+              "ins_b_014",
+              "ins_b_015",
+              "ins_b_016",
+              "ins_b_020",
+              "reg_b_009",
+              "reg_b_016",
+              "reg_b_017",
+              "reg_b_023",
+              "reg_b_025",
+              "res_b_008",
+              "res_b_015",
+              "res_b_017",
+              "res_b_018"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "cffed49669dd8b0dd1eec7ebd792ad89399d309f6efa8a1af9f708aba6ab2e61",
+        "schema_version": 1,
+        "semantic_sha256": "3e6af28174df6931a491f731fe25a736d0fb2cdef03a454e5222fc34c3849ce3",
+        "sha256": "f6d5c280380f6ed81a0752912ab3dcfa121071262e23bab09d422b15601bfaf1"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-qwen37-reasoning-structured-output-hard-fallback-a2",
+        "b-loop-qwen37-reasoning-structured-output-hard-fallback-a1"
+      ],
+      "similarity": 0.765101
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "47a3aaff30a26ee3866825a50a4d43c355635e62cf0fd9231e1c10ddc5aaccfc",
+      "size": 1336708
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "52d2670659a749883219bc4a5c3f7858ed58649caaf8d2b5ed821e728c148522",
+      "size": 1096102
+    },
+    "related_log_sections": [
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-b1",
+      "b-loop-research-structural-cost-reduction-res-b-009-a1",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-suspect-case-optimization-v3",
+      "b-loop-i024-remaining93-direct-source-five-v1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90",
+      "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+      "b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100",
+      "b-loop-reasoning-self-refine-verification-a1-lowtail6",
+      "b-loop-reasoning-self-refine-verification-a2-noop-priority",
+      "b-loop-reasoning-self-refine-verification-a3-conservative-gate",
+      "b-loop-metric-correction-reasoning-self-refine-a3-cumulative-normalization",
+      "b-loop-final-composite-i030-materialization-audit",
+      "b-loop-four-question-full-chain-truth-audit-a1",
+      "b-loop-four-old-answer-single-correct-counterfactual-a1",
+      "b-loop-four-question-zero-effect-third-label-analysis-a1",
+      "b-loop-two-submission-combinatorial-identification-a1",
+      "b-loop-two-submission-combinatorial-identification-result-a1",
+      "b-loop-adaptive-second-submission-ins012-single-a1",
+      "b-loop-adaptive-second-submission-ins012-official-result-a1",
+      "b-loop-last-error-minimal-candidate-set-official-history-a1",
+      "b-loop-percentage-bundle-net-plus-one-explanation-a1",
+      "b-loop-percentage-bundle-most-likely-positive-fin017-a1",
+      "b-loop-three-percentage-question-full-chain-numeric-revalidation-a1",
+      "b-loop-qwen37-full100-independent-baseline-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a1",
+      "b-loop-qwen37-structured-output-contract-a2-full100",
+      "b-loop-qwen37-option-verdict-consistency-a3",
+      "b-loop-qwen37-financial-percentage-semantics-a1",
+      "b-loop-qwen37-insurance-product-identity-clause-audit-a1",
+      "b-loop-qwen37-integrated-full100-candidate-a1",
+      "b-loop-qwen37-reasoning-structured-output-hard-fallback-a1",
+      "b-loop-qwen37-integrated-full100-candidate-a2",
+      "b-loop-qwen37-reasoning-structured-output-hard-fallback-a2"
+    ],
+    "reviewed_at": "2026-07-23T22:32:08+00:00"
+  },
+  "hypothesis": "完整100题中26个reasoning触发终检遗漏冻结多选答案，另2题虽可数值等价通过但同样未逐字输出冻结槽；在supported且正文非空、返回answer_parts已与冻结值完全相等时，由代码仅追加‘最终答案为<冻结值>’而不改原推理、答案或usage，可确定性修复内容终结格式，并避免无信息模型重试。",
+  "material_delta": {
+    "explicit_frozen_answer_conclusion": true,
+    "offline_replay_full100": true,
+    "semantic_reasoning_body_unchanged": true
+  },
+  "metrics": {
+    "answer_parts_changed_count": 0,
+    "compileall_passed": true,
+    "full_candidate_token_total": 1374229,
+    "full_question_count": 100,
+    "git_diff_check_passed": true,
+    "new_api_call_count": 0,
+    "new_generation_token_total": 0,
+    "normalized_reasoning_count": 28,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "official_upload_performed": false,
+    "post_reasoning_omission_failure_count": 0,
+    "pre_reasoning_omission_failure_count": 26,
+    "reasoning_body_rewritten_count": 0,
+    "tests_passed": 331,
+    "token_usage_changed_count": 0,
+    "usage_complete": true
+  },
+  "next_step": "该方向已到第3轮且有效，停止追加轮次，创建独立分支推送。随后对ins_b_016做决策：按已批准的证据驱动生产约束应保留ABD并把平台锁冲突作为明确阻塞；若用户明确授权benchmark correction层，才可在求解器外单独应用BD，不能伪装成Qwen证据结论。决策后再封存精确CSV并运行GPT-5.6影子评测。",
+  "pipeline_stage": "submission_reasoning_serialization",
+  "promotion_result": "effective_push_pending",
+  "question_types": [
+    "multi"
+  ],
+  "recorded_at": "2026-07-23T22:32:36+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "qwen37_reasoning_json_contract_failure",
+  "status": "completed_effective",
+  "submission_effect": "local_reasoning_normalization_not_officially_uploaded",
+  "target_qids": [
+    "fc_b_004",
+    "fc_b_007",
+    "fc_b_008",
+    "fc_b_011",
+    "fc_b_012",
+    "fc_b_013",
+    "fc_b_015",
+    "fin_b_001",
+    "fin_b_002",
+    "fin_b_010",
+    "ins_b_006",
+    "ins_b_010",
+    "ins_b_011",
+    "ins_b_012",
+    "ins_b_013",
+    "ins_b_014",
+    "ins_b_015",
+    "ins_b_016",
+    "ins_b_020",
+    "reg_b_009",
+    "reg_b_016",
+    "reg_b_017",
+    "reg_b_023",
+    "reg_b_025",
+    "res_b_008",
+    "res_b_015",
+    "res_b_017",
+    "res_b_018"
+  ]
+}
+```

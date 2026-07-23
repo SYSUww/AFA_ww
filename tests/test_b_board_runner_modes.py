@@ -1458,6 +1458,31 @@ class BBoardRunnerModeTests(unittest.TestCase):
         self.assertEqual(normalized["answer_parts"], ["A", "C"])
         self.assertEqual(changes, [])
 
+    def test_reasoning_hard_fallback_appends_exact_frozen_conclusion(self) -> None:
+        normalized, changes = normalize_submission_reasoning_payload(
+            {
+                "answer_parts": ["BCD"],
+                "grounding_status": "supported",
+                "missing_support": [],
+                "reasoning": "证据分别支持B、C、D，并排除A。",
+            },
+            frozen_answer_parts=["BCD"],
+        )
+
+        self.assertEqual(
+            normalized["reasoning"],
+            "证据分别支持B、C、D，并排除A。最终答案为BCD。",
+        )
+        self.assertEqual(
+            changes,
+            [
+                {
+                    "reason": "append_exact_frozen_answer_conclusion",
+                    "missing_parts": ["BCD"],
+                }
+            ],
+        )
+
     def test_reasoning_contract_failure_retries_only_reasoning_without_rescue(
         self,
     ) -> None:
