@@ -125,6 +125,11 @@ class OpenAICompatibleClient:
                 response.raise_for_status()
                 parsed = response.json()
                 break
+            except requests.ReadTimeout:
+                # A timed-out generation may still complete server-side. Sending
+                # the same request again would create an unobservable duplicate
+                # whose raw usage cannot be declared in the submission ledger.
+                raise
             except (requests.RequestException, ValueError) as exc:
                 last_error = exc
                 if attempt >= max_attempts - 1:

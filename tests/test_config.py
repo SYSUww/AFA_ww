@@ -63,7 +63,25 @@ class RunConfigEnvironmentTests(unittest.TestCase):
         assert config.model is not None
         self.assertEqual(config.model.model_name, "qwen3.7-plus-2026-05-26")
         self.assertEqual(config.model.timeout_seconds, 45)
+        self.assertEqual(config.model.read_timeout_seconds, 45)
         self.assertEqual(config.model.max_retries, 4)
+
+    def test_qwen37_uses_longer_default_read_timeout(self) -> None:
+        self.write_env(
+            "\n".join(
+                (
+                    "OPENAI_API_KEY=openai-key",
+                    "OPENAI_BASE_URL=https://openai.example/v1",
+                    "OPENAI_MODEL=qwen3.7-plus-2026-05-26",
+                )
+            )
+        )
+
+        config = self.build()
+
+        assert config.model is not None
+        self.assertEqual(config.model.timeout_seconds, 120)
+        self.assertEqual(config.model.read_timeout_seconds, 360)
 
     def test_openai_connection_accepts_generic_model_name_alias(self) -> None:
         self.write_env(

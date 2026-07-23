@@ -314,6 +314,31 @@ class BBoardCalculationTests(unittest.TestCase):
         self.assertIn("表格只有裸金额", CALCULATION_SYSTEM_PROMPT)
         self.assertIn("百分点差必须使用 pct_point_delta", CALCULATION_SYSTEM_PROMPT)
 
+    def test_ascii_energy_unit_grounding_is_case_insensitive(self):
+        result = CalculationExecutor().execute(
+            {
+                "variables": [
+                    {
+                        "name": "单车带电量",
+                        "value": "56",
+                        "value_type": "decimal",
+                        "unit": "kwh",
+                        "evidence_ids": ["question"],
+                    }
+                ],
+                "steps": [],
+                "outputs": [
+                    {"source": {"ref": "单车带电量"}, "format": "decimal2"}
+                ],
+            },
+            expected_slots=1,
+            evidence_text_by_id={"question": "单车带电量提升至56kWh"},
+            expected_slot_templates=("999999.99",),
+        )
+
+        self.assertEqual(result.answer_parts, ("56.00",))
+        self.assertTrue(result.trace["grounding_verified"])
+
     def test_diagnostic_retry_query_and_evidence_merge(self):
         question = BQuestion(
             qid="q1",

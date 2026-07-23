@@ -104,6 +104,20 @@ def build_model_config(
         return None
     prefix, values = selected
     timeout_seconds = _env_int(env, f"{prefix}_TIMEOUT_SECONDS", 120)
+    explicit_read_timeout = f"{prefix}_READ_TIMEOUT_SECONDS" in env
+    explicit_general_timeout = f"{prefix}_TIMEOUT_SECONDS" in env
+    if explicit_read_timeout:
+        read_timeout_seconds = _env_int(
+            env,
+            f"{prefix}_READ_TIMEOUT_SECONDS",
+            timeout_seconds,
+        )
+    elif explicit_general_timeout:
+        read_timeout_seconds = timeout_seconds
+    elif values["model_name"].strip().lower().startswith("qwen3.7"):
+        read_timeout_seconds = 360
+    else:
+        read_timeout_seconds = timeout_seconds
     structured_output_mode = str(
         env.get(f"{prefix}_STRUCTURED_OUTPUT_MODE", STRUCTURED_OUTPUT_LOCAL)
     ).strip()
@@ -121,9 +135,7 @@ def build_model_config(
         connect_timeout_seconds=_env_int(
             env, f"{prefix}_CONNECT_TIMEOUT_SECONDS", 20
         ),
-        read_timeout_seconds=_env_int(
-            env, f"{prefix}_READ_TIMEOUT_SECONDS", timeout_seconds
-        ),
+        read_timeout_seconds=read_timeout_seconds,
         max_retries=_env_int(env, f"{prefix}_MAX_RETRIES", 2),
         retry_backoff_seconds=_env_float(
             env, f"{prefix}_RETRY_BACKOFF_SECONDS", 2.0

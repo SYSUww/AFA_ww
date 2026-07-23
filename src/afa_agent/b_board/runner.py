@@ -124,12 +124,15 @@ SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推�
 4. 显式写出与 answer_parts 完全一致的最终答案。
 不得提及“质检”、“反馈”、“草稿”或修订过程，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。只输出 JSON。prompt_version={SUBMISSION_REASONING_REFINE_PROMPT_VERSION}。"""
 
-RUNNER_VERSION = "b_actual_v13_period_bound_semantics"
+RUNNER_VERSION = "b_actual_v17_calculation_semantic_gate"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 CALCULATION_PLAN_NORMALIZATION_VERSION = "qwen37_structure_contract_v3_schema"
 CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
     "insurance_surrender_rate_v1+question_target_date_binding_v1"
+    "+aggregate_intensity_binding_v1"
 )
+CALCULATION_PROMPT_EVIDENCE_POLICY_VERSION = "progressive_8_16_24_v1"
+CALCULATION_PROMPT_HITS_PER_ATTEMPT = 8
 RUN_MODE_SUBMISSION = "submission"
 RUN_MODE_RESEARCH = "research"
 RUN_MODES = (RUN_MODE_SUBMISSION, RUN_MODE_RESEARCH)
@@ -759,7 +762,16 @@ class BBoardActualRunner:
         diagnostics: list[dict[str, Any]] = []
         retrieval_rounds: list[dict[str, Any]] = []
         for attempt_number in range(1, 4):
-            evidence_payload = _calculation_evidence_payload(evidence_items)
+            evidence_payload = _calculation_evidence_payload(
+                evidence_items,
+                max_non_question_hits=(
+                    CALCULATION_PROMPT_HITS_PER_ATTEMPT * attempt_number
+                ),
+            )
+            semantic_constraints = _calculation_semantic_constraints(
+                question.question,
+                evidence_payload,
+            )
             messages = [
                 {"role": "system", "content": CALCULATION_SYSTEM_PROMPT},
                 {
@@ -767,6 +779,8 @@ class BBoardActualRunner:
                     "content": (
                         f"qid：{question.qid}\n题目：{question.question}\n答案槽数：{question.answer_slots}\n"
                         f"提交模板占位：{json.dumps(question.answer_slot_templates, ensure_ascii=False)}\n"
+                        f"题面与证据派生的计算口径约束："
+                        f"{json.dumps(semantic_constraints, ensure_ascii=False)}\n"
                         f"证据：{json.dumps(evidence_payload, ensure_ascii=False)}\n{feedback}"
                     ),
                 },
@@ -803,6 +817,10 @@ class BBoardActualRunner:
                     *structure_normalizations,
                 ]
                 validate_calculation_plan_schema(plan)
+                _validate_aggregate_intensity_plan_binding(
+                    plan,
+                    semantic_constraints,
+                )
                 _validate_insurance_surrender_rate_binding(
                     question,
                     plan,
@@ -831,7 +849,13 @@ class BBoardActualRunner:
                     ),
                 )
                 _validate_calculation_result_semantics(question, result.trace)
-                available = {str(item["unit_id"]) for item in evidence_items}
+                _validate_calculation_summary_output_consistency(
+                    plan,
+                    result.answer_parts,
+                )
+                available = {
+                    str(item["evidence_id"]) for item in evidence_payload
+                }
                 raw_supporting_evidence_ids = plan.get(
                     "supporting_evidence_ids",
                     [],
@@ -880,6 +904,13 @@ class BBoardActualRunner:
                             response.response_format_mode
                         ),
                         "calculation_plan_normalizations": plan_normalizations,
+                        "calculation_prompt_evidence_policy": (
+                            CALCULATION_PROMPT_EVIDENCE_POLICY_VERSION
+                        ),
+                        "calculation_prompt_evidence_count": len(
+                            evidence_payload
+                        ),
+                        "calculation_semantic_constraints": semantic_constraints,
                     },
                     calculation_trace={
                         **result.trace,
@@ -916,6 +947,11 @@ class BBoardActualRunner:
                             if plan is not None
                             else []
                         ),
+                        "prompt_evidence_count": len(evidence_payload),
+                        "prompt_evidence_policy": (
+                            CALCULATION_PROMPT_EVIDENCE_POLICY_VERSION
+                        ),
+                        "semantic_constraints": semantic_constraints,
                     }
                 )
                 added_ids: list[str] = []
@@ -1393,6 +1429,14 @@ class BBoardActualRunner:
             "structured_output_mode": (
                 self.config.model.structured_output_mode
             ),
+            "connect_timeout_seconds": (
+                self.config.model.connect_timeout_seconds
+            ),
+            "read_timeout_seconds": self.config.model.read_timeout_seconds,
+            "max_retries": self.config.model.max_retries,
+            "retry_backoff_seconds": (
+                self.config.model.retry_backoff_seconds
+            ),
             "api_base_sha256": hashlib.sha256(self.config.model.api_base.encode("utf-8")).hexdigest(),
         }
         strategy_payload = {
@@ -1410,6 +1454,9 @@ class BBoardActualRunner:
                 ),
                 "evidence_semantic_validation_version": (
                     CALCULATION_EVIDENCE_SEMANTIC_VERSION
+                ),
+                "prompt_evidence_policy_version": (
+                    CALCULATION_PROMPT_EVIDENCE_POLICY_VERSION
                 ),
                 "plan_schema_version": CALCULATION_PLAN_SCHEMA_VERSION,
                 "plan_schema_sha256": hashlib.sha256(
@@ -2362,6 +2409,8 @@ def _is_calculation_plan_structure_error(exc: Exception) -> bool:
         "CalculationPlan schema violation",
         "supporting_evidence_ids must be a list",
         "percentage-point output must have percent_points value_kind",
+        "Aggregate-intensity plan must",
+        "decision_summary does not contain replayed output",
     )
     return any(marker in message for marker in structural_markers)
 
@@ -2381,7 +2430,254 @@ def _calculation_semantic_query_terms(question_text: str) -> str:
         terms.append(
             "给付条件 小于 大于等于 身故保险金 为零 差额"
         )
+    if (
+        "持平" in compact
+        and "乘用车" in compact
+        and "单车带电量" in compact
+    ):
+        terms.append(
+            "乘用车单车带电量 总体平均口径 销量持平 动力电池需求"
+        )
     return " ".join(terms)
+
+
+def _calculation_semantic_constraints(
+    question_text: str,
+    evidence_payload: Sequence[Mapping[str, Any]],
+) -> list[dict[str, str]]:
+    """Derive aggregate-intensity constraints from the question and cited table.
+
+    This is deliberately answer-blind: it only binds an explicitly unchanged
+    aggregate volume to the aggregate per-unit metric named by the question.
+    """
+
+    compact_question = _compact_text(question_text)
+    if not (
+        "持平" in compact_question
+        and "乘用车" in compact_question
+        and "单车带电量" in compact_question
+        and "需求" in compact_question
+    ):
+        return []
+    base_year_match = re.search(r"与(20\d{2})年持平", compact_question)
+    if base_year_match is None:
+        base_year_match = re.search(r"从(20\d{2})年", compact_question)
+    if base_year_match is None:
+        return []
+    base_year = base_year_match.group(1)
+    target_match = re.search(
+        r"(?:提升|提高|变更|调整)至"
+        r"([+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)"
+        r"\s*(kwh)",
+        compact_question,
+        flags=re.IGNORECASE,
+    )
+    if target_match is None:
+        return []
+    target_value = target_match.group(1).replace(",", "")
+    question_evidence_id = next(
+        (
+            str(item.get("evidence_id", "")).strip()
+            for item in evidence_payload
+            if str(item.get("doc_id", "")) == "__question__"
+            and str(item.get("evidence_id", "")).strip()
+        ),
+        "",
+    )
+    if not question_evidence_id:
+        return []
+
+    for item in evidence_payload:
+        title = str(item.get("title", ""))
+        years = re.findall(r"(20\d{2})", title)
+        if base_year not in years:
+            continue
+        column_index = years.index(base_year)
+        for raw_line in str(item.get("text", "")).splitlines():
+            cells = [cell.strip() for cell in raw_line.split("|")]
+            if len(cells) < 2 or "乘用车单车带电量" not in _compact_text(cells[0]):
+                continue
+            values = cells[1:]
+            if column_index >= len(values):
+                continue
+            baseline = values[column_index].replace(",", "").strip()
+            if re.fullmatch(r"[+-]?\d+(?:\.\d+)?", baseline) is None:
+                continue
+            evidence_id = str(item.get("evidence_id", "")).strip()
+            if not evidence_id:
+                continue
+            return [
+                {
+                    "type": "unchanged_aggregate_volume",
+                    "evidence_id": evidence_id,
+                    "question_evidence_id": question_evidence_id,
+                    "base_year": base_year,
+                    "baseline_value": baseline,
+                    "target_value": target_value,
+                    "unit": "kWh",
+                    "constraint": (
+                        f"题面把新能源乘用车总体销量设为与{base_year}年持平，"
+                        f"并把同一总体口径的单车带电量调整至{target_value}kWh；"
+                        f"证据表中{base_year}年“乘用车单车带电量”为"
+                        f"{baseline}kWh。因此应按总体销量×总体单车带电量比较"
+                        "需求变化；除非题面明确给出各子车型变化，不得把总体"
+                        "单车带电量改写成纯电动或插混子类容量。"
+                    ),
+                }
+            ]
+    return []
+
+
+def _validate_aggregate_intensity_plan_binding(
+    plan: Mapping[str, Any],
+    semantic_constraints: Sequence[Mapping[str, str]],
+) -> None:
+    constraint = next(
+        (
+            item
+            for item in semantic_constraints
+            if item.get("type") == "unchanged_aggregate_volume"
+        ),
+        None,
+    )
+    if constraint is None:
+        return
+    baseline_value = _normalize_decimal_text(
+        str(constraint.get("baseline_value", ""))
+    )
+    target_value = _normalize_decimal_text(
+        str(constraint.get("target_value", ""))
+    )
+    evidence_id = str(constraint.get("evidence_id", "")).strip()
+    question_evidence_id = str(
+        constraint.get("question_evidence_id", "")
+    ).strip()
+    if (
+        baseline_value is None
+        or target_value is None
+        or not evidence_id
+        or not question_evidence_id
+    ):
+        raise CalculationPlanError(
+            "Aggregate-intensity plan must have a complete derived constraint"
+        )
+
+    variables = {
+        str(item.get("name", "")).strip(): item
+        for item in plan.get("variables", [])
+        if isinstance(item, Mapping) and str(item.get("name", "")).strip()
+    }
+    steps = {
+        str(item.get("id", "")).strip(): item
+        for item in plan.get("steps", [])
+        if isinstance(item, Mapping) and str(item.get("id", "")).strip()
+    }
+
+    def matching_variables(
+        expected_value: str,
+        *,
+        required_evidence_id: str | None = None,
+    ) -> set[str]:
+        matched: set[str] = set()
+        for name, variable in variables.items():
+            normalized_value = _normalize_decimal_text(
+                str(variable.get("value", "")).rstrip("%")
+            )
+            unit = _compact_text(str(variable.get("unit", ""))).casefold()
+            evidence_ids = {
+                str(item)
+                for item in variable.get("evidence_ids", [])
+                if str(item)
+            }
+            if (
+                normalized_value == expected_value
+                and unit == "kwh"
+                and (
+                    required_evidence_id is None
+                    or required_evidence_id in evidence_ids
+                )
+            ):
+                matched.add(name)
+        return matched
+
+    baseline_names = matching_variables(
+        baseline_value,
+        required_evidence_id=evidence_id,
+    )
+    target_names = matching_variables(
+        target_value,
+        required_evidence_id=question_evidence_id,
+    )
+    if not baseline_names or not target_names:
+        raise CalculationPlanError(
+            "Aggregate-intensity plan must retain evidence baseline "
+            f"{baseline_value}kWh from {evidence_id} and question target "
+            f"{target_value}kWh as raw variables"
+        )
+
+    symbols = {*variables, *steps}
+
+    def dependency_variables(value: Any, seen: set[str] | None = None) -> set[str]:
+        visited = set() if seen is None else set(seen)
+        direct_refs = _calculation_reference_names(value, symbols)
+        dependencies: set[str] = set()
+        for ref in direct_refs:
+            if ref in variables:
+                dependencies.add(ref)
+            elif ref in steps and ref not in visited:
+                dependencies.update(
+                    dependency_variables(
+                        steps[ref],
+                        {*visited, ref},
+                    )
+                )
+        return dependencies
+
+    for step in steps.values():
+        if str(step.get("op", "")).strip() != "pct_change":
+            continue
+        new_dependencies = dependency_variables(step.get("new"))
+        old_dependencies = dependency_variables(step.get("old"))
+        if (
+            new_dependencies & target_names
+            and old_dependencies & baseline_names
+        ):
+            return
+    raise CalculationPlanError(
+        "Aggregate-intensity plan must compute pct_change whose new dependency "
+        f"contains question target {target_value}kWh and whose old dependency "
+        f"contains evidence baseline {baseline_value}kWh; when aggregate volume "
+        "is unchanged, do not substitute a different-scope total"
+    )
+
+
+def _validate_calculation_summary_output_consistency(
+    plan: Mapping[str, Any],
+    answer_parts: Sequence[str],
+) -> None:
+    summary = str(plan.get("decision_summary", "")).strip()
+    if not summary:
+        raise CalculationPlanError(
+            "decision_summary does not contain replayed output: summary is empty"
+        )
+    summary_values = {
+        normalized
+        for raw in re.findall(
+            r"(?<![\d.])[+-]?\d[\d,]*(?:\.\d+)?(?![\d.])",
+            summary,
+        )
+        if (normalized := _normalize_decimal_text(raw)) is not None
+    }
+    missing: list[str] = []
+    for answer in answer_parts:
+        normalized = _normalize_decimal_text(str(answer).rstrip("%"))
+        if normalized is not None and normalized not in summary_values:
+            missing.append(str(answer))
+    if missing:
+        raise CalculationPlanError(
+            "decision_summary does not contain replayed output: "
+            + ", ".join(missing)
+        )
 
 
 def _validate_calculation_result_semantics(
@@ -2561,7 +2857,22 @@ def _normalize_decimal_text(value: str) -> str | None:
 
 def _calculation_evidence_payload(
     evidence_items: Sequence[Mapping[str, Any]],
+    *,
+    max_non_question_hits: int | None = None,
 ) -> list[dict[str, Any]]:
+    selected_items = list(evidence_items)
+    if max_non_question_hits is not None:
+        question_items = [
+            item
+            for item in selected_items
+            if str(item.get("doc_id", "")) == "__question__"
+        ][:1]
+        document_items = [
+            item
+            for item in selected_items
+            if str(item.get("doc_id", "")) != "__question__"
+        ][: max(0, max_non_question_hits)]
+        selected_items = [*question_items, *document_items]
     return [
         {
             "evidence_id": item["unit_id"],
@@ -2569,7 +2880,7 @@ def _calculation_evidence_payload(
             "title": " > ".join(item.get("title_path", [])),
             "text": str(item.get("text", ""))[:5000],
         }
-        for item in evidence_items
+        for item in selected_items
     ]
 
 

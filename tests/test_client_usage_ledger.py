@@ -4,6 +4,8 @@ import json
 import unittest
 from unittest.mock import patch
 
+import requests
+
 from afa_agent.client import OpenAICompatibleClient, capture_llm_usage
 from afa_agent.config import ModelConfig
 
@@ -112,6 +114,26 @@ class ClientUsageLedgerTests(unittest.TestCase):
             ledger.calls[0]["response_format_mode"],
             "native_json_schema_strict",
         )
+
+    def test_read_timeout_is_not_retried_without_a_usage_response(self) -> None:
+        client = OpenAICompatibleClient(
+            ModelConfig(
+                api_key="test",
+                api_base="https://example.invalid/v1",
+                model_name="qwen3.7-plus",
+                max_retries=2,
+            )
+        )
+        with patch(
+            "afa_agent.client.requests.post",
+            side_effect=requests.ReadTimeout("slow generation"),
+        ) as post:
+            with capture_llm_usage() as ledger:
+                with self.assertRaises(requests.ReadTimeout):
+                    client.chat_json([{"role": "user", "content": "slow"}])
+
+        self.assertEqual(post.call_count, 1)
+        self.assertEqual(ledger.calls, [])
 
 
 if __name__ == "__main__":

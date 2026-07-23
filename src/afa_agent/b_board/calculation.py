@@ -1221,7 +1221,7 @@ def _value_appears(value: Any, value_type: str, text: str) -> bool:
 
 
 def _unit_appears(unit: str, text: str) -> bool:
-    normalized = "".join(unit.split())
+    normalized = "".join(unit.split()).casefold()
     if not normalized or normalized in {"无", "个", "日", "天"}:
         return True
     aliases = {
@@ -1229,7 +1229,11 @@ def _unit_appears(unit: str, text: str) -> bool:
         "百分点": ("百分点", "%"),
         "元/股": ("元/股", "元／股", "每股"),
     }
-    return any(token in text for token in aliases.get(normalized, (normalized,)))
+    compact_text = "".join(text.split()).casefold()
+    return any(
+        token.casefold() in compact_text
+        for token in aliases.get(normalized, (normalized,))
+    )
 
 
 def check_variable_grounding(

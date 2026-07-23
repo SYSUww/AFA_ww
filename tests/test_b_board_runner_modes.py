@@ -24,10 +24,14 @@ from afa_agent.b_board.runner import (
     BAnswerGenerationError,
     BBoardActualRunner,
     _artifact_from_dict,
+    _calculation_evidence_payload,
+    _calculation_semantic_constraints,
     _calculation_semantic_query_terms,
     _is_calculation_plan_structure_error,
     _normalize_calculation_plan_structure,
     _normalize_calculation_numeric_literals,
+    _validate_aggregate_intensity_plan_binding,
+    _validate_calculation_summary_output_consistency,
     _validate_calculation_variable_period_binding,
     _validate_calculation_result_semantics,
     _validate_insurance_surrender_rate_binding,
@@ -455,6 +459,176 @@ class BBoardRunnerModeTests(unittest.TestCase):
             _calculation_semantic_query_terms("营业收入是多少？"),
             "",
         )
+
+    def test_aggregate_intensity_constraint_is_derived_from_question_and_evidence(
+        self,
+    ) -> None:
+        constraints = _calculation_semantic_constraints(
+            (
+                "若2026年国内新能源乘用车销量与2025年持平，但单车带电量"
+                "从2025年的水平提升至56kWh，则动力电池需求同比增速是多少？"
+            ),
+            [
+                {
+                    "doc_id": "__question__",
+                    "evidence_id": "question:q1",
+                    "title": "题目",
+                    "text": "单车带电量提升至56kWh",
+                },
+                {
+                    "doc_id": "report",
+                    "evidence_id": "u1",
+                    "title": "2025 | 2026E | 2027E",
+                    "text": (
+                        "乘用车单车带电量(kwh) | 45.8 | 52.2 | 53.1\n"
+                        "国内:纯电动销量(万辆) | 811.6 | 811.6 | 876.5"
+                    ),
+                }
+            ],
+        )
+
+        self.assertEqual(len(constraints), 1)
+        self.assertEqual(constraints[0]["evidence_id"], "u1")
+        self.assertEqual(
+            constraints[0]["question_evidence_id"],
+            "question:q1",
+        )
+        self.assertIn("45.8kWh", constraints[0]["constraint"])
+        self.assertIn("56kWh", constraints[0]["constraint"])
+        self.assertIn("不得把总体", constraints[0]["constraint"])
+        self.assertEqual(constraints[0]["baseline_value"], "45.8")
+        self.assertEqual(constraints[0]["target_value"], "56")
+
+    def test_aggregate_intensity_constraint_does_not_fire_without_flat_volume(
+        self,
+    ) -> None:
+        self.assertEqual(
+            _calculation_semantic_constraints(
+                "预计乘用车单车带电量提升至56kWh，需求是多少？",
+                [],
+            ),
+            [],
+        )
+
+    def test_aggregate_intensity_gate_rejects_different_scope_denominator(
+        self,
+    ) -> None:
+        constraints = [
+            {
+                "type": "unchanged_aggregate_volume",
+                "evidence_id": "table",
+                "question_evidence_id": "question:q1",
+                "base_year": "2025",
+                "baseline_value": "45.8",
+                "target_value": "56",
+                "unit": "kWh",
+                "constraint": "test",
+            }
+        ]
+        wrong_plan = {
+            "variables": [
+                {
+                    "name": "2025总体单车带电量",
+                    "value": "45.8",
+                    "value_type": "decimal",
+                    "unit": "kwh",
+                    "evidence_ids": ["table"],
+                },
+                {
+                    "name": "2026总体单车带电量",
+                    "value": "56",
+                    "value_type": "decimal",
+                    "unit": "kWh",
+                    "evidence_ids": ["question:q1"],
+                },
+                {
+                    "name": "不同口径总量",
+                    "value": "733",
+                    "value_type": "decimal",
+                    "unit": "GWh",
+                    "evidence_ids": ["other"],
+                },
+            ],
+            "steps": [
+                {
+                    "id": "wrong",
+                    "op": "pct_change",
+                    "new": {"ref": "2026总体单车带电量"},
+                    "old": {"ref": "不同口径总量"},
+                }
+            ],
+            "outputs": [{"source": {"ref": "wrong"}, "format": "percent2"}],
+        }
+        with self.assertRaisesRegex(
+            ValueError,
+            "whose old dependency contains evidence baseline 45.8kWh",
+        ):
+            _validate_aggregate_intensity_plan_binding(
+                wrong_plan,
+                constraints,
+            )
+
+        correct_plan = {
+            **wrong_plan,
+            "steps": [
+                {
+                    "id": "correct",
+                    "op": "pct_change",
+                    "new": {"ref": "2026总体单车带电量"},
+                    "old": {"ref": "2025总体单车带电量"},
+                }
+            ],
+            "outputs": [{"source": {"ref": "correct"}, "format": "percent2"}],
+        }
+        _validate_aggregate_intensity_plan_binding(correct_plan, constraints)
+
+    def test_calculation_summary_must_contain_replayed_numeric_output(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "decision_summary does not contain replayed output: -90.07%",
+        ):
+            _validate_calculation_summary_output_consistency(
+                {"decision_summary": "最终同比增速为18.10%。"},
+                ("-90.07%",),
+            )
+        _validate_calculation_summary_output_consistency(
+            {"decision_summary": "最终同比增速为22.27%。"},
+            ("22.27%",),
+        )
+
+    def test_calculation_evidence_payload_expands_progressively(self) -> None:
+        evidence = [
+            {
+                "unit_id": "question:q1",
+                "doc_id": "__question__",
+                "title_path": ["题目"],
+                "text": "题目",
+            },
+            *[
+                {
+                    "unit_id": f"u{index}",
+                    "doc_id": f"d{index}",
+                    "title_path": [],
+                    "text": f"证据{index}",
+                }
+                for index in range(1, 12)
+            ],
+        ]
+
+        first = _calculation_evidence_payload(
+            evidence,
+            max_non_question_hits=8,
+        )
+        second = _calculation_evidence_payload(
+            evidence,
+            max_non_question_hits=16,
+        )
+
+        self.assertEqual(len(first), 9)
+        self.assertEqual(first[0]["evidence_id"], "question:q1")
+        self.assertEqual(first[-1]["evidence_id"], "u8")
+        self.assertEqual(len(second), 12)
+        self.assertEqual(second[-1]["evidence_id"], "u11")
 
     def test_percentage_point_question_rejects_ratio_output(self) -> None:
         question = BQuestion(

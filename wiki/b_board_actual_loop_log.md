@@ -29454,3 +29454,913 @@
   ]
 }
 ```
+
+## b-loop-qwen37-calculation-progressive-evidence-payload-a1
+
+- recorded_at: `2026-07-23T19:16:05+00:00`
+
+```json
+{
+  "approach": "把计算题每轮实际发送给模型的非题目证据改为8/16/24条渐进扩展，并把可引用evidence ID限制为当前Prompt实际出现集合；保留原18条本地检索池和现有HTTP 120秒×最多3次传输重试。单题运行res_b_005。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_calculation_progressive_evidence_payload_a1",
+  "base_commit": "ac5d6b5",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "ac5d6b5"
+      },
+      "identity": {
+        "change_vector": {
+          "base_commit": "ac5d6b5",
+          "citation_scope": "current_prompt_only",
+          "locator": "attempt_43",
+          "model": "qwen3.7-plus-2026-05-26",
+          "prompt_evidence_policy": "progressive_8_16_24_v1",
+          "structured_output_mode": "native_json_schema_strict",
+          "workers": 1
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "res_b_005只需题面56和首条材料45.8，却在首轮发送18条跨文档证据；将计算证据prompt改为8/16/24条渐进扩展，可降低首轮延迟并在不牺牲失败补检索的前提下恢复答案与reasoning。",
+        "pipeline_stage": "calculation_request_payload",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "qwen37_read_timeout_large_evidence_payload",
+        "target_qids": [
+          "res_b_005"
+        ]
+      }
+    },
+    "context_sha256": "e705f1776c32b2c7956748329a4a0688640c54565458aa41021bce360f797052",
+    "direction_sha256": "8fddce2d61293c19b137858fda49e1cbbe0fc6cf7b1b27c539db2ec86ca0fd3a",
+    "schema_version": 1,
+    "semantic_sha256": "600f22404a015cb4ffe3d0a93369ea9e62e8f6c4c6ddc688f2b9820de9c6a2de",
+    "sha256": "c489b284d368d98321e3bf75e85734452dacd45c6b60b99c8d46dfadb5154265"
+  },
+  "change_vector": {
+    "base_commit": "ac5d6b5",
+    "citation_scope": "current_prompt_only",
+    "locator": "attempt_43",
+    "model": "qwen3.7-plus-2026-05-26",
+    "prompt_evidence_policy": "progressive_8_16_24_v1",
+    "structured_output_mode": "native_json_schema_strict",
+    "workers": 1
+  },
+  "direction_id": "qwen37_calculation_progressive_evidence_payload",
+  "domains": [
+    "research"
+  ],
+  "effect": "306项测试通过，但真实运行持续约8分14秒仍未返回首个可记录响应，复现了旧read timeout/重发问题；为避免继续产生不可审计的重复请求，人工中止进程。未生成答案、reasoning或可用usage，不能记为有效改善。",
+  "experiment_id": "b-loop-qwen37-calculation-progressive-evidence-payload-a1",
+  "failure_analysis": "证据载荷缩小没有消除超时，瓶颈主要在Qwen3.7该请求的服务端生成时延与客户端传输策略。当前client对ReadTimeout也按max_retries=2自动重发，同一逻辑调用最多产生3个服务端请求；超时响应无usage，既浪费时间，也存在无法完整申报Token的合规风险。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "base_commit": "ac5d6b5",
+            "citation_scope": "current_prompt_only",
+            "locator": "attempt_43",
+            "model": "qwen3.7-plus-2026-05-26",
+            "prompt_evidence_policy": "progressive_8_16_24_v1",
+            "structured_output_mode": "native_json_schema_strict",
+            "workers": 1
+          },
+          "domains": [
+            "research"
+          ],
+          "hypothesis": "res_b_005只需题面56和首条材料45.8，却在首轮发送18条跨文档证据；将计算证据prompt改为8/16/24条渐进扩展，可降低首轮延迟并在不牺牲失败补检索的前提下恢复答案与reasoning。",
+          "pipeline_stage": "calculation_request_payload",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "qwen37_read_timeout_large_evidence_payload",
+          "target_qids": [
+            "res_b_005"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "8fddce2d61293c19b137858fda49e1cbbe0fc6cf7b1b27c539db2ec86ca0fd3a",
+      "schema_version": 1,
+      "semantic_sha256": "600f22404a015cb4ffe3d0a93369ea9e62e8f6c4c6ddc688f2b9820de9c6a2de",
+      "sha256": "77035987fec41f2a1f20a8629ad01937397392cc537d72d4d02bc19f335c3b2d"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "base_commit": "ac5d6b5",
+              "citation_scope": "current_prompt_only",
+              "locator": "attempt_43",
+              "model": "qwen3.7-plus-2026-05-26",
+              "prompt_evidence_policy": "progressive_8_16_24_v1",
+              "structured_output_mode": "native_json_schema_strict",
+              "workers": 1
+            },
+            "domains": [
+              "research"
+            ],
+            "hypothesis": "res_b_005只需题面56和首条材料45.8，却在首轮发送18条跨文档证据；将计算证据prompt改为8/16/24条渐进扩展，可降低首轮延迟并在不牺牲失败补检索的前提下恢复答案与reasoning。",
+            "pipeline_stage": "calculation_request_payload",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "qwen37_read_timeout_large_evidence_payload",
+            "target_qids": [
+              "res_b_005"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "8fddce2d61293c19b137858fda49e1cbbe0fc6cf7b1b27c539db2ec86ca0fd3a",
+        "schema_version": 1,
+        "semantic_sha256": "600f22404a015cb4ffe3d0a93369ea9e62e8f6c4c6ddc688f2b9820de9c6a2de",
+        "sha256": "77035987fec41f2a1f20a8629ad01937397392cc537d72d4d02bc19f335c3b2d"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "59b68f85664069c1d8013f6676534cf1ca8fb45447aa6f726a23e64781801b8f",
+      "size": 1130347
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "03f5b4ef1042f82e22343465096478dba6f627be16cbf54f479b8a5fc92b0aeb",
+      "size": 921110
+    },
+    "related_log_sections": [
+      "B0-actual-integrity",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-readme-percent-format-priority-v6",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-full-chain-reproduction-baseline-v10",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-last-error-minimal-candidate-set-official-history-a1",
+      "b-loop-percentage-bundle-net-plus-one-explanation-a1",
+      "b-loop-percentage-bundle-most-likely-positive-fin017-a1",
+      "b-loop-three-percentage-question-full-chain-numeric-revalidation-a1",
+      "b-loop-qwen37-full100-independent-baseline-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a2",
+      "b-loop-qwen37-structured-output-contract-a2-full100",
+      "b-loop-qwen37-structured-output-contract-a3-staged-retry",
+      "b-loop-qwen37-insurance-surrender-year-binding-a2",
+      "b-loop-qwen37-calculation-variable-period-binding-a1"
+    ],
+    "reviewed_at": "2026-07-23T19:06:34+00:00"
+  },
+  "hypothesis": "res_b_005只需题面56和首条材料45.8，却在首轮发送18条跨文档证据；将计算证据Prompt改为8/16/24条渐进扩展，可降低首轮延迟并在不牺牲失败补检索的前提下恢复答案与reasoning。",
+  "material_delta": {
+    "citation_scope": "current_prompt_only",
+    "prompt_evidence_policy": "progressive_8_16_24_v1"
+  },
+  "metrics": {
+    "answer_completed_count": 0,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "process_exit_code": 130,
+    "proxy_total_score": null,
+    "reasoning_completed_count": 0,
+    "recorded_token_total": 0,
+    "returned_api_response_count": 0,
+    "run_elapsed_seconds_before_termination": 494,
+    "submission_generated": false,
+    "tests_passed": 306
+  },
+  "next_step": "A2保留渐进证据，但修改HTTP层：ReadTimeout不得自动重发；Qwen3.7默认使用更长的单次read timeout，连接错误仍可按现有规则重试。用res_b_005单题验证只发生一次答案请求、返回原始usage并完成独立reasoning。",
+  "pipeline_stage": "calculation_request_payload",
+  "promotion_result": "not_effective",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T19:16:05+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "qwen37_read_timeout_large_evidence_payload",
+  "status": "completed_not_effective_terminated",
+  "submission_effect": "not_submitted_incomplete",
+  "target_qids": [
+    "res_b_005"
+  ]
+}
+```
+
+## b-loop-qwen37-calculation-progressive-evidence-payload-a2
+
+- recorded_at: `2026-07-23T19:27:01+00:00`
+
+```json
+{
+  "approach": "保留A1的8/16/24条渐进证据，Qwen3.7未显式配置时使用360秒单次读取窗口；ReadTimeout在HTTP传输层立即抛出，不做不可审计的自动重复请求，其他连接/解析错误重试保持不变；把超时、重试参数纳入公开运行指纹。单题运行res_b_005。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_calculation_progressive_evidence_payload_a2",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "base_commit": "ac5d6b5",
+          "model": "qwen3.7-plus-2026-05-26",
+          "other_request_retries": "unchanged",
+          "prompt_evidence_policy": "progressive_8_16_24_v1",
+          "read_timeout_default_seconds": 360,
+          "read_timeout_transport_retries": 0,
+          "workers": 1
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "a1证明缩小证据不足以解决服务时延；禁止readtimeout传输层重发，并在未显式配置时给qwen3.7单次360秒读取窗口，可避免不可审计重复请求并让res_b_005返回原始usage。",
+        "pipeline_stage": "calculation_request_payload",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "qwen37_read_timeout_large_evidence_payload",
+        "target_qids": [
+          "res_b_005"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "4388cab95afb527bb40dab0fa1b33c177fd382fca5f89bb37596fb18c728e2f8",
+    "schema_version": 1,
+    "semantic_sha256": "ac50eda9c9970bccef2a79e9b65917e09034ca8a7c67db7959f6fd7165fea511",
+    "sha256": "d4a2bf13a7bbb48f7de674c5e5909782072b94d3a5793fa03a84016dd5b9a5ee"
+  },
+  "change_vector": {
+    "base_commit": "ac5d6b5",
+    "model": "qwen3.7-plus-2026-05-26",
+    "other_request_retries": "unchanged",
+    "prompt_evidence_policy": "progressive_8_16_24_v1",
+    "read_timeout_default_seconds": 360,
+    "read_timeout_transport_retries": 0,
+    "workers": 1
+  },
+  "direction_id": "qwen37_calculation_progressive_evidence_payload",
+  "domains": [
+    "research"
+  ],
+  "effect": "3次逻辑Qwen严格Schema响应均在单次传输内返回，0次ReadTimeout；三次usage完整记录为13944、18965、26117，合计59026 Token。A1的不可观测超时已转为可审计结果，并定位到答案失败不是传输问题，而是Qwen把总体乘用车单车带电量误解为纯电动子类口径。",
+  "experiment_id": "b-loop-qwen37-calculation-progressive-evidence-payload-a2",
+  "failure_analysis": "答案仍未完成：三轮都将题面总体56kWh绑定为2026年纯电动单车容量，并保留插混33.9kWh，偏离题面总体平均口径；同时模型输出单位kwh而题面为kWh，当前单位校验大小写敏感，导致题面变量被unit_not_found误拒绝。传输硬兜底有效，但本轮尚未提升答案准确率。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "base_commit": "ac5d6b5",
+            "model": "qwen3.7-plus-2026-05-26",
+            "other_request_retries": "unchanged",
+            "prompt_evidence_policy": "progressive_8_16_24_v1",
+            "read_timeout_default_seconds": 360,
+            "read_timeout_transport_retries": 0,
+            "workers": 1
+          },
+          "domains": [
+            "research"
+          ],
+          "hypothesis": "a1证明缩小证据不足以解决服务时延；禁止readtimeout传输层重发，并在未显式配置时给qwen3.7单次360秒读取窗口，可避免不可审计重复请求并让res_b_005返回原始usage。",
+          "pipeline_stage": "calculation_request_payload",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "qwen37_read_timeout_large_evidence_payload",
+          "target_qids": [
+            "res_b_005"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "4388cab95afb527bb40dab0fa1b33c177fd382fca5f89bb37596fb18c728e2f8",
+      "schema_version": 1,
+      "semantic_sha256": "ac50eda9c9970bccef2a79e9b65917e09034ca8a7c67db7959f6fd7165fea511",
+      "sha256": "d4a2bf13a7bbb48f7de674c5e5909782072b94d3a5793fa03a84016dd5b9a5ee"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "base_commit": "ac5d6b5",
+              "model": "qwen3.7-plus-2026-05-26",
+              "other_request_retries": "unchanged",
+              "prompt_evidence_policy": "progressive_8_16_24_v1",
+              "read_timeout_default_seconds": 360,
+              "read_timeout_transport_retries": 0,
+              "workers": 1
+            },
+            "domains": [
+              "research"
+            ],
+            "hypothesis": "a1证明缩小证据不足以解决服务时延；禁止readtimeout传输层重发，并在未显式配置时给qwen3.7单次360秒读取窗口，可避免不可审计重复请求并让res_b_005返回原始usage。",
+            "pipeline_stage": "calculation_request_payload",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "qwen37_read_timeout_large_evidence_payload",
+            "target_qids": [
+              "res_b_005"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "4388cab95afb527bb40dab0fa1b33c177fd382fca5f89bb37596fb18c728e2f8",
+        "schema_version": 1,
+        "semantic_sha256": "ac50eda9c9970bccef2a79e9b65917e09034ca8a7c67db7959f6fd7165fea511",
+        "sha256": "d4a2bf13a7bbb48f7de674c5e5909782072b94d3a5793fa03a84016dd5b9a5ee"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-qwen37-calculation-progressive-evidence-payload-a1"
+      ],
+      "similarity": 0.811238
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "bd34c4d34c815ea454142a7ed2b77293553e6afc0e131ae0e2c93fb4612c072a",
+      "size": 1140950
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "89d801fee3672962dbbba597dc1638d64ef287ad4069c21efff2226560bfbc68",
+      "size": 930122
+    },
+    "related_log_sections": [
+      "B0-actual-integrity",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-readme-percent-format-priority-v6",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-full-chain-reproduction-baseline-v10",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-last-error-minimal-candidate-set-official-history-a1",
+      "b-loop-percentage-bundle-net-plus-one-explanation-a1",
+      "b-loop-percentage-bundle-most-likely-positive-fin017-a1",
+      "b-loop-three-percentage-question-full-chain-numeric-revalidation-a1",
+      "b-loop-qwen37-full100-independent-baseline-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a2",
+      "b-loop-qwen37-structured-output-contract-a2-full100",
+      "b-loop-qwen37-structured-output-contract-a3-staged-retry",
+      "b-loop-qwen37-insurance-surrender-year-binding-a2",
+      "b-loop-qwen37-calculation-variable-period-binding-a1",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a1"
+    ],
+    "reviewed_at": "2026-07-23T19:16:45+00:00"
+  },
+  "hypothesis": "A1证明缩小证据不足以解决服务时延；禁止ReadTimeout传输层重发，并在未显式配置时给Qwen3.7单次360秒读取窗口，可避免不可审计重复请求并让res_b_005返回原始usage。",
+  "material_delta": {
+    "qwen37_read_timeout_default_seconds": 360,
+    "read_timeout_transport_retries": 0,
+    "runtime_fingerprint_includes_transport_policy": true
+  },
+  "metrics": {
+    "answer_completed_count": 0,
+    "logical_answer_call_count": 3,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "proxy_total_score": null,
+    "read_timeout_count": 0,
+    "reasoning_completed_count": 0,
+    "recorded_completion_tokens": 21628,
+    "recorded_prompt_tokens": 37398,
+    "recorded_token_total": 59026,
+    "returned_api_response_count": 3,
+    "submission_generated": false,
+    "tests_passed": 308,
+    "usage_complete": true
+  },
+  "next_step": "A3做本方向最后一轮：先把标准ASCII能量单位校验改为大小写等价；再从题面和已检索证据自动生成“总销量持平+总体单车指标”的口径约束，要求使用证据中的总体乘用车单车带电量作基期，除非题目明确给出子类别变化，不允许擅自拆成纯电动/插混。不得读取pseudo99参考答案。",
+  "pipeline_stage": "calculation_request_payload",
+  "promotion_result": "not_effective_yet",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T19:27:01+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "qwen37_read_timeout_large_evidence_payload",
+  "status": "completed_transport_effective_answer_incomplete",
+  "submission_effect": "not_submitted_incomplete",
+  "target_qids": [
+    "res_b_005"
+  ]
+}
+```
+
+## b-loop-qwen37-calculation-progressive-evidence-payload-a3
+
+- recorded_at: `2026-07-23T19:35:20+00:00`
+
+```json
+{
+  "approach": "在A2可审计传输基础上，把ASCII单位匹配改为大小写等价；从题面与当前Prompt证据表自动提取总销量持平、总体单车带电量基期和题面目标值，作为答案盲的口径约束发送给Qwen。先在错误LLM端点产生一次HTTP 404/0 Token技术失败，随后切换到与A2同指纹且列出Qwen3.7的OPENAI端点，单题运行res_b_005。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_calculation_progressive_evidence_payload_a3_valid_endpoint",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "base_commit": "ac5d6b5",
+          "model": "qwen3.7-plus-2026-05-26",
+          "prompt_evidence_policy": "progressive_8_16_24_v1",
+          "read_timeout_default_seconds": 360,
+          "read_timeout_transport_retries": 0,
+          "reference_answer_access": false,
+          "semantic_constraint": "evidence_derived_aggregate_intensity_v1",
+          "unit_matching": "ascii_case_insensitive_v1",
+          "workers": 1
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "a2已消除不可审计超时并暴露语义根因；把ascii单位匹配改为大小写等价，并从题面和当前检索证据派生总量持平/总体单车指标约束，可使qwen用总体45.8与题面56计算，而不误拆纯电动和插混子类。",
+        "pipeline_stage": "calculation_request_payload",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "qwen37_read_timeout_large_evidence_payload",
+        "target_qids": [
+          "res_b_005"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "fa85ee6e1b8ea6c77ad944f11664356488e6d990da5c2faa16190e851b90412b",
+    "schema_version": 1,
+    "semantic_sha256": "37c0beacdf930e00ef4fbea07265f69eac21c9e855acc6d6110506715b68c09f",
+    "sha256": "f8ac81c85aedcad73f2c2a05d84db26d497b0af23b84102778330571a35c4e3b"
+  },
+  "change_vector": {
+    "base_commit": "ac5d6b5",
+    "model": "qwen3.7-plus-2026-05-26",
+    "prompt_evidence_policy": "progressive_8_16_24_v1",
+    "read_timeout_default_seconds": 360,
+    "read_timeout_transport_retries": 0,
+    "reference_answer_access": false,
+    "semantic_constraint": "evidence_derived_aggregate_intensity_v1",
+    "unit_matching": "ascii_case_insensitive_v1",
+    "workers": 1
+  },
+  "domains": [
+    "research"
+  ],
+  "effect": "正确端点下答案请求从A2的3次/59026 Token降为1次/10204 Token，单位kWh/kwh不再误拒绝，0次超时；但生成计划仍输出-90.07%，与其decision_summary声称的18.10%矛盾。独立reasoning两次均判定口径不一致并返回insufficient，没有为冻结错误答案编造解释，证明两阶段隔离有效。",
+  "experiment_id": "b-loop-qwen37-calculation-progressive-evidence-payload-a3",
+  "failure_analysis": "Prompt约束不足以强制计划依赖关系。模型错误地把乘用车目标需求与全口径2025年动力电池733GWh比较，且把“万辆×kWh→GWh”的换算除以1000而非100；计划标准化还剪掉了45.8基期变量和对应步骤，最终轨迹与摘要互相矛盾。答案准确率代理未提升，reasoning未完成。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "base_commit": "ac5d6b5",
+            "model": "qwen3.7-plus-2026-05-26",
+            "prompt_evidence_policy": "progressive_8_16_24_v1",
+            "read_timeout_default_seconds": 360,
+            "read_timeout_transport_retries": 0,
+            "reference_answer_access": false,
+            "semantic_constraint": "evidence_derived_aggregate_intensity_v1",
+            "unit_matching": "ascii_case_insensitive_v1",
+            "workers": 1
+          },
+          "domains": [
+            "research"
+          ],
+          "hypothesis": "a2已消除不可审计超时并暴露语义根因；把ascii单位匹配改为大小写等价，并从题面和当前检索证据派生总量持平/总体单车指标约束，可使qwen用总体45.8与题面56计算，而不误拆纯电动和插混子类。",
+          "pipeline_stage": "calculation_request_payload",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "qwen37_read_timeout_large_evidence_payload",
+          "target_qids": [
+            "res_b_005"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "fa85ee6e1b8ea6c77ad944f11664356488e6d990da5c2faa16190e851b90412b",
+      "schema_version": 1,
+      "semantic_sha256": "37c0beacdf930e00ef4fbea07265f69eac21c9e855acc6d6110506715b68c09f",
+      "sha256": "f8ac81c85aedcad73f2c2a05d84db26d497b0af23b84102778330571a35c4e3b"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "base_commit": "ac5d6b5",
+              "model": "qwen3.7-plus-2026-05-26",
+              "prompt_evidence_policy": "progressive_8_16_24_v1",
+              "read_timeout_default_seconds": 360,
+              "read_timeout_transport_retries": 0,
+              "reference_answer_access": false,
+              "semantic_constraint": "evidence_derived_aggregate_intensity_v1",
+              "unit_matching": "ascii_case_insensitive_v1",
+              "workers": 1
+            },
+            "domains": [
+              "research"
+            ],
+            "hypothesis": "a2已消除不可审计超时并暴露语义根因；把ascii单位匹配改为大小写等价，并从题面和当前检索证据派生总量持平/总体单车指标约束，可使qwen用总体45.8与题面56计算，而不误拆纯电动和插混子类。",
+            "pipeline_stage": "calculation_request_payload",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "qwen37_read_timeout_large_evidence_payload",
+            "target_qids": [
+              "res_b_005"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "fa85ee6e1b8ea6c77ad944f11664356488e6d990da5c2faa16190e851b90412b",
+        "schema_version": 1,
+        "semantic_sha256": "37c0beacdf930e00ef4fbea07265f69eac21c9e855acc6d6110506715b68c09f",
+        "sha256": "f8ac81c85aedcad73f2c2a05d84db26d497b0af23b84102778330571a35c4e3b"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-qwen37-calculation-progressive-evidence-payload-a2",
+        "b-loop-qwen37-calculation-progressive-evidence-payload-a1"
+      ],
+      "similarity": 0.858783
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "a94d6125e79dad562f5ecd3e4f7604858d4feeb86f69870ad3f4fcd845a64fcf",
+      "size": 1151961
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "a8938b791a1c63c3e9a4aca1a9034559adf27133e0e0a8428a7e3de179b04100",
+      "size": 939522
+    },
+    "related_log_sections": [
+      "B0-actual-integrity",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-readme-percent-format-priority-v6",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-full-chain-reproduction-baseline-v10",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-last-error-minimal-candidate-set-official-history-a1",
+      "b-loop-percentage-bundle-net-plus-one-explanation-a1",
+      "b-loop-percentage-bundle-most-likely-positive-fin017-a1",
+      "b-loop-three-percentage-question-full-chain-numeric-revalidation-a1",
+      "b-loop-qwen37-full100-independent-baseline-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a2",
+      "b-loop-qwen37-structured-output-contract-a2-full100",
+      "b-loop-qwen37-structured-output-contract-a3-staged-retry",
+      "b-loop-qwen37-insurance-surrender-year-binding-a2",
+      "b-loop-qwen37-calculation-variable-period-binding-a1",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a1",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a2"
+    ],
+    "reviewed_at": "2026-07-23T19:27:31+00:00"
+  },
+  "hypothesis": "A2已消除不可审计超时并暴露语义根因；把ASCII单位匹配改为大小写等价，并从题面和当前检索证据派生总量持平/总体单车指标约束，可使Qwen用总体45.8与题面56计算，而不误拆纯电动和插混子类。",
+  "material_delta": {
+    "semantic_constraint": "evidence_derived_aggregate_intensity_v1",
+    "unit_matching": "ascii_case_insensitive_v1"
+  },
+  "metrics": {
+    "answer_completed_count": 1,
+    "answer_value": "-90.07%",
+    "decision_summary_value": "18.10%",
+    "logical_answer_call_count": 1,
+    "logical_reasoning_call_count": 2,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "proxy_total_score": null,
+    "read_timeout_count": 0,
+    "reasoning_completed_count": 0,
+    "recorded_answer_tokens": 10204,
+    "recorded_failed_reasoning_tokens": 18460,
+    "recorded_token_total": 28664,
+    "returned_api_response_count": 3,
+    "submission_generated": false,
+    "technical_404_call_count": 1,
+    "technical_404_token_total": 0,
+    "tests_passed": 311,
+    "usage_complete": true
+  },
+  "next_step": "本方向已达A3上限并停止。新开“计算计划语义依赖与摘要一致性硬校验”方向：代码从题面/证据派生基期与目标变量，要求最终pct_change的old/new依赖链分别包含同口径45.8和56；同时要求decision_summary最终数值与重放输出一致。校验失败才向同一Qwen反馈重试，不在代码中写参考答案。",
+  "pipeline_stage": "calculation_request_payload",
+  "promotion_result": "not_effective",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T19:35:20+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "qwen37_read_timeout_large_evidence_payload",
+  "status": "completed_not_effective_semantic_mismatch",
+  "submission_effect": "not_submitted_incomplete",
+  "target_qids": [
+    "res_b_005"
+  ]
+}
+```
+
+## b-loop-qwen37-calculation-semantic-dependency-gate-a1
+
+- recorded_at: `2026-07-23T19:40:29+00:00`
+
+```json
+{
+  "approach": "在证据派生的总体口径约束基础上新增两个答案盲硬校验：其一要求最终pct_change的new依赖链包含题面目标56kWh、old依赖链包含当前证据同口径基期45.8kWh；其二要求decision_summary显式包含本地重放后的最终数值。校验失败才向同一Qwen反馈并按既有最多3次逻辑尝试重试。单题运行res_b_005，随后独立生成reasoning。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_calculation_semantic_dependency_gate_a1",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "aggregate_pct_change_dependency_gate": "v1",
+          "base_commit": "ac5d6b5",
+          "decision_summary_output_consistency_gate": "v1",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reference_answer_access": false,
+          "retry_policy": "existing_max_3_logical_attempts",
+          "workers": 1
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "qwen能在摘要中识别正确总体口径但结构化计划会漂移；用题面和当前证据派生的基期/目标值校验pct_change依赖链，并校验摘要结论与重放答案一致，可在不写入参考答案的前提下拒绝错误计划并触发一次有信息的定向重试。",
+        "pipeline_stage": "calculation_plan_semantic_validation",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "qwen37_summary_trace_and_aggregate_scope_mismatch",
+        "target_qids": [
+          "res_b_005"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "c1e0e180251f3001c645258a7dd81182cbb8d8bfcdcd208b625e598590852ae3",
+    "schema_version": 1,
+    "semantic_sha256": "7ce6170be64252a29802c445ccb37fd88147756e3b8348dc84ac0d83ca8bf446",
+    "sha256": "55b4fd9538efa1344b3012c543ed933053e321e53401b47e81f04f16afb4307a"
+  },
+  "change_vector": {
+    "aggregate_pct_change_dependency_gate": "v1",
+    "base_commit": "ac5d6b5",
+    "decision_summary_output_consistency_gate": "v1",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reference_answer_access": false,
+    "retry_policy": "existing_max_3_logical_attempts",
+    "workers": 1
+  },
+  "direction_id": "qwen37_calculation_semantic_dependency_gate",
+  "domains": [
+    "research"
+  ],
+  "effect": "答案和reasoning均一次完成，输出22.27%；本地轨迹严格重放(56/45.8-1)*100=22.270742358...%，grounding_verified和replay_verified均为true，摘要结论与输出一致。答案调用11316 Token、reasoning调用3436 Token、合计14752；相对上一轮错误答案加失败reasoning的28664 Token下降48.53%。",
+  "experiment_id": "b-loop-qwen37-calculation-semantic-dependency-gate-a1",
+  "failure_analysis": "本轮未触发重试，说明证据派生口径约束已足以引导本次Qwen生成正确依赖链；硬校验的失败后重试分支仅由单元测试覆盖，尚未在更多总体数量×单位强度题上验证。22.27%与历史pseudo99一致且证据链强，但不是官网逐题正确性反馈。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "aggregate_pct_change_dependency_gate": "v1",
+            "base_commit": "ac5d6b5",
+            "decision_summary_output_consistency_gate": "v1",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reference_answer_access": false,
+            "retry_policy": "existing_max_3_logical_attempts",
+            "workers": 1
+          },
+          "domains": [
+            "research"
+          ],
+          "hypothesis": "qwen能在摘要中识别正确总体口径但结构化计划会漂移；用题面和当前证据派生的基期/目标值校验pct_change依赖链，并校验摘要结论与重放答案一致，可在不写入参考答案的前提下拒绝错误计划并触发一次有信息的定向重试。",
+          "pipeline_stage": "calculation_plan_semantic_validation",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "qwen37_summary_trace_and_aggregate_scope_mismatch",
+          "target_qids": [
+            "res_b_005"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "c1e0e180251f3001c645258a7dd81182cbb8d8bfcdcd208b625e598590852ae3",
+      "schema_version": 1,
+      "semantic_sha256": "7ce6170be64252a29802c445ccb37fd88147756e3b8348dc84ac0d83ca8bf446",
+      "sha256": "55b4fd9538efa1344b3012c543ed933053e321e53401b47e81f04f16afb4307a"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "aggregate_pct_change_dependency_gate": "v1",
+              "base_commit": "ac5d6b5",
+              "decision_summary_output_consistency_gate": "v1",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reference_answer_access": false,
+              "retry_policy": "existing_max_3_logical_attempts",
+              "workers": 1
+            },
+            "domains": [
+              "research"
+            ],
+            "hypothesis": "qwen能在摘要中识别正确总体口径但结构化计划会漂移；用题面和当前证据派生的基期/目标值校验pct_change依赖链，并校验摘要结论与重放答案一致，可在不写入参考答案的前提下拒绝错误计划并触发一次有信息的定向重试。",
+            "pipeline_stage": "calculation_plan_semantic_validation",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "qwen37_summary_trace_and_aggregate_scope_mismatch",
+            "target_qids": [
+              "res_b_005"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "c1e0e180251f3001c645258a7dd81182cbb8d8bfcdcd208b625e598590852ae3",
+        "schema_version": 1,
+        "semantic_sha256": "7ce6170be64252a29802c445ccb37fd88147756e3b8348dc84ac0d83ca8bf446",
+        "sha256": "55b4fd9538efa1344b3012c543ed933053e321e53401b47e81f04f16afb4307a"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "00740d2f9baf8afb75dccdeb8005b8cd4c198f70b5d5a987268d7993e5c3dc89",
+      "size": 1164003
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "c9ac1c04c70e870466263794d882f1993120206a4a09481b30a44dd8807ea088",
+      "size": 949845
+    },
+    "related_log_sections": [
+      "B0-actual-integrity",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-readme-percent-format-priority-v6",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-full-chain-reproduction-baseline-v10",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-last-error-minimal-candidate-set-official-history-a1",
+      "b-loop-percentage-bundle-net-plus-one-explanation-a1",
+      "b-loop-percentage-bundle-most-likely-positive-fin017-a1",
+      "b-loop-three-percentage-question-full-chain-numeric-revalidation-a1",
+      "b-loop-qwen37-full100-independent-baseline-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a2",
+      "b-loop-qwen37-structured-output-contract-a2-full100",
+      "b-loop-qwen37-structured-output-contract-a3-staged-retry",
+      "b-loop-qwen37-insurance-surrender-year-binding-a2",
+      "b-loop-qwen37-calculation-variable-period-binding-a1",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a1",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a2",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a3"
+    ],
+    "reviewed_at": "2026-07-23T19:35:33+00:00"
+  },
+  "hypothesis": "Qwen能在摘要中识别正确总体口径但结构化计划会漂移；用题面和当前证据派生的基期/目标值校验pct_change依赖链，并校验摘要结论与重放答案一致，可在不写入参考答案的前提下拒绝错误计划并触发一次有信息的定向重试。",
+  "metrics": {
+    "answer_call_count": 1,
+    "answer_completed_count": 1,
+    "answer_value": "22.27%",
+    "formula_exact_percent": "22.27074235807860262008733620",
+    "grounding_verified": true,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "official_upload_performed": false,
+    "previous_round_token_total": 28664,
+    "proxy_total_score": null,
+    "reasoning_call_count": 1,
+    "reasoning_completed_count": 1,
+    "recorded_answer_tokens": 11316,
+    "recorded_reasoning_tokens": 3436,
+    "recorded_token_total": 14752,
+    "replay_verified": true,
+    "submission_eligible_subset_run": true,
+    "tests_passed": 313,
+    "token_reduction_percent": 48.53,
+    "usage_complete": true
+  },
+  "next_step": "该方向A1已同时恢复答案、reasoning并降低Token，停止追加轮次，创建独立分支提交推送。随后复读日志并审计剩余语义badcase；本地主要方向结束后重跑完整100题，再对冻结reasoning运行GPT-5.6影子评估。",
+  "pipeline_stage": "calculation_plan_semantic_validation",
+  "promotion_result": "effective_branch_required",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T19:40:29+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "qwen37_summary_trace_and_aggregate_scope_mismatch",
+  "status": "completed_effective",
+  "submission_effect": "not_officially_submitted_single_qid_artifact_only",
+  "target_qids": [
+    "res_b_005"
+  ]
+}
+```
