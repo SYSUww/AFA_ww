@@ -35748,3 +35748,240 @@
   ]
 }
 ```
+
+## b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a3
+
+- recorded_at: `2026-07-23T23:20:31+00:00`
+
+```json
+{
+  "approach": "对A6唯一残留双调用reg_b_016冻结答案，单次native strict干净重生成；GPT-5.6离线复评，并以最终公式判定是否合并。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_integrated_full100_candidate_a7_retry_eliminated_all9",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "answer_stage_calls": false,
+          "base_commit": "ee9e36f",
+          "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reasoning_prompt": "b_submission_reasoning_v4_grounded_date_boundary_hint",
+          "reference_answer_access": false,
+          "selection_gate": "per_qid_final_formula_delta_positive",
+          "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json",
+          "target_batch": "last_remaining_double_reasoning_call_after_a2"
+        },
+        "domains": [
+          "regulatory"
+        ],
+        "hypothesis": "对a6唯一残留的双调用reasoning行reg_b_016，从冻结答案checkpoint单次干净重生成并按最终公式判定，完成该方向第三轮封口。",
+        "pipeline_stage": "submission_reasoning_generation",
+        "question_types": [
+          "multiple_choice"
+        ],
+        "root_cause_cluster": "reasoning_duplicate_call_token_waste",
+        "target_qids": [
+          "reg_b_016"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "fd4f96c3467052b75b8633f128678e173b7eed9eb5d125d9d60a964bc80fc433",
+    "schema_version": 1,
+    "semantic_sha256": "2ee015c2f2e7cce89c3ecb1a4bcdc173022bdb51b7b00bef3492c15e0a7c981e",
+    "sha256": "10bd4887c813446ae1302ef4e091f9d3cffc32ace16f237aab5fe94f0c6591ad"
+  },
+  "change_vector": {
+    "answer_stage_calls": false,
+    "base_commit": "ee9e36f",
+    "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reasoning_prompt": "b_submission_reasoning_v4_grounded_date_boundary_hint",
+    "reference_answer_access": false,
+    "selection_gate": "per_qid_final_formula_delta_positive",
+    "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json",
+    "target_batch": "last_remaining_double_reasoning_call_after_a2"
+  },
+  "direction_id": "qwen37_reasoning_retry_elimination_clean_regeneration",
+  "domains": [
+    "regulatory"
+  ],
+  "effect": "reg_b_016 reasoning调用2→1、格式重试1→0、Token 6000→3269，节省2731；影子reasoning分保持97.6667完全不变。A7完整Token为1323396，Token效率73.53208，同accuracy下代理总分再增0.010924；A7已无reasoning多调用行。",
+  "experiment_id": "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a3",
+  "failure_analysis": "本轮无质量回退。该方向累计三轮已封闭；收益只说明离线代理改善，不代表官网分，且官方锁冲突仍存在。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "answer_stage_calls": false,
+            "base_commit": "ee9e36f",
+            "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reasoning_prompt": "b_submission_reasoning_v4_grounded_date_boundary_hint",
+            "reference_answer_access": false,
+            "selection_gate": "per_qid_final_formula_delta_positive",
+            "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json",
+            "target_batch": "last_remaining_double_reasoning_call_after_a2"
+          },
+          "domains": [
+            "regulatory"
+          ],
+          "hypothesis": "对a6唯一残留的双调用reasoning行reg_b_016，从冻结答案checkpoint单次干净重生成并按最终公式判定，完成该方向第三轮封口。",
+          "pipeline_stage": "submission_reasoning_generation",
+          "question_types": [
+            "multiple_choice"
+          ],
+          "root_cause_cluster": "reasoning_duplicate_call_token_waste",
+          "target_qids": [
+            "reg_b_016"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "fd4f96c3467052b75b8633f128678e173b7eed9eb5d125d9d60a964bc80fc433",
+      "schema_version": 1,
+      "semantic_sha256": "2ee015c2f2e7cce89c3ecb1a4bcdc173022bdb51b7b00bef3492c15e0a7c981e",
+      "sha256": "10bd4887c813446ae1302ef4e091f9d3cffc32ace16f237aab5fe94f0c6591ad"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "answer_stage_calls": false,
+              "base_commit": "ee9e36f",
+              "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reasoning_prompt": "b_submission_reasoning_v4_grounded_date_boundary_hint",
+              "reference_answer_access": false,
+              "selection_gate": "per_qid_final_formula_delta_positive",
+              "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json",
+              "target_batch": "last_remaining_double_reasoning_call_after_a2"
+            },
+            "domains": [
+              "regulatory"
+            ],
+            "hypothesis": "对a6唯一残留的双调用reasoning行reg_b_016，从冻结答案checkpoint单次干净重生成并按最终公式判定，完成该方向第三轮封口。",
+            "pipeline_stage": "submission_reasoning_generation",
+            "question_types": [
+              "multiple_choice"
+            ],
+            "root_cause_cluster": "reasoning_duplicate_call_token_waste",
+            "target_qids": [
+              "reg_b_016"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "fd4f96c3467052b75b8633f128678e173b7eed9eb5d125d9d60a964bc80fc433",
+        "schema_version": 1,
+        "semantic_sha256": "2ee015c2f2e7cce89c3ecb1a4bcdc173022bdb51b7b00bef3492c15e0a7c981e",
+        "sha256": "10bd4887c813446ae1302ef4e091f9d3cffc32ace16f237aab5fe94f0c6591ad"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "Related history is inconclusive, so executing will add information",
+      "related_experiment_ids": [
+        "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a2",
+        "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a1"
+      ],
+      "similarity": 0.819179
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "66c4222487d0f2c03a96b6f35e7f1c7d5b32d190b7a2f19493e1a4b914d0606b",
+      "size": 1429357
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "3a0db3fb959361c27281b0f8bac93489f7077a4e85cd3b29a787871a0cf4b172",
+      "size": 1174028
+    },
+    "related_log_sections": [
+      "b0-run-integrity-reg016-v2",
+      "b0-run-integrity-reg016-v3",
+      "b0-run-integrity-reg016-v4",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a1",
+      "b-loop-qwen37-reasoning-structured-output-hard-fallback-a3",
+      "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a1",
+      "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a2-date-boundary",
+      "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a1",
+      "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a2"
+    ],
+    "reviewed_at": "2026-07-23T23:18:52+00:00"
+  },
+  "hypothesis": "对A6唯一残留的双调用reasoning行reg_b_016，从冻结答案checkpoint单次干净重生成并按最终公式判定，完成该方向第三轮封口。",
+  "metrics": {
+    "answer_parts_changed_count": 0,
+    "answer_stage_api_call_count": 0,
+    "format_retry_count_after": 0,
+    "format_retry_count_before": 1,
+    "full100_reasoning_score_after": 95.76,
+    "full100_reasoning_score_before": 95.76,
+    "full100_token_after": 1323396,
+    "full100_token_before": 1326127,
+    "full100_token_efficiency_after": 73.53208,
+    "generation_models": [
+      "qwen3.7-plus-2026-05-26"
+    ],
+    "official_accuracy": null,
+    "official_total_score": null,
+    "official_upload_performed": false,
+    "proxy_total_delta_accuracy_invariant": 0.01092400000000282,
+    "reasoning_api_call_count_after": 1,
+    "reasoning_api_call_count_before": 2,
+    "reasoning_judge_model": "gpt-5.6",
+    "reasoning_judge_offline_only": true,
+    "reasoning_token_after": 3269,
+    "reasoning_token_before": 6000,
+    "reasoning_token_saved": 2731,
+    "reg_b_016_reasoning_score_after": 97.66666666666667,
+    "reg_b_016_reasoning_score_before": 97.66666666666667,
+    "remaining_reasoning_multi_call_count": 0,
+    "submission_valid": true,
+    "target_qids": [
+      "reg_b_016"
+    ],
+    "usage_complete": true
+  },
+  "next_step": "该方向达到三轮上限且目标清零，禁止继续同方向尝试。进入新的reasoning证据负载压缩方向，先重读日志；不重跑答案、不做官网上传。",
+  "patch_artifact_path": "artifacts/b_board_actual/qwen37_reasoning_retry_elimination_clean_a3_reg016",
+  "pipeline_stage": "submission_reasoning_generation",
+  "promotion_result": "effective_same_direction_branch_push_pending",
+  "question_types": [
+    "multiple_choice"
+  ],
+  "recorded_at": "2026-07-23T23:20:31+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "reasoning_duplicate_call_token_waste",
+  "status": "completed_effective_direction_exhausted",
+  "submission_effect": "local_reasoning_candidate_not_officially_uploaded",
+  "target_qids": [
+    "reg_b_016"
+  ]
+}
+```
