@@ -907,6 +907,22 @@ class RegulatorySolver:
                 }
             )
         if (
+            "受益所有人识别标准" in compact
+            and ("继续判断" in compact or "结合" in compact)
+        ):
+            specs.extend(
+                [
+                    {
+                        "required": ["查询核对后发现差异", "沟通、核实"],
+                        "optional": ["更正其识别的受益所有人信息", "差异重大", "差异报告"],
+                    },
+                    {
+                        "required": ["更严格的受益所有人识别标准", "导致信息不一致"],
+                        "optional": ["本办法第八条", "小于25%", "最终认定"],
+                    },
+                ]
+            )
+        if (
             (("收费标准" in compact or "收费项目" in compact) and ("30个自然日" in compact or "公示" in compact))
             or "确认用户知悉" in compact
             or ("调整施行前" in compact and "持续公示" in compact)
@@ -1749,6 +1765,19 @@ class RegulatorySolver:
                 ),
                 "rule_override": "regulatory_non_major_difference_no_report",
             }
+        elif (
+            "受益所有人识别标准" in compact_option
+            and ("继续判断" in compact_option or "结合" in compact_option)
+            and "查询核对后发现差异" in compact_evidence
+            and "沟通、核实" in compact_evidence
+            and "更严格的受益所有人识别标准" in compact_evidence
+            and "导致信息不一致" in compact_evidence
+        ):
+            override_reason = (
+                "规则复核：第二十七条要求查询核对发现差异后继续与客户沟通、核实；"
+                "第二十九条又以是否采用更严格的受益所有人识别标准及是否影响最终认定来判断差异性质，"
+                "因此应结合识别标准继续判断。"
+            )
         elif (
             "撤并分支机构" in compact_option
             and "至少提前30日" in compact_option

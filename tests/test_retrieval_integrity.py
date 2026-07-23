@@ -2116,6 +2116,50 @@ class RegulatoryCompositeClauseTests(unittest.TestCase):
             labels[key] = solver._targeted_rule_payload(option, hits)["label"]
         self.assertEqual(labels, {"A": False, "B": True, "C": False, "D": True})
 
+    def test_beneficial_owner_difference_chain_supports_continued_identification_judgment(self) -> None:
+        solver = self.make_solver(
+            [
+                make_unit(
+                    "beneficial-owner::27",
+                    "beneficial-owner",
+                    (
+                        "第二十七条 金融机构查询核对后发现差异的，应当与客户进行必要的沟通、核实。"
+                        "有合理理由认为由于自身识别不准确而导致差异的，应当更正其识别的受益所有人信息。"
+                    ),
+                ),
+                make_unit(
+                    "beneficial-owner::29",
+                    "beneficial-owner",
+                    (
+                        "第二十九条 金融机构采用比本办法第八条更严格的受益所有人识别标准，"
+                        "导致信息不一致，例如将持股比例小于25%的自然人识别为受益所有人；"
+                        "不影响受益所有权关系类型最终认定的，属于非重大差异。"
+                    ),
+                ),
+            ]
+        )
+        option = "应结合受益所有人识别标准继续判断"
+        question = Question(
+            qid="reg_b_015",
+            domain="regulatory",
+            split="B",
+            question="查询受益所有人信息后发现登记信息错误、不一致或不完整。",
+            options={"C": option},
+            answer_format="multi",
+            type="多选题",
+            doc_ids=["beneficial-owner"],
+        )
+
+        hits = solver._targeted_literal_hits(question, option)
+        payload = solver._targeted_rule_payload(option, hits)
+
+        self.assertEqual(
+            {hit.unit_id for hit in hits},
+            {"beneficial-owner::27", "beneficial-owner::29"},
+        )
+        self.assertTrue(payload["label"])
+        self.assertEqual(payload["verdict"], "support")
+
     def test_reference_date_matrix_binds_commencement_and_transition_clauses(self) -> None:
         solver = self.make_solver(
             [

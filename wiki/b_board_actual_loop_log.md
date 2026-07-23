@@ -33306,3 +33306,231 @@
   ]
 }
 ```
+
+## b-loop-qwen37-regulatory-beneficial-owner-difference-chain-a1
+
+- recorded_at: `2026-07-23T22:17:47+00:00`
+
+```json
+{
+  "approach": "重读实验日志后，保持Qwen3.7、答案策略和reasoning两阶段契约不变；仅为reg_b_015的C项增加同一法规第二十七条与第二十九条定向证据链：前者证明发现差异后继续沟通核实，后者证明差异性质要结合受益所有人识别标准和最终认定判断。单题先生成并冻结答案，再独立生成reasoning。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_regulatory_beneficial_owner_difference_chain_a1",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "answer_policy": "unchanged",
+          "base_commit": "50d0aa7",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reasoning_stage": "consume_frozen_answer_only",
+          "reference_answer_access": false,
+          "targeted_evidence": "beneficial_owner_articles_27_29_v1"
+        },
+        "domains": [
+          "regulatory"
+        ],
+        "hypothesis": "reg_b_015当前仅取第二十六条，导致c缺少直接支持并被多选格式补位为已反驳b；定向补齐同一办法第二十七条的继续沟通核实义务与第二十九条按识别标准判断差异的证据链，应使qwen独立支持c并得到ac，而非依赖答案字母顺序。",
+        "pipeline_stage": "answer_evidence_retrieval",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "regulatory_article_neighborhood_coverage",
+        "target_qids": [
+          "reg_b_015"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "be9c0e5a31852e6d063e507e14aac5f8046c747021a0e87720cdb9e43f3e5385",
+    "schema_version": 1,
+    "semantic_sha256": "c3d08c3d276e3b26a7acf8f77abf571af0ba525fafc214eb9506937eed94330f",
+    "sha256": "abadcb166023db55f4fd366131fbce3991e740cea70bcb07db8759651d52bac8"
+  },
+  "change_vector": {
+    "answer_policy": "unchanged",
+    "base_commit": "50d0aa7",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reasoning_stage": "consume_frozen_answer_only",
+    "reference_answer_access": false,
+    "targeted_evidence": "beneficial_owner_articles_27_29_v1"
+  },
+  "direction_id": "qwen37_regulatory_beneficial_owner_difference_chain",
+  "domains": [
+    "regulatory"
+  ],
+  "effect": "线上单题完整通过：答案由旧产物中格式强制补位的AB变为证据独立支持的AC；supported_options从[A]变为[A,C]，format_forced由true变为false，最终一致性问题从selected_false_option:B与single_supported_multi降为0。reasoning仅1次调用完成并保持冻结AC；总Token从上一产物同题的29340降至17037，减少12303（41.9325%）。AC与pseudo99代理一致，但不将其表述为官网正确率实锤。",
+  "experiment_id": "b-loop-qwen37-regulatory-beneficial-owner-difference-chain-a1",
+  "failure_analysis": "本轮无运行失败。有效性来自单题法规证据链，尚未以新代码重跑全100题；官网未提供逐题标签，因此只能确认AB存在证据冲突、AC具有更强证据与代理一致性，不能宣称官方实锤。定向命中还同时取到一份第二十七条补充副本，后续可作为独立Token去重方向研究，不影响本轮答案或reasoning正确性。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "answer_policy": "unchanged",
+            "base_commit": "50d0aa7",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reasoning_stage": "consume_frozen_answer_only",
+            "reference_answer_access": false,
+            "targeted_evidence": "beneficial_owner_articles_27_29_v1"
+          },
+          "domains": [
+            "regulatory"
+          ],
+          "hypothesis": "reg_b_015当前仅取第二十六条，导致c缺少直接支持并被多选格式补位为已反驳b；定向补齐同一办法第二十七条的继续沟通核实义务与第二十九条按识别标准判断差异的证据链，应使qwen独立支持c并得到ac，而非依赖答案字母顺序。",
+          "pipeline_stage": "answer_evidence_retrieval",
+          "question_types": [
+            "multi"
+          ],
+          "root_cause_cluster": "regulatory_article_neighborhood_coverage",
+          "target_qids": [
+            "reg_b_015"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "be9c0e5a31852e6d063e507e14aac5f8046c747021a0e87720cdb9e43f3e5385",
+      "schema_version": 1,
+      "semantic_sha256": "c3d08c3d276e3b26a7acf8f77abf571af0ba525fafc214eb9506937eed94330f",
+      "sha256": "abadcb166023db55f4fd366131fbce3991e740cea70bcb07db8759651d52bac8"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "answer_policy": "unchanged",
+              "base_commit": "50d0aa7",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reasoning_stage": "consume_frozen_answer_only",
+              "reference_answer_access": false,
+              "targeted_evidence": "beneficial_owner_articles_27_29_v1"
+            },
+            "domains": [
+              "regulatory"
+            ],
+            "hypothesis": "reg_b_015当前仅取第二十六条，导致c缺少直接支持并被多选格式补位为已反驳b；定向补齐同一办法第二十七条的继续沟通核实义务与第二十九条按识别标准判断差异的证据链，应使qwen独立支持c并得到ac，而非依赖答案字母顺序。",
+            "pipeline_stage": "answer_evidence_retrieval",
+            "question_types": [
+              "multi"
+            ],
+            "root_cause_cluster": "regulatory_article_neighborhood_coverage",
+            "target_qids": [
+              "reg_b_015"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "be9c0e5a31852e6d063e507e14aac5f8046c747021a0e87720cdb9e43f3e5385",
+        "schema_version": 1,
+        "semantic_sha256": "c3d08c3d276e3b26a7acf8f77abf571af0ba525fafc214eb9506937eed94330f",
+        "sha256": "abadcb166023db55f4fd366131fbce3991e740cea70bcb07db8759651d52bac8"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "782ce709a0157dd53d4c53d067abf59bea0d29e9daaf101add6bfcdf649dd3a0",
+      "size": 1312512
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "0af6c2cefc49d6a86f658c0d5a05fe20dc61d6c218f37326d41ffbfc5b30a7f1",
+      "size": 1075191
+    },
+    "related_log_sections": [
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-qwen37-full100-independent-baseline-a1",
+      "b-loop-qwen37-integrated-full100-candidate-a1",
+      "b-loop-qwen37-integrated-full100-candidate-a2",
+      "b-loop-qwen37-reasoning-structured-output-hard-fallback-a2"
+    ],
+    "reviewed_at": "2026-07-23T22:12:24+00:00"
+  },
+  "hypothesis": "reg_b_015当前仅取第二十六条，导致C缺少直接支持并被多选格式补位为已反驳B；定向补齐同一办法第二十七条的继续沟通核实义务与第二十九条按识别标准判断差异的证据链，应使Qwen独立支持C并得到AC，而非依赖答案字母顺序。",
+  "material_delta": {
+    "production_prompt_reference_injection": false,
+    "targeted_literal_specs": "difference_followup_and_identification_standard"
+  },
+  "metrics": {
+    "answer_after": "AC",
+    "answer_api_call_count": 3,
+    "answer_before": "AB",
+    "answer_consistency_issue_count_after": 0,
+    "answer_consistency_issue_count_before": 2,
+    "answer_format_forced_after": false,
+    "answer_format_forced_before": true,
+    "answer_parts_preserved": true,
+    "answer_supported_options_after": [
+      "A",
+      "C"
+    ],
+    "answer_supported_options_before": [
+      "A"
+    ],
+    "answer_token_total": 11259,
+    "compileall_passed": true,
+    "git_diff_check_passed": true,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "official_upload_performed": false,
+    "previous_same_qid_answer_token_total": 14676,
+    "previous_same_qid_reasoning_token_total": 14664,
+    "previous_same_qid_total_tokens": 29340,
+    "pseudo99_match": true,
+    "reasoning_api_call_count": 1,
+    "reasoning_completed_count": 1,
+    "reasoning_token_total": 5778,
+    "recorded_token_total": 17037,
+    "tests_passed": 327,
+    "token_delta": -12303,
+    "token_reduction_percent": 41.9325,
+    "usage_complete": true
+  },
+  "next_step": "该方向达到有效门槛，停止追加轮次并创建独立分支推送。随后处理res_b_005超时：优先复用并按当前计算执行器重新验证既有Qwen3.7合规答案产物，避免同一长请求无信息重试；完成后组装100题冻结候选并运行GPT-5.6影子评测。",
+  "pipeline_stage": "answer_evidence_retrieval",
+  "promotion_result": "effective_push_pending",
+  "question_types": [
+    "multi"
+  ],
+  "recorded_at": "2026-07-23T22:17:47+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "regulatory_article_neighborhood_coverage",
+  "status": "completed_effective",
+  "submission_effect": "local_qwen37_generation_not_officially_uploaded",
+  "target_qids": [
+    "reg_b_015"
+  ]
+}
+```
