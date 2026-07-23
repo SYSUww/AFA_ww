@@ -33534,3 +33534,244 @@
   ]
 }
 ```
+
+## b-loop-qwen37-calculation-checkpoint-revalidation-a1
+
+- recorded_at: `2026-07-23T22:21:53+00:00`
+
+```json
+{
+  "approach": "重读日志后，不再重试已连续超时的res_b_005长请求。选择此前真实Qwen3.7全量运行中已完成的该题两阶段产物，先校验source manifest白名单模型与artifact逐调用usage lineage，再用当前CalculationExecutor对原变量、依赖图、单位、输出格式和证据ID做确定性重放；未访问pseudo答案，未发生答案模型重规划。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_calculation_checkpoint_revalidation_a1",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "answer_model_replanning": false,
+          "base_commit": "b43b69a",
+          "current_executor_replay": true,
+          "model": "qwen3.7-plus-2026-05-26",
+          "reference_answer_access": false,
+          "source_artifact": "final_two_stage_qwen_artifact",
+          "source_model_and_usage_validation": true,
+          "source_run": "qwen37_integrated_full100_candidate_a1"
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "res_b_005在当前全量请求连续读超时，但此前同一qwen3.7已产生带逐调用usage、完整证据和可重放计算trace的22.27%冻结产物；在不访问pseudo答案的前提下，用当前calculationexecutor重新验证该真实模型checkpoint并校验qwen白名单与usage lineage，可恢复该题而不再消耗无信息的长请求。",
+        "pipeline_stage": "answer_checkpoint_recovery",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "qwen37_long_request_timeout",
+        "target_qids": [
+          "res_b_005"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "5a0d1d1cc83e9a553369240a8224e93a2fee9634f58da99b3ab2bfc4189b1d98",
+    "schema_version": 1,
+    "semantic_sha256": "66bcf984c059730a79a1bcc17f1b330deec0e47344c964dcecf0a17ddfb8f121",
+    "sha256": "ac856f673293942492ddbb8c76b650cfa97066fbea0efa150d3cf99e11e1325a"
+  },
+  "change_vector": {
+    "answer_model_replanning": false,
+    "base_commit": "b43b69a",
+    "current_executor_replay": true,
+    "model": "qwen3.7-plus-2026-05-26",
+    "reference_answer_access": false,
+    "source_artifact": "final_two_stage_qwen_artifact",
+    "source_model_and_usage_validation": true,
+    "source_run": "qwen37_integrated_full100_candidate_a1"
+  },
+  "direction_id": "qwen37_calculation_checkpoint_revalidation",
+  "domains": [
+    "research"
+  ],
+  "effect": "res_b_005从当前全量A2的答案缺失恢复为22.27%；2025销量1300.4万辆、2025单车带电量45.8kWh和题面2026目标56kWh均通过原文/题面绑定，当前执行器重放(1300.4×56)/(1300.4×45.8)-1=22.270742...%，输出22.27%。answer preserved、replay verified、grounding verified、Qwen白名单和3次API usage账本全部通过；本轮新增模型调用0、增量Token 0。",
+  "experiment_id": "b-loop-qwen37-calculation-checkpoint-revalidation-a1",
+  "failure_analysis": "恢复依赖一个此前真实完成且可审计的Qwen3.7 checkpoint；若源artifact缺计算trace、逐调用usage、白名单model声明或当前执行器重放改变答案，脚本会硬失败。源全量run整体状态为incomplete，但res_b_005单题两阶段完整。其reasoning来自此前成功的Qwen阶段，未因本轮重放而重新生成；这不影响答案冻结与模型合规，但新strict reasoning格式能力未在该题重新调用。官网未提供单题标签，22.27%仅有证据链和pseudo99一致性，不是官方实锤。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "answer_model_replanning": false,
+            "base_commit": "b43b69a",
+            "current_executor_replay": true,
+            "model": "qwen3.7-plus-2026-05-26",
+            "reference_answer_access": false,
+            "source_artifact": "final_two_stage_qwen_artifact",
+            "source_model_and_usage_validation": true,
+            "source_run": "qwen37_integrated_full100_candidate_a1"
+          },
+          "domains": [
+            "research"
+          ],
+          "hypothesis": "res_b_005在当前全量请求连续读超时，但此前同一qwen3.7已产生带逐调用usage、完整证据和可重放计算trace的22.27%冻结产物；在不访问pseudo答案的前提下，用当前calculationexecutor重新验证该真实模型checkpoint并校验qwen白名单与usage lineage，可恢复该题而不再消耗无信息的长请求。",
+          "pipeline_stage": "answer_checkpoint_recovery",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "qwen37_long_request_timeout",
+          "target_qids": [
+            "res_b_005"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "5a0d1d1cc83e9a553369240a8224e93a2fee9634f58da99b3ab2bfc4189b1d98",
+      "schema_version": 1,
+      "semantic_sha256": "66bcf984c059730a79a1bcc17f1b330deec0e47344c964dcecf0a17ddfb8f121",
+      "sha256": "ac856f673293942492ddbb8c76b650cfa97066fbea0efa150d3cf99e11e1325a"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "answer_model_replanning": false,
+              "base_commit": "b43b69a",
+              "current_executor_replay": true,
+              "model": "qwen3.7-plus-2026-05-26",
+              "reference_answer_access": false,
+              "source_artifact": "final_two_stage_qwen_artifact",
+              "source_model_and_usage_validation": true,
+              "source_run": "qwen37_integrated_full100_candidate_a1"
+            },
+            "domains": [
+              "research"
+            ],
+            "hypothesis": "res_b_005在当前全量请求连续读超时，但此前同一qwen3.7已产生带逐调用usage、完整证据和可重放计算trace的22.27%冻结产物；在不访问pseudo答案的前提下，用当前calculationexecutor重新验证该真实模型checkpoint并校验qwen白名单与usage lineage，可恢复该题而不再消耗无信息的长请求。",
+            "pipeline_stage": "answer_checkpoint_recovery",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "qwen37_long_request_timeout",
+            "target_qids": [
+              "res_b_005"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "5a0d1d1cc83e9a553369240a8224e93a2fee9634f58da99b3ab2bfc4189b1d98",
+        "schema_version": 1,
+        "semantic_sha256": "66bcf984c059730a79a1bcc17f1b330deec0e47344c964dcecf0a17ddfb8f121",
+        "sha256": "ac856f673293942492ddbb8c76b650cfa97066fbea0efa150d3cf99e11e1325a"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "0158bf7ad8ff0793b1c4f47c84396b651362f9a9b24041028f84c7d4983d6737",
+      "size": 1323965
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "0d577291644bd119d018c47cc6d42a9ac7f9647957cfb5561721899c99327d59",
+      "size": 1085057
+    },
+    "related_log_sections": [
+      "B0-actual-integrity",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "b-loop-calculation_executor-a1-typed_grounded_calc_v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-readme-percent-format-priority-v6",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-full-chain-reproduction-baseline-v10",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-last-error-minimal-candidate-set-official-history-a1",
+      "b-loop-percentage-bundle-net-plus-one-explanation-a1",
+      "b-loop-percentage-bundle-most-likely-positive-fin017-a1",
+      "b-loop-three-percentage-question-full-chain-numeric-revalidation-a1",
+      "b-loop-qwen37-full100-independent-baseline-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a2",
+      "b-loop-qwen37-structured-output-contract-a2-full100",
+      "b-loop-qwen37-structured-output-contract-a3-staged-retry",
+      "b-loop-qwen37-insurance-surrender-year-binding-a2",
+      "b-loop-qwen37-calculation-variable-period-binding-a1",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a1",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a2",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a3",
+      "b-loop-qwen37-calculation-semantic-dependency-gate-a1",
+      "b-loop-qwen37-integrated-full100-candidate-a2",
+      "b-loop-qwen37-reasoning-structured-output-hard-fallback-a2",
+      "b-loop-qwen37-regulatory-beneficial-owner-difference-chain-a1"
+    ],
+    "reviewed_at": "2026-07-23T22:19:58+00:00"
+  },
+  "hypothesis": "res_b_005在当前全量请求连续读超时，但此前同一Qwen3.7已产生带逐调用usage、完整证据和可重放计算trace的22.27%冻结产物；在不访问pseudo答案的前提下，用当前CalculationExecutor重新验证该真实模型checkpoint并校验Qwen白名单与usage lineage，可恢复该题而不再消耗无信息的长请求。",
+  "material_delta": {
+    "allowed_qwen_source_lineage": true,
+    "current_calculation_executor_replay": true,
+    "legacy_gpt_incumbent_reuse": false,
+    "timeout_checkpoint_recovery": true
+  },
+  "metrics": {
+    "answer_after": "22.27%",
+    "answer_completed_count": 1,
+    "answer_preserved": true,
+    "calculation_grounding_verified": true,
+    "calculation_replay_verified": true,
+    "compileall_passed": true,
+    "git_diff_check_passed": true,
+    "new_api_call_count": 0,
+    "new_generation_token_total": 0,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "official_upload_performed": false,
+    "pseudo99_match": true,
+    "recorded_submission_token_total": 30842,
+    "reused_generation_token_total": 30842,
+    "source_api_call_count": 3,
+    "source_model": "qwen3.7-plus-2026-05-26",
+    "source_model_verified": true,
+    "source_usage_lineage_verified": true,
+    "tests_passed": 328,
+    "usage_complete": true
+  },
+  "next_step": "该方向有效，停止追加轮次并创建独立分支推送。将当前全量A2的90题、reasoning硬兜底A2恢复的8题、reg_b_015新AC题和本轮res_b_005 checkpoint合成100题；对每个来源校验Qwen模型、逐调用usage、答案覆盖与冻结reasoning，再生成submit并运行GPT-5.6影子评测。",
+  "pipeline_stage": "answer_checkpoint_recovery",
+  "promotion_result": "effective_push_pending",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T22:21:53+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "qwen37_long_request_timeout",
+  "status": "completed_effective",
+  "submission_effect": "local_qwen37_checkpoint_revalidation_not_officially_uploaded",
+  "target_qids": [
+    "res_b_005"
+  ]
+}
+```

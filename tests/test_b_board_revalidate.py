@@ -6,6 +6,7 @@ from afa_agent.b_board.calculation import CalculationPlanError
 from afa_agent.b_board.io import BQuestion
 from afa_agent.b_board.revalidate import revalidate_calculation_artifact
 from afa_agent.b_board.runner import BAnswerArtifact
+from scripts.revalidate_b_calculations import _validated_source_model
 
 
 class BBoardCalculationRevalidationTests(unittest.TestCase):
@@ -85,6 +86,20 @@ class BBoardCalculationRevalidationTests(unittest.TestCase):
         self.assertTrue(result.decision_trace["format_migrated"])
         self.assertTrue(result.decision_trace["format_change_allowed"])
         self.assertEqual(result.token_usage["total_tokens"], 2)
+
+    def test_checkpoint_source_requires_allowed_qwen_model(self) -> None:
+        model = _validated_source_model(
+            {
+                "model": {
+                    "model_name": "qwen3.7-plus-2026-05-26",
+                    "temperature": 0.0,
+                }
+            }
+        )
+        self.assertEqual(model["model_name"], "qwen3.7-plus-2026-05-26")
+
+        with self.assertRaisesRegex(ValueError, "allowed Qwen3.5/Qwen3.6/Qwen3.7"):
+            _validated_source_model({"model": {"model_name": "gpt-5.5"}})
 
 
 if __name__ == "__main__":
