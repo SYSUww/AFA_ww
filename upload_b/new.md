@@ -2,7 +2,7 @@
 
 本次测评包含三个维度：答案准确率（accuracy）、推理过程分和 Token 效率分。最终分数按以下加权公式计算：
 
-总分 = acc 分 x 0.6 + 推理过程分 x 0.2 + Token 效率分 x 0.2
+总分 = acc 分 x 0.5 + 推理过程分 x 0.3 + Token 效率分 x 0.2
 评分体系用于综合评估答案准确性、推理过程质量和 token 使用合理性，降低通过未授权方式获取答案、极低 token 消耗、缺少有效推理过程等异常提交方式获得高分的风险。
 
 二、参赛提交格式
@@ -32,9 +32,18 @@ total_tokens	模型 API 原始返回的总 token 数
 summary,,,,,prompt_tokens_sum,completion_tokens_sum,total_tokens_sum,
 summary 行中的 prompt_tokens、completion_tokens、total_tokens 应分别等于所有普通题目行对应字段的求和结果。若提交文件缺少 summary 行，测评脚本可根据逐题 token 字段汇总；若逐题字段与 summary 行不一致，出题方可按一致性审计规则处理。
 
+2.3 提交时间说明
+
+为提供更公平、合理的竞赛环境，赛事组委会决定对B榜规则进行优化调整。受此规则变更影响，B榜的评测时间将整体延后一天。现将具体调整事项说明如下：
+
+成绩作废通知：原7月22日的B榜评测成绩将予以取消，不计入最终有效成绩。
+
+时间变更：7月22日00:00-7月24日17:00”
+正式更改为：7月23日00:00-7月25日17:00。
+
 三、允许使用的模型 API 服务
 
-允许调用出题方指定的模型 API 服务：Qwen3.6/Qwen3.5 系列全部模型。
+允许调用出题方指定的模型 API 服务：Qwen3.7/Qwen3.6/Qwen3.5 系列全部模型。
 
 参赛者提交的 prompt_tokens、completion_tokens 和 total_tokens 必须直接来源于上述允许模型/API 服务返回的原始 usage 字段。
 
@@ -81,7 +90,7 @@ Token 效率分从选手提交文件读取 prompt_tokens + completion_tokens 总
 Token 总量	得分	说明
 0	0	无 token 数据
 1 - 499,999	线性递增	score = actual / 500000 x 100，例如 100 token 约为 0.02 分
-500,000 - 5,000,000	100	合理区间
+500,000 - 5,000,000	(5000000 - actual) / 5000000)	合理区间
 5,000,001 - 10,000,000	线性递减	score = 100 x (1 - (actual - 5000000) / 5000000)
 大于 10,000,000	0	过量消耗
 Token 总量优先使用 summary 行；若无 summary 行，可由普通题目行求和得到。若两者不一致，出题方可结合逐题记录、summary 行和结果内容进行审计。

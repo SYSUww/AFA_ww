@@ -19,6 +19,29 @@ from afa_agent.b_board.runner import (
 
 
 class BBoardCalculationTests(unittest.TestCase):
+    def test_string_source_matching_variable_name_is_treated_as_reference(self):
+        result = CalculationExecutor().execute(
+            {
+                "variables": [
+                    {
+                        "name": "后续公告周期",
+                        "value": "30",
+                        "value_type": "decimal",
+                        "unit": "日",
+                        "evidence_ids": ["question"],
+                    }
+                ],
+                "steps": [],
+                "outputs": [{"source": "后续公告周期", "format": "decimal2"}],
+            },
+            expected_slots=1,
+            evidence_text_by_id={"question": "后续每30日公告一次"},
+            expected_slot_templates=("999999.99",),
+        )
+
+        self.assertEqual(result.answer_parts, ("30.00",))
+        self.assertEqual(result.trace["outputs"][0]["value_kind"], "amount")
+
     def test_format_migration_guard_rejects_value_changes(self):
         self.assertTrue(_answers_differ_only_in_format(["40.05", "67.10"], ["40.05%", "67.1"]))
         self.assertFalse(_answers_differ_only_in_format(["0.08"], ["8.00%"]))

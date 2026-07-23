@@ -947,6 +947,8 @@ def _resolve(value: Any, values: Mapping[str, Any]) -> Any:
     if isinstance(value, Mapping) and "literal" in value:
         value_type = str(value.get("value_type", "text"))
         return _parse_value(value["literal"], value_type)
+    if isinstance(value, str) and value in values:
+        return values[value]
     return value
 
 
@@ -1045,6 +1047,8 @@ def _resolve_kind(value: Any, kinds: Mapping[str, str]) -> str:
         return kinds.get(str(value["ref"]), "decimal")
     if isinstance(value, Mapping) and "literal" in value:
         return _variable_kind(str(value.get("value_type", "text")), str(value.get("unit", "")))
+    if isinstance(value, str) and value in kinds:
+        return kinds[value]
     return "decimal"
 
 
