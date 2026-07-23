@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
 from afa_agent.b_board.io import (
+    BAnswer,
     BQuestion,
     load_b_questions,
     validate_b_submission,
@@ -21,6 +22,19 @@ from afa_agent.b_board.io import (
 from afa_agent.b_board.runner import BAnswerArtifact, _artifact_from_dict
 from afa_agent.b_board.scoring import is_allowed_submission_model, score_submission
 from afa_agent.io_utils import ensure_dir, read_json, write_json
+
+
+APP_COMPAT_SUBMISSION_COLUMNS = (
+    "qid",
+    "answer_1",
+    "answer_2",
+    "answer_3",
+    "answer_4",
+    "prompt_tokens",
+    "completion_tokens",
+    "total_tokens",
+    "reasoning",
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -100,6 +114,17 @@ def main() -> None:
         audit_ready=True,
     )
     validated = validate_b_submission(submission_path, questions, audit_ready=True)
+    app_compatible_submission_path = output_dir / "research_submit_compat.csv"
+    write_app_compatible_submission(
+        app_compatible_submission_path,
+        questions,
+        validated,
+    )
+    validate_app_compatible_submission(
+        app_compatible_submission_path,
+        questions,
+        validated,
+    )
     incumbent_by_qid = _load_incumbent_answer_parts(incumbent_submission, questions)
     pseudo_mismatches = {
         item.qid: {
@@ -135,6 +160,9 @@ def main() -> None:
         "pseudo_mismatches": pseudo_mismatches,
         "answer_change_count": len(pseudo_mismatches),
         "audit_ready_csv_validated": True,
+        "app_compatible_submission": app_compatible_submission_path.name,
+        "app_compatible_answer_columns": list(APP_COMPAT_SUBMISSION_COLUMNS[1:5]),
+        "app_compatible_submission_validated": True,
         "token_total": token_total,
         "generator_model": "gpt-5.5",
         "submission_model_allowlisted": is_allowed_submission_model("gpt-5.5"),
@@ -147,6 +175,125 @@ def main() -> None:
     }
     write_json(output_dir / "manifest.json", manifest)
     print(manifest)
+
+
+def write_app_compatible_submission(
+    path: Path,
+    questions: list[BQuestion],
+    answers: list[BAnswer],
+) -> None:
+    """Export the same research rows for upload apps using legacy answer headers."""
+
+    answer_by_qid = {item.qid: item for item in answers}
+    expected_qids = [item.qid for item in questions]
+    if len(answer_by_qid) != len(answers) or set(answer_by_qid) != set(expected_qids):
+        raise ValueError("App-compatible export answer qids do not match questions")
+
+    prompt_total = sum(answer_by_qid[qid].prompt_tokens for qid in expected_qids)
+    completion_total = sum(answer_by_qid[qid].completion_tokens for qid in expected_qids)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(APP_COMPAT_SUBMISSION_COLUMNS))
+        writer.writeheader()
+        writer.writerow(
+            {
+                "qid": "summary",
+                "answer_1": "",
+                "answer_2": "",
+                "answer_3": "",
+                "answer_4": "",
+                "prompt_tokens": prompt_total,
+                "completion_tokens": completion_total,
+                "total_tokens": prompt_total + completion_total,
+                "reasoning": "",
+            }
+        )
+        for qid in expected_qids:
+            answer = answer_by_qid[qid]
+            row: dict[str, str | int | None] = {
+                "qid": qid,
+                "prompt_tokens": answer.prompt_tokens,
+                "completion_tokens": answer.completion_tokens,
+                "total_tokens": answer.total_tokens,
+                "reasoning": answer.reasoning,
+            }
+            for index in range(1, 5):
+                row[f"answer_{index}"] = (
+                    answer.answer_parts[index - 1]
+                    if index <= len(answer.answer_parts)
+                    else ""
+                )
+            writer.writerow(row)
+
+
+def validate_app_compatible_submission(
+    path: Path,
+    questions: list[BQuestion],
+    expected_answers: list[BAnswer],
+) -> None:
+    """Prove the compatibility export only renames answer columns."""
+
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        columns = tuple(reader.fieldnames or ())
+        rows = list(reader)
+    if columns != APP_COMPAT_SUBMISSION_COLUMNS:
+        raise ValueError(
+            f"{path}: expected App-compatible columns {APP_COMPAT_SUBMISSION_COLUMNS}, "
+            f"got {columns}"
+        )
+
+    summary_rows = [row for row in rows if row["qid"] == "summary"]
+    question_rows = [row for row in rows if row["qid"] != "summary"]
+    if len(summary_rows) != 1:
+        raise ValueError(f"{path}: expected exactly one summary row")
+    if len(question_rows) != len(questions):
+        raise ValueError(f"{path}: expected exactly {len(questions)} answer rows")
+
+    expected_by_qid = {item.qid: item for item in expected_answers}
+    if len(expected_by_qid) != len(expected_answers):
+        raise ValueError("Expected answers contain duplicate qids")
+    for question, row in zip(questions, question_rows):
+        if row["qid"] != question.qid:
+            raise ValueError(
+                f"{path}: expected qid {question.qid!r}, got {row['qid']!r}"
+            )
+        expected = expected_by_qid[question.qid]
+        actual_parts = tuple(
+            row[f"answer_{index}"] for index in range(1, question.answer_slots + 1)
+        )
+        unused_parts = tuple(
+            row[f"answer_{index}"] for index in range(question.answer_slots + 1, 5)
+        )
+        if actual_parts != expected.answer_parts or any(unused_parts):
+            raise ValueError(f"{path}: answer fields drifted for {question.qid}")
+        actual_tokens = (
+            int(row["prompt_tokens"]),
+            int(row["completion_tokens"]),
+            int(row["total_tokens"]),
+        )
+        expected_tokens = (
+            expected.prompt_tokens,
+            expected.completion_tokens,
+            expected.total_tokens,
+        )
+        if actual_tokens != expected_tokens or row["reasoning"] != expected.reasoning:
+            raise ValueError(f"{path}: reasoning or token fields drifted for {question.qid}")
+
+    prompt_total = sum(item.prompt_tokens for item in expected_answers)
+    completion_total = sum(item.completion_tokens for item in expected_answers)
+    expected_summary = (prompt_total, completion_total, prompt_total + completion_total)
+    summary = summary_rows[0]
+    actual_summary = (
+        int(summary["prompt_tokens"]),
+        int(summary["completion_tokens"]),
+        int(summary["total_tokens"]),
+    )
+    if actual_summary != expected_summary:
+        raise ValueError(
+            f"{path}: summary token totals drifted: "
+            f"expected {expected_summary}, got {actual_summary}"
+        )
 
 
 def _load_artifacts(path: Path) -> dict[str, BAnswerArtifact]:

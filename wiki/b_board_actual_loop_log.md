@@ -20161,3 +20161,169 @@
   "target_qids": []
 }
 ```
+
+## b-loop-submission-schema-app-legacy-compatibility-a1
+
+- recorded_at: `2026-07-23T03:21:39+00:00`
+
+```json
+{
+  "approach": "在最终 composite 构建器中保留 research_submit.csv 的 new.md 九列协议，并新增 research_submit_compat.csv，将 answer1..answer4 仅重命名为 answer_1..answer_4；写出后逐题回读对照。",
+  "artifact_path": "artifacts/b_board_score_loop/final_composite_i030_reasoning_self_refine/research_submit_compat.csv",
+  "base_commit": "23b3a5b86f1f5b820340c7436c520e7edc4b830a",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "23b3a5b86f1f5b820340c7436c520e7edc4b830a"
+      },
+      "identity": {
+        "change_vector": {
+          "additional_export": "research_submit_compat.csv",
+          "answer_headers": [
+            "answer_1",
+            "answer_2",
+            "answer_3",
+            "answer_4"
+          ],
+          "official_research_csv": "preserved"
+        },
+        "domains": [],
+        "hypothesis": "保留 new.md 的 answer1..answer4 研究文件，同时额外导出 answer_1..answer_4 兼容文件，可通过当前上传 app 的旧字段校验，且不改变答案、推理或 token。",
+        "pipeline_stage": "integration",
+        "question_types": [],
+        "root_cause_cluster": "app_upload_legacy_answer_headers",
+        "target_qids": []
+      }
+    },
+    "context_sha256": "9f386aae15a977511014e9b4e33f9d75f99747472268e2088ac0a7f0c3299087",
+    "direction_sha256": "9ed98182715aa242106b5b1e78940db9baa35d2e2b7bdca07a16fd64569449cb",
+    "schema_version": 1,
+    "semantic_sha256": "f693f8ef605fb6ca636af06add6a5f92dbb787be32f9b2398434cf0db33b7420",
+    "sha256": "97beafbec7a507da8a11bd97e360be160f8b960bc1e8c38f9ec3f8eb257ca7fd"
+  },
+  "change_vector": {
+    "additional_export": "research_submit_compat.csv",
+    "answer_headers": [
+      "answer_1",
+      "answer_2",
+      "answer_3",
+      "answer_4"
+    ],
+    "official_research_csv": "preserved"
+  },
+  "direction_id": "submission_schema_app_legacy_compatibility",
+  "effect": "兼容文件满足上传 App 对 answer 或 answer_1/answer_2/... 列的要求；100 道题答案、推理文本和 Token 与原研究文件完全一致。",
+  "experiment_id": "b-loop-submission-schema-app-legacy-compatibility-a1",
+  "failure_analysis": "根因不是答案内容，而是评分更新后的 new.md 字段名与当前上传 App 旧解析器之间存在版本错配。原文件不应被降级覆盖，因此采用双文件导出。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "23b3a5b86f1f5b820340c7436c520e7edc4b830a"
+        },
+        "identity": {
+          "change_vector": {
+            "additional_export": "research_submit_compat.csv",
+            "answer_headers": [
+              "answer_1",
+              "answer_2",
+              "answer_3",
+              "answer_4"
+            ],
+            "official_research_csv": "preserved"
+          },
+          "domains": [],
+          "hypothesis": "保留 new.md 的 answer1..answer4 研究文件，同时额外导出 answer_1..answer_4 兼容文件，可通过当前上传 app 的旧字段校验，且不改变答案、推理或 token。",
+          "pipeline_stage": "integration",
+          "question_types": [],
+          "root_cause_cluster": "app_upload_legacy_answer_headers",
+          "target_qids": []
+        }
+      },
+      "context_sha256": "9f386aae15a977511014e9b4e33f9d75f99747472268e2088ac0a7f0c3299087",
+      "direction_sha256": "9ed98182715aa242106b5b1e78940db9baa35d2e2b7bdca07a16fd64569449cb",
+      "schema_version": 1,
+      "semantic_sha256": "f693f8ef605fb6ca636af06add6a5f92dbb787be32f9b2398434cf0db33b7420",
+      "sha256": "97beafbec7a507da8a11bd97e360be160f8b960bc1e8c38f9ec3f8eb257ca7fd"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "23b3a5b86f1f5b820340c7436c520e7edc4b830a"
+          },
+          "identity": {
+            "change_vector": {
+              "additional_export": "research_submit_compat.csv",
+              "answer_headers": [
+                "answer_1",
+                "answer_2",
+                "answer_3",
+                "answer_4"
+              ],
+              "official_research_csv": "preserved"
+            },
+            "domains": [],
+            "hypothesis": "保留 new.md 的 answer1..answer4 研究文件，同时额外导出 answer_1..answer_4 兼容文件，可通过当前上传 app 的旧字段校验，且不改变答案、推理或 token。",
+            "pipeline_stage": "integration",
+            "question_types": [],
+            "root_cause_cluster": "app_upload_legacy_answer_headers",
+            "target_qids": []
+          }
+        },
+        "context_sha256": "9f386aae15a977511014e9b4e33f9d75f99747472268e2088ac0a7f0c3299087",
+        "direction_sha256": "9ed98182715aa242106b5b1e78940db9baa35d2e2b7bdca07a16fd64569449cb",
+        "schema_version": 1,
+        "semantic_sha256": "f693f8ef605fb6ca636af06add6a5f92dbb787be32f9b2398434cf0db33b7420",
+        "sha256": "97beafbec7a507da8a11bd97e360be160f8b960bc1e8c38f9ec3f8eb257ca7fd"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "291b0413957f24ff0ef648a91dbbe1fc4357cf660dea0e7f44eacbf85d4aa30f",
+      "size": 723139
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "22da953f4caa7f9de0afec330a7b0d8ab713cf5d467de3c0be603e405df9c02a",
+      "size": 587406
+    },
+    "related_log_sections": [
+      "b-loop-final-composite-i030-materialization-audit"
+    ],
+    "reviewed_at": "2026-07-23T03:21:39+00:00"
+  },
+  "hypothesis": "保留 new.md 的 answer1..answer4 研究文件，同时额外导出 answer_1..answer_4 兼容文件，可通过当前上传 App 的旧字段校验，且不改变答案、推理或 Token。",
+  "metrics": {
+    "answer_drift_count": 0,
+    "app_compatible_columns": [
+      "answer_1",
+      "answer_2",
+      "answer_3",
+      "answer_4"
+    ],
+    "csv_line_count": 102,
+    "full_test_count": 251,
+    "full_test_failures": 0,
+    "original_research_csv_preserved": true,
+    "question_count": 100,
+    "reasoning_drift_count": 0,
+    "token_drift_count": 0
+  },
+  "next_step": "当前 App 上传使用 research_submit_compat.csv；若 App 后续支持 answer1..answer4，继续以 research_submit.csv 作为 new.md 原生文件。",
+  "pipeline_stage": "integration",
+  "recorded_at": "2026-07-23T03:21:39+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "app_upload_legacy_answer_headers",
+  "status": "effective",
+  "submission_effect": "not_submitted",
+  "target_qids": []
+}
+```
