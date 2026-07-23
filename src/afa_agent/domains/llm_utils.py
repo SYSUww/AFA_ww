@@ -64,7 +64,9 @@ def ask_option_judgment(
     user_parts.append(
         '请输出 JSON，格式为 {"label": true/false, "confidence": 0.0-1.0, '
         '"confidence_reason": "...", "reasoning_summary": "...", "used_evidence_ids": [1,2]}。'
+        "label 表示该选项是否应按题干要求被选中，而不是该陈述是否为真；若题干问错误项，陈述错误时 label 应为 true。"
         "confidence 表示仅基于给定证据判断该选项 label 是否可靠的置信度；证据缺关键指标、条款、公式或文档时必须降低。"
+        f"reasoning_summary 最后必须明确写“选项{option_key}应选”或“选项{option_key}不应选”，且必须与 label 一致。"
     )
     messages = [
         {"role": "system", "content": system_prompt},
@@ -78,7 +80,18 @@ def ask_option_judgment(
         try:
             parsed = extract_json_object(response.content)
             parsed["label"] = _parse_option_label(parsed.get("label"))
-            if parsed["label"] and _reasoning_says_insufficient(str(parsed.get("reasoning_summary", ""))):
+            reasoning = str(parsed.get("reasoning_summary", ""))
+            verdict = _terminal_option_verdict(reasoning, option_key, question_text)
+            if verdict is not None and verdict != parsed["label"]:
+                parsed["label_before_reconciliation"] = parsed["label"]
+                parsed["label"] = verdict
+                parsed["label_reconciliation"] = {
+                    "strategy": "explicit_terminal_option_verdict",
+                    "option": option_key.upper(),
+                    "verdict": verdict,
+                }
+            if parsed["label"] and _reasoning_says_insufficient(reasoning):
+                parsed.setdefault("label_before_reconciliation", parsed["label"])
                 parsed["label"] = False
                 parsed["label_coerced_reason"] = "insufficient_evidence_reasoning"
             return parsed, total_usage
@@ -186,6 +199,106 @@ def _reasoning_says_insufficient(reasoning: str) -> bool:
         "未包含",
     ]
     return any(pattern in compact for pattern in patterns)
+
+
+def _terminal_option_verdict(
+    reasoning: str,
+    option_key: str,
+    question_text: str = "",
+) -> bool | None:
+    """Return an explicit terminal verdict for the current isolated option.
+
+    The matcher is deliberately conservative: it only trusts a conclusion near
+    the end of the reasoning, requires an option/verdict phrase, and rejects a
+    verdict that names another option. Ambiguous prose is left to the model
+    retry path instead of being guessed locally.
+    """
+
+    compact = re.sub(r"\s+", "", reasoning).strip()
+    if not compact:
+        return None
+    terminal = compact[-180:].rstrip("。！？；;,.，")
+    key = re.escape(option_key.strip().upper())
+    option_ref = rf"(?:(?:该|此)?选项(?:{key}|(?![A-D])))"
+    subject = option_ref
+    gap = r"[^。！？；;]{0,64}"
+    selection_object = r"(?:选|选择|选中|选取)"
+    generic_direct_negative = re.compile(
+        rf"(?:不应该|不应当|不应|不需要|无需|不可以|不能|不可)(?:被)?{selection_object}$"
+    )
+    generic_direct_positive = re.compile(
+        rf"(?<![不无])(?:应该|应当|应|需要|需|可以|可)(?:被)?{selection_object}$"
+    )
+    if generic_direct_negative.search(terminal):
+        return False
+    if generic_direct_positive.search(terminal):
+        return True
+
+    direct_negative = re.compile(
+        rf"{subject}{gap}(?:不应该|不应当|不应|不需要|无需|不可以|不能|不可)(?:被)?{selection_object}$"
+    )
+    direct_positive = re.compile(
+        rf"{subject}{gap}(?<![不无])(?:应该|应当|应|需要|需|可以|可)(?:被)?{selection_object}$"
+    )
+    direct_negative_match = direct_negative.search(terminal)
+    direct_positive_match = direct_positive.search(terminal)
+    if direct_negative_match and direct_positive_match:
+        return None
+    if direct_negative_match:
+        return False
+    if direct_positive_match:
+        return True
+
+    negated_error = re.compile(
+        rf"{subject}{gap}(?:并非|不是|并无)(?:错误|不正确|不成立)$"
+    )
+    negated_error_match = negated_error.search(terminal)
+    if negated_error_match:
+        content_is_true = True
+        return not content_is_true if _question_requests_incorrect_option(question_text) else content_is_true
+
+    content_negative = re.compile(
+        rf"{subject}{gap}(?:错误|不正确|不成立|不符合|不一致|不吻合)$"
+    )
+    content_positive = re.compile(
+        rf"{subject}{gap}(?:正确|成立|符合|一致|吻合)$"
+    )
+    negative_match = content_negative.search(terminal)
+    positive_match = content_positive.search(terminal)
+    if negative_match and positive_match:
+        if negative_match.start() == positive_match.start():
+            return None
+        content_is_true = positive_match.start() > negative_match.start()
+    elif negative_match:
+        content_is_true = False
+    elif positive_match:
+        content_is_true = True
+    else:
+        return None
+    if _question_requests_incorrect_option(question_text):
+        return not content_is_true
+    return content_is_true
+
+
+def _question_requests_incorrect_option(question_text: str) -> bool:
+    compact = re.sub(r"\s+", "", question_text)
+    negative_cues = (
+        "错误的是",
+        "错误的有",
+        "错误的选项",
+        "哪些错误",
+        "不正确的是",
+        "不正确的有",
+        "不正确的选项",
+        "说法错误",
+        "表述错误",
+        "判断错误",
+        "不符合的是",
+        "不符合题意",
+        "不属于的是",
+        "不包括的是",
+    )
+    return any(cue in compact for cue in negative_cues)
 
 
 def finalize_answer(

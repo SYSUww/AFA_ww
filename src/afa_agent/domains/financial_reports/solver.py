@@ -154,6 +154,7 @@ class FinancialReportsSolver:
                     "label": label,
                     "reasoning_summary": reasoning,
                     "confidence": confidence,
+                    "label_reconciliation": parsed.get("label_reconciliation", {}) if rule_label is None else {},
                     "evidence_items": evidence_items[:6],
                     "gate_status": gate_debug.get("final_gate", {}).get("status", ""),
                     "gate_reasons": gate_debug.get("final_gate", {}).get("reasons", []),
@@ -166,6 +167,7 @@ class FinancialReportsSolver:
                     "retrieval_topk": serialize_hits(hits, limit=self.retrieval_settings.get("top_k", 6)),
                     "used_rule": bool(self.rule_settings.get("enabled", True) and rule_label is not None),
                     "model_confidence": confidence,
+                    "label_reconciliation": parsed.get("label_reconciliation", {}) if rule_label is None else {},
                     "targeted_evidence": targeted_debug,
                     "evidence_gate": gate_debug,
                 }

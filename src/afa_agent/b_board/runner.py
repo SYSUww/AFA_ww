@@ -686,6 +686,19 @@ class BBoardActualRunner:
         finalization = result.debug_meta.get("answer_finalization", {}) or {}
         consistency = result.debug_meta.get("final_consistency_check", {}) or {}
         decision_trace = {**finalization, "final_consistency_check": consistency}
+        label_reconciliations = []
+        for item in result.debug_meta.get("option_debug", []) or []:
+            reconciliation = item.get("label_reconciliation")
+            if not isinstance(reconciliation, Mapping) or not reconciliation:
+                continue
+            label_reconciliations.append(
+                {
+                    "option": str(item.get("option", "")).upper(),
+                    **dict(reconciliation),
+                }
+            )
+        if label_reconciliations:
+            decision_trace["label_reconciliations"] = label_reconciliations
         artifact = BAnswerArtifact(
             qid=question.qid,
             domain=question.domain,

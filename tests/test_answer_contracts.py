@@ -3,7 +3,12 @@ from __future__ import annotations
 import unittest
 
 from afa_agent.client import LLMResponse
-from afa_agent.domains.llm_utils import ask_answer_fallback, ask_option_judgment, finalize_answer
+from afa_agent.domains.llm_utils import (
+    _terminal_option_verdict,
+    ask_answer_fallback,
+    ask_option_judgment,
+    finalize_answer,
+)
 from afa_agent.models import TokenUsage
 
 
@@ -67,6 +72,71 @@ class OptionJudgmentContractTests(unittest.TestCase):
             ask_judgment(client)
 
         self.assertEqual(len(client.calls), 2)
+
+    def test_explicit_terminal_negative_verdict_overrides_conflicting_true_label(self) -> None:
+        client = FakeClient([
+            (
+                '{"label": true, "reasoning_summary": '
+                '"38+5=43，而非48。选项A的计算结果错误。"}'
+            ),
+        ])
+
+        parsed, _ = ask_judgment(client)
+
+        self.assertIs(parsed["label"], False)
+        self.assertIs(parsed["label_before_reconciliation"], True)
+        self.assertEqual(
+            parsed["label_reconciliation"]["strategy"],
+            "explicit_terminal_option_verdict",
+        )
+        self.assertEqual(len(client.calls), 1)
+
+    def test_explicit_terminal_positive_verdict_overrides_conflicting_false_label(self) -> None:
+        client = FakeClient([
+            (
+                '{"label": false, "reasoning_summary": '
+                '"两个数据均与证据一致，因此选项A正确。"}'
+            ),
+        ])
+
+        parsed, _ = ask_judgment(client)
+
+        self.assertIs(parsed["label"], True)
+        self.assertIs(parsed["label_before_reconciliation"], False)
+        self.assertEqual(len(client.calls), 1)
+
+    def test_terminal_verdict_does_not_accept_another_option_or_quoted_midstream_word(self) -> None:
+        self.assertIsNone(_terminal_option_verdict("题干称“选项错误”，但尚无结论。", "A"))
+        self.assertIsNone(_terminal_option_verdict("综合计算后，选项B错误。", "A"))
+
+    def test_generic_terminal_verdict_is_allowed_for_isolated_option(self) -> None:
+        self.assertIs(_terminal_option_verdict("应为160万，选项称130万错误。", "A"), False)
+        self.assertIs(_terminal_option_verdict("结果为140万，选项正确。", "B"), True)
+
+    def test_incorrect_question_inverts_statement_truth_into_selection_label(self) -> None:
+        question = "关于锁定期安排，下列说法错误的是？"
+
+        self.assertIs(_terminal_option_verdict("选项C所称12个月错误。", "C", question), True)
+        self.assertIs(_terminal_option_verdict("选项A的表述正确。", "A", question), False)
+        self.assertIs(_terminal_option_verdict("选项A陈述并非错误。", "A", question), False)
+
+    def test_explicit_should_select_verdict_does_not_depend_on_question_polarity(self) -> None:
+        question = "关于锁定期安排，下列说法错误的是？"
+
+        self.assertIs(_terminal_option_verdict("因此选项C应选。", "C", question), True)
+        self.assertIs(_terminal_option_verdict("因此选项A不应选。", "A", question), False)
+        self.assertIs(
+            _terminal_option_verdict(
+                "数据均吻合，题干要求选出正确判断，故label应为true，判断正确，应选。",
+                "B",
+            ),
+            True,
+        )
+        self.assertIs(_terminal_option_verdict("两项数据均与证据一致，因此应被选中。", "B"), True)
+        self.assertIs(_terminal_option_verdict("该陈述与证据冲突，因此不应该被选中。", "C"), False)
+        self.assertIs(_terminal_option_verdict("该项证据充分，可以选择。", "A"), True)
+        self.assertIs(_terminal_option_verdict("该项证据不足，不需要选择。", "D"), False)
+        self.assertIs(_terminal_option_verdict("证据与选项不符，因此不应选。", "D"), False)
 
 
 class AnswerFallbackContractTests(unittest.TestCase):

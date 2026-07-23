@@ -27577,3 +27577,776 @@
   ]
 }
 ```
+
+## b-loop-qwen37-option-verdict-consistency-a1
+
+- recorded_at: `2026-07-23T18:31:25+00:00`
+
+```json
+{
+  "approach": "明确label代表是否按题干应选，并要求reasoning末尾写应选/不应选；解析后先做题干正反向感知的确定性结论映射，再沿用既有结构失败模型重试。仅运行fin_b_007、fin_b_011、ins_b_002。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_option_verdict_consistency_a1",
+  "base_commit": "7771dee",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "7771dee"
+      },
+      "identity": {
+        "change_vector": {
+          "base_commit": "7771dee",
+          "local_fallback": "terminal_option_verdict_with_question_polarity_v1",
+          "locator": "attempt_43",
+          "model": "qwen3.7-plus-2026-05-26",
+          "prompt_contract": "label_means_should_select_v1",
+          "retry_policy": "deterministic_reconcile_before_existing_model_retry",
+          "structured_output_mode": "native_json_schema_strict",
+          "workers": 3
+        },
+        "domains": [
+          "financial_reports",
+          "insurance"
+        ],
+        "hypothesis": "qwen逐选项响应中布尔label偶发与其明确末句结论相反；先按题干正反向将明确应选/不应选或正确/错误结论确定性映射为选择标签，可修复坏例且不引入参考答案。",
+        "pipeline_stage": "choice_option_judgment",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "qwen37_option_label_reasoning_contradiction",
+        "target_qids": [
+          "fin_b_007",
+          "fin_b_011",
+          "ins_b_002"
+        ]
+      }
+    },
+    "context_sha256": "f58c0e52b4f0113aed1ae853377bf381637849b6d5b89b9d6a0ecbc23943b788",
+    "direction_sha256": "4cc0e5f317df1568c3736bcc5cb11964f5059f99b6759d1dbdbefd9ece8e7ad0",
+    "schema_version": 1,
+    "semantic_sha256": "e4dcc2661d97fb29d700e01f5dadf63c92626001fe20efc3d1393d1bda779c37",
+    "sha256": "3894267c518c306285e23e8e34fccab241979b8fe3c5cd5e4dbc0c69f31c58cf"
+  },
+  "change_vector": {
+    "base_commit": "7771dee",
+    "local_fallback": "terminal_option_verdict_with_question_polarity_v1",
+    "locator": "attempt_43",
+    "model": "qwen3.7-plus-2026-05-26",
+    "prompt_contract": "label_means_should_select_v1",
+    "retry_policy": "deterministic_reconcile_before_existing_model_retry",
+    "structured_output_mode": "native_json_schema_strict",
+    "workers": 3
+  },
+  "direction_id": "qwen37_option_verdict_consistency",
+  "domains": [
+    "financial_reports",
+    "insurance"
+  ],
+  "effect": "Stage A 3/3完成；fin_b_011由ABCD改为ABC、ins_b_002由ABCD改为BC，均与pseudo99参考一致；fin_b_007仍为AD而非证据支持的ABD。pseudo99匹配由旧0/3升至2/3。Stage B完成2/3，fin_b_007因冻结AD与证据明确支持B矛盾而拒绝生成。总生成Token 70124，较旧同3题72300减少2176（3.01%），但答案Token 40829较39047增加1782（4.56%）。",
+  "experiment_id": "b-loop-qwen37-option-verdict-consistency-a1",
+  "failure_analysis": "A1实际纠偏主要来自更清晰的prompt，记录到的本地label_reconciliation为0。fin_b_007的B摘要虽以“应选”收尾，但最后180字内没有再次出现“选项B”，保守匹配器未触发；因此原始false标签仍被采纳并导致后置reasoning正确拒绝冻结AD。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "7771dee"
+        },
+        "identity": {
+          "change_vector": {
+            "base_commit": "7771dee",
+            "local_fallback": "terminal_option_verdict_with_question_polarity_v1",
+            "locator": "attempt_43",
+            "model": "qwen3.7-plus-2026-05-26",
+            "prompt_contract": "label_means_should_select_v1",
+            "retry_policy": "deterministic_reconcile_before_existing_model_retry",
+            "structured_output_mode": "native_json_schema_strict",
+            "workers": 3
+          },
+          "domains": [
+            "financial_reports",
+            "insurance"
+          ],
+          "hypothesis": "qwen逐选项响应中布尔label偶发与其明确末句结论相反；先按题干正反向将明确应选/不应选或正确/错误结论确定性映射为选择标签，可修复坏例且不引入参考答案。",
+          "pipeline_stage": "choice_option_judgment",
+          "question_types": [
+            "multi"
+          ],
+          "root_cause_cluster": "qwen37_option_label_reasoning_contradiction",
+          "target_qids": [
+            "fin_b_007",
+            "fin_b_011",
+            "ins_b_002"
+          ]
+        }
+      },
+      "context_sha256": "f58c0e52b4f0113aed1ae853377bf381637849b6d5b89b9d6a0ecbc23943b788",
+      "direction_sha256": "4cc0e5f317df1568c3736bcc5cb11964f5059f99b6759d1dbdbefd9ece8e7ad0",
+      "schema_version": 1,
+      "semantic_sha256": "e4dcc2661d97fb29d700e01f5dadf63c92626001fe20efc3d1393d1bda779c37",
+      "sha256": "3894267c518c306285e23e8e34fccab241979b8fe3c5cd5e4dbc0c69f31c58cf"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "7771dee"
+          },
+          "identity": {
+            "change_vector": {
+              "base_commit": "7771dee",
+              "local_fallback": "terminal_option_verdict_with_question_polarity_v1",
+              "locator": "attempt_43",
+              "model": "qwen3.7-plus-2026-05-26",
+              "prompt_contract": "label_means_should_select_v1",
+              "retry_policy": "deterministic_reconcile_before_existing_model_retry",
+              "structured_output_mode": "native_json_schema_strict",
+              "workers": 3
+            },
+            "domains": [
+              "financial_reports",
+              "insurance"
+            ],
+            "hypothesis": "qwen逐选项响应中布尔label偶发与其明确末句结论相反；先按题干正反向将明确应选/不应选或正确/错误结论确定性映射为选择标签，可修复坏例且不引入参考答案。",
+            "pipeline_stage": "choice_option_judgment",
+            "question_types": [
+              "multi"
+            ],
+            "root_cause_cluster": "qwen37_option_label_reasoning_contradiction",
+            "target_qids": [
+              "fin_b_007",
+              "fin_b_011",
+              "ins_b_002"
+            ]
+          }
+        },
+        "context_sha256": "f58c0e52b4f0113aed1ae853377bf381637849b6d5b89b9d6a0ecbc23943b788",
+        "direction_sha256": "4cc0e5f317df1568c3736bcc5cb11964f5059f99b6759d1dbdbefd9ece8e7ad0",
+        "schema_version": 1,
+        "semantic_sha256": "e4dcc2661d97fb29d700e01f5dadf63c92626001fe20efc3d1393d1bda779c37",
+        "sha256": "3894267c518c306285e23e8e34fccab241979b8fe3c5cd5e4dbc0c69f31c58cf"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "b3ecb09ba14701aa7008fa1d79aac378b8d3d03d39bfbea8d58c7fdbf300c2ac",
+      "size": 1044357
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "6c151bcd44cdaf085a260f4dcd569af1d9a00303688bfce449ed2f4bcf0ede52",
+      "size": 848552
+    },
+    "related_log_sections": [
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-answer-reasoning-stage-decoupling-a1",
+      "b-loop-qwen37-structured-output-contract-a2-full100",
+      "b-loop-qwen37-structured-output-contract-a3-staged-retry"
+    ],
+    "reviewed_at": "2026-07-23T18:27:13+00:00"
+  },
+  "hypothesis": "Qwen逐选项响应中布尔label偶发与其明确末句结论相反；先按题干正反向将明确应选/不应选或正确/错误结论确定性映射为选择标签，可修复坏例且不引入参考答案。",
+  "material_delta": {
+    "local_fallback": "terminal_option_verdict_with_question_polarity_v1",
+    "prompt_contract": "label_means_should_select_v1"
+  },
+  "metrics": {
+    "answer_completed_count": 3,
+    "answer_token_delta": 1782,
+    "baseline_answer_token_total": 39047,
+    "baseline_generation_token_total": 72300,
+    "baseline_reference_match_count": 0,
+    "candidate_answer_token_total": 40829,
+    "candidate_answers": {
+      "fin_b_007": [
+        "AD"
+      ],
+      "fin_b_011": [
+        "ABC"
+      ],
+      "ins_b_002": [
+        "BC"
+      ]
+    },
+    "candidate_generation_token_total": 70124,
+    "generation_token_delta": -2176,
+    "generation_token_reduction_rate": 0.030097,
+    "local_label_reconciliation_count": 0,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "proxy_total_score": null,
+    "reasoning_completed_count": 2,
+    "reasoning_failed_qids": [
+      "fin_b_007"
+    ],
+    "reasoning_shadow_score": null,
+    "reference_match_count": 2,
+    "reference_mismatch_count": 1,
+    "reference_mismatches": [
+      {
+        "candidate": [
+          "AD"
+        ],
+        "qid": "fin_b_007",
+        "reference": [
+          "ABD"
+        ]
+      }
+    ],
+    "target_question_count": 3
+  },
+  "next_step": "A2仅放宽孤立单选项响应末尾的明确“应选/不应选”直判，不放宽正确/错误语义词；先跑单测和全量历史回放，再只重跑fin_b_007验证。",
+  "pipeline_stage": "choice_option_judgment",
+  "promotion_result": "needs_refinement",
+  "question_types": [
+    "multi"
+  ],
+  "recorded_at": "2026-07-23T18:31:25+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "qwen37_option_label_reasoning_contradiction",
+  "status": "completed",
+  "submission_effect": "incomplete_not_submitted",
+  "target_qids": [
+    "fin_b_007",
+    "fin_b_011",
+    "ins_b_002"
+  ]
+}
+```
+
+## b-loop-qwen37-option-verdict-consistency-a2
+
+- recorded_at: `2026-07-23T18:36:23+00:00`
+
+```json
+{
+  "approach": "在A1后重读日志，仅允许孤立选项响应末尾的通用“应选/不应选”覆盖冲突label，并只重跑fin_b_007。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_option_verdict_consistency_a2",
+  "base_commit": "7771dee",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "7771dee"
+      },
+      "identity": {
+        "change_vector": {
+          "base_commit": "7771dee",
+          "local_fallback": "terminal_direct_selection_verdict_v2",
+          "locator": "attempt_43",
+          "model": "qwen3.7-plus-2026-05-26",
+          "prompt_contract": "label_means_should_select_v1",
+          "retry_policy": "deterministic_reconcile_before_existing_model_retry",
+          "structured_output_mode": "native_json_schema_strict",
+          "workers": 1
+        },
+        "domains": [
+          "financial_reports"
+        ],
+        "hypothesis": "a1剩余fin_b_007/b在孤立选项响应末尾明确写应选，但因末尾窗口内未重复选项字母而未被兜底；直接识别末尾应选/不应选可安全恢复该标签。",
+        "pipeline_stage": "choice_option_judgment",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "qwen37_option_label_reasoning_contradiction",
+        "target_qids": [
+          "fin_b_007"
+        ]
+      }
+    },
+    "context_sha256": "f58c0e52b4f0113aed1ae853377bf381637849b6d5b89b9d6a0ecbc23943b788",
+    "direction_sha256": "88e073c0180040fbd4dc88bad6a1c70a77de5126cf89b9801a1a1a1dd5828353",
+    "schema_version": 1,
+    "semantic_sha256": "7e0d90009965939d859692811f6167087b077ec17fab9200e5d7ce5762555be4",
+    "sha256": "c52b404bf6545707387dd29417e4aa11b69cb9bb8c8ff2e59569edbb5a8dbde6"
+  },
+  "change_vector": {
+    "base_commit": "7771dee",
+    "local_fallback": "terminal_direct_selection_verdict_v2",
+    "locator": "attempt_43",
+    "model": "qwen3.7-plus-2026-05-26",
+    "prompt_contract": "label_means_should_select_v1",
+    "retry_policy": "deterministic_reconcile_before_existing_model_retry",
+    "structured_output_mode": "native_json_schema_strict",
+    "workers": 1
+  },
+  "direction_id": "qwen37_option_verdict_consistency",
+  "domains": [
+    "financial_reports"
+  ],
+  "effect": "Stage A与Stage B均完成，但答案仍为AD，与pseudo99参考ABD不一致；本地label_reconciliation仍为0。生成Token35465，较A1同题35111增加354，较原始A2全量基线同题22610增加12855。reasoning虽生成成功，却同时写B与证据一致、但因冻结答案未含B而不选，内部不一致，不能视为推理质量提升。",
+  "experiment_id": "b-loop-qwen37-option-verdict-consistency-a2",
+  "failure_analysis": "本轮Qwen将B的末句措辞改为“应被选中”，未命中仅覆盖“应选/应选择”的有限语法，因此原始false标签仍被采纳。问题仍是明确选择结论的同义格式漂移，不是证据不足；不应通过重复reasoning掩盖冻结答案矛盾。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "7771dee"
+        },
+        "identity": {
+          "change_vector": {
+            "base_commit": "7771dee",
+            "local_fallback": "terminal_direct_selection_verdict_v2",
+            "locator": "attempt_43",
+            "model": "qwen3.7-plus-2026-05-26",
+            "prompt_contract": "label_means_should_select_v1",
+            "retry_policy": "deterministic_reconcile_before_existing_model_retry",
+            "structured_output_mode": "native_json_schema_strict",
+            "workers": 1
+          },
+          "domains": [
+            "financial_reports"
+          ],
+          "hypothesis": "a1剩余fin_b_007/b在孤立选项响应末尾明确写应选，但因末尾窗口内未重复选项字母而未被兜底；直接识别末尾应选/不应选可安全恢复该标签。",
+          "pipeline_stage": "choice_option_judgment",
+          "question_types": [
+            "multi"
+          ],
+          "root_cause_cluster": "qwen37_option_label_reasoning_contradiction",
+          "target_qids": [
+            "fin_b_007"
+          ]
+        }
+      },
+      "context_sha256": "f58c0e52b4f0113aed1ae853377bf381637849b6d5b89b9d6a0ecbc23943b788",
+      "direction_sha256": "88e073c0180040fbd4dc88bad6a1c70a77de5126cf89b9801a1a1a1dd5828353",
+      "schema_version": 1,
+      "semantic_sha256": "7e0d90009965939d859692811f6167087b077ec17fab9200e5d7ce5762555be4",
+      "sha256": "c52b404bf6545707387dd29417e4aa11b69cb9bb8c8ff2e59569edbb5a8dbde6"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "7771dee"
+          },
+          "identity": {
+            "change_vector": {
+              "base_commit": "7771dee",
+              "local_fallback": "terminal_direct_selection_verdict_v2",
+              "locator": "attempt_43",
+              "model": "qwen3.7-plus-2026-05-26",
+              "prompt_contract": "label_means_should_select_v1",
+              "retry_policy": "deterministic_reconcile_before_existing_model_retry",
+              "structured_output_mode": "native_json_schema_strict",
+              "workers": 1
+            },
+            "domains": [
+              "financial_reports"
+            ],
+            "hypothesis": "a1剩余fin_b_007/b在孤立选项响应末尾明确写应选，但因末尾窗口内未重复选项字母而未被兜底；直接识别末尾应选/不应选可安全恢复该标签。",
+            "pipeline_stage": "choice_option_judgment",
+            "question_types": [
+              "multi"
+            ],
+            "root_cause_cluster": "qwen37_option_label_reasoning_contradiction",
+            "target_qids": [
+              "fin_b_007"
+            ]
+          }
+        },
+        "context_sha256": "f58c0e52b4f0113aed1ae853377bf381637849b6d5b89b9d6a0ecbc23943b788",
+        "direction_sha256": "88e073c0180040fbd4dc88bad6a1c70a77de5126cf89b9801a1a1a1dd5828353",
+        "schema_version": 1,
+        "semantic_sha256": "7e0d90009965939d859692811f6167087b077ec17fab9200e5d7ce5762555be4",
+        "sha256": "c52b404bf6545707387dd29417e4aa11b69cb9bb8c8ff2e59569edbb5a8dbde6"
+      },
+      "comparable_attempt_count": 1,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-qwen37-option-verdict-consistency-a1"
+      ],
+      "similarity": 0.854969
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "af03ae7c87c256f1fc5a226ff686b4d04422b76a2010d032974ec8529228bb02",
+      "size": 1056037
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "4a0d81e23e5b3d77d82c0c4a9b68f3f92396a257fcb1d140724b99ed6999fd68",
+      "size": 858285
+    },
+    "related_log_sections": [
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-answer-reasoning-stage-decoupling-a1",
+      "b-loop-qwen37-structured-output-contract-a2-full100",
+      "b-loop-qwen37-option-verdict-consistency-a1"
+    ],
+    "reviewed_at": "2026-07-23T18:32:31+00:00"
+  },
+  "hypothesis": "A1剩余fin_b_007/B在孤立选项响应末尾明确写应选，但因末尾窗口内未重复选项字母而未被兜底；直接识别末尾应选/不应选可安全恢复该标签。",
+  "material_delta": {
+    "terminal_direct_selection_verdict": {
+      "from": "requires_option_reference",
+      "to": "allow_generic_terminal_verdict_in_isolated_option_call"
+    }
+  },
+  "metrics": {
+    "a1_same_qid_generation_token_total": 35111,
+    "answer_completed_count": 1,
+    "baseline_generation_token_total": 22610,
+    "candidate_answer_token_total": 16710,
+    "candidate_answers": {
+      "fin_b_007": [
+        "AD"
+      ]
+    },
+    "candidate_generation_token_total": 35465,
+    "local_label_reconciliation_count": 0,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "proxy_total_score": null,
+    "reasoning_completed_count": 1,
+    "reasoning_internal_consistency_issue_count": 1,
+    "reasoning_shadow_score": null,
+    "reference_match_count": 0,
+    "reference_mismatch_count": 1,
+    "reference_mismatches": [
+      {
+        "candidate": [
+          "AD"
+        ],
+        "qid": "fin_b_007",
+        "reference": [
+          "ABD"
+        ]
+      }
+    ],
+    "target_question_count": 1,
+    "vs_a1_generation_token_delta": 354,
+    "vs_baseline_generation_token_delta": 12855
+  },
+  "next_step": "A3为该方向最后一轮：把直接选择结论扩展为有限同义集合（应/应该/应当/需要/可以+被+选择/选中；对应否定形式），仍只匹配孤立响应结尾；历史回放确认影响范围后只重跑fin_b_007。",
+  "pipeline_stage": "choice_option_judgment",
+  "promotion_result": "not_effective",
+  "question_types": [
+    "multi"
+  ],
+  "recorded_at": "2026-07-23T18:36:23+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "qwen37_option_label_reasoning_contradiction",
+  "status": "completed",
+  "submission_effect": "local_partial_submit_only_not_officially_uploaded",
+  "target_qids": [
+    "fin_b_007"
+  ]
+}
+```
+
+## b-loop-qwen37-option-verdict-consistency-a3
+
+- recorded_at: `2026-07-23T18:40:41+00:00`
+
+```json
+{
+  "approach": "本方向第3轮：把孤立选项响应末尾的直接选择结论扩展为有限同义语法（应/应该/应当/需要/可以及否定形式，搭配选择/选中/选取），仍先本地纠偏、含糊时才走既有模型重试；只重跑fin_b_007。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_option_verdict_consistency_a3",
+  "base_commit": "7771dee",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "7771dee"
+      },
+      "identity": {
+        "change_vector": {
+          "base_commit": "7771dee",
+          "local_fallback": "terminal_selection_synonym_verdict_v3",
+          "locator": "attempt_43",
+          "model": "qwen3.7-plus-2026-05-26",
+          "prompt_contract": "label_means_should_select_v1",
+          "retry_policy": "deterministic_reconcile_before_existing_model_retry",
+          "structured_output_mode": "native_json_schema_strict",
+          "workers": 1
+        },
+        "domains": [
+          "financial_reports"
+        ],
+        "hypothesis": "a2的明确末句“应被选中”属于有限选择结论同义词；覆盖应/应该/应当/需要/可以及其否定形式与选择/选中/选取组合，可在不解析宽泛语义的情况下修复fin_b_007/b。",
+        "pipeline_stage": "choice_option_judgment",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "qwen37_option_label_reasoning_contradiction",
+        "target_qids": [
+          "fin_b_007"
+        ]
+      }
+    },
+    "context_sha256": "f58c0e52b4f0113aed1ae853377bf381637849b6d5b89b9d6a0ecbc23943b788",
+    "direction_sha256": "bdd6e297cbae0b3d91595e564bbc8e8d3208d951c492ed671fcb184a86f912b1",
+    "schema_version": 1,
+    "semantic_sha256": "f2b1269dbe441af1c6cd1c811874840034cb38b6ab48b754b52191523814aee5",
+    "sha256": "ac46dbc01f5a117a096465955f9aa61fa80226cf83de98072b98322fe1ccb844"
+  },
+  "change_vector": {
+    "base_commit": "7771dee",
+    "local_fallback": "terminal_selection_synonym_verdict_v3",
+    "locator": "attempt_43",
+    "model": "qwen3.7-plus-2026-05-26",
+    "prompt_contract": "label_means_should_select_v1",
+    "retry_policy": "deterministic_reconcile_before_existing_model_retry",
+    "structured_output_mode": "native_json_schema_strict",
+    "workers": 1
+  },
+  "direction_id": "qwen37_option_verdict_consistency",
+  "domains": [
+    "financial_reports"
+  ],
+  "effect": "fin_b_007 Stage A得到ABD并与pseudo99参考一致，Stage B一次成功且reasoning逐项支持A/B/D、排除C，内部自洽。单题生成Token24028，较原始基线22610增加1418（6.27%），但较A2的35465减少11437。结合A1已成功的fin_b_011=ABC、ins_b_002=BC，方向选优产物实现3/3 pseudo99匹配和3/3 reasoning完成；三题选优总Token59041，较旧同三题72300减少13259（18.34%）。",
+  "experiment_id": "b-loop-qwen37-option-verdict-consistency-a3",
+  "failure_analysis": "A3响应本身已返回正确label，因此在线local_label_reconciliation仍为0，不能把本轮答案改善归因于本地兜底；兜底的证据来自对A1/A2原始输出离线回放，能确定性识别fin_b_007/B的false→true。pseudo99并非官网真值，3/3仅是代理准确率与证据链共同支持。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "7771dee"
+        },
+        "identity": {
+          "change_vector": {
+            "base_commit": "7771dee",
+            "local_fallback": "terminal_selection_synonym_verdict_v3",
+            "locator": "attempt_43",
+            "model": "qwen3.7-plus-2026-05-26",
+            "prompt_contract": "label_means_should_select_v1",
+            "retry_policy": "deterministic_reconcile_before_existing_model_retry",
+            "structured_output_mode": "native_json_schema_strict",
+            "workers": 1
+          },
+          "domains": [
+            "financial_reports"
+          ],
+          "hypothesis": "a2的明确末句“应被选中”属于有限选择结论同义词；覆盖应/应该/应当/需要/可以及其否定形式与选择/选中/选取组合，可在不解析宽泛语义的情况下修复fin_b_007/b。",
+          "pipeline_stage": "choice_option_judgment",
+          "question_types": [
+            "multi"
+          ],
+          "root_cause_cluster": "qwen37_option_label_reasoning_contradiction",
+          "target_qids": [
+            "fin_b_007"
+          ]
+        }
+      },
+      "context_sha256": "f58c0e52b4f0113aed1ae853377bf381637849b6d5b89b9d6a0ecbc23943b788",
+      "direction_sha256": "bdd6e297cbae0b3d91595e564bbc8e8d3208d951c492ed671fcb184a86f912b1",
+      "schema_version": 1,
+      "semantic_sha256": "f2b1269dbe441af1c6cd1c811874840034cb38b6ab48b754b52191523814aee5",
+      "sha256": "ac46dbc01f5a117a096465955f9aa61fa80226cf83de98072b98322fe1ccb844"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "7771dee"
+          },
+          "identity": {
+            "change_vector": {
+              "base_commit": "7771dee",
+              "local_fallback": "terminal_selection_synonym_verdict_v3",
+              "locator": "attempt_43",
+              "model": "qwen3.7-plus-2026-05-26",
+              "prompt_contract": "label_means_should_select_v1",
+              "retry_policy": "deterministic_reconcile_before_existing_model_retry",
+              "structured_output_mode": "native_json_schema_strict",
+              "workers": 1
+            },
+            "domains": [
+              "financial_reports"
+            ],
+            "hypothesis": "a2的明确末句“应被选中”属于有限选择结论同义词；覆盖应/应该/应当/需要/可以及其否定形式与选择/选中/选取组合，可在不解析宽泛语义的情况下修复fin_b_007/b。",
+            "pipeline_stage": "choice_option_judgment",
+            "question_types": [
+              "multi"
+            ],
+            "root_cause_cluster": "qwen37_option_label_reasoning_contradiction",
+            "target_qids": [
+              "fin_b_007"
+            ]
+          }
+        },
+        "context_sha256": "f58c0e52b4f0113aed1ae853377bf381637849b6d5b89b9d6a0ecbc23943b788",
+        "direction_sha256": "bdd6e297cbae0b3d91595e564bbc8e8d3208d951c492ed671fcb184a86f912b1",
+        "schema_version": 1,
+        "semantic_sha256": "f2b1269dbe441af1c6cd1c811874840034cb38b6ab48b754b52191523814aee5",
+        "sha256": "ac46dbc01f5a117a096465955f9aa61fa80226cf83de98072b98322fe1ccb844"
+      },
+      "comparable_attempt_count": 2,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-qwen37-option-verdict-consistency-a2",
+        "b-loop-qwen37-option-verdict-consistency-a1"
+      ],
+      "similarity": 0.930654
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "1d37488c7bf1139c79e4acf5a183dcec1cec6258c8200281aff9d92662f658a8",
+      "size": 1066960
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "1ae78fa7239ceffec4f41dc6c6b92c344f2018e1f698b483d21c6f23dfafeefd",
+      "size": 867433
+    },
+    "related_log_sections": [
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-answer-reasoning-stage-decoupling-a1",
+      "b-loop-qwen37-structured-output-contract-a2-full100",
+      "b-loop-qwen37-option-verdict-consistency-a1",
+      "b-loop-qwen37-option-verdict-consistency-a2"
+    ],
+    "reviewed_at": "2026-07-23T18:37:13+00:00"
+  },
+  "hypothesis": "A2的明确末句“应被选中”属于有限选择结论同义词；覆盖应/应该/应当/需要/可以及其否定形式与选择/选中/选取组合，可在不解析宽泛语义的情况下修复fin_b_007/B。",
+  "material_delta": {
+    "selection_verdict_grammar": {
+      "from": [
+        "应选",
+        "不应选"
+      ],
+      "to": "finite_positive_negative_selection_synonym_grammar"
+    }
+  },
+  "metrics": {
+    "a2_same_qid_generation_token_total": 35465,
+    "answer_completed_count": 1,
+    "baseline_same_qid_answer_token_total": 16138,
+    "baseline_same_qid_generation_token_total": 22610,
+    "baseline_three_qid_generation_token_total": 72300,
+    "candidate_answer_token_total": 16279,
+    "candidate_answers": {
+      "fin_b_007": [
+        "ABD"
+      ]
+    },
+    "candidate_generation_token_total": 24028,
+    "direction_best_of_rounds_answers": {
+      "fin_b_007": [
+        "ABD"
+      ],
+      "fin_b_011": [
+        "ABC"
+      ],
+      "ins_b_002": [
+        "BC"
+      ]
+    },
+    "direction_best_of_rounds_generation_token_delta": -13259,
+    "direction_best_of_rounds_generation_token_reduction_rate": 0.183389,
+    "direction_best_of_rounds_generation_token_total": 59041,
+    "direction_best_of_rounds_reasoning_completed_count": 3,
+    "direction_best_of_rounds_reference_match_count": 3,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "offline_replay_conflicts_repaired": 1,
+    "online_local_label_reconciliation_count": 0,
+    "proxy_total_score": null,
+    "reasoning_completed_count": 1,
+    "reasoning_shadow_score": null,
+    "reference_match_count": 1,
+    "reference_mismatch_count": 0,
+    "target_question_count": 1,
+    "vs_a2_generation_token_delta": -11437,
+    "vs_baseline_answer_token_delta": 141,
+    "vs_baseline_generation_token_delta": 1418
+  },
+  "next_step": "本方向达到3轮上限并停止。将有效Prompt契约与确定性兜底建独立分支提交推送；下一方向处理剩余语义badcase（优先fin_b_006百分比与百分点、ins_b_016产品身份），不再重复本方向。",
+  "pipeline_stage": "choice_option_judgment",
+  "promotion_result": "promoted_effective_direction",
+  "question_types": [
+    "multi"
+  ],
+  "recorded_at": "2026-07-23T18:40:41+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "qwen37_option_label_reasoning_contradiction",
+  "status": "completed",
+  "submission_effect": "local_partial_submit_only_not_officially_uploaded",
+  "supporting_artifacts": [
+    "artifacts/b_board_actual/qwen37_option_verdict_consistency_a1",
+    "artifacts/b_board_actual/qwen37_option_verdict_consistency_a2"
+  ],
+  "target_qids": [
+    "fin_b_007"
+  ]
+}
+```

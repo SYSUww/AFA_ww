@@ -208,6 +208,7 @@ class InsuranceSolver:
                     "label": label,
                     "reasoning_summary": reasoning,
                     "confidence": confidence,
+                    "label_reconciliation": parsed.get("label_reconciliation", {}) if rule_label is None else {},
                     "evidence_items": self._compact_evidence_items(hits),
                     "gate_status": gate_debug.get("final_gate", {}).get("status", ""),
                     "gate_reasons": gate_debug.get("final_gate", {}).get("reasons", []),
@@ -220,6 +221,7 @@ class InsuranceSolver:
                     "search_doc_ids": search_doc_ids,
                     "retrieval_topk": serialize_hits(hits, limit=self.retrieval_settings.get("top_k", 4)),
                     "model_confidence": confidence,
+                    "label_reconciliation": parsed.get("label_reconciliation", {}) if rule_label is None else {},
                     "evidence_gate": gate_debug,
                 }
             )

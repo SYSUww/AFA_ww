@@ -116,6 +116,7 @@ class FinancialContractsSolver:
                 "label": label,
                 "reasoning_summary": reasoning,
                 "confidence": confidence,
+                "label_reconciliation": parsed.get("label_reconciliation", {}) if not rule_output else {},
                 "evidence_items": [hit.to_dict() for hit in hits],
                 "gate_status": gate_debug.get("final_gate", {}).get("status", ""),
                 "gate_reasons": gate_debug.get("final_gate", {}).get("reasons", []),
@@ -129,6 +130,7 @@ class FinancialContractsSolver:
                     "query_variants": query_variants,
                     "retrieval_topk": serialize_hits(hits, limit=self.retrieval_settings.get("top_k", 7)),
                     "model_confidence": confidence,
+                    "label_reconciliation": parsed.get("label_reconciliation", {}) if not rule_output else {},
                     "evidence_gate": gate_debug,
                     "rule_override": rule_output or {},
                 }
