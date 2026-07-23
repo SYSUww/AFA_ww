@@ -7,7 +7,7 @@ from typing import Any, Mapping, Sequence
 
 from afa_agent.b_board.io import BQuestion, validate_b_answer, write_b_submission
 from afa_agent.b_board.runner import BAnswerArtifact, _artifact_from_dict, _sum_tokens
-from afa_agent.b_board.scoring import is_allowed_submission_model
+from afa_agent.b_board.submission_policy import is_allowed_submission_model
 from afa_agent.io_utils import ensure_dir, read_json, write_json
 
 
@@ -51,7 +51,7 @@ def assemble_answer_run(
                 {
                     "qid": "*",
                     "error": (
-                        f"source run {resolved} does not declare an allowed Qwen3.5/Qwen3.6 "
+                        f"source run {resolved} does not declare an allowed Qwen3.5/Qwen3.6/Qwen3.7 "
                         f"generation model (got {source_model or 'missing'})"
                     ),
                 }

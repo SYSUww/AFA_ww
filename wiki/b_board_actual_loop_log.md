@@ -24353,3 +24353,424 @@
   "notes": "本条仅记录当前实现和边界，没有修改生产代码、模型配置或候选答案。"
 }
 ```
+
+## b-loop-qwen37-compliance-and-score-loop-scaffold-a1
+
+- recorded_at: `2026-07-23T15:08:40+00:00`
+
+```json
+{
+  "approach": "按new.md更新总分权重和Token公式；新增Qwen3.5/3.6/3.7白名单模块及OPENAI/LLM完整配置选择；将GPT-5.6 shadow judge固定走独立LLM连接；reasoning改为冻结答案、证据不足显式返回并只在定位候选文档内救援一次；新增逐调用usage ledger及断点重试累计；冻结理论99参考与9题官网答案锁，并新增只输出proxy不冒充official的候选评估器。",
+  "artifact_path": "src/afa_agent/b_board/candidate_scorecard.py",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "production_model_family": "qwen3.7",
+          "pseudo_reference": "official98_plus_ins016_bd_unsubmitted",
+          "reasoning_prompt": "grounded_v3",
+          "shadow_judge_connection": "independent",
+          "usage_ledger": "all_calls_with_resume_history",
+          "weights": "0.5_0.3_0.2"
+        },
+        "domains": [
+          "financial_contracts",
+          "financial_reports",
+          "insurance",
+          "regulatory",
+          "research"
+        ],
+        "hypothesis": "先修正新版评分、qwen3.7白名单、独立生产与影子judge连接、reasoning证据门禁和完整usage审计，才能建立可比较的qwen3.7全量基线。",
+        "pipeline_stage": "production_policy_scoring_reasoning_usage_audit",
+        "question_types": [
+          "calculation",
+          "extraction",
+          "mcq",
+          "multi",
+          "tf"
+        ],
+        "root_cause_cluster": "new_rule_and_model_compliance_drift",
+        "target_qids": [
+          "all_100"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "5e5c75d8ebc69ae28579634586a302b57f45dabc71926248aa3d05b560026f76",
+    "schema_version": 1,
+    "semantic_sha256": "2f2b2dc4aa5342eed16bbf037c1668d6df6ec46d024aecbab0e86ed9c0de6e3a",
+    "sha256": "9706f319d165170ab70a3629dc18cb3a0582e7f06dc8a9e901900e93a0799766"
+  },
+  "change_vector": {
+    "production_model_family": "qwen3.7",
+    "pseudo_reference": "official98_plus_ins016_bd_unsubmitted",
+    "reasoning_prompt": "grounded_v3",
+    "shadow_judge_connection": "independent",
+    "usage_ledger": "all_calls_with_resume_history",
+    "weights": "0.5_0.3_0.2"
+  },
+  "direction_id": "qwen37_compliance_and_score_loop_scaffold",
+  "domains": [
+    "financial_contracts",
+    "financial_reports",
+    "insurance",
+    "regulatory",
+    "research"
+  ],
+  "effect": "合规脚手架已完成，274项测试全部通过，compileall与git diff --check通过。理论99参考为evaluation-only且未生成submit；候选只有100题全部等价匹配、9题答案锁无回归、Qwen调用及usage完整时才得到accuracy proxy=99。尚未执行任何付费Qwen推理，因此当前没有新的accuracy/reasoning/token/总分结果。",
+  "experiment_id": "b-loop-qwen37-compliance-and-score-loop-scaffold-a1",
+  "failure_analysis": "new.md的50万到500万Token公式文本存在括号和缩放笔误，但官网931605 Token对应81.3679已支持当前乘100实现；理论99仍未官网提交，不能称为真实99。两题探针和100题Qwen基线尚未运行，实际API兼容性、余额、JSON稳定性与reasoning证据充足率仍未知。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "production_model_family": "qwen3.7",
+            "pseudo_reference": "official98_plus_ins016_bd_unsubmitted",
+            "reasoning_prompt": "grounded_v3",
+            "shadow_judge_connection": "independent",
+            "usage_ledger": "all_calls_with_resume_history",
+            "weights": "0.5_0.3_0.2"
+          },
+          "domains": [
+            "financial_contracts",
+            "financial_reports",
+            "insurance",
+            "regulatory",
+            "research"
+          ],
+          "hypothesis": "先修正新版评分、qwen3.7白名单、独立生产与影子judge连接、reasoning证据门禁和完整usage审计，才能建立可比较的qwen3.7全量基线。",
+          "pipeline_stage": "production_policy_scoring_reasoning_usage_audit",
+          "question_types": [
+            "calculation",
+            "extraction",
+            "mcq",
+            "multi",
+            "tf"
+          ],
+          "root_cause_cluster": "new_rule_and_model_compliance_drift",
+          "target_qids": [
+            "all_100"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "5e5c75d8ebc69ae28579634586a302b57f45dabc71926248aa3d05b560026f76",
+      "schema_version": 1,
+      "semantic_sha256": "2f2b2dc4aa5342eed16bbf037c1668d6df6ec46d024aecbab0e86ed9c0de6e3a",
+      "sha256": "9706f319d165170ab70a3629dc18cb3a0582e7f06dc8a9e901900e93a0799766"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "production_model_family": "qwen3.7",
+              "pseudo_reference": "official98_plus_ins016_bd_unsubmitted",
+              "reasoning_prompt": "grounded_v3",
+              "shadow_judge_connection": "independent",
+              "usage_ledger": "all_calls_with_resume_history",
+              "weights": "0.5_0.3_0.2"
+            },
+            "domains": [
+              "financial_contracts",
+              "financial_reports",
+              "insurance",
+              "regulatory",
+              "research"
+            ],
+            "hypothesis": "先修正新版评分、qwen3.7白名单、独立生产与影子judge连接、reasoning证据门禁和完整usage审计，才能建立可比较的qwen3.7全量基线。",
+            "pipeline_stage": "production_policy_scoring_reasoning_usage_audit",
+            "question_types": [
+              "calculation",
+              "extraction",
+              "mcq",
+              "multi",
+              "tf"
+            ],
+            "root_cause_cluster": "new_rule_and_model_compliance_drift",
+            "target_qids": [
+              "all_100"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "5e5c75d8ebc69ae28579634586a302b57f45dabc71926248aa3d05b560026f76",
+        "schema_version": 1,
+        "semantic_sha256": "2f2b2dc4aa5342eed16bbf037c1668d6df6ec46d024aecbab0e86ed9c0de6e3a",
+        "sha256": "9706f319d165170ab70a3629dc18cb3a0582e7f06dc8a9e901900e93a0799766"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "259410ccf6664e700f876c01eeaf6b4fbefd1a65fd7b0e0b878a3ea50456a3fd",
+      "size": 905910
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "12e3113ca6b991e908aef57adbc951577cbe7a3c7298ca5ebc5625d255e5940d",
+      "size": 734334
+    },
+    "related_log_sections": [],
+    "reviewed_at": "2026-07-23T15:08:40+00:00"
+  },
+  "hypothesis": "先修正新版评分、Qwen3.7白名单、独立生产与影子judge连接、reasoning证据门禁和完整usage审计，才能建立可比较的Qwen3.7全量基线。",
+  "metrics": {
+    "official_accuracy": null,
+    "official_answer_lock_count": 9,
+    "paid_inference_calls": 0,
+    "proxy_total_score": null,
+    "pseudo_reference_officially_submitted": false,
+    "pseudo_reference_predicted_accuracy": 99.0,
+    "pseudo_reference_question_count": 100,
+    "reasoning_shadow_score": null,
+    "submission_weight_accuracy": 0.5,
+    "submission_weight_reasoning": 0.3,
+    "submission_weight_token": 0.2,
+    "test_count": 274,
+    "test_failures": 0,
+    "token_total": null
+  },
+  "next_step": "先用qwen3.7-plus-2026-05-26对1道选择题和1道计算题执行最小付费探针；验证JSON、冻结答案、grounding_status、计算重放、逐调用原始usage和九列表头。探针通过后再运行独立100题Qwen基线并进行GPT-5.6冻结reasoning影子评测。",
+  "pipeline_stage": "production_policy_scoring_reasoning_usage_audit",
+  "question_types": [
+    "tf",
+    "mcq",
+    "multi",
+    "calculation",
+    "extraction"
+  ],
+  "recorded_at": "2026-07-23T15:08:40+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "new_rule_and_model_compliance_drift",
+  "status": "completed",
+  "submission_effect": "infrastructure_only_not_submitted",
+  "target_qids": [
+    "all_100"
+  ]
+}
+```
+
+## b-loop-qwen37-compliance-and-score-loop-scaffold-a2
+
+- recorded_at: `2026-07-23T15:14:06+00:00`
+
+```json
+{
+  "approach": "在A1后执行独立只读代码审查：支持当前.env中的MODEL_NAME作为OPENAI模型别名；最终scorecard逐字段校验九列submit.csv、summary、答案、reasoning和三类Token；reasoning分取消手填参数，必须绑定同一submit SHA、同一sealed reasoning、固定GPT-5.6身份与完整qid覆盖的评测产物；manifest分别核对prompt/completion/total；断点重试把此前解析失败调用usage并入最终题目；救援证据只记reasoning trace，不伪称answer used_evidence；非全匹配候选只输出99假设下区间而不伪造点准确率。",
+  "artifact_path": "src/afa_agent/b_board/candidate_scorecard.py",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "model_alias": "OPENAI_MODEL_or_MODEL_NAME",
+          "reasoning_provenance": "rescued_not_claimed_as_answer_evidence",
+          "reasoning_shadow_binding": "sealed_gpt56_artifact_only",
+          "scenario_range": "predicted99_not_official",
+          "submit_csv_binding": "required_exact_nine_columns",
+          "usage_resume": "cumulative_raw_calls"
+        },
+        "domains": [
+          "financial_contracts",
+          "financial_reports",
+          "insurance",
+          "regulatory",
+          "research"
+        ],
+        "hypothesis": "对第一轮脚手架做独立审查并封堵实际环境选模、最终csv漂移、影子分误绑定和resume usage遗漏，才能把合规通过作为付费探针前置门禁。",
+        "pipeline_stage": "production_policy_scoring_reasoning_usage_audit",
+        "question_types": [
+          "calculation",
+          "extraction",
+          "mcq",
+          "multi",
+          "tf"
+        ],
+        "root_cause_cluster": "new_rule_and_model_compliance_drift",
+        "target_qids": [
+          "all_100"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "7f6263694c1e465d7c12890dfa16bc567e8e8bfb23411e36337296a0f5391051",
+    "schema_version": 1,
+    "semantic_sha256": "729cc1219d07642aa5e24966c61c247ec95c9c0a56116fbb7e3df32b9a705a94",
+    "sha256": "de2844108d10bdb11a03d7a8d99ad5765fde2194d03baa7d1df37065081f9c10"
+  },
+  "change_vector": {
+    "model_alias": "OPENAI_MODEL_or_MODEL_NAME",
+    "reasoning_provenance": "rescued_not_claimed_as_answer_evidence",
+    "reasoning_shadow_binding": "sealed_gpt56_artifact_only",
+    "scenario_range": "predicted99_not_official",
+    "submit_csv_binding": "required_exact_nine_columns",
+    "usage_resume": "cumulative_raw_calls"
+  },
+  "direction_id": "qwen37_compliance_and_score_loop_scaffold",
+  "domains": [
+    "financial_contracts",
+    "financial_reports",
+    "insurance",
+    "regulatory",
+    "research"
+  ],
+  "effect": "独立审查提出的8项高/中问题中，环境选模、CSV绑定、shadow分绑定、双endpoint、usage三字段、resume usage和救援provenance均已修复；grounding增加答案显式出现、证据ID闭包及计算replay/grounding确定性门禁。accuracy改答仍无隐藏真值，因此保留情景区间而不输出伪点分。277项测试全部通过，实际环境在OPENAI选择下解析为允许的qwen3.7-plus，judge基座走独立LLM连接。尚未执行付费推理。",
+  "experiment_id": "b-loop-qwen37-compliance-and-score-loop-scaffold-a2",
+  "failure_analysis": "reasoning事实与证据的完全语义蕴含仍不可能由纯确定性规则证明；当前采用Qwen显式insufficient门、答案/数值显式闭环、证据ID闭包、计算本地重放和后续GPT-5.6文本质量影子评测。pseudo99之外的改答只能给假设区间，不能据此声称真实提升。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "model_alias": "OPENAI_MODEL_or_MODEL_NAME",
+            "reasoning_provenance": "rescued_not_claimed_as_answer_evidence",
+            "reasoning_shadow_binding": "sealed_gpt56_artifact_only",
+            "scenario_range": "predicted99_not_official",
+            "submit_csv_binding": "required_exact_nine_columns",
+            "usage_resume": "cumulative_raw_calls"
+          },
+          "domains": [
+            "financial_contracts",
+            "financial_reports",
+            "insurance",
+            "regulatory",
+            "research"
+          ],
+          "hypothesis": "对第一轮脚手架做独立审查并封堵实际环境选模、最终csv漂移、影子分误绑定和resume usage遗漏，才能把合规通过作为付费探针前置门禁。",
+          "pipeline_stage": "production_policy_scoring_reasoning_usage_audit",
+          "question_types": [
+            "calculation",
+            "extraction",
+            "mcq",
+            "multi",
+            "tf"
+          ],
+          "root_cause_cluster": "new_rule_and_model_compliance_drift",
+          "target_qids": [
+            "all_100"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "7f6263694c1e465d7c12890dfa16bc567e8e8bfb23411e36337296a0f5391051",
+      "schema_version": 1,
+      "semantic_sha256": "729cc1219d07642aa5e24966c61c247ec95c9c0a56116fbb7e3df32b9a705a94",
+      "sha256": "de2844108d10bdb11a03d7a8d99ad5765fde2194d03baa7d1df37065081f9c10"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "model_alias": "OPENAI_MODEL_or_MODEL_NAME",
+              "reasoning_provenance": "rescued_not_claimed_as_answer_evidence",
+              "reasoning_shadow_binding": "sealed_gpt56_artifact_only",
+              "scenario_range": "predicted99_not_official",
+              "submit_csv_binding": "required_exact_nine_columns",
+              "usage_resume": "cumulative_raw_calls"
+            },
+            "domains": [
+              "financial_contracts",
+              "financial_reports",
+              "insurance",
+              "regulatory",
+              "research"
+            ],
+            "hypothesis": "对第一轮脚手架做独立审查并封堵实际环境选模、最终csv漂移、影子分误绑定和resume usage遗漏，才能把合规通过作为付费探针前置门禁。",
+            "pipeline_stage": "production_policy_scoring_reasoning_usage_audit",
+            "question_types": [
+              "calculation",
+              "extraction",
+              "mcq",
+              "multi",
+              "tf"
+            ],
+            "root_cause_cluster": "new_rule_and_model_compliance_drift",
+            "target_qids": [
+              "all_100"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "7f6263694c1e465d7c12890dfa16bc567e8e8bfb23411e36337296a0f5391051",
+        "schema_version": 1,
+        "semantic_sha256": "729cc1219d07642aa5e24966c61c247ec95c9c0a56116fbb7e3df32b9a705a94",
+        "sha256": "de2844108d10bdb11a03d7a8d99ad5765fde2194d03baa7d1df37065081f9c10"
+      },
+      "comparable_attempt_count": 1,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-qwen37-compliance-and-score-loop-scaffold-a1"
+      ],
+      "similarity": 0.7
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "5a43a1dbab1328787f38088c5f1a45cbc8f1f90642770aa7a5d00ea322490b2f",
+      "size": 914799
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "6fd9753596053a5cc55ddf90dcfc84e007dc5462633d9a9a0b9953b5573c43ac",
+      "size": 741602
+    },
+    "related_log_sections": [
+      "b-loop-qwen37-compliance-and-score-loop-scaffold-a1"
+    ],
+    "reviewed_at": "2026-07-23T15:14:06+00:00"
+  },
+  "hypothesis": "对第一轮脚手架做独立审查并封堵实际环境选模、最终CSV漂移、影子分误绑定和resume usage遗漏，才能把合规通过作为付费探针前置门禁。",
+  "material_delta": {
+    "independent_code_review_findings_fixed": 8
+  },
+  "metrics": {
+    "judge_connection_independent": true,
+    "official_accuracy": null,
+    "paid_inference_calls": 0,
+    "production_model_allowed": true,
+    "production_model_resolved": "qwen3.7-plus",
+    "proxy_total_score": null,
+    "reasoning_score_manual_override_allowed": false,
+    "reasoning_shadow_score": null,
+    "review_findings_fixed_or_mitigated": 8,
+    "review_findings_total": 8,
+    "submit_csv_required_for_compliance": true,
+    "test_count": 277,
+    "test_failures": 0,
+    "token_total": null
+  },
+  "next_step": "提交并推送合规脚手架；随后固定OPENAI_MODEL=qwen3.7-plus-2026-05-26运行fc_b_019选择题与fin_b_005计算题探针，探针必须完整通过submit CSV、raw usage、grounded reasoning和本地计算门禁才允许100题基线。",
+  "pipeline_stage": "production_policy_scoring_reasoning_usage_audit",
+  "question_types": [
+    "tf",
+    "mcq",
+    "multi",
+    "calculation",
+    "extraction"
+  ],
+  "recorded_at": "2026-07-23T15:14:06+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "new_rule_and_model_compliance_drift",
+  "status": "completed",
+  "submission_effect": "infrastructure_only_not_submitted",
+  "target_qids": [
+    "all_100"
+  ]
+}
+```

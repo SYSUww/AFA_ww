@@ -1,19 +1,18 @@
 from __future__ import annotations
 
-import re
 from dataclasses import asdict, dataclass
 from statistics import fmean
 from typing import Iterable
 
-
-ACCURACY_WEIGHT = 0.6
-REASONING_WEIGHT = 0.2
-TOKEN_EFFICIENCY_WEIGHT = 0.2
-
-_ALLOWED_MODEL_RE = re.compile(
-    r"(?:^|[/_-])qwen[-_]?3[._-]?[56](?:$|[-_/.:])",
-    flags=re.IGNORECASE,
+from afa_agent.b_board.submission_policy import (
+    is_allowed_submission_model,
+    require_allowed_submission_model,
 )
+
+
+ACCURACY_WEIGHT = 0.5
+REASONING_WEIGHT = 0.3
+TOKEN_EFFICIENCY_WEIGHT = 0.2
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,7 +37,7 @@ def token_efficiency_score(token_total: int) -> float:
     if token_total < 500_000:
         return token_total / 500_000 * 100.0
     if token_total <= 5_000_000:
-        return 100.0
+        return (5_000_000 - token_total) / 5_000_000 * 100.0
     if token_total <= 10_000_000:
         return 100.0 * (1.0 - (token_total - 5_000_000) / 5_000_000)
     return 0.0
@@ -69,20 +68,6 @@ def score_submission(
         total_score=total,
         token_total=token_total,
     )
-
-
-def is_allowed_submission_model(model_name: str) -> bool:
-    """Whether a configured model belongs to the stated Qwen3.5/3.6 families."""
-
-    return bool(_ALLOWED_MODEL_RE.search(str(model_name).strip()))
-
-
-def require_allowed_submission_model(model_name: str) -> None:
-    if not is_allowed_submission_model(model_name):
-        raise ValueError(
-            "B-board submission generation requires a Qwen3.5/Qwen3.6 model; "
-            f"configured model is {model_name!r}"
-        )
 
 
 def _score_value(value: float, name: str) -> float:

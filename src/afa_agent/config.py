@@ -8,6 +8,18 @@ from typing import Any
 
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[2]
+_MODEL_ENV_FIELDS = {
+    "LLM": {
+        "api_key": "LLM_API_KEY",
+        "api_base": "LLM_API_BASE",
+        "model_name": "LLM_MODEL",
+    },
+    "OPENAI": {
+        "api_key": "OPENAI_API_KEY",
+        "api_base": "OPENAI_BASE_URL",
+        "model_name": "OPENAI_MODEL",
+    },
+}
 
 
 def load_env(env_path: Path | None = None) -> dict[str, str]:
@@ -65,24 +77,80 @@ class RunConfig:
 
 def build_run_config(project_root: Path | None = None) -> RunConfig:
     root = project_root or DEFAULT_ROOT
-    env = load_env(root / ".env")
-    model = None
-    if env.get("LLM_API_KEY") and env.get("LLM_API_BASE") and env.get("LLM_MODEL"):
-        timeout_seconds = _env_int(env, "LLM_TIMEOUT_SECONDS", 120)
-        model = ModelConfig(
-            api_key=env["LLM_API_KEY"],
-            api_base=env["LLM_API_BASE"],
-            model_name=env["LLM_MODEL"],
-            temperature=_env_float(env, "LLM_TEMPERATURE", 0.0),
-            timeout_seconds=timeout_seconds,
-            connect_timeout_seconds=_env_int(env, "LLM_CONNECT_TIMEOUT_SECONDS", 20),
-            read_timeout_seconds=_env_int(env, "LLM_READ_TIMEOUT_SECONDS", timeout_seconds),
-            max_retries=_env_int(env, "LLM_MAX_RETRIES", 2),
-            retry_backoff_seconds=_env_float(env, "LLM_RETRY_BACKOFF_SECONDS", 2.0),
-        )
+    model = build_model_config(root)
     config = RunConfig(project_root=root, artifacts_dir=root / "artifacts", model=model)
     config.ensure_directories()
     return config
+
+
+def build_model_config(
+    project_root: Path | None = None,
+    *,
+    env_prefix: str | None = None,
+) -> ModelConfig | None:
+    """Build one complete connection without mixing environment namespaces."""
+
+    root = project_root or DEFAULT_ROOT
+    env = load_env(root / ".env")
+    selected = _select_model_env(env, requested_prefix=env_prefix)
+    if selected is None:
+        return None
+    prefix, values = selected
+    timeout_seconds = _env_int(env, f"{prefix}_TIMEOUT_SECONDS", 120)
+    return ModelConfig(
+        api_key=values["api_key"],
+        api_base=values["api_base"],
+        model_name=values["model_name"],
+        temperature=_env_float(env, f"{prefix}_TEMPERATURE", 0.0),
+        timeout_seconds=timeout_seconds,
+        connect_timeout_seconds=_env_int(
+            env, f"{prefix}_CONNECT_TIMEOUT_SECONDS", 20
+        ),
+        read_timeout_seconds=_env_int(
+            env, f"{prefix}_READ_TIMEOUT_SECONDS", timeout_seconds
+        ),
+        max_retries=_env_int(env, f"{prefix}_MAX_RETRIES", 2),
+        retry_backoff_seconds=_env_float(
+            env, f"{prefix}_RETRY_BACKOFF_SECONDS", 2.0
+        ),
+    )
+
+
+def _select_model_env(
+    env: dict[str, str],
+    *,
+    requested_prefix: str | None = None,
+) -> tuple[str, dict[str, str]] | None:
+    selected_prefix = str(
+        requested_prefix
+        if requested_prefix is not None
+        else env.get("AFA_MODEL_ENV_PREFIX", "")
+    ).strip().upper()
+    if selected_prefix and selected_prefix not in _MODEL_ENV_FIELDS:
+        raise ValueError("model env prefix must be one of LLM or OPENAI")
+    prefixes = (selected_prefix,) if selected_prefix else ("LLM", "OPENAI")
+    for prefix in prefixes:
+        fields = _MODEL_ENV_FIELDS[prefix]
+        present = {
+            name: str(env.get(key, "")).strip()
+            for name, key in fields.items()
+        }
+        if prefix == "OPENAI" and not present["model_name"]:
+            present["model_name"] = str(env.get("MODEL_NAME", "")).strip()
+        supplied = [name for name, value in present.items() if value]
+        if not supplied:
+            if selected_prefix:
+                raise ValueError(
+                    f"{prefix} model configuration was explicitly selected but is missing"
+                )
+            continue
+        if len(supplied) != len(fields):
+            missing = sorted(set(fields) - set(supplied))
+            raise ValueError(
+                f"incomplete {prefix} model configuration; missing {', '.join(missing)}"
+            )
+        return prefix, present
+    return None
 
 
 def _env_int(env: dict[str, str], key: str, default: int) -> int:

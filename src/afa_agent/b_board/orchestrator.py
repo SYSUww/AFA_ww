@@ -25,7 +25,7 @@ from afa_agent.b_board.reasoning_evaluation import (
     run_reasoning_evaluation,
 )
 from afa_agent.b_board.runner import BBoardActualRunner
-from afa_agent.config import build_run_config
+from afa_agent.config import build_model_config, build_run_config
 from afa_agent.experiment_registry import ExperimentRegistry
 from afa_agent.io_utils import ensure_dir, read_json, write_json
 
@@ -588,10 +588,13 @@ class BBoardLoopOrchestrator:
         questions: Sequence[BQuestion],
         config: Mapping[str, Any],
     ) -> Mapping[str, Any]:
-        run_config = build_run_config(self.root)
-        if run_config.model is None:
-            raise BBoardLoopStateError("Missing model config for fixed B reasoning evaluator")
-        model = self._reasoning_evaluator_model_config(run_config.model)
+        env_prefix = str(config.get("env_prefix") or "LLM").strip().upper()
+        base_model = build_model_config(self.root, env_prefix=env_prefix)
+        if base_model is None:
+            raise BBoardLoopStateError(
+                f"Missing {env_prefix} model config for fixed B reasoning evaluator"
+            )
+        model = self._reasoning_evaluator_model_config(base_model)
         result = run_reasoning_evaluation(
             submission_path=submission_path,
             questions=questions,
@@ -648,6 +651,13 @@ class BBoardLoopOrchestrator:
         return self.run_dir / output_name
 
     def _validate_reasoning_evaluation_config(self) -> None:
+        env_prefix = str(
+            self.reasoning_evaluation.get("env_prefix") or "LLM"
+        ).strip().upper()
+        if env_prefix not in {"LLM", "OPENAI"}:
+            raise ValueError(
+                "B loop reasoning_evaluation.env_prefix must be LLM or OPENAI"
+            )
         if (
             self.reasoning_evaluation.get("prompt_version", REASONING_PROMPT_VERSION)
             != REASONING_PROMPT_VERSION

@@ -17,7 +17,7 @@ from afa_agent.b_board.reasoning_evaluation import (
     REASONING_JUDGE_MODEL,
     run_reasoning_evaluation,
 )
-from afa_agent.config import build_run_config
+from afa_agent.config import build_model_config
 
 
 def parse_args() -> argparse.Namespace:
@@ -31,16 +31,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--accuracy-score", type=float)
     parser.add_argument("--accuracy-source", default="")
+    parser.add_argument(
+        "--judge-env-prefix",
+        choices=("LLM", "OPENAI"),
+        default="LLM",
+        help="Independent connection namespace for the GPT-5.6 shadow judge",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    config = build_run_config(ROOT)
-    if config.model is None:
-        raise RuntimeError("Missing model config in .env")
+    base_model = build_model_config(ROOT, env_prefix=args.judge_env_prefix)
+    if base_model is None:
+        raise RuntimeError(
+            f"Missing complete {args.judge_env_prefix} model config in .env"
+        )
     judge_model = replace(
-        config.model,
+        base_model,
         model_name=REASONING_JUDGE_MODEL,
         temperature=0.0,
     )

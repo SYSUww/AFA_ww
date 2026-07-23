@@ -122,7 +122,7 @@ class ReasoningEvaluationRunTests(unittest.TestCase):
         assert result.scorecard is not None
         self.assertEqual(result.scorecard["token_total"], 35)
         self.assertFalse(result.scorecard["judge_tokens_included_in_submission"])
-        self.assertAlmostEqual(result.scorecard["total_score"], 58.2 + 8 + 0.0014)
+        self.assertAlmostEqual(result.scorecard["total_score"], 48.5 + 12 + 0.0014)
 
     def test_judge_failure_is_persisted_as_zero_and_is_not_retried_on_resume(self) -> None:
         second_reasoning = "先定位比较对象，再核对材料中的数值和适用范围，最后依据完整推导得到结论。"

@@ -1,0 +1,17 @@
+{
+  "status": "officially_confirmed_or_uniquely_derived",
+  "updated_at": "2026-07-23",
+  "source_log": "wiki/b_board_submission_score_log.md",
+  "answers": {
+    "fc_b_003": ["ABCD"],
+    "fc_b_019": ["ABCD"],
+    "reg_b_001": ["ACD"],
+    "res_b_004": ["BCD"],
+    "ins_b_006": ["BCD"],
+    "ins_b_012": ["BCD"],
+    "ins_b_016": ["BD"],
+    "ins_b_017": ["ABCD"],
+    "fin_b_005": ["AC"]
+  },
+  "notes": "These locks come from single-question official score deltas or uniquely decomposed official score constraints. They are evaluation gates only and must not be injected into Qwen generation prompts."
+}

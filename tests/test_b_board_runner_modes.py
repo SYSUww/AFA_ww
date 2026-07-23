@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import unittest
@@ -95,10 +96,87 @@ class BBoardRunnerModeTests(unittest.TestCase):
     def test_reasoning_prompt_requires_explicit_auditable_structure(self) -> None:
         self.assertEqual(
             SUBMISSION_REASONING_PROMPT_VERSION,
-            "b_submission_reasoning_v2_explicit_structure",
+            "b_submission_reasoning_v3_qwen37_grounded",
         )
         self.assertIn("定位—关键事实—推导—结论", SUBMISSION_REASONING_SYSTEM_PROMPT)
-        self.assertIn("与 answer_parts 完全一致", SUBMISSION_REASONING_SYSTEM_PROMPT)
+        self.assertIn("frozen_answer_parts", SUBMISSION_REASONING_SYSTEM_PROMPT)
+        self.assertIn('grounding_status="insufficient"', SUBMISSION_REASONING_SYSTEM_PROMPT)
+
+    def test_reasoning_generation_preserves_answer_and_receives_verified_trace(self) -> None:
+        runner = object.__new__(BBoardActualRunner)
+        runner.config = SimpleNamespace(model=SimpleNamespace(model_name="qwen3.7-plus"))
+        runner.client = _QueuedClient(
+            [
+                _response(
+                    '{"answer_parts":["A"],"grounding_status":"supported",'
+                    '"missing_support":[],"reasoning":"定位监管要求后，证据明确给出适用条件，'
+                    '该条件与题干陈述一致，因而判断成立，最终答案为A。"}',
+                    10,
+                    2,
+                )
+            ]
+        )
+        artifact = _artifact()
+
+        result = runner._attach_submission_reasoning(_question(), artifact)
+
+        self.assertEqual(result.answer_parts, ["A"])
+        self.assertIn("最终答案为A", result.decision_summary)
+        self.assertEqual(
+            result.token_usage,
+            {"prompt_tokens": 20, "completion_tokens": 7, "total_tokens": 27},
+        )
+        payload = runner.client.messages[0][1]["content"]
+        self.assertIn('"frozen_answer_parts": ["A"]', payload)
+        self.assertIn('"verified_calculation_trace": {}', payload)
+        trace = result.decision_trace["submission_reasoning"]
+        self.assertEqual(trace["grounding_status"], "supported")
+        self.assertEqual(trace["attempt_count"], 1)
+        self.assertEqual(
+            trace["token_usage"],
+            {"prompt_tokens": 10, "completion_tokens": 2, "total_tokens": 12},
+        )
+
+    def test_reasoning_generation_rescues_once_after_insufficient_evidence(self) -> None:
+        runner = object.__new__(BBoardActualRunner)
+        runner.config = SimpleNamespace(model=SimpleNamespace(model_name="qwen3.7-plus"))
+        runner.client = _QueuedClient(
+            [
+                _response(
+                    '{"answer_parts":["A"],"grounding_status":"insufficient",'
+                    '"missing_support":["缺少适用条件"],"reasoning":""}',
+                    10,
+                    2,
+                ),
+                _response(
+                    '{"answer_parts":["A"],"grounding_status":"supported",'
+                    '"missing_support":[],"reasoning":"定位监管要求后，补充证据明确给出适用条件，'
+                    '该条件与题干陈述一致，因而判断成立，最终答案为A。"}',
+                    12,
+                    3,
+                ),
+            ]
+        )
+        runner._rescue_submission_reasoning_evidence = lambda *_args: [
+            {
+                "unit_id": "u2",
+                "doc_id": "d1",
+                "title_path": ["补充条款"],
+                "text": "补充证据明确给出适用条件。",
+            }
+        ]
+
+        result = runner._attach_submission_reasoning(_question(), _artifact())
+
+        self.assertEqual(len(runner.client.messages), 2)
+        self.assertNotIn("u2", result.used_evidence_ids)
+        self.assertEqual(
+            result.token_usage,
+            {"prompt_tokens": 32, "completion_tokens": 10, "total_tokens": 42},
+        )
+        trace = result.decision_trace["submission_reasoning"]
+        self.assertEqual(trace["attempt_count"], 2)
+        self.assertEqual(trace["rescued_evidence_ids"], ["u2"])
 
     def test_reasoning_refinement_prompts_match_new_md_dimensions_and_freeze_answer(self) -> None:
         self.assertEqual(
@@ -247,7 +325,7 @@ class BBoardRunnerModeTests(unittest.TestCase):
         config = RunConfig(model=_model("gpt-5.5"))
         with mock.patch(
             "afa_agent.b_board.runner.build_run_config", return_value=config
-        ), self.assertRaisesRegex(ValueError, "requires a Qwen3.5/Qwen3.6 model"):
+        ), self.assertRaisesRegex(ValueError, "requires a Qwen3.5/Qwen3.6/Qwen3.7 model"):
             BBoardActualRunner(questions=[])
 
     def test_research_mode_allows_non_allowlisted_model(self) -> None:
@@ -288,8 +366,13 @@ class BBoardRunnerModeTests(unittest.TestCase):
                 manifest["submission_ineligibility_reasons"],
                 [
                     "research_mode_is_not_submission_eligible",
-                    "model_is_not_qwen3.5_or_qwen3.6",
+                    "model_is_not_qwen3.5_qwen3.6_or_qwen3.7",
                 ],
+            )
+            self.assertTrue((run_dir / "usage_ledger.jsonl").is_file())
+            self.assertEqual(
+                manifest["usage_ledger_path"],
+                str((run_dir / "usage_ledger.jsonl").resolve()),
             )
 
     def test_submission_run_writes_submit_csv_and_is_eligible(self) -> None:
@@ -307,6 +390,100 @@ class BBoardRunnerModeTests(unittest.TestCase):
             )
             self.assertIsNone(manifest["research_submission_path"])
             self.assertEqual(manifest["submission_ineligibility_reasons"], [])
+            self.assertTrue((run_dir / "usage_ledger.jsonl").is_file())
+
+    def test_qwen37_submission_run_is_eligible(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory) / "submission-qwen37"
+            runner = self._lightweight_runner(
+                RUN_MODE_SUBMISSION, "qwen3.7-plus-2026-05-26"
+            )
+
+            manifest = runner.run(run_dir=run_dir, workers=1)
+
+            self.assertTrue(manifest["submission_eligible"])
+            self.assertEqual(manifest["submission_ineligibility_reasons"], [])
+
+    def test_resume_preserves_prior_failed_call_usage_in_final_qid_total(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory) / "resume-usage"
+            failing_runner = self._lightweight_runner(
+                RUN_MODE_SUBMISSION, "qwen3.7-plus"
+            )
+            failure_call = {
+                "call_index": 1,
+                "model_name": "qwen3.7-plus",
+                "token_usage": {
+                    "prompt_tokens": 5,
+                    "completion_tokens": 2,
+                    "total_tokens": 7,
+                },
+            }
+
+            def fail_once(*_args):
+                raise BAnswerGenerationError(
+                    "invalid first response",
+                    token_usage={
+                        "prompt_tokens": 5,
+                        "completion_tokens": 2,
+                        "total_tokens": 7,
+                    },
+                    diagnostics=[
+                        {"stage": "api_usage_ledger", "calls": [failure_call]}
+                    ],
+                )
+
+            failing_runner.answer_one = fail_once
+            first_manifest = failing_runner.run(run_dir=run_dir, workers=1)
+            self.assertEqual(first_manifest["status"], "incomplete")
+
+            succeeding_runner = self._lightweight_runner(
+                RUN_MODE_SUBMISSION, "qwen3.7-plus"
+            )
+            succeeded = _artifact()
+            succeeded.decision_trace = {
+                "api_usage_ledger": {
+                    "call_count": 1,
+                    "calls": [
+                        {
+                            "call_index": 1,
+                            "model_name": "qwen3.7-plus",
+                            "token_usage": dict(succeeded.token_usage),
+                        }
+                    ],
+                }
+            }
+            succeeding_runner.answer_one = lambda *_args: succeeded
+
+            with mock.patch(
+                "afa_agent.b_board.runner.validate_resume_fingerprint"
+            ):
+                final_manifest = succeeding_runner.run(run_dir=run_dir, workers=1)
+            ledger_rows = [
+                json.loads(line)
+                for line in (run_dir / "usage_ledger.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+                if line.strip()
+            ]
+
+        self.assertEqual(final_manifest["status"], "complete")
+        self.assertEqual(
+            final_manifest["generation_token_usage"],
+            {"prompt_tokens": 15, "completion_tokens": 7, "total_tokens": 22},
+        )
+        self.assertEqual(
+            final_manifest["failed_token_usage"],
+            {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+        )
+        self.assertEqual(final_manifest["retry_failure_count"], 1)
+        self.assertEqual(len(ledger_rows), 1)
+        self.assertEqual(ledger_rows[0]["status"], "success")
+        self.assertEqual(ledger_rows[0]["call_count"], 2)
+        self.assertEqual(
+            ledger_rows[0]["token_usage"],
+            {"prompt_tokens": 15, "completion_tokens": 7, "total_tokens": 22},
+        )
 
     def test_run_mode_changes_fingerprint_and_blocks_resume(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
