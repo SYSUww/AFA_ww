@@ -123,11 +123,16 @@ def materialize_accuracy_only_candidate(
         writer.writerows(rows)
 
     _validate_candidate(base_path, output_path, changes)
+    baseline_accuracy = 97.0
+    maximum_delta = float(len(changes))
     manifest = {
         "status": "candidate_ready",
-        "baseline_official_accuracy": 97.0,
-        "predicted_accuracy": 99.0,
-        "strict_possible_accuracy_range": [95.0, 99.0],
+        "baseline_official_accuracy": baseline_accuracy,
+        "predicted_accuracy": baseline_accuracy + maximum_delta,
+        "strict_possible_accuracy_range": [
+            baseline_accuracy - maximum_delta,
+            baseline_accuracy + maximum_delta,
+        ],
         "answer_change_count": len(changes),
         "answer_changes": changes,
         "frozen_answer_count": len(rows) - 1 - len(changes),

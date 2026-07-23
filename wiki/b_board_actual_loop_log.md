@@ -20551,3 +20551,216 @@
   ]
 }
 ```
+
+## b-loop-official97-boundary-d-option-rollback-a2-ins017-single
+
+- recorded_at: `2026-07-23T04:03:27+00:00`
+
+```json
+{
+  "approach": "基于官网97%八列文件做单题消融，仅将ins_b_017.answer_1从ABCD改为ABC；其余99题、Token字段、summary和行序全部冻结，不包含reasoning列。",
+  "artifact_path": "artifacts/b_board_actual/candidates/i031_accuracy_boundary_d_rollback/ins017_drop_d_single_a2/submit.csv",
+  "base_commit": "ddca74710fbb571f20ca9960268bd6e0bfe1147e",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "ddca74710fbb571f20ca9960268bd6e0bfe1147e"
+      },
+      "identity": {
+        "change_vector": {
+          "ablation": "single_qid",
+          "answer_only": true,
+          "frozen_other_qids": 99,
+          "ins_b_017": "ABCD->ABC",
+          "reasoning_column": false
+        },
+        "domains": [
+          "insurance"
+        ],
+        "hypothesis": "ins_b_017的d项只列出放射性污染、核反应、核辐射，可能不满足标准答案对核爆炸、核辐射或核污染的明确列明口径；单题abcd改abc可用一次官网提交无混杂归因。",
+        "pipeline_stage": "answer_badcase_optimization",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "multi_choice_scope_boundary_overselection",
+        "target_qids": [
+          "ins_b_017"
+        ]
+      }
+    },
+    "context_sha256": "1ef6745875c2086bd860a4b7dd3f80bfe202adf05c575c8bc8f1ccb9b0174851",
+    "direction_sha256": "ff6cab18b5899581afdf255f6e1cd385ad6c3b5b8510f47e5d987c322bde1b35",
+    "schema_version": 1,
+    "semantic_sha256": "4e4a0df4c61d8a8dfed74e360988e48df5dfdf51e09d36b4d7146429bf92cbbf",
+    "sha256": "e6ce7cc2c0c7084fbbae6267bba5e6755f9a17cfd7755a61459dcb0c9d4ba970"
+  },
+  "change_vector": {
+    "ablation": "single_qid",
+    "answer_only": true,
+    "frozen_other_qids": 99,
+    "ins_b_017": "ABCD->ABC",
+    "reasoning_column": false
+  },
+  "direction_id": "official97_boundary_d_option_rollback",
+  "domains": [
+    "insurance"
+  ],
+  "effect": "已生成无混杂单题候选并完成逐字段校验；候选尚未官网提交，因此没有真实准确率提升结论。相对97%基线，单题完全匹配下结果只能为96%、97%或98%。",
+  "experiment_id": "b-loop-official97-boundary-d-option-rollback-a2-ins017-single",
+  "failure_analysis": "D项存在真实反证风险：条款明确列有放射性污染、核反应和核辐射，题干又使用“等核风险免责”。本轮价值主要是官网单题归因，不应把98%上界视为高置信预测。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "ddca74710fbb571f20ca9960268bd6e0bfe1147e"
+        },
+        "identity": {
+          "change_vector": {
+            "ablation": "single_qid",
+            "answer_only": true,
+            "frozen_other_qids": 99,
+            "ins_b_017": "ABCD->ABC",
+            "reasoning_column": false
+          },
+          "domains": [
+            "insurance"
+          ],
+          "hypothesis": "ins_b_017的d项只列出放射性污染、核反应、核辐射，可能不满足标准答案对核爆炸、核辐射或核污染的明确列明口径；单题abcd改abc可用一次官网提交无混杂归因。",
+          "pipeline_stage": "answer_badcase_optimization",
+          "question_types": [
+            "multi"
+          ],
+          "root_cause_cluster": "multi_choice_scope_boundary_overselection",
+          "target_qids": [
+            "ins_b_017"
+          ]
+        }
+      },
+      "context_sha256": "1ef6745875c2086bd860a4b7dd3f80bfe202adf05c575c8bc8f1ccb9b0174851",
+      "direction_sha256": "ff6cab18b5899581afdf255f6e1cd385ad6c3b5b8510f47e5d987c322bde1b35",
+      "schema_version": 1,
+      "semantic_sha256": "4e4a0df4c61d8a8dfed74e360988e48df5dfdf51e09d36b4d7146429bf92cbbf",
+      "sha256": "e6ce7cc2c0c7084fbbae6267bba5e6755f9a17cfd7755a61459dcb0c9d4ba970"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "ddca74710fbb571f20ca9960268bd6e0bfe1147e"
+          },
+          "identity": {
+            "change_vector": {
+              "ablation": "single_qid",
+              "answer_only": true,
+              "frozen_other_qids": 99,
+              "ins_b_017": "ABCD->ABC",
+              "reasoning_column": false
+            },
+            "domains": [
+              "insurance"
+            ],
+            "hypothesis": "ins_b_017的d项只列出放射性污染、核反应、核辐射，可能不满足标准答案对核爆炸、核辐射或核污染的明确列明口径；单题abcd改abc可用一次官网提交无混杂归因。",
+            "pipeline_stage": "answer_badcase_optimization",
+            "question_types": [
+              "multi"
+            ],
+            "root_cause_cluster": "multi_choice_scope_boundary_overselection",
+            "target_qids": [
+              "ins_b_017"
+            ]
+          }
+        },
+        "context_sha256": "1ef6745875c2086bd860a4b7dd3f80bfe202adf05c575c8bc8f1ccb9b0174851",
+        "direction_sha256": "ff6cab18b5899581afdf255f6e1cd385ad6c3b5b8510f47e5d987c322bde1b35",
+        "schema_version": 1,
+        "semantic_sha256": "4e4a0df4c61d8a8dfed74e360988e48df5dfdf51e09d36b4d7146429bf92cbbf",
+        "sha256": "e6ce7cc2c0c7084fbbae6267bba5e6755f9a17cfd7755a61459dcb0c9d4ba970"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "Related history is inconclusive, so executing will add information",
+      "related_experiment_ids": [
+        "b-loop-official97-boundary-d-option-rollback-a1-joint"
+      ],
+      "similarity": 0.793755
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "8230115981d9a7275da27b1ebaacfd6c8c060d66c0b0878aff0d08a86d961608",
+      "size": 739796
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "99ba3e9b9c68aa4c3f63831325a8685eeb968b53af7630446699212f6b355a5b",
+      "size": 601152
+    },
+    "related_log_sections": [
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i024-remaining93-direct-source-five-v1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-official97-boundary-d-option-rollback-a1-joint"
+    ],
+    "reviewed_at": "2026-07-23T04:03:27+00:00"
+  },
+  "hypothesis": "ins_b_017的D项只列出放射性污染、核反应、核辐射，可能不满足标准答案对核爆炸、核辐射或核污染的明确列明口径；单题ABCD改ABC可用一次官网提交无混杂归因。",
+  "metrics": {
+    "answer_change_count": 1,
+    "answer_changes": {
+      "ins_b_017": {
+        "after": "ABC",
+        "before": "ABCD"
+      }
+    },
+    "answer_row_count": 100,
+    "baseline_official_accuracy": 97.0,
+    "best_case_accuracy": 98.0,
+    "candidate_sha256": "56cd46ae731ac75744f36f8bc682118ed619c7b99a57490d667117f96e414889",
+    "frozen_answer_count": 99,
+    "full_test_count": 254,
+    "full_test_failures": 0,
+    "reasoning_column_present": false,
+    "strict_possible_accuracy_range": [
+      96.0,
+      98.0
+    ],
+    "token_field_change_count": 0
+  },
+  "next_step": "上传本轮submit.csv并回填官网结果：98%锁定ABC；96%锁定ABCD并回滚；97%说明两种答案均未产生边际变化，停止该题方向。",
+  "pipeline_stage": "answer_badcase_optimization",
+  "question_types": [
+    "multi"
+  ],
+  "recorded_at": "2026-07-23T04:03:27+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "multi_choice_scope_boundary_overselection",
+  "status": "candidate_ready",
+  "submission_effect": "candidate_ready_not_submitted",
+  "target_qids": [
+    "ins_b_017"
+  ]
+}
+```

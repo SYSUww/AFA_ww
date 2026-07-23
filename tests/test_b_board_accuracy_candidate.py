@@ -38,6 +38,8 @@ class AccuracyOnlyCandidateTests(unittest.TestCase):
         self.assertEqual(manifest["answer_change_count"], 1)
         self.assertEqual(manifest["frozen_answer_count"], 1)
         self.assertFalse(manifest["reasoning_column_present"])
+        self.assertEqual(manifest["predicted_accuracy"], 98.0)
+        self.assertEqual(manifest["strict_possible_accuracy_range"], [96.0, 98.0])
 
     def test_rejects_non_answer_only_baseline(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
