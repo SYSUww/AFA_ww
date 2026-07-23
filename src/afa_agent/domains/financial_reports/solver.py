@@ -487,7 +487,7 @@ class FinancialReportsSolver:
             "招商银行": "cmb",
             "中国建筑": "cscec",
         }
-        values: dict[str, tuple[float, dict[str, Any]]] = {}
+        values: dict[str, tuple[float, list[dict[str, Any]]]] = {}
         for company, hint in doc_hints.items():
             doc_id = self._company_year_doc(question.doc_ids, hint, "2025")
             result = self._best_dividend_per_ten(doc_id) if doc_id else None
@@ -501,23 +501,34 @@ class FinancialReportsSolver:
             reason = "规范全年分红口径（每10股）：" + "，".join(
                 f"{company}{values[company][0]:g}元" for company in ordered
             )
-            evidence = [self._unit_to_evidence(values[company][1], 999.0) for company in ordered]
+            evidence = [
+                self._unit_to_evidence(unit, 999.0)
+                for company in ordered
+                for unit in values[company][1]
+            ]
             return label, reason, evidence
         if "美的集团" in option_text and "全年每 10 股现金分红为 38 元" in option_text:
             label = abs(values["美的集团"][0] - 38.0) <= 0.001
             reason = f"规范全年口径：美的集团2025年全年每10股现金分红为{values['美的集团'][0]:g}元，38元仅为年末方案。"
-            return label, reason, [self._unit_to_evidence(values["美的集团"][1], 999.0)]
+            return label, reason, [
+                self._unit_to_evidence(unit, 999.0)
+                for unit in values["美的集团"][1]
+            ]
         if "招商银行" in option_text and "每股现金分红 2.016 元" in option_text:
             label = abs(values["招商银行"][0] - 20.16) <= 0.001
             reason = f"规范单位换算：招商银行全年每股2.016元，等价于每10股{values['招商银行'][0]:.2f}元。"
-            return label, reason, [self._unit_to_evidence(values["招商银行"][1], 999.0)]
+            return label, reason, [
+                self._unit_to_evidence(unit, 999.0)
+                for unit in values["招商银行"][1]
+            ]
         if "宁德时代与美的集团" in option_text and "相差 26.57 元" in option_text:
             difference = values["宁德时代"][0] - values["美的集团"][0]
             label = abs(difference - 26.57) <= 0.001
             reason = f"规范全年口径差值：{values['宁德时代'][0]:g}-{values['美的集团'][0]:g}={difference:.2f}元。"
             return label, reason, [
-                self._unit_to_evidence(values["宁德时代"][1], 999.0),
-                self._unit_to_evidence(values["美的集团"][1], 999.0),
+                self._unit_to_evidence(unit, 999.0)
+                for company in ("宁德时代", "美的集团")
+                for unit in values[company][1]
             ]
         return None
 
@@ -939,7 +950,9 @@ class FinancialReportsSolver:
         match = re.search(r"(\d+(?:\.\d+)?)\s*(?:个?百分点|%)", text)
         return float(match.group(1)) if match else None
 
-    def _best_dividend_per_ten(self, doc_id: str) -> tuple[float, dict[str, Any]] | None:
+    def _best_dividend_per_ten(
+        self, doc_id: str
+    ) -> tuple[float, list[dict[str, Any]]] | None:
         candidates: list[tuple[int, float, dict[str, Any]]] = []
         for unit in self.units:
             if unit.get("doc_id") != doc_id or unit.get("unit_type") != "metric_row":
@@ -961,7 +974,51 @@ class FinancialReportsSolver:
         if not candidates:
             return None
         _, value, unit = max(candidates, key=lambda item: (item[0], -len(item[2].get("text", ""))))
-        return value, unit
+        evidence_units = [unit]
+
+        # Annual reports can headline the year-end residual as the per-10-share
+        # dividend. Add the interim payment only when the same report explicitly
+        # says that the selected value is the amount remaining after interim.
+        residual_unit = next(
+            (
+                candidate
+                for candidate in self.units
+                if candidate.get("doc_id") == doc_id
+                and "中期" in candidate.get("text", "")
+                and "剩余待分配" in candidate.get("text", "")
+                and re.search(
+                    rf"每\s*10\s*股派发现金(?:分红|红利)?\s*{re.escape(f'{value:g}')}\s*元",
+                    candidate.get("text", ""),
+                )
+            ),
+            None,
+        )
+        if residual_unit is not None:
+            interim_candidates: list[tuple[float, dict[str, Any]]] = []
+            for candidate in self.units:
+                if candidate.get("doc_id") != doc_id:
+                    continue
+                text = candidate.get("text", "")
+                if "中期分红" not in text:
+                    continue
+                match = re.search(
+                    r"每\s*10\s*股派发现金(?:分红|红利)?(?:人民币)?\s*(\d+(?:\.\d+)?)\s*元",
+                    text,
+                )
+                if match:
+                    interim_candidates.append((float(match.group(1)), candidate))
+            if interim_candidates:
+                interim_value, interim_unit = max(
+                    interim_candidates,
+                    key=lambda item: (-len(item[1].get("text", "")), item[0]),
+                )
+                value += interim_value
+                for candidate in (interim_unit, residual_unit):
+                    if candidate.get("unit_id") not in {
+                        item.get("unit_id") for item in evidence_units
+                    }:
+                        evidence_units.append(candidate)
+        return value, evidence_units
 
     def _find_unit(self, doc_id: str, *, required: tuple[str, ...]) -> dict[str, Any] | None:
         return next(

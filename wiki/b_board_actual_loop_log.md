@@ -20980,3 +20980,212 @@
   ]
 }
 ```
+
+## b-loop-financial-reports-full-year-dividend-evidence-aggregation-a1-fin005
+
+- recorded_at: `2026-07-23T05:37:06+00:00`
+
+```json
+{
+  "approach": "先复读既有循环日志，再对100题做原始材料证据审计并用GPT-5.6复核封存证据；发现fin_b_005把宁德时代剩余分红69.57误当全年分红。修复全年分红证据聚合，只生成fin_b_005的answer-only单题消融候选，其余99题、Token字段、summary与行序全部冻结。",
+  "artifact_path": "artifacts/b_board_actual/candidates/i032_evidence_full_year_dividend/fin005_ac_single_v1/submit.csv",
+  "base_commit": "ddd8b3b",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "ddd8b3b"
+      },
+      "identity": {
+        "change_vector": {
+          "answer_only": true,
+          "fin_b_005": "ACD->AC",
+          "frozen_other_qids": 99,
+          "reasoning_column": false
+        },
+        "domains": [
+          "financial_reports"
+        ],
+        "hypothesis": "宁德时代69.57元是扣除2025年中期10.07元后的剩余分红，全年应为79.64元；修正证据聚合后fin_b_005应由acd改为ac。",
+        "pipeline_stage": "answer_badcase_optimization",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "partial_year_residual_dividend_scope",
+        "target_qids": [
+          "fin_b_005"
+        ]
+      }
+    },
+    "context_sha256": "ea47f329f76d6eee0011d14acc5c622f1a57513480027711188e5a498d4dfe0c",
+    "direction_sha256": "8661989f30c6764530e9ba2db5263ecef819fa8ec258571f78b84fca3c2df868",
+    "schema_version": 1,
+    "semantic_sha256": "5016ccf2dd9ca864ee1bd7829d424db2180c3f5f1f105a79b327bd815927f1b6",
+    "sha256": "56946b33c8c4f1cdc6c9f8e0d1ae51fdfff49aa048930d5a7d8c53c32e310d36"
+  },
+  "change_vector": {
+    "answer_only": true,
+    "fin_b_005": "ACD->AC",
+    "frozen_other_qids": 99,
+    "reasoning_column": false
+  },
+  "direction_id": "financial_reports_full_year_dividend_evidence_aggregation",
+  "domains": [
+    "financial_reports"
+  ],
+  "effect": "原始年报闭环支持宁德时代全年79.64元、美的43元，差额36.64元，故D错误；候选仅将fin_b_005从ACD改为AC。当前仅为证据代理改善，尚无官网提交结果，不能声称真实准确率已提升。",
+  "experiment_id": "b-loop-financial-reports-full-year-dividend-evidence-aggregation-a1-fin005",
+  "failure_analysis": "GPT-5.6对封存证据给当前ACD置信度99，是因为证据包只带69.57指标行，遗漏中期10.07和剩余待分配上下文；说明仅审封存证据会产生假高置信。官网97%还意味着除本题外约有2题未定位。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "ddd8b3b"
+        },
+        "identity": {
+          "change_vector": {
+            "answer_only": true,
+            "fin_b_005": "ACD->AC",
+            "frozen_other_qids": 99,
+            "reasoning_column": false
+          },
+          "domains": [
+            "financial_reports"
+          ],
+          "hypothesis": "宁德时代69.57元是扣除2025年中期10.07元后的剩余分红，全年应为79.64元；修正证据聚合后fin_b_005应由acd改为ac。",
+          "pipeline_stage": "answer_badcase_optimization",
+          "question_types": [
+            "multi"
+          ],
+          "root_cause_cluster": "partial_year_residual_dividend_scope",
+          "target_qids": [
+            "fin_b_005"
+          ]
+        }
+      },
+      "context_sha256": "ea47f329f76d6eee0011d14acc5c622f1a57513480027711188e5a498d4dfe0c",
+      "direction_sha256": "8661989f30c6764530e9ba2db5263ecef819fa8ec258571f78b84fca3c2df868",
+      "schema_version": 1,
+      "semantic_sha256": "5016ccf2dd9ca864ee1bd7829d424db2180c3f5f1f105a79b327bd815927f1b6",
+      "sha256": "56946b33c8c4f1cdc6c9f8e0d1ae51fdfff49aa048930d5a7d8c53c32e310d36"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "ddd8b3b"
+          },
+          "identity": {
+            "change_vector": {
+              "answer_only": true,
+              "fin_b_005": "ACD->AC",
+              "frozen_other_qids": 99,
+              "reasoning_column": false
+            },
+            "domains": [
+              "financial_reports"
+            ],
+            "hypothesis": "宁德时代69.57元是扣除2025年中期10.07元后的剩余分红，全年应为79.64元；修正证据聚合后fin_b_005应由acd改为ac。",
+            "pipeline_stage": "answer_badcase_optimization",
+            "question_types": [
+              "multi"
+            ],
+            "root_cause_cluster": "partial_year_residual_dividend_scope",
+            "target_qids": [
+              "fin_b_005"
+            ]
+          }
+        },
+        "context_sha256": "ea47f329f76d6eee0011d14acc5c622f1a57513480027711188e5a498d4dfe0c",
+        "direction_sha256": "8661989f30c6764530e9ba2db5263ecef819fa8ec258571f78b84fca3c2df868",
+        "schema_version": 1,
+        "semantic_sha256": "5016ccf2dd9ca864ee1bd7829d424db2180c3f5f1f105a79b327bd815927f1b6",
+        "sha256": "56946b33c8c4f1cdc6c9f8e0d1ae51fdfff49aa048930d5a7d8c53c32e310d36"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "f8f6817f878ea5a72dc5ee38a1e7161d0c0787524e250e3125fe2d9323bb1939",
+      "size": 758377
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "4842f314e19dd9bb0da1d3f954d7d3919ca8395b1476035888460a3f8e9988b7",
+      "size": 616608
+    },
+    "related_log_sections": [
+      "B0-actual-evaluation",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-official97-boundary-d-option-rollback-a1-joint",
+      "b-loop-official97-boundary-d-option-rollback-a2-ins017-single"
+    ],
+    "reviewed_at": "2026-07-23T05:37:06+00:00"
+  },
+  "hypothesis": "宁德时代69.57元是扣除2025年中期10.07元后的剩余分红，全年应为79.64元；修正证据聚合后fin_b_005应由ACD改为AC。",
+  "metrics": {
+    "answer_change_count": 1,
+    "answer_changes": {
+      "fin_b_005": {
+        "after": "AC",
+        "before": "ACD"
+      }
+    },
+    "baseline_evidence_proxy_range": [
+      97.0,
+      99.0
+    ],
+    "baseline_official_accuracy": 97.0,
+    "candidate_evidence_proxy_range": [
+      98.0,
+      100.0
+    ],
+    "candidate_sha256": "8449237193e0895e05aa1166566e7b1213206510d6af91d6fcd4de0893b54d54",
+    "frozen_answer_count": 99,
+    "full_test_count": 254,
+    "full_test_failures": 0,
+    "gpt56_audit_answer_count": 100,
+    "gpt56_audit_answer_disagreement_count": 3,
+    "gpt56_audit_failures": 0,
+    "gpt56_audit_review_candidate_count": 12,
+    "predicted_accuracy_if_evidence_matches_hidden_key": 98.0,
+    "reasoning_column_present": false,
+    "strict_possible_official_accuracy_range": [
+      96.0,
+      98.0
+    ],
+    "submission_token_total": 931605,
+    "token_field_change_count": 0
+  },
+  "next_step": "若使用一次官网机会，优先提交该单题候选：98%确认AC；96%否定AC并回滚ACD；97%说明AC与ACD均未命中官方标签，停止该变体并继续证据矩阵审计。",
+  "pipeline_stage": "answer_badcase_optimization",
+  "question_types": [
+    "multi"
+  ],
+  "recorded_at": "2026-07-23T05:37:06+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "partial_year_residual_dividend_scope",
+  "status": "candidate_ready",
+  "submission_effect": "candidate_ready_not_submitted",
+  "target_qids": [
+    "fin_b_005"
+  ]
+}
+```

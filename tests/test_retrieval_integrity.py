@@ -1616,7 +1616,15 @@ class FinancialReportMetricBundleTests(unittest.TestCase):
         units = [
             make_metric(
                 "catl::dividend", "annual_catl_2025_report",
-                "2025年度利润分配预案：向全体股东每10股派发现金分红69.57元（含税）。", "现金分红",
+                "每10股派息数(元)(含税) | 69.57", "现金分红",
+            ),
+            make_unit(
+                "catl::interim", "annual_catl_2025_report",
+                "2025年中期分红方案，向全体股东每10股派发现金分红人民币10.07元（含税）。",
+            ),
+            make_unit(
+                "catl::remaining", "annual_catl_2025_report",
+                "扣除公司已分派的中期现金分红后，因此本次剩余待分配的年度现金分红及特别现金分红金额，向全体股东每10股派发现金分红69.57元。",
             ),
             make_metric(
                 "midea::dividend", "annual_midea_2025_report",
@@ -1647,8 +1655,16 @@ class FinancialReportMetricBundleTests(unittest.TestCase):
                 "annual_cmb_2025_report", "annual_cscec_2025_report",
             ],
         )
+        catl_value, catl_evidence = solver._best_dividend_per_ten(
+            "annual_catl_2025_report"
+        )
+        self.assertAlmostEqual(catl_value, 79.64)
+        self.assertEqual(
+            {item["unit_id"] for item in catl_evidence},
+            {"catl::dividend", "catl::interim", "catl::remaining"},
+        )
         labels = {key: solver._choice_metric_bundle_rule(question, option)[0] for key, option in options.items()}
-        self.assertEqual(labels, {"A": True, "B": False, "C": True, "D": True})
+        self.assertEqual(labels, {"A": True, "B": False, "C": True, "D": False})
 
     def test_statement_scope_bundle_distinguishes_consolidated_and_parent_rows(self) -> None:
         units = [
