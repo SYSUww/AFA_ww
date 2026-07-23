@@ -35122,3 +35122,324 @@
   ]
 }
 ```
+
+## b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a1
+
+- recorded_at: `2026-07-23T23:13:51+00:00`
+
+```json
+{
+  "approach": "锁定4个历史reasoning格式重试题，从干净冻结答案checkpoint按当前native strict schema各单次重生成；GPT-5.6仅离线影子复评；按0.5 accuracy + 0.3 reasoning + 0.2 Token逐题计算，保留代理总分净增项。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_integrated_full100_candidate_a5_retry_eliminated",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "answer_stage_calls": false,
+          "base_commit": "91b5088",
+          "feedback_refine_calls": false,
+          "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reasoning_prompt": "b_submission_reasoning_v4_grounded_date_boundary_hint",
+          "reference_answer_access": false,
+          "selection_gate": "per_qid_final_formula_delta_positive",
+          "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+        },
+        "domains": [
+          "financial",
+          "regulatory",
+          "research"
+        ],
+        "hypothesis": "对历史因格式重试而产生两次reasoning调用的题，从冻结答案checkpoint按当前严格schema单次干净重生成，并按0.3 reasoning + 0.2 token公式逐题筛选，可消除重复调用token浪费且不降低最终代理总分。",
+        "pipeline_stage": "submission_reasoning_generation",
+        "question_types": [
+          "calculation",
+          "multiple_choice"
+        ],
+        "root_cause_cluster": "reasoning_duplicate_call_token_waste",
+        "target_qids": [
+          "fin_b_007",
+          "fin_b_017",
+          "reg_b_023",
+          "res_b_001"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "416f8774675f4ad9b00a98a866af27cc206079093f03e869580bc67b6ad14966",
+    "schema_version": 1,
+    "semantic_sha256": "fc91d7d3e09b40992916076c25560c344a861711bac9de3bae49c4d916e99d58",
+    "sha256": "503ca83d0a5b35fc1871831efa409c7a98800cff515507f62323a61c66d46ce8"
+  },
+  "change_vector": {
+    "answer_stage_calls": false,
+    "base_commit": "91b5088",
+    "feedback_refine_calls": false,
+    "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reasoning_prompt": "b_submission_reasoning_v4_grounded_date_boundary_hint",
+    "reference_answer_access": false,
+    "selection_gate": "per_qid_final_formula_delta_positive",
+    "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+  },
+  "direction_id": "qwen37_reasoning_retry_elimination_clean_regeneration",
+  "domains": [
+    "research",
+    "regulatory",
+    "financial"
+  ],
+  "effect": "4题reasoning API调用由8次降为4次、格式重试4次降为0，生成Token合计节省27792。完整100题reasoning影子均分95.8167→95.7700，Token效率72.51068→73.06652；在相同accuracy假设下代理总分净增0.097168。4题逐题最终公式贡献均为正。",
+  "experiment_id": "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a1",
+  "failure_analysis": "res_b_001、reg_b_023、fin_b_017的影子reasoning分别下降2.6667、2.0、1.0，但节省Token后的逐题代理净增仍为+0.027136、+0.025152、+0.011976；fin_b_007 reasoning提升1.0且净增+0.032904。该结论是冻结答案下的离线因果代理，不代表官网得分；ins_b_016官方锁与证据/Qwen答案冲突仍未处理。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "answer_stage_calls": false,
+            "base_commit": "91b5088",
+            "feedback_refine_calls": false,
+            "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reasoning_prompt": "b_submission_reasoning_v4_grounded_date_boundary_hint",
+            "reference_answer_access": false,
+            "selection_gate": "per_qid_final_formula_delta_positive",
+            "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+          },
+          "domains": [
+            "financial",
+            "regulatory",
+            "research"
+          ],
+          "hypothesis": "对历史因格式重试而产生两次reasoning调用的题，从冻结答案checkpoint按当前严格schema单次干净重生成，并按0.3 reasoning + 0.2 token公式逐题筛选，可消除重复调用token浪费且不降低最终代理总分。",
+          "pipeline_stage": "submission_reasoning_generation",
+          "question_types": [
+            "calculation",
+            "multiple_choice"
+          ],
+          "root_cause_cluster": "reasoning_duplicate_call_token_waste",
+          "target_qids": [
+            "fin_b_007",
+            "fin_b_017",
+            "reg_b_023",
+            "res_b_001"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "416f8774675f4ad9b00a98a866af27cc206079093f03e869580bc67b6ad14966",
+      "schema_version": 1,
+      "semantic_sha256": "fc91d7d3e09b40992916076c25560c344a861711bac9de3bae49c4d916e99d58",
+      "sha256": "503ca83d0a5b35fc1871831efa409c7a98800cff515507f62323a61c66d46ce8"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "answer_stage_calls": false,
+              "base_commit": "91b5088",
+              "feedback_refine_calls": false,
+              "generation_policy": "single_clean_reasoning_call_from_frozen_answer",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reasoning_prompt": "b_submission_reasoning_v4_grounded_date_boundary_hint",
+              "reference_answer_access": false,
+              "selection_gate": "per_qid_final_formula_delta_positive",
+              "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+            },
+            "domains": [
+              "financial",
+              "regulatory",
+              "research"
+            ],
+            "hypothesis": "对历史因格式重试而产生两次reasoning调用的题，从冻结答案checkpoint按当前严格schema单次干净重生成，并按0.3 reasoning + 0.2 token公式逐题筛选，可消除重复调用token浪费且不降低最终代理总分。",
+            "pipeline_stage": "submission_reasoning_generation",
+            "question_types": [
+              "calculation",
+              "multiple_choice"
+            ],
+            "root_cause_cluster": "reasoning_duplicate_call_token_waste",
+            "target_qids": [
+              "fin_b_007",
+              "fin_b_017",
+              "reg_b_023",
+              "res_b_001"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "416f8774675f4ad9b00a98a866af27cc206079093f03e869580bc67b6ad14966",
+        "schema_version": 1,
+        "semantic_sha256": "fc91d7d3e09b40992916076c25560c344a861711bac9de3bae49c4d916e99d58",
+        "sha256": "503ca83d0a5b35fc1871831efa409c7a98800cff515507f62323a61c66d46ce8"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "0568dba534ab05ca85fa553b208ad39426d8f74ae3aa74d4b113f95d4865211b",
+      "size": 1399806
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "79f2f1065cf5be15b448a14bb9d4ede0a846808a7ea622d7de49031565d71624",
+      "size": 1149095
+    },
+    "related_log_sections": [
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-readme-percent-format-priority-v6",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-full-chain-reproduction-baseline-v10",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90",
+      "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+      "b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100",
+      "b-loop-last-error-minimal-candidate-set-official-history-a1",
+      "b-loop-percentage-bundle-net-plus-one-explanation-a1",
+      "b-loop-percentage-bundle-most-likely-positive-fin017-a1",
+      "b-loop-three-percentage-question-full-chain-numeric-revalidation-a1",
+      "b-loop-answer-reasoning-stage-decoupling-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a1",
+      "b-loop-qwen37-structured-output-contract-a1",
+      "b-loop-qwen37-structured-output-contract-a2-full100",
+      "b-loop-qwen37-option-verdict-consistency-a1",
+      "b-loop-qwen37-option-verdict-consistency-a2",
+      "b-loop-qwen37-option-verdict-consistency-a3",
+      "b-loop-qwen37-reasoning-structured-output-hard-fallback-a3",
+      "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a1",
+      "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a2-date-boundary"
+    ],
+    "reviewed_at": "2026-07-23T23:09:20+00:00"
+  },
+  "hypothesis": "对历史因格式重试而产生两次reasoning调用的题，从冻结答案checkpoint按当前严格schema单次干净重生成，并按0.3 reasoning + 0.2 Token公式逐题筛选，可消除重复调用Token浪费且不降低最终代理总分。",
+  "metrics": {
+    "answer_parts_changed_count": 0,
+    "answer_stage_api_call_count": 0,
+    "format_retry_count_after": 0,
+    "format_retry_count_before": 4,
+    "full100_reasoning_score_after": 95.77,
+    "full100_reasoning_score_before": 95.81666666666666,
+    "full100_token_after": 1346674,
+    "full100_token_before": 1374466,
+    "full100_token_efficiency_after": 73.06652,
+    "full100_token_efficiency_before": 72.51068000000001,
+    "generation_models": [
+      "qwen3.7-plus-2026-05-26"
+    ],
+    "official_accuracy": null,
+    "official_total_score": null,
+    "official_upload_performed": false,
+    "patch_answer_signature_verified": true,
+    "per_qid": {
+      "fin_b_007": {
+        "proxy_total_delta": 0.032904,
+        "reasoning_score_after": 97.33333333333333,
+        "reasoning_score_before": 96.33333333333333,
+        "reasoning_score_delta": 1.0,
+        "reasoning_token_after": 6045,
+        "reasoning_token_before": 13521,
+        "reasoning_token_delta": -7476
+      },
+      "fin_b_017": {
+        "proxy_total_delta": 0.011976,
+        "reasoning_score_after": 96.33333333333333,
+        "reasoning_score_before": 97.33333333333333,
+        "reasoning_score_delta": -1.0,
+        "reasoning_token_after": 4408,
+        "reasoning_token_before": 8152,
+        "reasoning_token_delta": -3744
+      },
+      "reg_b_023": {
+        "proxy_total_delta": 0.025152,
+        "reasoning_score_after": 94.0,
+        "reasoning_score_before": 96.0,
+        "reasoning_score_delta": -2.0,
+        "reasoning_token_after": 7557,
+        "reasoning_token_before": 15345,
+        "reasoning_token_delta": -7788
+      },
+      "res_b_001": {
+        "proxy_total_delta": 0.027136000000000028,
+        "reasoning_score_after": 91.66666666666667,
+        "reasoning_score_before": 94.33333333333333,
+        "reasoning_score_delta": -2.666666666666657,
+        "reasoning_token_after": 8969,
+        "reasoning_token_before": 17753,
+        "reasoning_token_delta": -8784
+      }
+    },
+    "proxy_total_delta_accuracy_invariant": 0.09716799999998216,
+    "reasoning_api_call_count_after": 4,
+    "reasoning_api_call_count_before": 8,
+    "reasoning_judge_model": "gpt-5.6",
+    "reasoning_judge_offline_only": true,
+    "reasoning_patch_token_after": 26979,
+    "reasoning_patch_token_before": 54771,
+    "reasoning_patch_token_saved": 27792,
+    "submission_valid": true,
+    "target_qids": [
+      "res_b_001",
+      "reg_b_023",
+      "fin_b_007",
+      "fin_b_017"
+    ],
+    "usage_complete": true
+  },
+  "next_step": "该方向A1有效，停止追加轮次，创建独立分支推送。进入下一Token方向时先重读日志，寻找高Token answer阶段的无损压缩机会；不做官网上传、不修改官方锁答案。",
+  "patch_artifact_path": "artifacts/b_board_actual/qwen37_reasoning_retry_elimination_clean_a1_four",
+  "pipeline_stage": "submission_reasoning_generation",
+  "promotion_result": "effective_push_pending",
+  "question_types": [
+    "multiple_choice",
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T23:13:51+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "reasoning_duplicate_call_token_waste",
+  "status": "completed_effective",
+  "submission_effect": "local_reasoning_candidate_not_officially_uploaded",
+  "target_qids": [
+    "res_b_001",
+    "reg_b_023",
+    "fin_b_007",
+    "fin_b_017"
+  ]
+}
+```
