@@ -1666,6 +1666,47 @@ class FinancialReportMetricBundleTests(unittest.TestCase):
         labels = {key: solver._choice_metric_bundle_rule(question, option)[0] for key, option in options.items()}
         self.assertEqual(labels, {"A": True, "B": False, "C": True, "D": False})
 
+    def test_cmb_asset_quality_bundle_separates_relative_change_from_percentage_points(self) -> None:
+        units = [
+            make_unit(
+                "cmb::asset-quality",
+                "annual_cmb_2025_report",
+                "资产质量指标(%) | 2025年12月31日 | 2024年12月31日 | 本年末比上年末增减 | 2023年12月31日\n"
+                "不良贷款率 | 0.94 | 0.95 | 下降0.01个百分点 | 0.95\n"
+                "拨备覆盖率(1) | 391.79 | 411.98 | 下降20.19个百分点 | 437.70\n"
+                "核心一级资本充足率 | 14.16 | 14.86 | 下降0.70个百分点 | 13.73",
+            )
+        ]
+        solver = self.make_solver(units)
+        options = {
+            "A": "不良贷款率由 0.95% 降至 0.94%，相对降幅为 0.01%",
+            "B": "拨备覆盖率较 2024 年下降 20.19 个百分点",
+            "C": "核心一级资本充足率较 2024 年下降 0.70 个百分点，但仍较 2023 年高 0.43 个百分点",
+            "D": "不良贷款率、拨备覆盖率和核心一级资本充足率三项指标均较 2024 年改善",
+        }
+        question = Question(
+            qid="fin_b_006",
+            domain="financial_reports",
+            split="B",
+            question="根据招商银行2025年年度报告中的不良贷款率、拨备覆盖率和核心一级资本充足率。",
+            options=options,
+            answer_format="multi",
+            type="多选题",
+            doc_ids=["annual_cmb_2025_report"],
+        )
+
+        results = {
+            key: solver._choice_metric_bundle_rule(question, option)
+            for key, option in options.items()
+        }
+
+        self.assertEqual(
+            {key: result[0] for key, result in results.items()},
+            {"A": False, "B": True, "C": True, "D": False},
+        )
+        self.assertIn("相对降幅1.05%", results["A"][1])
+        self.assertEqual(results["A"][2][0]["unit_id"], "cmb::asset-quality")
+
     def test_statement_scope_bundle_distinguishes_consolidated_and_parent_rows(self) -> None:
         units = [
             make_metric(

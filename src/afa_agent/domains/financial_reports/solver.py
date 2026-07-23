@@ -406,6 +406,7 @@ class FinancialReportsSolver:
         for rule in (
             self._operating_metric_bundle_rule,
             self._dividend_per_ten_bundle_rule,
+            self._cmb_asset_quality_bundle_rule,
             self._midea_statement_scope_rule,
             self._byd_cross_year_amount_rule,
             self._cscec_original_basis_rule,
@@ -533,6 +534,65 @@ class FinancialReportsSolver:
                 for unit in values[company][1]
             ]
         return None
+
+    def _cmb_asset_quality_bundle_rule(self, question: Question, option_text: str):
+        required_metrics = ("招商银行", "不良贷款率", "拨备覆盖率", "核心一级资本充足率")
+        if not all(term in question.question for term in required_metrics):
+            return None
+        doc_id = self._company_year_doc(question.doc_ids, "cmb", "2025")
+        if not doc_id:
+            return None
+        unit = self._find_unit(
+            doc_id,
+            required=("不良贷款率", "拨备覆盖率", "核心一级资本充足率", "2023"),
+        )
+        if unit is None:
+            return None
+        npl = self._extract_row_numbers(unit.get("text", ""), "不良贷款率")
+        coverage = self._extract_row_numbers(unit.get("text", ""), "拨备覆盖率")
+        core_tier_one = self._extract_row_numbers(unit.get("text", ""), "核心一级资本充足率")
+        if min(len(npl), len(coverage), len(core_tier_one)) < 3 or not npl[1]:
+            return None
+
+        npl_point_decline = npl[1] - npl[0]
+        npl_relative_decline = npl_point_decline / npl[1] * 100
+        coverage_point_decline = coverage[1] - coverage[0]
+        core_point_decline = core_tier_one[1] - core_tier_one[0]
+        core_vs_2023 = core_tier_one[0] - core_tier_one[2]
+
+        if "不良贷款率" in option_text and "相对降幅" in option_text:
+            match = re.search(r"相对降幅(?:约)?(?:为)?\s*(\d+(?:\.\d+)?)\s*%", option_text)
+            label = bool(match) and abs(npl_relative_decline - float(match.group(1))) <= 0.02
+        elif "拨备覆盖率" in option_text and "百分点" in option_text:
+            match = re.search(r"下降\s*(\d+(?:\.\d+)?)\s*个?百分点", option_text)
+            label = bool(match) and abs(coverage_point_decline - float(match.group(1))) <= 0.02
+        elif "核心一级资本充足率" in option_text and "百分点" in option_text:
+            expected = [
+                float(value)
+                for value in re.findall(r"(\d+(?:\.\d+)?)\s*个?百分点", option_text)
+            ]
+            label = len(expected) >= 2 and (
+                abs(core_point_decline - expected[0]) <= 0.02
+                and abs(core_vs_2023 - expected[1]) <= 0.02
+            )
+        elif all(term in option_text for term in ("不良贷款率", "拨备覆盖率", "核心一级资本充足率", "均")):
+            label = (
+                npl[0] < npl[1]
+                and coverage[0] > coverage[1]
+                and core_tier_one[0] > core_tier_one[1]
+            )
+        else:
+            return None
+
+        reason = (
+            f"招商银行资产质量指标束：不良贷款率{npl[1]:.2f}%降至{npl[0]:.2f}%，"
+            f"下降{npl_point_decline:.2f}个百分点、相对降幅{npl_relative_decline:.2f}%；"
+            f"拨备覆盖率{coverage[1]:.2f}%降至{coverage[0]:.2f}%，"
+            f"下降{coverage_point_decline:.2f}个百分点；核心一级资本充足率"
+            f"{core_tier_one[1]:.2f}%降至{core_tier_one[0]:.2f}%，下降{core_point_decline:.2f}个百分点，"
+            f"且较2023年{core_tier_one[2]:.2f}%高{core_vs_2023:.2f}个百分点。"
+        )
+        return label, reason, [self._unit_to_evidence(unit, 999.0)]
 
     def _midea_statement_scope_rule(self, question: Question, option_text: str):
         if not ("合并财务报表与母公司财务报表" in question.question and "美的集团" in question.question):

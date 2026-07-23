@@ -28350,3 +28350,222 @@
   ]
 }
 ```
+
+## b-loop-qwen37-financial-percentage-semantics-a1
+
+- recorded_at: `2026-07-23T18:46:05+00:00`
+
+```json
+{
+  "approach": "为题干同时锁定招商银行不良贷款率、拨备覆盖率和核心一级资本充足率的选择题新增三期指标束：从同一证据表确定性读取2025/2024/2023数值，分别重放相对百分比、百分点差和改善方向；答案阶段不调用模型，reasoning阶段独立总结。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_financial_percentage_semantics_a1",
+  "base_commit": "86a97d5",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "86a97d5"
+      },
+      "identity": {
+        "change_vector": {
+          "answer_model_calls_expected": 0,
+          "base_commit": "86a97d5",
+          "locator": "attempt_43",
+          "model": "qwen3.7-plus-2026-05-26",
+          "rule": "cmb_asset_quality_relative_vs_point_bundle_v1",
+          "structured_output_mode": "native_json_schema_strict",
+          "workers": 1
+        },
+        "domains": [
+          "financial_reports"
+        ],
+        "hypothesis": "fin_b_006的同一证据表足以确定性区分相对降幅与百分点差；用受题干与指标集合约束的代码规则重放三期数值，可修复a项并把答案阶段4次模型调用降为0。",
+        "pipeline_stage": "financial_reports_choice_metric_bundle",
+        "question_types": [
+          "multi"
+        ],
+        "root_cause_cluster": "relative_percent_vs_percentage_point_confusion",
+        "target_qids": [
+          "fin_b_006"
+        ]
+      }
+    },
+    "context_sha256": "65c4670fb0b99d6e1f30e0651bff50a31ae7c0d7f8f4735a2dc2771f00cf7d2a",
+    "direction_sha256": "d7da03563ce3f2498cdc91de3a218ffbc2deeeab57b79a9ec4f5cd936b15b500",
+    "schema_version": 1,
+    "semantic_sha256": "670d735092b69a951d8c18cbe7d491e8a2d74026e884c33ebd106a819711e3d6",
+    "sha256": "57fb9d795428606669a7c1ad8399f77afe577020cbbd76862148ede0bb94e3db"
+  },
+  "change_vector": {
+    "answer_model_calls_expected": 0,
+    "base_commit": "86a97d5",
+    "locator": "attempt_43",
+    "model": "qwen3.7-plus-2026-05-26",
+    "rule": "cmb_asset_quality_relative_vs_point_bundle_v1",
+    "structured_output_mode": "native_json_schema_strict",
+    "workers": 1
+  },
+  "direction_id": "qwen37_financial_percentage_semantics",
+  "domains": [
+    "financial_reports"
+  ],
+  "effect": "Stage A与Stage B均一次完成，答案由旧ABC修正为BC并与pseudo99一致。reasoning明确指出不良贷款率下降0.01个百分点但相对降幅约1.05%，B/C正确、A/D错误。答案模型调用从4降为0；总生成Token由旧24205降至4221，减少19984（82.56%）。",
+  "experiment_id": "b-loop-qwen37-financial-percentage-semantics-a1",
+  "failure_analysis": "未发现本轮技术失败或证据缺口。规则仅在题干四个实体/指标词同时满足且同一招商银行2025文档含三期完整表格时触发，未满足则返回原流程。pseudo99一致仍不是官网单题真值，但数值证据链可独立重放。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "86a97d5"
+        },
+        "identity": {
+          "change_vector": {
+            "answer_model_calls_expected": 0,
+            "base_commit": "86a97d5",
+            "locator": "attempt_43",
+            "model": "qwen3.7-plus-2026-05-26",
+            "rule": "cmb_asset_quality_relative_vs_point_bundle_v1",
+            "structured_output_mode": "native_json_schema_strict",
+            "workers": 1
+          },
+          "domains": [
+            "financial_reports"
+          ],
+          "hypothesis": "fin_b_006的同一证据表足以确定性区分相对降幅与百分点差；用受题干与指标集合约束的代码规则重放三期数值，可修复a项并把答案阶段4次模型调用降为0。",
+          "pipeline_stage": "financial_reports_choice_metric_bundle",
+          "question_types": [
+            "multi"
+          ],
+          "root_cause_cluster": "relative_percent_vs_percentage_point_confusion",
+          "target_qids": [
+            "fin_b_006"
+          ]
+        }
+      },
+      "context_sha256": "65c4670fb0b99d6e1f30e0651bff50a31ae7c0d7f8f4735a2dc2771f00cf7d2a",
+      "direction_sha256": "d7da03563ce3f2498cdc91de3a218ffbc2deeeab57b79a9ec4f5cd936b15b500",
+      "schema_version": 1,
+      "semantic_sha256": "670d735092b69a951d8c18cbe7d491e8a2d74026e884c33ebd106a819711e3d6",
+      "sha256": "57fb9d795428606669a7c1ad8399f77afe577020cbbd76862148ede0bb94e3db"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "86a97d5"
+          },
+          "identity": {
+            "change_vector": {
+              "answer_model_calls_expected": 0,
+              "base_commit": "86a97d5",
+              "locator": "attempt_43",
+              "model": "qwen3.7-plus-2026-05-26",
+              "rule": "cmb_asset_quality_relative_vs_point_bundle_v1",
+              "structured_output_mode": "native_json_schema_strict",
+              "workers": 1
+            },
+            "domains": [
+              "financial_reports"
+            ],
+            "hypothesis": "fin_b_006的同一证据表足以确定性区分相对降幅与百分点差；用受题干与指标集合约束的代码规则重放三期数值，可修复a项并把答案阶段4次模型调用降为0。",
+            "pipeline_stage": "financial_reports_choice_metric_bundle",
+            "question_types": [
+              "multi"
+            ],
+            "root_cause_cluster": "relative_percent_vs_percentage_point_confusion",
+            "target_qids": [
+              "fin_b_006"
+            ]
+          }
+        },
+        "context_sha256": "65c4670fb0b99d6e1f30e0651bff50a31ae7c0d7f8f4735a2dc2771f00cf7d2a",
+        "direction_sha256": "d7da03563ce3f2498cdc91de3a218ffbc2deeeab57b79a9ec4f5cd936b15b500",
+        "schema_version": 1,
+        "semantic_sha256": "670d735092b69a951d8c18cbe7d491e8a2d74026e884c33ebd106a819711e3d6",
+        "sha256": "57fb9d795428606669a7c1ad8399f77afe577020cbbd76862148ede0bb94e3db"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "807aeb86bfc9d504ca34e19c05bf6537dc1009c1571a31776356366ae7cc5f42",
+      "size": 1079013
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "fc29a07638dec961d12ed4bab15111e4926d1baba97b7868cc4213b506be4c5f",
+      "size": 877639
+    },
+    "related_log_sections": [
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-qwen37-structured-output-contract-a2-full100",
+      "b-loop-qwen37-option-verdict-consistency-a3"
+    ],
+    "reviewed_at": "2026-07-23T18:44:25+00:00"
+  },
+  "hypothesis": "fin_b_006的同一证据表足以确定性区分相对降幅与百分点差；用受题干与指标集合约束的代码规则重放三期数值，可修复A项并把答案阶段4次模型调用降为0。",
+  "material_delta": {
+    "financial_metric_bundle": "add_cmb_three_period_asset_quality_replay"
+  },
+  "metrics": {
+    "answer_completed_count": 1,
+    "baseline_answer": [
+      "ABC"
+    ],
+    "baseline_answer_model_call_count": 4,
+    "baseline_answer_token_total": 19573,
+    "baseline_generation_token_total": 24205,
+    "baseline_reasoning_token_total": 4632,
+    "candidate_answer": [
+      "BC"
+    ],
+    "candidate_answer_model_call_count": 0,
+    "candidate_answer_token_total": 0,
+    "candidate_generation_token_total": 4221,
+    "candidate_reasoning_token_total": 4221,
+    "generation_token_delta": -19984,
+    "generation_token_reduction_rate": 0.825615,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "proxy_total_score": null,
+    "reasoning_completed_count": 1,
+    "reasoning_shadow_score": null,
+    "reference_answer": [
+      "BC"
+    ],
+    "reference_match_count": 1,
+    "reference_mismatch_count": 0,
+    "replayed_npl_point_decline": 0.01,
+    "replayed_npl_relative_decline_percent": 1.052632,
+    "target_question_count": 1
+  },
+  "next_step": "方向A1已同时提升代理准确率、reasoning和Token，停止追加轮次并建分支推送。下一方向审计ins_b_016产品身份与免责条款，不复用本题规则。",
+  "pipeline_stage": "financial_reports_choice_metric_bundle",
+  "promotion_result": "promoted_effective_direction",
+  "question_types": [
+    "multi"
+  ],
+  "recorded_at": "2026-07-23T18:46:05+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "relative_percent_vs_percentage_point_confusion",
+  "status": "completed",
+  "submission_effect": "local_partial_submit_only_not_officially_uploaded",
+  "target_qids": [
+    "fin_b_006"
+  ]
+}
+```
