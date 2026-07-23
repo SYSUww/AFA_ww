@@ -1585,6 +1585,7 @@ class BBoardRunnerModeTests(unittest.TestCase):
                 structured_output_mode="native_json_schema_strict",
             )
         )
+        runner.reasoning_enable_thinking = False
         runner.client = _QueuedClient(
             [
                 _response(
@@ -1610,10 +1611,20 @@ class BBoardRunnerModeTests(unittest.TestCase):
         )
         self.assertIn("response_schema", runner.client.kwargs[0])
         self.assertEqual(
+            runner.client.kwargs[0]["extra_body"],
+            {"enable_thinking": False},
+        )
+        self.assertEqual(
             result.decision_trace["submission_reasoning"][
                 "response_format_modes"
             ],
             ["native_json_schema_strict"],
+        )
+        self.assertIs(
+            result.decision_trace["submission_reasoning"][
+                "enable_thinking"
+            ],
+            False,
         )
 
     def test_reasoning_generation_rescues_once_after_insufficient_evidence(self) -> None:

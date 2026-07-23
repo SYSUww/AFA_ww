@@ -52,6 +52,12 @@ def parse_args() -> argparse.Namespace:
         default=1800,
         help="Maximum characters retained from each reasoning evidence item",
     )
+    parser.add_argument(
+        "--thinking-mode",
+        choices=("default", "on", "off"),
+        default="default",
+        help="Provider thinking mode for the reasoning-only stage",
+    )
     return parser.parse_args()
 
 
@@ -98,9 +104,15 @@ def main() -> None:
             f"answer run has no clean checkpoints for: {missing_artifacts}"
         )
 
+    thinking_mode = {
+        "default": None,
+        "on": True,
+        "off": False,
+    }[args.thinking_mode]
     runner = BBoardActualRunner(
         questions=[question_by_qid[qid] for qid in qids],
         reasoning_evidence_char_limit=args.evidence_char_limit,
+        reasoning_enable_thinking=thinking_mode,
         run_mode=RUN_MODE_SUBMISSION,
     )
     if runner.config.model.model_name != model_name:
@@ -199,6 +211,7 @@ def main() -> None:
         "answer_parts_preserved": True,
         "source_model_verified": True,
         "reasoning_evidence_char_limit": args.evidence_char_limit,
+        "reasoning_enable_thinking": thinking_mode,
         "submission_eligible": False,
         "submission_ineligibility_reasons": [
             "partial_reasoning_patch_requires_full_assembly"

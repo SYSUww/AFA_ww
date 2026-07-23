@@ -115,6 +115,36 @@ class ClientUsageLedgerTests(unittest.TestCase):
             "native_json_schema_strict",
         )
 
+    def test_extra_body_adds_provider_specific_options(self) -> None:
+        response = FakeHTTPResponse(
+            {
+                "choices": [{"message": {"content": "{}"}}],
+                "usage": {
+                    "prompt_tokens": 10,
+                    "completion_tokens": 2,
+                    "total_tokens": 12,
+                },
+            }
+        )
+        with patch(
+            "afa_agent.client.requests.post",
+            return_value=response,
+        ) as post:
+            self.client.chat_json(
+                [{"role": "user", "content": "direct"}],
+                extra_body={"enable_thinking": False},
+            )
+
+        payload = json.loads(post.call_args.kwargs["data"])
+        self.assertIs(payload["enable_thinking"], False)
+
+    def test_extra_body_cannot_override_core_request_fields(self) -> None:
+        with self.assertRaisesRegex(ValueError, "protected request fields"):
+            self.client.chat_json(
+                [{"role": "user", "content": "direct"}],
+                extra_body={"model": "different-model"},
+            )
+
     def test_read_timeout_is_not_retried_without_a_usage_response(self) -> None:
         client = OpenAICompatibleClient(
             ModelConfig(

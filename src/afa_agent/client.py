@@ -77,6 +77,7 @@ class OpenAICompatibleClient:
         *,
         response_schema: Mapping[str, Any] | None = None,
         schema_name: str = "response",
+        extra_body: Mapping[str, Any] | None = None,
     ) -> LLMResponse:
         url = self.config.api_base.rstrip("/") + "/chat/completions"
         if response_schema is None:
@@ -105,6 +106,14 @@ class OpenAICompatibleClient:
             "temperature": self.config.temperature,
             "response_format": response_format,
         }
+        if extra_body:
+            protected = set(payload) & set(extra_body)
+            if protected:
+                raise ValueError(
+                    "extra_body cannot override protected request fields: "
+                    + ", ".join(sorted(protected))
+                )
+            payload.update(dict(extra_body))
         last_error: Exception | None = None
         max_attempts = max(1, self.config.max_retries + 1)
         timeout = (

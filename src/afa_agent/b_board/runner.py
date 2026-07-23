@@ -242,10 +242,16 @@ class BBoardActualRunner:
         reasoning_evidence_char_limit: int = (
             DEFAULT_SUBMISSION_REASONING_EVIDENCE_CHAR_LIMIT
         ),
+        reasoning_enable_thinking: bool | None = None,
         run_mode: str = RUN_MODE_SUBMISSION,
     ) -> None:
         if reasoning_evidence_char_limit < 1:
             raise ValueError("reasoning_evidence_char_limit must be positive")
+        if (
+            reasoning_enable_thinking is not None
+            and not isinstance(reasoning_enable_thinking, bool)
+        ):
+            raise TypeError("reasoning_enable_thinking must be bool or None")
         self.questions = list(questions)
         self.question_by_qid = {item.qid: item for item in questions}
         self.parsed_root = Path(parsed_root).resolve()
@@ -254,6 +260,7 @@ class BBoardActualRunner:
         self.locator_attempt_id = locator_attempt_id
         self.calculation_top_k = calculation_top_k
         self.reasoning_evidence_char_limit = reasoning_evidence_char_limit
+        self.reasoning_enable_thinking = reasoning_enable_thinking
         self.run_mode = _validate_run_mode(run_mode)
         self.config = build_run_config(ROOT)
         if self.config.model is None:
@@ -1208,6 +1215,11 @@ class BBoardActualRunner:
             "reasoning_evidence_char_limit",
             DEFAULT_SUBMISSION_REASONING_EVIDENCE_CHAR_LIMIT,
         )
+        reasoning_enable_thinking = getattr(
+            self,
+            "reasoning_enable_thinking",
+            None,
+        )
         reasoning_evidence_items = [
             dict(item) for item in artifact.evidence_items
         ]
@@ -1259,6 +1271,11 @@ class BBoardActualRunner:
                             ),
                         },
                     ]
+                request_kwargs: dict[str, Any] = {}
+                if reasoning_enable_thinking is not None:
+                    request_kwargs["extra_body"] = {
+                        "enable_thinking": reasoning_enable_thinking
+                    }
                 if (
                     getattr(
                         self.config.model,
@@ -1271,9 +1288,13 @@ class BBoardActualRunner:
                         messages,
                         response_schema=SUBMISSION_REASONING_SCHEMA,
                         schema_name=SUBMISSION_REASONING_SCHEMA_VERSION,
+                        **request_kwargs,
                     )
                 else:
-                    response = self.client.chat_json(messages)
+                    response = self.client.chat_json(
+                        messages,
+                        **request_kwargs,
+                    )
                 response_format_modes.append(response.response_format_mode)
                 reasoning_usage = _add_token_usage(
                     reasoning_usage,
@@ -1380,6 +1401,7 @@ class BBoardActualRunner:
                         ),
                         "reasoning_style_hint": reasoning_style_hint,
                         "evidence_item_char_limit": evidence_char_limit,
+                        "enable_thinking": reasoning_enable_thinking,
                         "model_name": self.config.model.model_name,
                         "attempt_count": attempt_number,
                         "api_call_count": len(diagnostics),

@@ -36786,3 +36786,339 @@
   ]
 }
 ```
+
+## b-loop-qwen37-reasoning-nonthinking-stage-a1
+
+- recorded_at: `2026-07-23T23:47:27+00:00`
+
+```json
+{
+  "accepted_patch_artifact_path": "artifacts/b_board_actual/qwen37_reasoning_nonthinking_a1_accepted3",
+  "approach": "依据阿里云官方混合思考与结构化输出文档，只在冻结答案后的reasoning摘要阶段传enable_thinking=false；答案/证据链阶段保持原配置。对4个高reasoning Token题单次native strict生成，GPT-5.6离线复评并逐题按最终公式筛选。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_integrated_full100_candidate_a9_nonthinking3",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "answer_stage_thinking_mode": "unchanged",
+          "base_commit": "5716c7f",
+          "evidence_char_limit": 1800,
+          "model": "qwen3.7-plus-2026-05-26",
+          "reasoning_stage_enable_thinking": false,
+          "reference_answer_access": false,
+          "selection_gate": "per_qid_final_formula_delta_positive",
+          "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json",
+          "source_official_deep_thinking": "https://help.aliyun.com/en/model-studio/deep-thinking",
+          "source_official_structured_output": "https://help.aliyun.com/en/model-studio/qwen-structured-output",
+          "structured_output_mode": "native_json_schema_strict"
+        },
+        "domains": [
+          "financial",
+          "research"
+        ],
+        "hypothesis": "qwen3.7 plus默认thinking适合复杂求解，但reasoning阶段仅基于冻结答案和已验证解生成审计摘要；仅该阶段显式enable_thinking=false可显著减少隐藏推理token，同时native structured output与gpt-5.6质量门禁保持输出可靠。",
+        "pipeline_stage": "submission_reasoning_generation",
+        "question_types": [
+          "multiple_choice"
+        ],
+        "root_cause_cluster": "default_thinking_token_overhead_on_frozen_summary_task",
+        "target_qids": [
+          "fin_b_010",
+          "res_b_009",
+          "res_b_013",
+          "res_b_017"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "79d54b3b26c21cb986cd693562686c7b9f6eedf6b2e704084b44b3d70c0f7227",
+    "schema_version": 1,
+    "semantic_sha256": "fcd7602ef3253546e52cfafc69add6d6b24627735c3cd058cb95f3386b82b993",
+    "sha256": "9db4e76b58dd9e95a8887c93b25d48566fca12729986a6a4b8d847a3cf50bef3"
+  },
+  "change_vector": {
+    "answer_stage_thinking_mode": "unchanged",
+    "base_commit": "5716c7f",
+    "evidence_char_limit": 1800,
+    "model": "qwen3.7-plus-2026-05-26",
+    "reasoning_stage_enable_thinking": false,
+    "reference_answer_access": false,
+    "selection_gate": "per_qid_final_formula_delta_positive",
+    "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json",
+    "source_official_deep_thinking": "https://help.aliyun.com/en/model-studio/deep-thinking",
+    "source_official_structured_output": "https://help.aliyun.com/en/model-studio/qwen-structured-output",
+    "structured_output_mode": "native_json_schema_strict"
+  },
+  "direction_id": "qwen37_reasoning_non_thinking_stage",
+  "domains": [
+    "research",
+    "financial"
+  ],
+  "effect": "4题全部一次结构化成功、无格式重试，reasoning completion Token合计6390→655，总reasoning Token 36389→30822。接受res_b_009、res_b_017、fin_b_010，拒绝res_b_013；A9 reasoning 95.7733→95.7933、Token 1322904→1318757，同accuracy下代理总分净增0.022588。",
+  "experiment_id": "b-loop-qwen37-reasoning-nonthinking-stage-a1",
+  "failure_analysis": "非thinking并非对所有摘要无损：res_b_013完整性下降使reasoning分降低4分，即使省1420 Token仍净降0.006320，故不能全局关闭。三条接受项质量不降且Token显著下降，适合局部overlay。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "answer_stage_thinking_mode": "unchanged",
+            "base_commit": "5716c7f",
+            "evidence_char_limit": 1800,
+            "model": "qwen3.7-plus-2026-05-26",
+            "reasoning_stage_enable_thinking": false,
+            "reference_answer_access": false,
+            "selection_gate": "per_qid_final_formula_delta_positive",
+            "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json",
+            "source_official_deep_thinking": "https://help.aliyun.com/en/model-studio/deep-thinking",
+            "source_official_structured_output": "https://help.aliyun.com/en/model-studio/qwen-structured-output",
+            "structured_output_mode": "native_json_schema_strict"
+          },
+          "domains": [
+            "financial",
+            "research"
+          ],
+          "hypothesis": "qwen3.7 plus默认thinking适合复杂求解，但reasoning阶段仅基于冻结答案和已验证解生成审计摘要；仅该阶段显式enable_thinking=false可显著减少隐藏推理token，同时native structured output与gpt-5.6质量门禁保持输出可靠。",
+          "pipeline_stage": "submission_reasoning_generation",
+          "question_types": [
+            "multiple_choice"
+          ],
+          "root_cause_cluster": "default_thinking_token_overhead_on_frozen_summary_task",
+          "target_qids": [
+            "fin_b_010",
+            "res_b_009",
+            "res_b_013",
+            "res_b_017"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "79d54b3b26c21cb986cd693562686c7b9f6eedf6b2e704084b44b3d70c0f7227",
+      "schema_version": 1,
+      "semantic_sha256": "fcd7602ef3253546e52cfafc69add6d6b24627735c3cd058cb95f3386b82b993",
+      "sha256": "9db4e76b58dd9e95a8887c93b25d48566fca12729986a6a4b8d847a3cf50bef3"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "answer_stage_thinking_mode": "unchanged",
+              "base_commit": "5716c7f",
+              "evidence_char_limit": 1800,
+              "model": "qwen3.7-plus-2026-05-26",
+              "reasoning_stage_enable_thinking": false,
+              "reference_answer_access": false,
+              "selection_gate": "per_qid_final_formula_delta_positive",
+              "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json",
+              "source_official_deep_thinking": "https://help.aliyun.com/en/model-studio/deep-thinking",
+              "source_official_structured_output": "https://help.aliyun.com/en/model-studio/qwen-structured-output",
+              "structured_output_mode": "native_json_schema_strict"
+            },
+            "domains": [
+              "financial",
+              "research"
+            ],
+            "hypothesis": "qwen3.7 plus默认thinking适合复杂求解，但reasoning阶段仅基于冻结答案和已验证解生成审计摘要；仅该阶段显式enable_thinking=false可显著减少隐藏推理token，同时native structured output与gpt-5.6质量门禁保持输出可靠。",
+            "pipeline_stage": "submission_reasoning_generation",
+            "question_types": [
+              "multiple_choice"
+            ],
+            "root_cause_cluster": "default_thinking_token_overhead_on_frozen_summary_task",
+            "target_qids": [
+              "fin_b_010",
+              "res_b_009",
+              "res_b_013",
+              "res_b_017"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "79d54b3b26c21cb986cd693562686c7b9f6eedf6b2e704084b44b3d70c0f7227",
+        "schema_version": 1,
+        "semantic_sha256": "fcd7602ef3253546e52cfafc69add6d6b24627735c3cd058cb95f3386b82b993",
+        "sha256": "9db4e76b58dd9e95a8887c93b25d48566fca12729986a6a4b8d847a3cf50bef3"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "c69f763ee7bfaed546157c57ca9e76e3a0aaf82e9bdf0789315149bbf53b6488",
+      "size": 1479092
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "64f6528638e591a779d910d221cc80aed7f10016fcb3694f5d6920367a5e62c3",
+      "size": 1216111
+    },
+    "related_log_sections": [
+      "B0-actual-evaluation",
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-regulatory-temporal-transition-evidence-matrix-a1",
+      "b-loop-research-supply-constraint-causal-evidence-res-b-003-a1",
+      "b-loop-research-market-fund-flow-evidence-res-b-004-a1",
+      "b-loop-research-risk-asset-reallocation-evidence-res-b-006-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-b1",
+      "b-loop-research-structural-cost-reduction-res-b-009-a1",
+      "b-loop-research-service-consumption-dual-side-risk-res-b-014-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-suspect-case-optimization-v3",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90",
+      "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+      "b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100",
+      "b-loop-qwen37-reasoning-structured-output-hard-fallback-a3",
+      "b-loop-qwen37-integrated-full100-candidate-a3",
+      "b-loop-qwen37-reasoning-refinement-structured-output-contract-a1",
+      "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a1",
+      "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a2-date-boundary",
+      "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a1",
+      "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a2",
+      "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a3",
+      "b-loop-qwen37-reasoning-evidence-payload-compression-a1-global900-probe",
+      "b-loop-qwen37-reasoning-evidence-payload-compression-a2-parameterized-repro",
+      "b-loop-qwen37-reasoning-evidence-payload-compression-a3-res013-1200"
+    ],
+    "reviewed_at": "2026-07-23T23:43:03+00:00"
+  },
+  "hypothesis": "Qwen3.7 Plus默认thinking适合复杂求解，但reasoning阶段仅基于冻结答案和已验证解生成审计摘要；仅该阶段显式enable_thinking=false可显著减少隐藏推理Token，同时native structured output与GPT-5.6质量门禁保持输出可靠。",
+  "metrics": {
+    "accepted_qids": [
+      "res_b_009",
+      "res_b_017",
+      "fin_b_010"
+    ],
+    "answer_parts_changed_count": 0,
+    "answer_stage_thinking_mode": "unchanged",
+    "compileall_passed": true,
+    "format_retry_count": 0,
+    "full100_reasoning_score_after": 95.79333333333334,
+    "full100_reasoning_score_before": 95.77333333333334,
+    "full100_token_after": 1318757,
+    "full100_token_before": 1322904,
+    "full100_token_efficiency_after": 73.62486,
+    "generation_models": [
+      "qwen3.7-plus-2026-05-26"
+    ],
+    "official_accuracy": null,
+    "official_total_score": null,
+    "official_upload_performed": false,
+    "per_qid": {
+      "fin_b_010": {
+        "proxy_total_delta": 0.007499999999999986,
+        "reasoning_score_after": 94.33333333333333,
+        "reasoning_score_before": 94.0,
+        "reasoning_score_delta": 0.3333333333333286,
+        "reasoning_token_after": 5801,
+        "reasoning_token_before": 7426,
+        "reasoning_token_delta": -1625
+      },
+      "res_b_009": {
+        "proxy_total_delta": 0.008607999999999987,
+        "reasoning_score_after": 86.0,
+        "reasoning_score_before": 84.66666666666667,
+        "reasoning_score_delta": 1.3333333333333286,
+        "reasoning_token_after": 7970,
+        "reasoning_token_before": 9122,
+        "reasoning_token_delta": -1152
+      },
+      "res_b_013": {
+        "proxy_total_delta": -0.00632,
+        "reasoning_score_after": 91.66666666666667,
+        "reasoning_score_before": 95.66666666666667,
+        "reasoning_score_delta": -4.0,
+        "reasoning_token_after": 9495,
+        "reasoning_token_before": 10915,
+        "reasoning_token_delta": -1420
+      },
+      "res_b_017": {
+        "proxy_total_delta": 0.006479999999999986,
+        "reasoning_score_after": 92.0,
+        "reasoning_score_before": 91.66666666666667,
+        "reasoning_score_delta": 0.3333333333333286,
+        "reasoning_token_after": 7556,
+        "reasoning_token_before": 8926,
+        "reasoning_token_delta": -1370
+      }
+    },
+    "proxy_total_delta_accuracy_invariant": 0.022588000000013153,
+    "reasoning_api_call_count": 4,
+    "reasoning_completion_token_after": 655,
+    "reasoning_completion_token_before": 6390,
+    "reasoning_judge_model": "gpt-5.6",
+    "reasoning_judge_offline_only": true,
+    "reasoning_patch_token_after": 30822,
+    "reasoning_patch_token_before": 36389,
+    "reasoning_patch_token_saved": 5567,
+    "reasoning_stage_enable_thinking": false,
+    "rejected_qids": [
+      "res_b_013"
+    ],
+    "structured_output_mode": "native_json_schema_strict",
+    "submission_valid": true,
+    "target_qids": [
+      "res_b_013",
+      "res_b_009",
+      "res_b_017",
+      "fin_b_010"
+    ],
+    "tests_passed": 340
+  },
+  "next_step": "A1有效，创建独立分支推送。A2扩大到剩余高completion Token且答案已冻结的代表样本，继续逐题门禁；最多三轮后封闭。不得把enable_thinking=false传播到答案与证据链阶段。",
+  "pipeline_stage": "submission_reasoning_generation",
+  "probe_artifact_path": "artifacts/b_board_actual/qwen37_reasoning_nonthinking_a1_mixed4",
+  "promotion_result": "effective_push_pending",
+  "question_types": [
+    "multiple_choice"
+  ],
+  "recorded_at": "2026-07-23T23:47:27+00:00",
+  "registry_schema_version": 1,
+  "research_sources": [
+    "https://help.aliyun.com/en/model-studio/deep-thinking",
+    "https://help.aliyun.com/en/model-studio/qwen-structured-output",
+    "https://arxiv.org/html/2310.06839v2"
+  ],
+  "root_cause_cluster": "default_thinking_token_overhead_on_frozen_summary_task",
+  "status": "completed_effective",
+  "submission_effect": "local_reasoning_candidate_not_officially_uploaded",
+  "target_qids": [
+    "res_b_013",
+    "res_b_009",
+    "res_b_017",
+    "fin_b_010"
+  ]
+}
+```
