@@ -56,6 +56,7 @@ CALCULATION_SYSTEM_PROMPT = """你是金融长文计算题的结构化求解器�
 输出一个 JSON 对象，字段为 variables、steps、outputs、supporting_evidence_ids、decision_summary。
 variables: [{name,value,value_type,unit,evidence_ids}]，value_type 仅 decimal/date/text，所有变量必须给 evidence_ids。
 variables 只能放证据或题目中逐字出现的原始输入，禁止放任何经加减乘除、比例换算、排序、计数或日期运算得到的派生结果；evidence_ids 也禁止引用 step id。所有派生结果必须只在 steps 中计算，后续步骤和 outputs 直接引用对应 step id。
+证据以文字规定“减半/折半/加倍/若干倍”时，折算后的数值也是派生结果，禁止放入 variables。必须保留证据中的原始数值，并用 literal 2 等因数通过 div 或 mul 步骤计算；例如“每次扣0.5分，分支机构减半”应计算 0.5÷2，不得把0.25作为证据变量。
 题目明确给出的目标期假设值优先于材料中的历史值；例如题目给出2026年增速时，必须使用该增速计算2026年结果，不得误用材料中的2025年历史增速。已抽取且与目标公式相关的题目输入不得在依赖链中遗漏。
 凡是要进入 decimal0、decimal1、decimal2、percent2 输出或算术步骤的数值变量，value_type 必须是 decimal，禁止写成 text。百分数变量的正确示例为 {"name":"毛利率","value":"5.55","value_type":"decimal","unit":"%","evidence_ids":["原证据ID"]}；也可保留 value 中的 %，但 value_type 仍必须为 decimal 且 unit 必须为 %。
 每个变量的 value 必须以同一数值或日期直接出现在所引证据中，unit 也必须与证据一致；不得把 5.55% 擅自写成 0.0555。
@@ -126,7 +127,7 @@ SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推�
 4. 显式写出与 answer_parts 完全一致的最终答案。
 不得提及“质检”、“反馈”、“草稿”或修订过程，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。只输出 JSON。prompt_version={SUBMISSION_REASONING_REFINE_PROMPT_VERSION}。"""
 
-RUNNER_VERSION = "b_actual_v19_raw_amount_ratio_binding"
+RUNNER_VERSION = "b_actual_v20_derived_rule_arithmetic"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 CALCULATION_PLAN_NORMALIZATION_VERSION = "qwen37_structure_contract_v3_schema"
 CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
@@ -134,6 +135,7 @@ CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
     "+aggregate_intensity_binding_v1"
     "+table_row_label_binding_v1"
     "+raw_amount_ratio_binding_v1"
+    "+derived_rule_arithmetic_v1"
 )
 CALCULATION_PROMPT_EVIDENCE_POLICY_VERSION = "progressive_8_16_24_v1"
 CALCULATION_PROMPT_HITS_PER_ATTEMPT = 8

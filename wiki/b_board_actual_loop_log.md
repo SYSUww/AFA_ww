@@ -30992,3 +30992,531 @@
   ]
 }
 ```
+
+## b-loop-qwen37-integrated-full100-candidate-a1
+
+- recorded_at: `2026-07-23T20:38:19+00:00`
+
+```json
+{
+  "approach": "从已推送36112d4集成代码独立运行100题，固定Qwen3.7、attempt_43、workers=4与native strict；生成链路不读取pseudo99或官方锁，不上传官网。先完成整批答案并冻结，再独立运行reasoning。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_integrated_full100_candidate_a1",
+  "base_commit": "36112d4",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "36112d4"
+      },
+      "identity": {
+        "change_vector": {
+          "answer_reasoning_stages": "independent_sequential_v1",
+          "base_commit": "36112d4",
+          "calculation_evidence_policy": "progressive_8_16_24_v1",
+          "locator": "attempt_43",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reference_answer_access": false,
+          "runner": "b_actual_v19_raw_amount_ratio_binding",
+          "structured_output_mode": "native_json_schema_strict",
+          "workers": 4
+        },
+        "domains": [
+          "financial_contracts",
+          "financial_reports",
+          "insurance",
+          "regulatory",
+          "research"
+        ],
+        "hypothesis": "把已验证的选择题一致性、计算期别/比例/年度/表格行与原始金额语义门禁集成后，从当前提交代码独立重跑100题，可收口完整qwen3.7答案与reasoning，并在不访问pseudo99答案的生成链路中提高代理准确率和推理过程质量。",
+        "pipeline_stage": "end_to_end_candidate_validation",
+        "question_types": [
+          "calculation",
+          "extraction",
+          "mcq",
+          "multi",
+          "tf"
+        ],
+        "root_cause_cluster": "integrated_candidate_completeness_and_score",
+        "target_qids": [
+          "all_100"
+        ]
+      }
+    },
+    "context_sha256": "f10b9ccfac446ced9841d784b85be52e81bd3e3903ac74458f38355171e4b93e",
+    "direction_sha256": "7d184d98b274d22e2172616c886e238432a74830c6d18a55acc949aefab78228",
+    "schema_version": 1,
+    "semantic_sha256": "0749d3c6c79e7351bc07ac5081c63b21ce9e2be4fbdf902e41b8197e00628d15",
+    "sha256": "fd7fe0c3516b998f9bf04c3c45d68a866121f2e025c3b4b1623f059177ee347f"
+  },
+  "change_vector": {
+    "answer_reasoning_stages": "independent_sequential_v1",
+    "base_commit": "36112d4",
+    "calculation_evidence_policy": "progressive_8_16_24_v1",
+    "locator": "attempt_43",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reference_answer_access": false,
+    "runner": "b_actual_v19_raw_amount_ratio_binding",
+    "structured_output_mode": "native_json_schema_strict",
+    "workers": 4
+  },
+  "direction_id": "qwen37_integrated_full100_candidate",
+  "domains": [
+    "financial_contracts",
+    "financial_reports",
+    "insurance",
+    "regulatory",
+    "research"
+  ],
+  "effect": "答案99/100、reasoning 96/99；相比旧structured strict A2仍为99答案/96 reasoning，完整性未提升。生成总Token1304808，较旧A2的1306610仅减少1802（0.14%）。99个可用答案中93个与pseudo99代理等价；该匹配仅用于定位badcase，不代表官方准确率。",
+  "experiment_id": "b-loop-qwen37-integrated-full100-candidate-a1",
+  "failure_analysis": "reg_b_014三轮都把由0.5减半推导的0.25错误放入原始变量，被grounding正确拒绝。fin_b_016缺中国建筑2025全年每10股分红证据；ins_b_002与reg_b_015的reasoning均明确指出冻结答案包含证据不支持的选项，属于答案badcase信号而非单纯摘要失败。另有fin_b_018、ins_b_003、ins_b_016代理差异，其中ins_b_016还回归了已知官网锁BD。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "36112d4"
+        },
+        "identity": {
+          "change_vector": {
+            "answer_reasoning_stages": "independent_sequential_v1",
+            "base_commit": "36112d4",
+            "calculation_evidence_policy": "progressive_8_16_24_v1",
+            "locator": "attempt_43",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reference_answer_access": false,
+            "runner": "b_actual_v19_raw_amount_ratio_binding",
+            "structured_output_mode": "native_json_schema_strict",
+            "workers": 4
+          },
+          "domains": [
+            "financial_contracts",
+            "financial_reports",
+            "insurance",
+            "regulatory",
+            "research"
+          ],
+          "hypothesis": "把已验证的选择题一致性、计算期别/比例/年度/表格行与原始金额语义门禁集成后，从当前提交代码独立重跑100题，可收口完整qwen3.7答案与reasoning，并在不访问pseudo99答案的生成链路中提高代理准确率和推理过程质量。",
+          "pipeline_stage": "end_to_end_candidate_validation",
+          "question_types": [
+            "calculation",
+            "extraction",
+            "mcq",
+            "multi",
+            "tf"
+          ],
+          "root_cause_cluster": "integrated_candidate_completeness_and_score",
+          "target_qids": [
+            "all_100"
+          ]
+        }
+      },
+      "context_sha256": "f10b9ccfac446ced9841d784b85be52e81bd3e3903ac74458f38355171e4b93e",
+      "direction_sha256": "7d184d98b274d22e2172616c886e238432a74830c6d18a55acc949aefab78228",
+      "schema_version": 1,
+      "semantic_sha256": "0749d3c6c79e7351bc07ac5081c63b21ce9e2be4fbdf902e41b8197e00628d15",
+      "sha256": "fd7fe0c3516b998f9bf04c3c45d68a866121f2e025c3b4b1623f059177ee347f"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "36112d4"
+          },
+          "identity": {
+            "change_vector": {
+              "answer_reasoning_stages": "independent_sequential_v1",
+              "base_commit": "36112d4",
+              "calculation_evidence_policy": "progressive_8_16_24_v1",
+              "locator": "attempt_43",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reference_answer_access": false,
+              "runner": "b_actual_v19_raw_amount_ratio_binding",
+              "structured_output_mode": "native_json_schema_strict",
+              "workers": 4
+            },
+            "domains": [
+              "financial_contracts",
+              "financial_reports",
+              "insurance",
+              "regulatory",
+              "research"
+            ],
+            "hypothesis": "把已验证的选择题一致性、计算期别/比例/年度/表格行与原始金额语义门禁集成后，从当前提交代码独立重跑100题，可收口完整qwen3.7答案与reasoning，并在不访问pseudo99答案的生成链路中提高代理准确率和推理过程质量。",
+            "pipeline_stage": "end_to_end_candidate_validation",
+            "question_types": [
+              "calculation",
+              "extraction",
+              "mcq",
+              "multi",
+              "tf"
+            ],
+            "root_cause_cluster": "integrated_candidate_completeness_and_score",
+            "target_qids": [
+              "all_100"
+            ]
+          }
+        },
+        "context_sha256": "f10b9ccfac446ced9841d784b85be52e81bd3e3903ac74458f38355171e4b93e",
+        "direction_sha256": "7d184d98b274d22e2172616c886e238432a74830c6d18a55acc949aefab78228",
+        "schema_version": 1,
+        "semantic_sha256": "0749d3c6c79e7351bc07ac5081c63b21ce9e2be4fbdf902e41b8197e00628d15",
+        "sha256": "fd7fe0c3516b998f9bf04c3c45d68a866121f2e025c3b4b1623f059177ee347f"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "3bed9588595e92599c0e6ed211f3c010aa083c4524d01094359272b6db34c219",
+      "size": 1205398
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "e0e4a34967c448ed6265b8060ce20ad8f88a57e91aa81628e753b71d3adfb8f0",
+      "size": 985084
+    },
+    "related_log_sections": [
+      "b-loop-qwen37-compliance-and-score-loop-scaffold-a1",
+      "b-loop-qwen37-compliance-and-score-loop-scaffold-a2",
+      "b-loop-qwen37-full100-independent-baseline-a1",
+      "b-loop-qwen37-full100-independent-baseline-a1-metric-correction",
+      "b-loop-qwen37-structured-output-contract-a2-full100"
+    ],
+    "reviewed_at": "2026-07-23T20:05:50+00:00"
+  },
+  "hypothesis": "把已验证的选择题一致性、计算期别/比例/年度/表格行与原始金额语义门禁集成后，从当前提交代码独立重跑100题，可收口完整Qwen3.7答案与reasoning，并在不访问pseudo99答案的生成链路中提高代理准确率和推理过程质量。",
+  "metrics": {
+    "answer_completed_count": 99,
+    "answer_failed_qids": [
+      "reg_b_014"
+    ],
+    "answer_token_total": 723318,
+    "conditional_token_efficiency_score": 76.11888,
+    "failed_token_total": 73801,
+    "generation_token_reduction_percent": 0.14,
+    "generation_token_total": 1304808,
+    "official_accuracy": null,
+    "official_answer_lock_regressions": [
+      {
+        "candidate": [
+          "ABD"
+        ],
+        "lock": [
+          "BD"
+        ],
+        "qid": "ins_b_016"
+      }
+    ],
+    "official_submission_count": 0,
+    "official_upload_performed": false,
+    "previous_generation_token_total": 1306610,
+    "proxy_total_score": null,
+    "reasoning_completed_count": 96,
+    "reasoning_failed_qids": [
+      "fin_b_016",
+      "ins_b_002",
+      "reg_b_015"
+    ],
+    "reasoning_shadow_score": null,
+    "reasoning_token_total": 507689,
+    "reference_available_count": 99,
+    "reference_match_count": 93,
+    "reference_mismatches": [
+      {
+        "candidate": [
+          "宁德时代>美的集团>招商银行>中国建筑",
+          "79.64"
+        ],
+        "qid": "fin_b_016",
+        "reference": [
+          "宁德时代>美的集团>招商银行>中国建筑",
+          "76.92"
+        ]
+      },
+      {
+        "candidate": [
+          "2.65",
+          "7.42"
+        ],
+        "qid": "fin_b_018",
+        "reference": [
+          "2.58",
+          "7.65"
+        ]
+      },
+      {
+        "candidate": [
+          "BCD"
+        ],
+        "qid": "ins_b_002",
+        "reference": [
+          "BC"
+        ]
+      },
+      {
+        "candidate": [
+          "315.00"
+        ],
+        "qid": "ins_b_003",
+        "reference": [
+          "366.00"
+        ]
+      },
+      {
+        "candidate": [
+          "ABD"
+        ],
+        "qid": "ins_b_016",
+        "reference": [
+          "BD"
+        ]
+      },
+      {
+        "candidate": [
+          "AB"
+        ],
+        "qid": "reg_b_015",
+        "reference": [
+          "AC"
+        ]
+      }
+    ],
+    "reference_missing_qids": [
+      "reg_b_014"
+    ],
+    "submission_token_total": 1194056,
+    "target_question_count": 100,
+    "usage_complete": true
+  },
+  "next_step": "开启同一集成候选方向A2，但仅针对reg_b_014、fin_b_016、fin_b_018、ins_b_002、ins_b_003、ins_b_016、reg_b_015逐题从证据链复核；答案阶段只重跑有语义问题的题，reasoning阶段只消费新冻结答案。先修reg_b_014“规则减半必须用div步骤”的计划契约，再按证据决定其余题是否需要新检索/语义门禁。",
+  "pipeline_stage": "end_to_end_candidate_validation",
+  "promotion_result": "not_effective_incomplete_not_promoted",
+  "question_types": [
+    "calculation",
+    "extraction",
+    "mcq",
+    "multi",
+    "tf"
+  ],
+  "recorded_at": "2026-07-23T20:38:19+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "integrated_candidate_completeness_and_score",
+  "status": "completed_not_effective_incomplete",
+  "submission_effect": "incomplete_not_submitted",
+  "target_qids": [
+    "all_100"
+  ]
+}
+```
+
+## b-loop-qwen37-derived-rule-arithmetic-binding-a1
+
+- recorded_at: `2026-07-23T20:42:55+00:00`
+
+```json
+{
+  "approach": "在计算计划Prompt中明确：减半/折半/加倍/若干倍的折算值属于派生结果，必须用原始证据数值和literal因数通过div/mul步骤计算，禁止把折算值放进variables；只重跑reg_b_014。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_derived_rule_arithmetic_binding_a1",
+  "base_commit": "36112d4",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "36112d4"
+      },
+      "identity": {
+        "change_vector": {
+          "base_commit": "36112d4",
+          "derived_rule_as_step_prompt": "half_double_v1",
+          "existing_raw_variable_grounding_gate": "unchanged",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reference_answer_access": false,
+          "workers": 1
+        },
+        "domains": [
+          "regulatory"
+        ],
+        "hypothesis": "reg_b_014的0.25来自证据0.5与“减半”规则而非原文字面值；明确要求把减半/加倍写成div/mul步骤，可让既有grounding门禁保留严格性的同时生成可重放计划。",
+        "pipeline_stage": "calculation_plan_semantic_grounding",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "derived_rule_value_misclassified_as_raw_variable",
+        "target_qids": [
+          "reg_b_014"
+        ]
+      }
+    },
+    "context_sha256": "f10b9ccfac446ced9841d784b85be52e81bd3e3903ac74458f38355171e4b93e",
+    "direction_sha256": "0625b21617ad4c2f8f622d76da03b5adfc5cd4fee2e9e3b47987f54be14482e1",
+    "schema_version": 1,
+    "semantic_sha256": "a2e22b57a2144a4e37a6ddf231197e9d27406f85929d83baaee453cd3fb16557",
+    "sha256": "fdfbd235e5a78bdb38e1d2bc7e5ad670596d965a4727cf270a43e94ee03bf04f"
+  },
+  "change_vector": {
+    "base_commit": "36112d4",
+    "derived_rule_as_step_prompt": "half_double_v1",
+    "existing_raw_variable_grounding_gate": "unchanged",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reference_answer_access": false,
+    "workers": 1
+  },
+  "direction_id": "qwen37_derived_rule_arithmetic_binding",
+  "domains": [
+    "regulatory"
+  ],
+  "effect": "答案和reasoning均一次完成，输出99.25。trace保留证据原值0.5和题面次数1，以div(0.5,2)=0.25，再计算总扣分0.75及100-0.75=99.25；grounding与replay均通过。总Token12034，较集成全量A1同题三轮失败的30289减少60.27%。",
+  "experiment_id": "b-loop-qwen37-derived-rule-arithmetic-binding-a1",
+  "failure_analysis": "本轮未出现模型或校验失败。该规则只改善可重放计划契约，单题代理一致不等于官方准确率；仍需把本题产物阶段化覆盖到完整候选，并处理其余6个答案/reasoning badcase。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "36112d4"
+        },
+        "identity": {
+          "change_vector": {
+            "base_commit": "36112d4",
+            "derived_rule_as_step_prompt": "half_double_v1",
+            "existing_raw_variable_grounding_gate": "unchanged",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reference_answer_access": false,
+            "workers": 1
+          },
+          "domains": [
+            "regulatory"
+          ],
+          "hypothesis": "reg_b_014的0.25来自证据0.5与“减半”规则而非原文字面值；明确要求把减半/加倍写成div/mul步骤，可让既有grounding门禁保留严格性的同时生成可重放计划。",
+          "pipeline_stage": "calculation_plan_semantic_grounding",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "derived_rule_value_misclassified_as_raw_variable",
+          "target_qids": [
+            "reg_b_014"
+          ]
+        }
+      },
+      "context_sha256": "f10b9ccfac446ced9841d784b85be52e81bd3e3903ac74458f38355171e4b93e",
+      "direction_sha256": "0625b21617ad4c2f8f622d76da03b5adfc5cd4fee2e9e3b47987f54be14482e1",
+      "schema_version": 1,
+      "semantic_sha256": "a2e22b57a2144a4e37a6ddf231197e9d27406f85929d83baaee453cd3fb16557",
+      "sha256": "fdfbd235e5a78bdb38e1d2bc7e5ad670596d965a4727cf270a43e94ee03bf04f"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "36112d4"
+          },
+          "identity": {
+            "change_vector": {
+              "base_commit": "36112d4",
+              "derived_rule_as_step_prompt": "half_double_v1",
+              "existing_raw_variable_grounding_gate": "unchanged",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reference_answer_access": false,
+              "workers": 1
+            },
+            "domains": [
+              "regulatory"
+            ],
+            "hypothesis": "reg_b_014的0.25来自证据0.5与“减半”规则而非原文字面值；明确要求把减半/加倍写成div/mul步骤，可让既有grounding门禁保留严格性的同时生成可重放计划。",
+            "pipeline_stage": "calculation_plan_semantic_grounding",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "derived_rule_value_misclassified_as_raw_variable",
+            "target_qids": [
+              "reg_b_014"
+            ]
+          }
+        },
+        "context_sha256": "f10b9ccfac446ced9841d784b85be52e81bd3e3903ac74458f38355171e4b93e",
+        "direction_sha256": "0625b21617ad4c2f8f622d76da03b5adfc5cd4fee2e9e3b47987f54be14482e1",
+        "schema_version": 1,
+        "semantic_sha256": "a2e22b57a2144a4e37a6ddf231197e9d27406f85929d83baaee453cd3fb16557",
+        "sha256": "fdfbd235e5a78bdb38e1d2bc7e5ad670596d965a4727cf270a43e94ee03bf04f"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "3b9d576b9a7f4e3e381125e1ad2f2f66a502b98c4de390b5459b73c45c2022d5",
+      "size": 1217419
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "2aced18048b6e2238ebaa190c5a0a718a238be26f5050505526807c698bf43a5",
+      "size": 994584
+    },
+    "related_log_sections": [
+      "B0-actual-evaluation",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a1",
+      "b-loop-qwen37-integrated-full100-candidate-a1"
+    ],
+    "reviewed_at": "2026-07-23T20:40:09+00:00"
+  },
+  "hypothesis": "reg_b_014的0.25来自证据0.5与“减半”规则而非原文字面值；明确要求把减半/加倍写成div/mul步骤，可让既有grounding门禁保留严格性的同时生成可重放计划。",
+  "material_delta": {
+    "derived_rule_as_step_prompt": "half_double_v1"
+  },
+  "metrics": {
+    "answer_call_count": 1,
+    "answer_completed_count": 1,
+    "answer_parts": [
+      "99.25"
+    ],
+    "answer_token_total": 7543,
+    "derived_half_step_verified": true,
+    "grounding_verified": true,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "official_upload_performed": false,
+    "previous_failed_answer_token_total": 30289,
+    "reasoning_call_count": 1,
+    "reasoning_completed_count": 1,
+    "reasoning_token_total": 4491,
+    "recorded_token_total": 12034,
+    "replay_verified": true,
+    "tests_passed": 317,
+    "token_reduction_percent": 60.27,
+    "usage_complete": true
+  },
+  "next_step": "创建独立有效分支并推送。随后新方向优先处理fin_b_016“摘要承认证据缺失却仍输出数值”的完整性门禁与精确现金分红证据检索；不重复本方向。",
+  "pipeline_stage": "calculation_plan_semantic_grounding",
+  "promotion_result": "promoted_effective_direction",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T20:42:55+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "derived_rule_value_misclassified_as_raw_variable",
+  "status": "completed_effective",
+  "submission_effect": "single_qid_local_submit_only_not_officially_uploaded",
+  "target_qids": [
+    "reg_b_014"
+  ]
+}
+```

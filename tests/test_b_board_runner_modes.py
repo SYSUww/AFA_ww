@@ -11,6 +11,7 @@ from unittest import mock
 from afa_agent.b_board.calculation import CalculationExecutor
 from afa_agent.b_board.io import BQuestion
 from afa_agent.b_board.runner import (
+    CALCULATION_SYSTEM_PROMPT,
     RUN_MODE_RESEARCH,
     RUN_MODE_SUBMISSION,
     SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
@@ -816,6 +817,13 @@ class BBoardRunnerModeTests(unittest.TestCase):
             ],
         }
         _validate_raw_amount_ratio_dependency(question, correct_plan)
+
+    def test_calculation_prompt_requires_rule_derived_values_as_steps(
+        self,
+    ) -> None:
+        self.assertIn("减半/折半/加倍/若干倍", CALCULATION_SYSTEM_PROMPT)
+        self.assertIn("应计算 0.5÷2", CALCULATION_SYSTEM_PROMPT)
+        self.assertIn("不得把0.25作为证据变量", CALCULATION_SYSTEM_PROMPT)
 
     def test_calculation_evidence_payload_expands_progressively(self) -> None:
         evidence = [
