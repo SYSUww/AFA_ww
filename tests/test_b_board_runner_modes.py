@@ -33,9 +33,12 @@ from afa_agent.b_board.runner import (
     _normalize_calculation_numeric_literals,
     _validate_aggregate_intensity_plan_binding,
     _validate_calculation_summary_output_consistency,
+    _validate_calculation_plan_has_required_inputs,
+    _validate_calculation_required_sort_objects,
     _validate_calculation_table_row_label_binding,
     _validate_calculation_variable_period_binding,
     _validate_calculation_result_semantics,
+    _validate_full_year_dividend_component_dependency,
     _validate_insurance_surrender_rate_binding,
     _validate_raw_amount_ratio_dependency,
 )
@@ -612,6 +615,274 @@ class BBoardRunnerModeTests(unittest.TestCase):
             "append_missing_replayed_outputs_to_summary",
         )
         self.assertIn("本地重放结果为：40.05%；10.10", plan["decision_summary"])
+
+    def test_calculation_plan_rejects_admitted_missing_required_input(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "reports missing required data",
+        ):
+            _validate_calculation_plan_has_required_inputs(
+                {
+                    "decision_summary": (
+                        "中国建筑数据缺失，无法完成完整排序和差额计算。"
+                    )
+                }
+            )
+        _validate_calculation_plan_has_required_inputs(
+            {
+                "decision_summary": (
+                    "材料未直接提供全年值，但中期与年末数据完整，"
+                    "相加后可以计算全年结果。"
+                )
+            }
+        )
+
+    def test_calculation_sort_must_cover_all_question_objects(self) -> None:
+        question = BQuestion(
+            qid="fin_b_016",
+            domain="financial_reports",
+            split="B",
+            question=(
+                "查阅宁德时代、美的集团、招商银行和中国建筑 2025 年"
+                "年度报告中的现金分红数据，按金额从高到低排序。"
+            ),
+            options={},
+            answer_format="calculation",
+            type="计算题",
+            answer_slots=1,
+            answer_slot_templates=("公司>公司",),
+        )
+        variables = [
+            {
+                "name": name,
+                "value": str(index),
+                "value_type": "decimal",
+                "unit": "元",
+                "evidence_ids": [f"u{index}"],
+            }
+            for index, name in enumerate(
+                ("宁德时代", "美的集团", "招商银行", "中国建筑"),
+                start=1,
+            )
+        ]
+
+        def plan_with(labels: tuple[str, ...]) -> dict[str, object]:
+            return {
+                "variables": variables,
+                "steps": [
+                    {
+                        "id": "rank",
+                        "op": "sort_desc",
+                        "items": [
+                            {
+                                "label": label,
+                                "source": {"ref": label},
+                            }
+                            for label in labels
+                        ],
+                    }
+                ],
+                "outputs": [
+                    {"source": {"ref": "rank"}, "format": "text"}
+                ],
+            }
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "missing required question objects: 中国建筑",
+        ):
+            _validate_calculation_required_sort_objects(
+                question,
+                plan_with(("宁德时代", "美的集团", "招商银行")),
+            )
+        _validate_calculation_required_sort_objects(
+            question,
+            plan_with(("宁德时代", "美的集团", "招商银行", "中国建筑")),
+        )
+
+    def test_full_year_dividend_must_add_midyear_and_remaining(self) -> None:
+        question = BQuestion(
+            qid="fin_b_016",
+            domain="financial_reports",
+            split="B",
+            question="统一换算为每10股全年现金分红并排序。",
+            options={},
+            answer_format="calculation",
+            type="计算题",
+            answer_slots=1,
+            answer_slot_templates=("公司>公司",),
+        )
+        evidence = {
+            "annual_catl_2025_report::year_end": (
+                "扣除已分派的中期现金分红，因此本次剩余待分配，"
+                "向股东每10股派发现金分红69.57元。"
+            ),
+            "annual_catl_2025_report::midyear": (
+                "2025年中期分红方案，向股东每10股派发现金分红10.07元。"
+            ),
+        }
+        variables = [
+            {
+                "name": "宁德时代年末剩余分红",
+                "value": "69.57",
+                "value_type": "decimal",
+                "unit": "元",
+                "evidence_ids": [
+                    "annual_catl_2025_report::year_end"
+                ],
+            },
+            {
+                "name": "宁德时代中期分红",
+                "value": "10.07",
+                "value_type": "decimal",
+                "unit": "元",
+                "evidence_ids": [
+                    "annual_catl_2025_report::midyear"
+                ],
+            },
+        ]
+        wrong_plan = {
+            "variables": variables,
+            "steps": [
+                {
+                    "id": "rank",
+                    "op": "sort_desc",
+                    "items": [
+                        {
+                            "label": "宁德时代",
+                            "source": {"ref": "宁德时代年末剩余分红"},
+                        }
+                    ],
+                }
+            ],
+            "outputs": [{"source": {"ref": "rank"}, "format": "text"}],
+        }
+        with self.assertRaisesRegex(
+            ValueError,
+            "must add the evidenced midyear 10.07",
+        ):
+            _validate_full_year_dividend_component_dependency(
+                question,
+                wrong_plan,
+                evidence,
+            )
+
+        correct_plan = {
+            "variables": variables,
+            "steps": [
+                {
+                    "id": "full_year",
+                    "op": "add",
+                    "args": [
+                        {"ref": "宁德时代年末剩余分红"},
+                        {"ref": "宁德时代中期分红"},
+                    ],
+                },
+                {
+                    "id": "rank",
+                    "op": "sort_desc",
+                    "items": [
+                        {
+                            "label": "宁德时代",
+                            "source": {"ref": "full_year"},
+                        }
+                    ],
+                },
+            ],
+            "outputs": [{"source": {"ref": "rank"}, "format": "text"}],
+        }
+        _validate_full_year_dividend_component_dependency(
+            question,
+            correct_plan,
+            evidence,
+        )
+
+    def test_full_year_dividend_accepts_same_doc_same_value_duplicate_evidence(
+        self,
+    ) -> None:
+        question = BQuestion(
+            qid="fin_b_016",
+            domain="financial_reports",
+            split="B",
+            question="统一换算为每10股全年现金分红并排序。",
+            options={},
+            answer_format="calculation",
+            type="计算题",
+            answer_slots=1,
+            answer_slot_templates=("公司>公司",),
+        )
+        evidence = {
+            "annual_catl_2025_report::remaining_a": (
+                "扣除已分派的中期现金分红，本次剩余待分配每10股69.57元。"
+            ),
+            "annual_catl_2025_report::remaining_b": (
+                "扣除已分派的中期现金分红，本次剩余待分配每10股69.57元。"
+            ),
+            "annual_catl_2025_report::midyear": (
+                "2025年中期分红方案，每10股派发现金分红10.07元。"
+            ),
+        }
+        plan = {
+            "variables": [
+                {
+                    "name": "年末剩余",
+                    "value": "69.57",
+                    "value_type": "decimal",
+                    "unit": "元",
+                    "evidence_ids": [
+                        "annual_catl_2025_report::remaining_a"
+                    ],
+                },
+                {
+                    "name": "中期分红",
+                    "value": "10.07",
+                    "value_type": "decimal",
+                    "unit": "元",
+                    "evidence_ids": [
+                        "annual_catl_2025_report::midyear"
+                    ],
+                },
+            ],
+            "steps": [
+                {
+                    "id": "full_year",
+                    "op": "add",
+                    "args": [{"ref": "年末剩余"}, {"ref": "中期分红"}],
+                },
+                {
+                    "id": "rank",
+                    "op": "sort_desc",
+                    "items": [
+                        {
+                            "label": "宁德时代",
+                            "source": {"ref": "full_year"},
+                        }
+                    ],
+                },
+            ],
+            "outputs": [{"source": {"ref": "rank"}, "format": "text"}],
+        }
+
+        _validate_full_year_dividend_component_dependency(
+            question,
+            plan,
+            evidence,
+        )
+
+        plan["variables"][0]["evidence_ids"] = [
+            "annual_other_2025_report::remaining_a"
+        ]
+        with self.assertRaisesRegex(
+            ValueError,
+            "must add the evidenced midyear 10.07",
+        ):
+            _validate_full_year_dividend_component_dependency(
+                question,
+                plan,
+                evidence,
+            )
 
     def test_requested_table_row_label_rejects_value_from_another_row(
         self,

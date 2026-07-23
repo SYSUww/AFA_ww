@@ -397,6 +397,10 @@ class BBoardLoopOrchestrator:
             "b_actual_v18_table_row_label_binding",
             "b_actual_v19_raw_amount_ratio_binding",
             "b_actual_v20_derived_rule_arithmetic",
+            "b_actual_v21_calculation_missing_input_gate",
+            "b_actual_v22_required_sort_object_coverage",
+            "b_actual_v23_full_year_dividend_binding",
+            "b_actual_v24_duplicate_evidence_equivalence",
             "b_actual_composite_v1",
         }:
             raise BBoardLoopStateError("Existing B0 manifest runner identity mismatch")

@@ -31520,3 +31520,974 @@
   ]
 }
 ```
+
+## b-loop-qwen37-calculation-missing-input-gate-a1
+
+- recorded_at: `2026-07-23T20:47:29+00:00`
+
+```json
+{
+  "approach": "在计算计划schema校验后拒绝decision_summary同时含“未提供/缺失/证据不足”和“无法计算/无法完成”等承认缺必需输入的计划，让该错误进入现有定向检索而非输出占位数；只跑fin_b_016。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_calculation_missing_input_gate_a1",
+  "base_commit": "c085282",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "c085282"
+      },
+      "identity": {
+        "change_vector": {
+          "base_commit": "c085282",
+          "missing_input_summary_gate": "v1",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reference_answer_access": false,
+          "retrieval_after_semantic_failure": "existing_phrase_overlay",
+          "workers": 1
+        },
+        "domains": [
+          "financial_reports"
+        ],
+        "hypothesis": "fin_b_016计划摘要明确承认中国建筑数据缺失且无法完成，却用literal 0生成排序和差额；在执行前拒绝同时含“缺失+无法计算/完成”的计划，可触发已有定向检索找到中国建筑2025每10股2.718元，并避免占位数伪答案。",
+        "pipeline_stage": "calculation_variable_retrieval",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "missing_required_value_replaced_by_literal_placeholder",
+        "target_qids": [
+          "fin_b_016"
+        ]
+      }
+    },
+    "context_sha256": "be8e4f20a61b6ffda0736d2fb0f6977b631bdeecc75838770858b7afe854531f",
+    "direction_sha256": "472f067046524f2d3f19b747f74b0d16000f5dabd4dd801cb28275b05a269fbe",
+    "schema_version": 1,
+    "semantic_sha256": "a1cfa3ca9151f7c6b23d08bdae5f9c6fbd9b387a31a4de518405c7d618ae383e",
+    "sha256": "d5839b3b297c46094944697ac3e2c64e5d3ce6af55cfd8f6b47566abc47dc650"
+  },
+  "change_vector": {
+    "base_commit": "c085282",
+    "missing_input_summary_gate": "v1",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reference_answer_access": false,
+    "retrieval_after_semantic_failure": "existing_phrase_overlay",
+    "workers": 1
+  },
+  "direction_id": "qwen37_calculation_missing_input_gate",
+  "domains": [
+    "financial_reports"
+  ],
+  "effect": "答案和reasoning均一次完成、Token15130，但输出变为仅3家公司“宁德时代>美的集团>招商银行”和差额59.48；未与pseudo99代理一致，且没有覆盖题面明确要求的中国建筑，因此本轮无效。",
+  "experiment_id": "b-loop-qwen37-calculation-missing-input-gate-a1",
+  "failure_analysis": "Qwen规避了A1摘要门禁：不再写“数据缺失/无法完成”，而是直接从sort_desc items和最终文本中删除中国建筑。由于当前输出槽只校验text类型，不校验题面列举对象集合，计划未触发检索；说明根因还包括排序对象覆盖缺失，单靠摘要措辞门禁不充分。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "c085282"
+        },
+        "identity": {
+          "change_vector": {
+            "base_commit": "c085282",
+            "missing_input_summary_gate": "v1",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reference_answer_access": false,
+            "retrieval_after_semantic_failure": "existing_phrase_overlay",
+            "workers": 1
+          },
+          "domains": [
+            "financial_reports"
+          ],
+          "hypothesis": "fin_b_016计划摘要明确承认中国建筑数据缺失且无法完成，却用literal 0生成排序和差额；在执行前拒绝同时含“缺失+无法计算/完成”的计划，可触发已有定向检索找到中国建筑2025每10股2.718元，并避免占位数伪答案。",
+          "pipeline_stage": "calculation_variable_retrieval",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "missing_required_value_replaced_by_literal_placeholder",
+          "target_qids": [
+            "fin_b_016"
+          ]
+        }
+      },
+      "context_sha256": "be8e4f20a61b6ffda0736d2fb0f6977b631bdeecc75838770858b7afe854531f",
+      "direction_sha256": "472f067046524f2d3f19b747f74b0d16000f5dabd4dd801cb28275b05a269fbe",
+      "schema_version": 1,
+      "semantic_sha256": "a1cfa3ca9151f7c6b23d08bdae5f9c6fbd9b387a31a4de518405c7d618ae383e",
+      "sha256": "d5839b3b297c46094944697ac3e2c64e5d3ce6af55cfd8f6b47566abc47dc650"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "c085282"
+          },
+          "identity": {
+            "change_vector": {
+              "base_commit": "c085282",
+              "missing_input_summary_gate": "v1",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reference_answer_access": false,
+              "retrieval_after_semantic_failure": "existing_phrase_overlay",
+              "workers": 1
+            },
+            "domains": [
+              "financial_reports"
+            ],
+            "hypothesis": "fin_b_016计划摘要明确承认中国建筑数据缺失且无法完成，却用literal 0生成排序和差额；在执行前拒绝同时含“缺失+无法计算/完成”的计划，可触发已有定向检索找到中国建筑2025每10股2.718元，并避免占位数伪答案。",
+            "pipeline_stage": "calculation_variable_retrieval",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "missing_required_value_replaced_by_literal_placeholder",
+            "target_qids": [
+              "fin_b_016"
+            ]
+          }
+        },
+        "context_sha256": "be8e4f20a61b6ffda0736d2fb0f6977b631bdeecc75838770858b7afe854531f",
+        "direction_sha256": "472f067046524f2d3f19b747f74b0d16000f5dabd4dd801cb28275b05a269fbe",
+        "schema_version": 1,
+        "semantic_sha256": "a1cfa3ca9151f7c6b23d08bdae5f9c6fbd9b387a31a4de518405c7d618ae383e",
+        "sha256": "d5839b3b297c46094944697ac3e2c64e5d3ce6af55cfd8f6b47566abc47dc650"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "2397829fc2ceba49e9f5f887a3a08da35caf532e3581cc61358078cca911ed94",
+      "size": 1226538
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "3654b2b0749db9fbc2fc9e68f04e7b2ec5135d3897971d4abfc575ca92017255",
+      "size": 1002207
+    },
+    "related_log_sections": [
+      "b-loop-reasoning-shadow-baseline-v1",
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90",
+      "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+      "b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100",
+      "b-loop-insurance-conditional-policy-loan-eligibility-a1",
+      "b-loop-metric-scope-correction-ins-b-004-a1",
+      "b-loop-insurance-policy-loan-a1-full100-validation-82d4492",
+      "b-loop-calculation-amount-unit-scale-consistency-a1-res-b-012",
+      "b-loop-online-research-post-local-exhaustion-v1",
+      "b-loop-metric-correction-reasoning-self-refine-a3-cumulative-normalization",
+      "b-loop-official97-boundary-d-option-rollback-a1-joint",
+      "b-loop-official97-boundary-d-option-rollback-a2-ins017-single",
+      "b-loop-official97-boundary-d-option-rollback-a2-ins017-official-result",
+      "b-loop-four-question-full-chain-truth-audit-a1",
+      "b-loop-four-old-answer-single-correct-counterfactual-a1",
+      "b-loop-four-question-zero-effect-third-label-analysis-a1",
+      "b-loop-two-submission-combinatorial-identification-a1",
+      "b-loop-two-submission-combinatorial-identification-result-a1",
+      "b-loop-adaptive-second-submission-ins012-single-a1",
+      "b-loop-adaptive-second-submission-ins012-official-result-a1",
+      "b-loop-percentage-bundle-net-plus-one-explanation-a1",
+      "b-loop-percentage-bundle-most-likely-positive-fin017-a1",
+      "b-loop-three-percentage-question-full-chain-numeric-revalidation-a1",
+      "b-loop-qwen37-two-question-submission-probe-a1",
+      "b-loop-qwen37-calculation-numeric-literal-normalization-a1",
+      "b-loop-qwen37-calculation-numeric-literal-normalization-a1-result-correction",
+      "b-loop-answer-reasoning-stage-decoupling-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a2",
+      "b-loop-qwen37-structured-output-contract-a1",
+      "b-loop-qwen37-structured-output-contract-a3-staged-retry",
+      "b-loop-qwen37-option-verdict-consistency-a1",
+      "b-loop-qwen37-option-verdict-consistency-a2",
+      "b-loop-qwen37-option-verdict-consistency-a3",
+      "b-loop-qwen37-financial-percentage-semantics-a1",
+      "b-loop-qwen37-insurance-product-identity-clause-audit-a1",
+      "b-loop-qwen37-calculation-variable-period-binding-a1",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a1",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a2",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a3",
+      "b-loop-qwen37-calculation-semantic-dependency-gate-a1",
+      "b-loop-qwen37-calculation-row-label-evidence-binding-a1",
+      "b-loop-qwen37-calculation-row-label-evidence-binding-a2",
+      "b-loop-qwen37-calculation-row-label-evidence-binding-a3",
+      "b-loop-qwen37-integrated-full100-candidate-a1",
+      "b-loop-qwen37-derived-rule-arithmetic-binding-a1"
+    ],
+    "reviewed_at": "2026-07-23T20:44:02+00:00"
+  },
+  "hypothesis": "fin_b_016计划摘要明确承认中国建筑数据缺失且无法完成，却用literal 0生成排序和差额；在执行前拒绝同时含“缺失+无法计算/完成”的计划，可触发已有定向检索找到中国建筑2025每10股2.718元，并避免占位数伪答案。",
+  "material_delta": {
+    "missing_input_summary_gate": "v1"
+  },
+  "metrics": {
+    "answer_call_count": 1,
+    "answer_completed_count": 1,
+    "answer_parts": [
+      "宁德时代>美的集团>招商银行",
+      "59.48"
+    ],
+    "calculation_retrieval_round_count": 0,
+    "covered_object_count": 3,
+    "missing_objects": [
+      "中国建筑"
+    ],
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "official_upload_performed": false,
+    "reasoning_call_count": 1,
+    "reasoning_completed_count": 1,
+    "recorded_token_total": 15130,
+    "reference_match_count": 0,
+    "required_object_count": 4,
+    "tests_passed": 318,
+    "usage_complete": true
+  },
+  "next_step": "A2在保留摘要缺失门禁的基础上，解析题面“公司A、公司B、公司C和公司D…排序”对象集合；要求输出可达的sort_desc items标签完整覆盖题面对象，缺任一对象则触发检索。只重跑fin_b_016。",
+  "pipeline_stage": "calculation_variable_retrieval",
+  "promotion_result": "not_effective",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T20:47:29+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "missing_required_value_replaced_by_literal_placeholder",
+  "status": "completed_not_effective_missing_object_omitted",
+  "submission_effect": "single_qid_local_submit_only_not_officially_uploaded",
+  "target_qids": [
+    "fin_b_016"
+  ]
+}
+```
+
+## b-loop-qwen37-calculation-missing-input-gate-a2
+
+- recorded_at: `2026-07-23T20:56:12+00:00`
+
+```json
+{
+  "approach": "在A1摘要缺失门禁上，解析题面查阅对象列表，并要求输出可达sort_desc items完整覆盖全部对象；缺对象错误进入现有phrase overlay检索。只重跑fin_b_016。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_calculation_missing_input_gate_a2",
+  "base_commit": "c085282",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "c085282"
+      },
+      "identity": {
+        "change_vector": {
+          "base_commit": "c085282",
+          "missing_input_summary_gate": "v1",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reference_answer_access": false,
+          "required_sort_object_coverage_gate": "v1",
+          "retrieval_after_semantic_failure": "existing_phrase_overlay",
+          "workers": 1
+        },
+        "domains": [
+          "financial_reports"
+        ],
+        "hypothesis": "a1证明模型可能通过删除缺失对象绕过摘要门禁；从题面排序任务提取明确公司对象，并要求输出可达sort_desc完整覆盖这些标签，可把缺失中国建筑转成检索信号并恢复四对象计算。",
+        "pipeline_stage": "calculation_variable_retrieval",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "missing_required_value_replaced_by_literal_placeholder",
+        "target_qids": [
+          "fin_b_016"
+        ]
+      }
+    },
+    "context_sha256": "be8e4f20a61b6ffda0736d2fb0f6977b631bdeecc75838770858b7afe854531f",
+    "direction_sha256": "f42a8e78548fea28e81be88c7c209017f7ddce2936d6e3fc98ff61dd00185999",
+    "schema_version": 1,
+    "semantic_sha256": "33cdd1e21989c3f7994a5d0fb307af8303773b0f29026170de2004a0a0e371cd",
+    "sha256": "50eb2fc336243a059b91387385007b662862b1be7635d6c89e0094e3ac940e8d"
+  },
+  "change_vector": {
+    "base_commit": "c085282",
+    "missing_input_summary_gate": "v1",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reference_answer_access": false,
+    "required_sort_object_coverage_gate": "v1",
+    "retrieval_after_semantic_failure": "existing_phrase_overlay",
+    "workers": 1
+  },
+  "direction_id": "qwen37_calculation_missing_input_gate",
+  "domains": [
+    "financial_reports"
+  ],
+  "effect": "三次答案调用后成功覆盖宁德时代、美的集团、招商银行、中国建筑四家公司，并找到中国建筑2025每10股2.718元直接证据；reasoning一次完成。对象覆盖缺口已修复，但最终答案为“宁德时代>美的集团>招商银行>中国建筑；66.85”，未与代理参考一致。",
+  "experiment_id": "b-loop-qwen37-calculation-missing-input-gate-a2",
+  "failure_analysis": "最终计划把宁德时代69.57当成全年每10股分红，漏加已实施的2025中期10.07；实际证据说明69.57是扣除中期金额后的剩余年度分配，全年应为69.57+10.07=79.64。最高减最低应为79.64-2.718=76.922，四舍五入76.92。本轮总Token43046，且中国建筑证据到第3次答案调用才进入，检索效率偏低。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "c085282"
+        },
+        "identity": {
+          "change_vector": {
+            "base_commit": "c085282",
+            "missing_input_summary_gate": "v1",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reference_answer_access": false,
+            "required_sort_object_coverage_gate": "v1",
+            "retrieval_after_semantic_failure": "existing_phrase_overlay",
+            "workers": 1
+          },
+          "domains": [
+            "financial_reports"
+          ],
+          "hypothesis": "a1证明模型可能通过删除缺失对象绕过摘要门禁；从题面排序任务提取明确公司对象，并要求输出可达sort_desc完整覆盖这些标签，可把缺失中国建筑转成检索信号并恢复四对象计算。",
+          "pipeline_stage": "calculation_variable_retrieval",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "missing_required_value_replaced_by_literal_placeholder",
+          "target_qids": [
+            "fin_b_016"
+          ]
+        }
+      },
+      "context_sha256": "be8e4f20a61b6ffda0736d2fb0f6977b631bdeecc75838770858b7afe854531f",
+      "direction_sha256": "f42a8e78548fea28e81be88c7c209017f7ddce2936d6e3fc98ff61dd00185999",
+      "schema_version": 1,
+      "semantic_sha256": "33cdd1e21989c3f7994a5d0fb307af8303773b0f29026170de2004a0a0e371cd",
+      "sha256": "50eb2fc336243a059b91387385007b662862b1be7635d6c89e0094e3ac940e8d"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "c085282"
+          },
+          "identity": {
+            "change_vector": {
+              "base_commit": "c085282",
+              "missing_input_summary_gate": "v1",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reference_answer_access": false,
+              "required_sort_object_coverage_gate": "v1",
+              "retrieval_after_semantic_failure": "existing_phrase_overlay",
+              "workers": 1
+            },
+            "domains": [
+              "financial_reports"
+            ],
+            "hypothesis": "a1证明模型可能通过删除缺失对象绕过摘要门禁；从题面排序任务提取明确公司对象，并要求输出可达sort_desc完整覆盖这些标签，可把缺失中国建筑转成检索信号并恢复四对象计算。",
+            "pipeline_stage": "calculation_variable_retrieval",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "missing_required_value_replaced_by_literal_placeholder",
+            "target_qids": [
+              "fin_b_016"
+            ]
+          }
+        },
+        "context_sha256": "be8e4f20a61b6ffda0736d2fb0f6977b631bdeecc75838770858b7afe854531f",
+        "direction_sha256": "f42a8e78548fea28e81be88c7c209017f7ddce2936d6e3fc98ff61dd00185999",
+        "schema_version": 1,
+        "semantic_sha256": "33cdd1e21989c3f7994a5d0fb307af8303773b0f29026170de2004a0a0e371cd",
+        "sha256": "50eb2fc336243a059b91387385007b662862b1be7635d6c89e0094e3ac940e8d"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-qwen37-calculation-missing-input-gate-a1"
+      ],
+      "similarity": 0.942342
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "7feb908cd785e643a1ae1b5af03df40f10ecfaa604d4a41d698b65a39f4277ea",
+      "size": 1238348
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "b5791c95c8ecc8fcde99cce5a69be445d072c96606d554988ef5950f151b3005",
+      "size": 1012302
+    },
+    "related_log_sections": [
+      "b-loop-reasoning-structured-summary-a1",
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90",
+      "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+      "b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100",
+      "b-loop-insurance-conditional-policy-loan-eligibility-a1",
+      "b-loop-metric-scope-correction-ins-b-004-a1",
+      "b-loop-insurance-policy-loan-a1-full100-validation-82d4492",
+      "b-loop-calculation-amount-unit-scale-consistency-a1-res-b-012",
+      "b-loop-online-research-post-local-exhaustion-v1",
+      "b-loop-metric-correction-reasoning-self-refine-a3-cumulative-normalization",
+      "b-loop-official97-boundary-d-option-rollback-a1-joint",
+      "b-loop-official97-boundary-d-option-rollback-a2-ins017-single",
+      "b-loop-official97-boundary-d-option-rollback-a2-ins017-official-result",
+      "b-loop-four-question-full-chain-truth-audit-a1",
+      "b-loop-four-old-answer-single-correct-counterfactual-a1",
+      "b-loop-four-question-zero-effect-third-label-analysis-a1",
+      "b-loop-two-submission-combinatorial-identification-a1",
+      "b-loop-two-submission-combinatorial-identification-result-a1",
+      "b-loop-adaptive-second-submission-ins012-single-a1",
+      "b-loop-adaptive-second-submission-ins012-official-result-a1",
+      "b-loop-percentage-bundle-net-plus-one-explanation-a1",
+      "b-loop-percentage-bundle-most-likely-positive-fin017-a1",
+      "b-loop-three-percentage-question-full-chain-numeric-revalidation-a1",
+      "b-loop-qwen37-two-question-submission-probe-a1",
+      "b-loop-qwen37-calculation-numeric-literal-normalization-a1",
+      "b-loop-qwen37-calculation-numeric-literal-normalization-a1-result-correction",
+      "b-loop-answer-reasoning-stage-decoupling-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a2",
+      "b-loop-qwen37-structured-output-contract-a1",
+      "b-loop-qwen37-structured-output-contract-a3-staged-retry",
+      "b-loop-qwen37-option-verdict-consistency-a1",
+      "b-loop-qwen37-option-verdict-consistency-a2",
+      "b-loop-qwen37-option-verdict-consistency-a3",
+      "b-loop-qwen37-financial-percentage-semantics-a1",
+      "b-loop-qwen37-insurance-product-identity-clause-audit-a1",
+      "b-loop-qwen37-calculation-variable-period-binding-a1",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a1",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a2",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a3",
+      "b-loop-qwen37-calculation-semantic-dependency-gate-a1",
+      "b-loop-qwen37-calculation-row-label-evidence-binding-a1",
+      "b-loop-qwen37-calculation-row-label-evidence-binding-a2",
+      "b-loop-qwen37-calculation-row-label-evidence-binding-a3",
+      "b-loop-qwen37-integrated-full100-candidate-a1",
+      "b-loop-qwen37-derived-rule-arithmetic-binding-a1",
+      "b-loop-qwen37-calculation-missing-input-gate-a1"
+    ],
+    "reviewed_at": "2026-07-23T20:47:42+00:00"
+  },
+  "hypothesis": "a1证明模型可能通过删除缺失对象绕过摘要门禁；从题面排序任务提取明确公司对象，并要求输出可达sort_desc完整覆盖这些标签，可把缺失中国建筑转成检索信号并恢复四对象计算。",
+  "material_delta": {
+    "required_sort_object_coverage_gate": "v1"
+  },
+  "metrics": {
+    "answer_call_count": 3,
+    "answer_parts": [
+      "宁德时代>美的集团>招商银行>中国建筑",
+      "66.85"
+    ],
+    "calculation_retrieval_round_count": 2,
+    "candidate_highest_value": "69.57",
+    "china_construction_evidence_id": "annual_cscec_2025_report::metric_39",
+    "china_construction_value": "2.718",
+    "covered_object_count": 4,
+    "evidence_derived_exact_difference": "76.922",
+    "evidence_derived_full_year_highest": "79.64",
+    "full_year_midyear_value_omitted": "10.07",
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "official_upload_performed": false,
+    "reasoning_call_count": 1,
+    "recorded_token_total": 43046,
+    "reference_match_count": 0,
+    "required_object_count": 4,
+    "tests_passed": 319,
+    "usage_complete": true
+  },
+  "next_step": "A3为本方向最后一轮：把题面列举对象的分红phrase evidence首轮前置；当题目要求全年且同文档证据出现“已实施中期”与“扣除中期后的剩余分配”时，要求输出可达add步骤同时依赖中期与剩余值。只重跑fin_b_016。",
+  "pipeline_stage": "calculation_variable_retrieval",
+  "promotion_result": "partially_effective_not_promoted",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T20:56:12+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "missing_required_value_replaced_by_literal_placeholder",
+  "status": "completed_partial_effective_wrong_full_year_scope",
+  "submission_effect": "single_qid_local_submit_only_not_officially_uploaded",
+  "target_qids": [
+    "fin_b_016"
+  ]
+}
+```
+
+## b-loop-qwen37-calculation-missing-input-gate-a3
+
+- recorded_at: `2026-07-23T21:08:09+00:00`
+
+```json
+{
+  "approach": "在A2基础上把四个排序对象的分红phrase evidence前置，并要求全年分红的输出依赖链显式add“已实施中期金额+扣除中期后的年末剩余金额”；只重跑fin_b_016。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_calculation_missing_input_gate_a3",
+  "base_commit": "c085282",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "c085282"
+      },
+      "identity": {
+        "change_vector": {
+          "base_commit": "c085282",
+          "full_year_dividend_component_dependency_gate": "v1",
+          "initial_sort_object_phrase_evidence": "v1",
+          "missing_input_summary_gate": "v1",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reference_answer_access": false,
+          "required_sort_object_coverage_gate": "v1",
+          "workers": 1
+        },
+        "domains": [
+          "financial_reports"
+        ],
+        "hypothesis": "a2已覆盖四对象但遗漏宁德时代中期分红；把多对象分红phrase evidence前置，并从“扣除已分派中期后的剩余分配”与中期每10股证据派生全年组成约束，可同时在首轮补齐中国建筑并强制全年值依赖69.57与10.07。",
+        "pipeline_stage": "calculation_variable_retrieval",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "missing_required_value_replaced_by_literal_placeholder",
+        "target_qids": [
+          "fin_b_016"
+        ]
+      }
+    },
+    "context_sha256": "be8e4f20a61b6ffda0736d2fb0f6977b631bdeecc75838770858b7afe854531f",
+    "direction_sha256": "f2d9ddc7fe8f57e048b994ca5d750606dd718b6e9db37698e336f6bdd89380c3",
+    "schema_version": 1,
+    "semantic_sha256": "1697763282fbddcb8d46a79fbdcc22c3433372db54b4a12b6de77928de233bb0",
+    "sha256": "f07d9d13834d295ea52649f306dcc34d032a2cff5921b511ab7a8cc7c6f798c7"
+  },
+  "change_vector": {
+    "base_commit": "c085282",
+    "full_year_dividend_component_dependency_gate": "v1",
+    "initial_sort_object_phrase_evidence": "v1",
+    "missing_input_summary_gate": "v1",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reference_answer_access": false,
+    "required_sort_object_coverage_gate": "v1",
+    "workers": 1
+  },
+  "direction_id": "qwen37_calculation_missing_input_gate",
+  "domains": [
+    "financial_reports"
+  ],
+  "effect": "首轮即检索到四家公司和宁德时代全年两项组成证据；第2、3次Qwen计划均正确使用10.07+69.57=79.64、美的5+38=43、招商2.016×10=20.16、中国建筑2.718，并生成四对象排序及79.64-2.718。但本地门禁把同文档同数值的重复unit_id视为不同证据，三次答案调用后未产出冻结答案或reasoning，总Token40318；本轮无效。",
+  "experiment_id": "b-loop-qwen37-calculation-missing-input-gate-a3",
+  "failure_analysis": "全年组成检测器把69.57绑定到annual_catl_2025_report中一个精确unit_id，而模型第2、3轮引用同一文档、同一69.57事实的另一个重复unit_id。数值、文档和计算依赖均等价，却因抽取层重复证据身份不同被误拒；这是本地门禁过严，不是模型格式、grounding缺失或公式错误。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "c085282"
+        },
+        "identity": {
+          "change_vector": {
+            "base_commit": "c085282",
+            "full_year_dividend_component_dependency_gate": "v1",
+            "initial_sort_object_phrase_evidence": "v1",
+            "missing_input_summary_gate": "v1",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reference_answer_access": false,
+            "required_sort_object_coverage_gate": "v1",
+            "workers": 1
+          },
+          "domains": [
+            "financial_reports"
+          ],
+          "hypothesis": "a2已覆盖四对象但遗漏宁德时代中期分红；把多对象分红phrase evidence前置，并从“扣除已分派中期后的剩余分配”与中期每10股证据派生全年组成约束，可同时在首轮补齐中国建筑并强制全年值依赖69.57与10.07。",
+          "pipeline_stage": "calculation_variable_retrieval",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "missing_required_value_replaced_by_literal_placeholder",
+          "target_qids": [
+            "fin_b_016"
+          ]
+        }
+      },
+      "context_sha256": "be8e4f20a61b6ffda0736d2fb0f6977b631bdeecc75838770858b7afe854531f",
+      "direction_sha256": "f2d9ddc7fe8f57e048b994ca5d750606dd718b6e9db37698e336f6bdd89380c3",
+      "schema_version": 1,
+      "semantic_sha256": "1697763282fbddcb8d46a79fbdcc22c3433372db54b4a12b6de77928de233bb0",
+      "sha256": "f07d9d13834d295ea52649f306dcc34d032a2cff5921b511ab7a8cc7c6f798c7"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "c085282"
+          },
+          "identity": {
+            "change_vector": {
+              "base_commit": "c085282",
+              "full_year_dividend_component_dependency_gate": "v1",
+              "initial_sort_object_phrase_evidence": "v1",
+              "missing_input_summary_gate": "v1",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reference_answer_access": false,
+              "required_sort_object_coverage_gate": "v1",
+              "workers": 1
+            },
+            "domains": [
+              "financial_reports"
+            ],
+            "hypothesis": "a2已覆盖四对象但遗漏宁德时代中期分红；把多对象分红phrase evidence前置，并从“扣除已分派中期后的剩余分配”与中期每10股证据派生全年组成约束，可同时在首轮补齐中国建筑并强制全年值依赖69.57与10.07。",
+            "pipeline_stage": "calculation_variable_retrieval",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "missing_required_value_replaced_by_literal_placeholder",
+            "target_qids": [
+              "fin_b_016"
+            ]
+          }
+        },
+        "context_sha256": "be8e4f20a61b6ffda0736d2fb0f6977b631bdeecc75838770858b7afe854531f",
+        "direction_sha256": "f2d9ddc7fe8f57e048b994ca5d750606dd718b6e9db37698e336f6bdd89380c3",
+        "schema_version": 1,
+        "semantic_sha256": "1697763282fbddcb8d46a79fbdcc22c3433372db54b4a12b6de77928de233bb0",
+        "sha256": "f07d9d13834d295ea52649f306dcc34d032a2cff5921b511ab7a8cc7c6f798c7"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-qwen37-calculation-missing-input-gate-a2",
+        "b-loop-qwen37-calculation-missing-input-gate-a1"
+      ],
+      "similarity": 0.897207
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "43e119a3e915599ba6763068642bd56e830bd3c0e0bfd8efdb4dbed66113edb6",
+      "size": 1250665
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "efead7383056c3c8986ebe3171f12ab31c01b906524f7232a9118760840beeb8",
+      "size": 1022848
+    },
+    "related_log_sections": [
+      "b-loop-calculation-percent-unit-semantics-a1-target8",
+      "b-loop-calculation-percent-unit-semantics-a2-prompt-contract-target8",
+      "b-loop-calculation-percent-unit-semantics-a3-typed-outputs-target11",
+      "b-loop-reasoning-lowtail-explicit-structure-a1-lt90",
+      "b-loop-reasoning-lowtail-explicit-structure-a2-online-target19",
+      "b-loop-reasoning-lowtail-explicit-structure-a3-finalizer-all100",
+      "b-loop-insurance-conditional-policy-loan-eligibility-a1",
+      "b-loop-metric-scope-correction-ins-b-004-a1",
+      "b-loop-insurance-policy-loan-a1-full100-validation-82d4492",
+      "b-loop-calculation-amount-unit-scale-consistency-a1-res-b-012",
+      "b-loop-online-research-post-local-exhaustion-v1",
+      "b-loop-metric-correction-reasoning-self-refine-a3-cumulative-normalization",
+      "b-loop-official97-boundary-d-option-rollback-a1-joint",
+      "b-loop-official97-boundary-d-option-rollback-a2-ins017-single",
+      "b-loop-official97-boundary-d-option-rollback-a2-ins017-official-result",
+      "b-loop-four-question-full-chain-truth-audit-a1",
+      "b-loop-four-old-answer-single-correct-counterfactual-a1",
+      "b-loop-four-question-zero-effect-third-label-analysis-a1",
+      "b-loop-two-submission-combinatorial-identification-a1",
+      "b-loop-two-submission-combinatorial-identification-result-a1",
+      "b-loop-adaptive-second-submission-ins012-single-a1",
+      "b-loop-adaptive-second-submission-ins012-official-result-a1",
+      "b-loop-percentage-bundle-net-plus-one-explanation-a1",
+      "b-loop-percentage-bundle-most-likely-positive-fin017-a1",
+      "b-loop-three-percentage-question-full-chain-numeric-revalidation-a1",
+      "b-loop-qwen37-two-question-submission-probe-a1",
+      "b-loop-qwen37-calculation-numeric-literal-normalization-a1",
+      "b-loop-qwen37-calculation-numeric-literal-normalization-a1-result-correction",
+      "b-loop-answer-reasoning-stage-decoupling-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a2",
+      "b-loop-qwen37-structured-output-contract-a1",
+      "b-loop-qwen37-structured-output-contract-a3-staged-retry",
+      "b-loop-qwen37-option-verdict-consistency-a1",
+      "b-loop-qwen37-option-verdict-consistency-a2",
+      "b-loop-qwen37-option-verdict-consistency-a3",
+      "b-loop-qwen37-financial-percentage-semantics-a1",
+      "b-loop-qwen37-insurance-product-identity-clause-audit-a1",
+      "b-loop-qwen37-calculation-variable-period-binding-a1",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a1",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a2",
+      "b-loop-qwen37-calculation-progressive-evidence-payload-a3",
+      "b-loop-qwen37-calculation-semantic-dependency-gate-a1",
+      "b-loop-qwen37-calculation-row-label-evidence-binding-a1",
+      "b-loop-qwen37-calculation-row-label-evidence-binding-a2",
+      "b-loop-qwen37-calculation-row-label-evidence-binding-a3",
+      "b-loop-qwen37-integrated-full100-candidate-a1",
+      "b-loop-qwen37-derived-rule-arithmetic-binding-a1",
+      "b-loop-qwen37-calculation-missing-input-gate-a1",
+      "b-loop-qwen37-calculation-missing-input-gate-a2"
+    ],
+    "reviewed_at": "2026-07-23T20:56:26+00:00"
+  },
+  "hypothesis": "a2已覆盖四对象但遗漏宁德时代中期分红；把多对象分红phrase evidence前置，并从“扣除已分派中期后的剩余分配”与中期每10股证据派生全年组成约束，可同时在首轮补齐中国建筑并强制全年值依赖69.57与10.07。",
+  "material_delta": {
+    "full_year_dividend_component_dependency_gate": "v1",
+    "initial_sort_object_phrase_evidence": "v1"
+  },
+  "metrics": {
+    "answer_call_count": 3,
+    "answer_completed_count": 0,
+    "correct_plan_attempts": [
+      2,
+      3
+    ],
+    "duplicate_evidence_identity_false_rejection": true,
+    "expected_answer_parts_from_replay": [
+      "宁德时代>美的集团>招商银行>中国建筑",
+      "76.92"
+    ],
+    "failed_token_total": 40318,
+    "full_year_component_dependency_present": true,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "official_upload_performed": false,
+    "reasoning_call_count": 0,
+    "reasoning_completed_count": 0,
+    "recorded_token_total": 40318,
+    "tests_passed": 320,
+    "usage_complete": true
+  },
+  "next_step": "本方向已满3轮，停止继续。新方向应把组件匹配从“精确unit_id”收窄改为“同doc_id+同规范化数值”的重复证据语义等价；精确引用仍交由后续grounding校验，随后仅重跑fin_b_016。",
+  "pipeline_stage": "calculation_variable_retrieval",
+  "promotion_result": "not_effective",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T21:08:09+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "missing_required_value_replaced_by_literal_placeholder",
+  "status": "completed_not_effective_correct_plan_rejected_by_duplicate_evidence_identity",
+  "submission_effect": "not_submitted_incomplete",
+  "target_qids": [
+    "fin_b_016"
+  ]
+}
+```
+
+## b-loop-qwen37-duplicate-evidence-semantic-equivalence-a1
+
+- recorded_at: `2026-07-23T21:15:36+00:00`
+
+```json
+{
+  "approach": "把全年分红组件门禁的匹配从精确unit_id改为同doc_id+同规范化数值；变量精确unit_id、数值和单位仍由CalculationExecutor逐项grounding。只重跑fin_b_016。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_duplicate_evidence_semantic_equivalence_a1",
+  "base_commit": "c085282",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {
+        "base_commit": "c085282"
+      },
+      "identity": {
+        "change_vector": {
+          "base_commit": "c085282",
+          "duplicate_evidence_equivalence": "same_doc_same_value_v1",
+          "full_year_dividend_component_dependency_gate": "v1",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reference_answer_access": false,
+          "workers": 1
+        },
+        "domains": [
+          "financial_reports"
+        ],
+        "hypothesis": "fin_b_016第2、3轮计划已使用正确的10.07+69.57依赖，但同文档同数值的重复unit_id导致本地门禁误拒；在该门禁中按同doc_id+同规范化数值识别等价输入，同时保留后续精确证据grounding，可让正确计划一次通过且不弱化数值真实性。",
+        "pipeline_stage": "calculation_semantic_validation",
+        "question_types": [
+          "calculation"
+        ],
+        "root_cause_cluster": "duplicate_extracted_evidence_identity_overconstraint",
+        "target_qids": [
+          "fin_b_016"
+        ]
+      }
+    },
+    "context_sha256": "be8e4f20a61b6ffda0736d2fb0f6977b631bdeecc75838770858b7afe854531f",
+    "direction_sha256": "57b99d5037ead98bd45c93e7939f8cb1d8dc1378021447b13fcba1f488b1819f",
+    "schema_version": 1,
+    "semantic_sha256": "3cf99be896c65fe3af322a966e64d715e0ac6d51be63cce56fbcb914805d06ea",
+    "sha256": "f8709515acbdcc74afbe6c30e50380d2bdc687048a61bc025425bef896b7c7df"
+  },
+  "change_vector": {
+    "base_commit": "c085282",
+    "duplicate_evidence_equivalence": "same_doc_same_value_v1",
+    "full_year_dividend_component_dependency_gate": "v1",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reference_answer_access": false,
+    "workers": 1
+  },
+  "direction_id": "qwen37_duplicate_evidence_semantic_equivalence",
+  "domains": [
+    "financial_reports"
+  ],
+  "effect": "fin_b_016答案与reasoning完整生成。答案为“宁德时代>美的集团>招商银行>中国建筑；76.92”，与pseudo99代理等价；六个原始变量均通过精确证据数值与单位grounding，Decimal重放得到79.64、43、20.160、2.718与差额76.922。答案2次调用、reasoning1次调用，总Token31045，失败Token为0；未上传官网。",
+  "experiment_id": "b-loop-qwen37-duplicate-evidence-semantic-equivalence-a1",
+  "failure_analysis": "A1首个计划仍误用宁德时代2024年度45.53并把招商银行设为0，语义门禁正确拒绝后扩检索；第二次计划通过。新代码消除了同文档重复unit_id误拒，但没有消除首次语义错误，Token仍高于理想的一答一推理。pseudo99匹配不是官网准确率。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {
+          "base_commit": "c085282"
+        },
+        "identity": {
+          "change_vector": {
+            "base_commit": "c085282",
+            "duplicate_evidence_equivalence": "same_doc_same_value_v1",
+            "full_year_dividend_component_dependency_gate": "v1",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reference_answer_access": false,
+            "workers": 1
+          },
+          "domains": [
+            "financial_reports"
+          ],
+          "hypothesis": "fin_b_016第2、3轮计划已使用正确的10.07+69.57依赖，但同文档同数值的重复unit_id导致本地门禁误拒；在该门禁中按同doc_id+同规范化数值识别等价输入，同时保留后续精确证据grounding，可让正确计划一次通过且不弱化数值真实性。",
+          "pipeline_stage": "calculation_semantic_validation",
+          "question_types": [
+            "calculation"
+          ],
+          "root_cause_cluster": "duplicate_extracted_evidence_identity_overconstraint",
+          "target_qids": [
+            "fin_b_016"
+          ]
+        }
+      },
+      "context_sha256": "be8e4f20a61b6ffda0736d2fb0f6977b631bdeecc75838770858b7afe854531f",
+      "direction_sha256": "57b99d5037ead98bd45c93e7939f8cb1d8dc1378021447b13fcba1f488b1819f",
+      "schema_version": 1,
+      "semantic_sha256": "3cf99be896c65fe3af322a966e64d715e0ac6d51be63cce56fbcb914805d06ea",
+      "sha256": "f8709515acbdcc74afbe6c30e50380d2bdc687048a61bc025425bef896b7c7df"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {
+            "base_commit": "c085282"
+          },
+          "identity": {
+            "change_vector": {
+              "base_commit": "c085282",
+              "duplicate_evidence_equivalence": "same_doc_same_value_v1",
+              "full_year_dividend_component_dependency_gate": "v1",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reference_answer_access": false,
+              "workers": 1
+            },
+            "domains": [
+              "financial_reports"
+            ],
+            "hypothesis": "fin_b_016第2、3轮计划已使用正确的10.07+69.57依赖，但同文档同数值的重复unit_id导致本地门禁误拒；在该门禁中按同doc_id+同规范化数值识别等价输入，同时保留后续精确证据grounding，可让正确计划一次通过且不弱化数值真实性。",
+            "pipeline_stage": "calculation_semantic_validation",
+            "question_types": [
+              "calculation"
+            ],
+            "root_cause_cluster": "duplicate_extracted_evidence_identity_overconstraint",
+            "target_qids": [
+              "fin_b_016"
+            ]
+          }
+        },
+        "context_sha256": "be8e4f20a61b6ffda0736d2fb0f6977b631bdeecc75838770858b7afe854531f",
+        "direction_sha256": "57b99d5037ead98bd45c93e7939f8cb1d8dc1378021447b13fcba1f488b1819f",
+        "schema_version": 1,
+        "semantic_sha256": "3cf99be896c65fe3af322a966e64d715e0ac6d51be63cce56fbcb914805d06ea",
+        "sha256": "f8709515acbdcc74afbe6c30e50380d2bdc687048a61bc025425bef896b7c7df"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "2f9da50b0e20c5aed1f1d27168369b6bd34f434bd1658223612bf4a01ed5eb95",
+      "size": 1263266
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "455c451b8ded3984250ed7c7fc7ede207406fa97385e343e29dc995064935241",
+      "size": 1033624
+    },
+    "related_log_sections": [
+      "B0-actual-evaluation",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a1",
+      "b-loop-qwen37-calculation-plan-structure-contract-a2",
+      "b-loop-qwen37-integrated-full100-candidate-a1",
+      "b-loop-qwen37-derived-rule-arithmetic-binding-a1",
+      "b-loop-qwen37-calculation-missing-input-gate-a1",
+      "b-loop-qwen37-calculation-missing-input-gate-a2",
+      "b-loop-qwen37-calculation-missing-input-gate-a3"
+    ],
+    "reviewed_at": "2026-07-23T21:09:42+00:00"
+  },
+  "hypothesis": "fin_b_016第2、3轮计划已使用正确的10.07+69.57依赖，但同文档同数值的重复unit_id导致本地门禁误拒；在该门禁中按同doc_id+同规范化数值识别等价输入，同时保留后续精确证据grounding，可让正确计划一次通过且不弱化数值真实性。",
+  "material_delta": {
+    "duplicate_evidence_equivalence": "same_doc_same_value_v1"
+  },
+  "metrics": {
+    "answer_call_count": 2,
+    "answer_completed_count": 1,
+    "answer_parts": [
+      "宁德时代>美的集团>招商银行>中国建筑",
+      "76.92"
+    ],
+    "compileall_passed": true,
+    "exact_difference": "76.922",
+    "failed_token_total": 0,
+    "git_diff_check_passed": true,
+    "grounding_verified": true,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "official_upload_performed": false,
+    "reasoning_call_count": 1,
+    "reasoning_completed_count": 1,
+    "recorded_token_total": 31045,
+    "reference_match_count": 1,
+    "replay_verified": true,
+    "tests_passed": 321,
+    "usage_complete": true
+  },
+  "next_step": "该方向有效，创建独立分支并推送。随后按用户要求开启reasoning结构输出方向：原生strict Schema优先，确定性本地修复后再校验，仍不合规才只重试reasoning，不重跑冻结答案或扩检索。",
+  "pipeline_stage": "calculation_semantic_validation",
+  "promotion_result": "effective_branch_and_push_pending",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T21:15:36+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "duplicate_extracted_evidence_identity_overconstraint",
+  "status": "completed_effective",
+  "submission_effect": "single_qid_local_submit_only_not_officially_uploaded",
+  "target_qids": [
+    "fin_b_016"
+  ]
+}
+```

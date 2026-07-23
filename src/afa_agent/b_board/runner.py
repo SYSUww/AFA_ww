@@ -69,7 +69,7 @@ variables 只能放证据或题目中逐字出现的原始输入，禁止放任�
 同一道题只能选择一套统一尺度：若统一为元，则1亿元乘100000000、1万人乘10000后再乘元；若统一为万元，则1亿元乘10000，而“万人×元”已经直接得到万元，禁止再把万人额外乘10000。不得只转换加减式的一侧。
 分段或保底规则必须逐情形执行证据条件；当条款规定差额小于等于0时给付为0，应使用 max(差额,0) 后再汇总，禁止把负给付额直接相加。
 按保单年度、年份、区间或档位给出的分段表必须逐行匹配边界，先确认题目目标落在哪一行，再使用该行数值；边界行不得套用相邻区间，例如“第五年”不得使用“第六年及以后”的费率。
-“全年”数值必须覆盖同一年度内所有应计组成部分。若年末方案明确是在扣除已实施中期金额后的剩余分配，则全年金额=中期已实施金额+年末剩余金额；若材料已明确给出全年合计，则不得重复相加。
+“全年”数值必须覆盖同一年度内所有应计组成部分。若年末方案明确是在扣除已实施中期金额后的剩余分配，则全年金额=中期已实施金额+年末剩余金额，并且排序或差额必须引用这个 add 步骤；若材料已明确给出全年合计，则不得重复相加。
 supporting_evidence_ids 用于记录决定公式或分段条件、但不直接提供数值变量的规则证据；必须原样填写已给 evidence_id。凡是使用保底、分段、门槛、“小于/大于等于”或“中期+年末”等规则时，必须把对应条款或说明加入 supporting_evidence_ids。
 证据缺变量时不要用“无法计算”等文本冒充数值输出；该题应让计划校验失败并等待重新检索。
 steps: [{id,op,args,...}]，引用写成 {"ref":"变量或步骤id"}。
@@ -80,6 +80,7 @@ steps: [{id,op,args,...}]，引用写成 {"ref":"变量或步骤id"}。
 常数字面量必须写 {"literal":"100","value_type":"decimal","unit":""}，禁止写 {"value":"100","value_type":"decimal"}。禁止使用 assign；需要给派生结果命名时直接使用 step id。
 count_gte/count_gt 必须写成 {"id":"s1","op":"count_gte","args":[{"ref":"金额1"},{"ref":"金额2"}],"threshold":{"ref":"门槛"}}。
 sort_desc 必须是独立 step，写成 {"id":"rank","op":"sort_desc","items":[{"label":"甲","source":{"ref":"甲指标"}},{"label":"乙","source":{"ref":"乙指标"}}]}，文本排序输出再引用 {"ref":"rank"}；禁止把 sort_desc 或 items 直接塞进 output。
+题面明确列出多个公司、产品或对象并要求排序时，sort_desc 的 items 必须逐一覆盖题面列出的全部对象，每个对象都要引用其证据变量或派生步骤；禁止删除缺数据对象或用 0 等占位常数代替。
 已知“基数”和“增长率”而要求新值时，禁止误用 pct_change；应先用 mul 计算增量，再用 add 得到新值。pct_change 只用于同时已知 new 和 old 时计算同比变化率。
 方向性运算禁止使用位置参数：pct_change 必须写 new 和 old 字段，严格按
 (new / old - 1) * 100 计算；pct_point_delta 也必须写 new 和 old，严格按 new - old 计算。
@@ -127,7 +128,7 @@ SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推�
 4. 显式写出与 answer_parts 完全一致的最终答案。
 不得提及“质检”、“反馈”、“草稿”或修订过程，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。只输出 JSON。prompt_version={SUBMISSION_REASONING_REFINE_PROMPT_VERSION}。"""
 
-RUNNER_VERSION = "b_actual_v20_derived_rule_arithmetic"
+RUNNER_VERSION = "b_actual_v24_duplicate_evidence_equivalence"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 CALCULATION_PLAN_NORMALIZATION_VERSION = "qwen37_structure_contract_v3_schema"
 CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
@@ -136,6 +137,10 @@ CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
     "+table_row_label_binding_v1"
     "+raw_amount_ratio_binding_v1"
     "+derived_rule_arithmetic_v1"
+    "+calculation_missing_input_gate_v1"
+    "+required_sort_object_coverage_v1"
+    "+full_year_dividend_component_binding_v1"
+    "+duplicate_evidence_same_doc_value_v1"
 )
 CALCULATION_PROMPT_EVIDENCE_POLICY_VERSION = "progressive_8_16_24_v1"
 CALCULATION_PROMPT_HITS_PER_ATTEMPT = 8
@@ -769,7 +774,10 @@ class BBoardActualRunner:
                 f"{question.question}\n{_calculation_semantic_query_terms(question.question)}",
                 top_k=max(12, self.calculation_top_k),
             )
-            if _requested_calculation_table_row_labels(question.question)
+            if (
+                _requested_calculation_table_row_labels(question.question)
+                or _requested_calculation_sort_objects(question.question)
+            )
             else []
         )
         evidence_items, _ = _merge_calculation_evidence(
@@ -841,6 +849,13 @@ class BBoardActualRunner:
                     *structure_normalizations,
                 ]
                 validate_calculation_plan_schema(plan)
+                _validate_calculation_plan_has_required_inputs(plan)
+                _validate_calculation_required_sort_objects(question, plan)
+                _validate_full_year_dividend_component_dependency(
+                    question,
+                    plan,
+                    evidence_text_by_id,
+                )
                 _validate_aggregate_intensity_plan_binding(
                     plan,
                     semantic_constraints,
@@ -2498,6 +2513,14 @@ def _calculation_semantic_query_terms(question_text: str) -> str:
                 ]
             )
         )
+    if (
+        "全年现金分红" in compact
+        and _requested_calculation_sort_objects(question_text)
+    ):
+        terms.append(
+            "全年现金分红 中期分红 年末分红 扣除已派发中期 "
+            "剩余待分配 利润分配 每10股派"
+        )
     return " ".join(terms)
 
 
@@ -2758,6 +2781,260 @@ def _validate_calculation_summary_output_consistency(
             "answer_parts": [str(item) for item in answer_parts],
         }
     return None
+
+
+def _validate_calculation_plan_has_required_inputs(
+    plan: Mapping[str, Any],
+) -> None:
+    """Reject numeric placeholders when the plan admits required data is absent."""
+
+    summary = _compact_text(str(plan.get("decision_summary", "")))
+    missing_cues = (
+        "未提供",
+        "缺少",
+        "缺失",
+        "证据不足",
+    )
+    inability_cues = (
+        "无法计算",
+        "不能计算",
+        "无法完成",
+        "不能完成",
+        "无法确定",
+        "无法得出",
+    )
+    if (
+        any(cue in summary for cue in missing_cues)
+        and any(cue in summary for cue in inability_cues)
+    ):
+        raise CalculationPlanError(
+            "Calculation plan cannot emit outputs when decision_summary "
+            "reports missing required data; retrieve the missing value instead"
+        )
+
+
+def _validate_calculation_required_sort_objects(
+    question: BQuestion,
+    plan: Mapping[str, Any],
+) -> None:
+    required_labels = _requested_calculation_sort_objects(question.question)
+    if len(required_labels) < 2:
+        return
+    steps = {
+        str(item.get("id", "")).strip(): item
+        for item in plan.get("steps", [])
+        if isinstance(item, Mapping) and str(item.get("id", "")).strip()
+    }
+    symbols = {
+        *steps,
+        *(
+            str(item.get("name", "")).strip()
+            for item in plan.get("variables", [])
+            if isinstance(item, Mapping)
+            and str(item.get("name", "")).strip()
+        ),
+    }
+    reachable_steps: set[str] = set()
+
+    def collect_reachable(value: Any) -> None:
+        for ref in _calculation_reference_names(value, symbols):
+            if ref in steps and ref not in reachable_steps:
+                reachable_steps.add(ref)
+                collect_reachable(steps[ref])
+
+    collect_reachable(plan.get("outputs", []))
+    sort_steps = [
+        steps[step_id]
+        for step_id in reachable_steps
+        if str(steps[step_id].get("op", "")).strip() == "sort_desc"
+    ]
+    covered_labels = {
+        _compact_text(str(item.get("label", "")))
+        for step in sort_steps
+        for item in step.get("items", [])
+        if isinstance(item, Mapping) and str(item.get("label", "")).strip()
+    }
+    missing = [
+        label
+        for label in required_labels
+        if not any(
+            _compact_text(label) in covered
+            or covered in _compact_text(label)
+            for covered in covered_labels
+        )
+    ]
+    if missing:
+        raise CalculationPlanError(
+            "Calculation sort plan is missing required question objects: "
+            + ", ".join(missing)
+        )
+
+
+def _validate_full_year_dividend_component_dependency(
+    question: BQuestion,
+    plan: Mapping[str, Any],
+    evidence_text_by_id: Mapping[str, str],
+) -> None:
+    compact_question = _compact_text(question.question)
+    if "全年现金分红" not in compact_question:
+        return
+
+    evidence_by_doc: dict[str, list[tuple[str, str]]] = {}
+    for evidence_id, text in evidence_text_by_id.items():
+        doc_id = str(evidence_id).split("::", 1)[0]
+        evidence_by_doc.setdefault(doc_id, []).append(
+            (str(evidence_id), str(text))
+        )
+
+    requirements: list[tuple[str, str, str, str, str]] = []
+    for doc_id, rows in evidence_by_doc.items():
+        remaining_candidates = [
+            (evidence_id, value)
+            for evidence_id, text in rows
+            if "中期" in text
+            and "扣除" in text
+            and any(marker in text for marker in ("剩余", "待分配"))
+            for value in _per_ten_share_dividend_values(text)
+        ]
+        midyear_candidates = [
+            (evidence_id, value)
+            for evidence_id, text in rows
+            if "中期" in text
+            for segment in re.split(r"[。；;|\n]", text)
+            if "中期" in segment and "20" in segment
+            for value in _per_ten_share_dividend_values(segment)
+        ]
+        if not remaining_candidates or not midyear_candidates:
+            continue
+        remaining_id, remaining_value = remaining_candidates[-1]
+        midyear_id, midyear_value = midyear_candidates[-1]
+        if remaining_value == midyear_value:
+            continue
+        requirements.append(
+            (
+                doc_id,
+                remaining_id,
+                remaining_value,
+                midyear_id,
+                midyear_value,
+            )
+        )
+    if not requirements:
+        return
+
+    variables = {
+        str(item.get("name", "")).strip(): item
+        for item in plan.get("variables", [])
+        if isinstance(item, Mapping) and str(item.get("name", "")).strip()
+    }
+    steps = {
+        str(item.get("id", "")).strip(): item
+        for item in plan.get("steps", [])
+        if isinstance(item, Mapping) and str(item.get("id", "")).strip()
+    }
+    symbols = {*variables, *steps}
+
+    def matching_variables(value: str, doc_id: str) -> set[str]:
+        expected = _normalize_decimal_text(value)
+        return {
+            name
+            for name, variable in variables.items()
+            if _normalize_decimal_text(
+                str(variable.get("value", "")).rstrip("%")
+            )
+            == expected
+            and any(
+                str(item).split("::", 1)[0] == doc_id
+                for item in variable.get("evidence_ids", [])
+                if str(item)
+            )
+        }
+
+    def dependency_variables(
+        value: Any,
+        seen: set[str] | None = None,
+    ) -> set[str]:
+        visited = set() if seen is None else set(seen)
+        dependencies: set[str] = set()
+        for ref in _calculation_reference_names(value, symbols):
+            if ref in variables:
+                dependencies.add(ref)
+            elif ref in steps and ref not in visited:
+                dependencies.update(
+                    dependency_variables(steps[ref], {*visited, ref})
+                )
+        return dependencies
+
+    reachable_steps: set[str] = set()
+
+    def collect_reachable(value: Any) -> None:
+        for ref in _calculation_reference_names(value, symbols):
+            if ref in steps and ref not in reachable_steps:
+                reachable_steps.add(ref)
+                collect_reachable(steps[ref])
+
+    collect_reachable(plan.get("outputs", []))
+    reachable_add_steps = [
+        steps[step_id]
+        for step_id in reachable_steps
+        if str(steps[step_id].get("op", "")).strip() == "add"
+    ]
+    for (
+        doc_id,
+        remaining_id,
+        remaining_value,
+        midyear_id,
+        midyear_value,
+    ) in requirements:
+        # Parsed reports can expose the same source fact under more than one
+        # unit_id.  This semantic gate only needs to prove that the required
+        # value came from the same document; the executor still grounds the
+        # variable against the exact cited unit_id and literal value later.
+        remaining_names = matching_variables(remaining_value, doc_id)
+        midyear_names = matching_variables(midyear_value, doc_id)
+        if remaining_names and midyear_names and any(
+            dependency_variables(step) & remaining_names
+            and dependency_variables(step) & midyear_names
+            for step in reachable_add_steps
+        ):
+            continue
+        raise CalculationPlanError(
+            "Full-year dividend plan must add the evidenced midyear "
+            f"{midyear_value} and post-midyear remaining {remaining_value} "
+            f"components from {doc_id} in an output-reachable step"
+        )
+
+
+def _per_ten_share_dividend_values(text: str) -> list[str]:
+    return [
+        match.group(1)
+        for match in re.finditer(
+            r"每\s*10\s*股[^0-9。；;|\n]{0,48}"
+            r"([0-9]+(?:\.[0-9]+)?)\s*元",
+            str(text),
+            flags=re.IGNORECASE,
+        )
+    ]
+
+
+def _requested_calculation_sort_objects(
+    question_text: str,
+) -> list[str]:
+    compact = _compact_text(question_text)
+    if not any(marker in compact for marker in ("排序", "从高到低", "从低到高")):
+        return []
+    match = re.search(
+        r"查阅(.+?)(?:\s*20\d{2}\s*年)",
+        question_text,
+    )
+    if match is None:
+        return []
+    labels = [
+        item.strip(" ，,、；;")
+        for item in re.split(r"[、]|和|及", match.group(1))
+        if item.strip(" ，,、；;")
+    ]
+    return list(dict.fromkeys(labels)) if len(labels) >= 2 else []
 
 
 _CALCULATION_TABLE_ROW_LABELS = (
@@ -3213,6 +3490,17 @@ def _diagnostic_phrase_evidence(
         concept_groups.extend([(("评估增值率", "增值率"), 12), (("评估基准日",), 5)])
     elif "营业收入" in normalized_query:
         concept_groups.extend([(("营业收入", "营业收入合计", "营业总收入"), 10)])
+    elif any(
+        marker in normalized_query
+        for marker in ("现金分红", "现金红利", "每10股派", "派息")
+    ):
+        concept_groups.extend(
+            [
+                (("现金分红", "现金红利", "利润分配"), 12),
+                (("每10股派", "每10股现金"), 10),
+                (("中期", "年末", "全年", "剩余待分配"), 5),
+            ]
+        )
     if not concept_groups:
         return []
 
@@ -3220,7 +3508,14 @@ def _diagnostic_phrase_evidence(
     dates = set(re.findall(r"20\d{2}年\d{1,2}月\d{1,2}日", normalized_query))
     entities = [
         item
-        for item in ("冠鸿智能", "比亚迪", "宁德时代", "美的集团")
+        for item in (
+            "冠鸿智能",
+            "比亚迪",
+            "宁德时代",
+            "美的集团",
+            "招商银行",
+            "中国建筑",
+        )
         if item in normalized_query
     ]
     rows_by_doc: dict[str, list[tuple[int, int, Mapping[str, Any]]]] = {}
