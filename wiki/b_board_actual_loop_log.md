@@ -24193,3 +24193,163 @@
   ]
 }
 ```
+
+## b-production-qwen-model-and-allowlist-decision
+
+- recorded_at: `2026-07-23T13:57:00+00:00`
+
+```json
+{
+  "decision_id": "b-production-qwen-model-and-allowlist-decision",
+  "pipeline_scope": "submit_production_only",
+  "status": "decision_recorded_not_implemented",
+  "decision": {
+    "primary_model": "qwen3.7-plus-2026-05-26",
+    "rolling_alias": "qwen3.7-plus",
+    "primary_model_reason": "当前能力与滚动别名一致，固定快照更利于100题基线复现；相对Qwen3.7-Max更适配当前大量JSON Mode调用和Token约束。",
+    "optional_hard_case_challenger": "qwen3.7-max-2026-06-08",
+    "smoke_test_model": "qwen3.6-flash-2026-04-16",
+    "allowed_families": [
+      "qwen3.5",
+      "qwen3.6",
+      "qwen3.7"
+    ],
+    "disallowed_examples": [
+      "qwen3.8-*",
+      "qwen3-*",
+      "qwen2.5-*",
+      "gpt-*",
+      "deepseek-*"
+    ]
+  },
+  "production_boundary": {
+    "included": [
+      "Qwen模型白名单预检",
+      "题目与提交模板加载",
+      "attempt_43盲文档定位",
+      "领域检索与证据救援",
+      "Qwen答案生成与复核",
+      "计算题结构化计划及本地重放",
+      "Qwen reasoning生成",
+      "逐题全部Qwen API原始usage累计",
+      "audit_ready submit.csv校验与写出"
+    ],
+    "excluded": [
+      "GPT-5.6 reasoning影子评测",
+      "accuracy代理评估",
+      "Token效率分计算",
+      "总分计算",
+      "Loop Engineer badcase分析"
+    ]
+  },
+  "verification": {
+    "dashscope_models_endpoint_status": 200,
+    "primary_model_listed": true,
+    "snapshot_model_listed": true,
+    "paid_inference_probe_executed": false,
+    "actual_inference_entitlement_confirmed": false
+  },
+  "known_current_gaps": [
+    "生产白名单代码尚只接受Qwen3.5/Qwen3.6，尚未加入Qwen3.7",
+    ".env当前LLM_MODEL仍为gpt-5.5",
+    "当前配置加载器使用LLM_API_KEY/LLM_API_BASE/LLM_MODEL，不读取OPENAI_*变量"
+  ],
+  "next_step": "后续先修改并测试生产白名单，再把生产配置切换到qwen3.7-plus-2026-05-26；使用1道选择题和1道计算题执行最小付费探针，确认JSON、思考模式与原始usage后再运行100题。",
+  "notes": "本条仅记录决策，没有修改代码、环境变量或生成任何新候选。"
+}
+```
+
+## b-production-evidence-insufficiency-and-rescue-note
+
+- recorded_at: `2026-07-23T22:03:50+08:00`
+
+```json
+{
+  "decision_id": "b-production-evidence-insufficiency-and-rescue-note",
+  "pipeline_scope": "submit_production_only",
+  "status": "current_implementation_verified_no_code_change",
+  "conclusion": {
+    "is_evidence_insufficiency_judged_by_llm": false,
+    "current_judge": "本地确定性 evidence gate",
+    "llm_coverage_check_configured": false,
+    "rescue_trigger": "gate_status != pass OR certainty_score < 0.7"
+  },
+  "gate_inputs": [
+    "题目及当前选项文本",
+    "当前检索证据片段",
+    "领域",
+    "evidence_gate配置"
+  ],
+  "insufficiency_reasons": [
+    "wrong_chunk：没有命中或弱片段比例过高",
+    "missing_metric：财报题关键指标未被证据覆盖",
+    "missing_clause：条款、公式或关键术语未被证据覆盖",
+    "contradictory：选项表述与证据出现简单矛盾",
+    "option_semantics_error：选项断言语义与证据不一致",
+    "low_certainty：保险公式题等场景证据数量不足，或门控分低于阈值"
+  ],
+  "status_rule": {
+    "fail": "存在 contradictory、option_semantics_error，或 wrong_chunk 与其他问题同时出现",
+    "partial": "存在至少一个不足原因，但未达到 fail",
+    "pass": "没有不足原因"
+  },
+  "certainty_score": {
+    "initial": 1.0,
+    "no_hits": 0.0,
+    "penalties": {
+      "missing_required_docs": "最多-0.35；当前生产配置会忽略仅由locator候选产生的文档要求",
+      "wrong_chunk": -0.25,
+      "missing_metric_or_clause": -0.22,
+      "contradictory": -0.45,
+      "option_semantics_error": -0.35,
+      "weak_hit_ratio": "最多-0.20",
+      "term_coverage": "最多-0.15",
+      "required_statement_term_coverage": "最多-0.20",
+      "missing_preferred_unit_type": -0.08,
+      "fail_status": -0.10
+    },
+    "configured_thresholds": {
+      "high": 0.7,
+      "low": 0.45
+    },
+    "implementation_note": "当前救援触发直接使用high阈值0.7；low阈值虽在策略配置中声明，但未参与本门控函数的救援触发判断。"
+  },
+  "rescue": {
+    "behavior": "只重新检索、合并、去重和重排证据，不直接决定最终答案",
+    "max_rounds": 7,
+    "rescue_top_k": 12,
+    "max_hits_after_rescue": 12,
+    "per_doc_quota": 2,
+    "min_hit_chars": 24,
+    "channels": [
+      "option_assertion_search",
+      "contradiction_search",
+      "query_rewrite_search",
+      "title_search",
+      "unit_type_search",
+      "table_metric_search",
+      "clause_formula_search",
+      "per_doc_search",
+      "neighbor_expansion"
+    ],
+    "stop_condition": "重新评估后gate_status=pass且certainty_score>=0.7，或用完最多7轮"
+  },
+  "boundary": {
+    "after_rescue": "再把整理后的证据交给合规Qwen判断选项和生成答案",
+    "not_proven_by_gate": [
+      "门控通过不等于逻辑蕴含已被严格证明",
+      "关键词覆盖可能产生词面假阳性或假阴性",
+      "若真实文档未进入locator选定候选集合，当前救援通常无法跨集合找回"
+    ],
+    "future_llm_gate_constraint": "若以后增加证据覆盖大模型，生产链只能使用白名单Qwen，并必须把调用Token计入官方usage；GPT-5.6只能留在冻结结果后的影子评估链。"
+  },
+  "source_snapshot": [
+    "configs/autoresearch/evidence_gate_rescue_accuracy_first.json",
+    "src/afa_agent/evidence_gate.py::evaluate_evidence",
+    "src/afa_agent/evidence_gate.py::rescue_evidence",
+    "src/afa_agent/evidence_gate.py::_coverage_status",
+    "src/afa_agent/evidence_gate.py::_certainty_score"
+  ],
+  "notes": "本条仅记录当前实现和边界，没有修改生产代码、模型配置或候选答案。"
+}
+```
