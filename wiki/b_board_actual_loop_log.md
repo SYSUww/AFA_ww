@@ -36555,3 +36555,234 @@
   ]
 }
 ```
+
+## b-loop-qwen37-reasoning-evidence-payload-compression-a3-res013-1200
+
+- recorded_at: `2026-07-23T23:37:41+00:00`
+
+```json
+{
+  "approach": "针对A1在900字符下严重退化的res_b_013，将显式实验上限放宽至1200；冻结答案单次Qwen生成并由GPT-5.6离线复评。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_reasoning_evidence_1200_a3_res013",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "answer_stage_calls": false,
+          "base_commit": "48127c1",
+          "experiment_evidence_char_limit": 1200,
+          "model": "qwen3.7-plus-2026-05-26",
+          "prior_failed_limit": 900,
+          "production_default_evidence_char_limit": 1800,
+          "reasoning_prompt": "b_submission_reasoning_v5_grounded_evidence_policy",
+          "reference_answer_access": false,
+          "selection_gate": "final_formula_delta_positive",
+          "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+        },
+        "domains": [
+          "research"
+        ],
+        "hypothesis": "a1对res_b_013使用900字符导致过度压缩；将显式实验上限放宽至1200，可能保留关键中后段证据并获得质量与token的正平衡，用第三轮封闭该方向。",
+        "pipeline_stage": "submission_reasoning_generation",
+        "question_types": [
+          "multiple_choice"
+        ],
+        "root_cause_cluster": "reasoning_oversized_evidence_payload_token_cost",
+        "target_qids": [
+          "res_b_013"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "5ebe76b1a2b0a69bdc3dd50411aca3cbc3ea7d4ecdbc2c0edffe63d5161e915d",
+    "schema_version": 1,
+    "semantic_sha256": "89437fc1b10b725faf359b9b1c57329ef7e6767a4d6ad85588cdc8c1bbf4214b",
+    "sha256": "ae8b28f9f189f42e5cd2d3232ec83e8a3baae4c1b8b5637ef8f8b6723b537ce7"
+  },
+  "change_vector": {
+    "answer_stage_calls": false,
+    "base_commit": "48127c1",
+    "experiment_evidence_char_limit": 1200,
+    "model": "qwen3.7-plus-2026-05-26",
+    "prior_failed_limit": 900,
+    "production_default_evidence_char_limit": 1800,
+    "reasoning_prompt": "b_submission_reasoning_v5_grounded_evidence_policy",
+    "reference_answer_access": false,
+    "selection_gate": "final_formula_delta_positive",
+    "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+  },
+  "direction_id": "qwen37_reasoning_evidence_payload_compression",
+  "domains": [
+    "research"
+  ],
+  "effect": "res_b_013 reasoning Token 10915→10661，节省254；影子分95.6667→95.0000，最终代理净降-0.000984。补丁拒绝，A8不变。",
+  "experiment_id": "b-loop-qwen37-reasoning-evidence-payload-compression-a3-res013-1200",
+  "failure_analysis": "1200字符虽比900保留更多证据，但Token收益仅0.001016，无法覆盖reasoning下降0.6667带来的-0.002影响。说明字符阈值无法稳定刻画证据价值，继续扫描属于高方差过拟合。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "answer_stage_calls": false,
+            "base_commit": "48127c1",
+            "experiment_evidence_char_limit": 1200,
+            "model": "qwen3.7-plus-2026-05-26",
+            "prior_failed_limit": 900,
+            "production_default_evidence_char_limit": 1800,
+            "reasoning_prompt": "b_submission_reasoning_v5_grounded_evidence_policy",
+            "reference_answer_access": false,
+            "selection_gate": "final_formula_delta_positive",
+            "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+          },
+          "domains": [
+            "research"
+          ],
+          "hypothesis": "a1对res_b_013使用900字符导致过度压缩；将显式实验上限放宽至1200，可能保留关键中后段证据并获得质量与token的正平衡，用第三轮封闭该方向。",
+          "pipeline_stage": "submission_reasoning_generation",
+          "question_types": [
+            "multiple_choice"
+          ],
+          "root_cause_cluster": "reasoning_oversized_evidence_payload_token_cost",
+          "target_qids": [
+            "res_b_013"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "5ebe76b1a2b0a69bdc3dd50411aca3cbc3ea7d4ecdbc2c0edffe63d5161e915d",
+      "schema_version": 1,
+      "semantic_sha256": "89437fc1b10b725faf359b9b1c57329ef7e6767a4d6ad85588cdc8c1bbf4214b",
+      "sha256": "ae8b28f9f189f42e5cd2d3232ec83e8a3baae4c1b8b5637ef8f8b6723b537ce7"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "answer_stage_calls": false,
+              "base_commit": "48127c1",
+              "experiment_evidence_char_limit": 1200,
+              "model": "qwen3.7-plus-2026-05-26",
+              "prior_failed_limit": 900,
+              "production_default_evidence_char_limit": 1800,
+              "reasoning_prompt": "b_submission_reasoning_v5_grounded_evidence_policy",
+              "reference_answer_access": false,
+              "selection_gate": "final_formula_delta_positive",
+              "source_answer_checkpoint": "qwen37_integrated_full100_candidate_a2/answer_artifacts.json"
+            },
+            "domains": [
+              "research"
+            ],
+            "hypothesis": "a1对res_b_013使用900字符导致过度压缩；将显式实验上限放宽至1200，可能保留关键中后段证据并获得质量与token的正平衡，用第三轮封闭该方向。",
+            "pipeline_stage": "submission_reasoning_generation",
+            "question_types": [
+              "multiple_choice"
+            ],
+            "root_cause_cluster": "reasoning_oversized_evidence_payload_token_cost",
+            "target_qids": [
+              "res_b_013"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "5ebe76b1a2b0a69bdc3dd50411aca3cbc3ea7d4ecdbc2c0edffe63d5161e915d",
+        "schema_version": 1,
+        "semantic_sha256": "89437fc1b10b725faf359b9b1c57329ef7e6767a4d6ad85588cdc8c1bbf4214b",
+        "sha256": "ae8b28f9f189f42e5cd2d3232ec83e8a3baae4c1b8b5637ef8f8b6723b537ce7"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "Related history is inconclusive, so executing will add information",
+      "related_experiment_ids": [
+        "b-loop-qwen37-reasoning-evidence-payload-compression-a2-parameterized-repro",
+        "b-loop-qwen37-reasoning-evidence-payload-compression-a1-global900-probe"
+      ],
+      "similarity": 0.877143
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "8c139495a064f97e8ec7408fb1c6bd4f08446e39f279e42494d15bcb8ce5e1b2",
+      "size": 1467925
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "a4275c362d1dad786d1df98e8a5751b26c554132be9e064cf1725204ed5c764f",
+      "size": 1206657
+    },
+    "related_log_sections": [
+      "b-loop-calculation_executor-a2-typed-units-v2",
+      "b-loop-calculation_executor-a3-directional-operands-v3",
+      "b-loop-calculation_variable_retrieval-a2-phrase-constrained-v2",
+      "b-loop-calculation_variable_retrieval-a3-explicit-blank-unit-v3",
+      "b-loop-insurance_clause_synonym_retrieval-a2-rare-clause-ranking-v2",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-reports-company-year-metric-bundle-a2-cross-year-raw-amounts",
+      "b-loop-financial-reports-company-year-metric-bundle-a3-remaining-ratios",
+      "b-loop-financial-contracts-subject-clause-binding-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contract-cross-issuer-clause-comparison-a1",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a1",
+      "b-loop-qwen37-reasoning-causal-minimal-clean-regeneration-a2-date-boundary",
+      "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a1",
+      "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a2",
+      "b-loop-qwen37-reasoning-retry-elimination-clean-regeneration-a3",
+      "b-loop-qwen37-reasoning-evidence-payload-compression-a1-global900-probe",
+      "b-loop-qwen37-reasoning-evidence-payload-compression-a2-parameterized-repro"
+    ],
+    "reviewed_at": "2026-07-23T23:36:15+00:00"
+  },
+  "hypothesis": "A1对res_b_013使用900字符导致过度压缩；将显式实验上限放宽至1200，可能保留关键中后段证据并获得质量与Token的正平衡，用第三轮封闭该方向。",
+  "metrics": {
+    "answer_parts_changed_count": 0,
+    "answer_stage_api_call_count": 0,
+    "direction_attempt_count": 3,
+    "evidence_char_limit": 1200,
+    "format_retry_count": 0,
+    "official_upload_performed": false,
+    "patch_accepted": false,
+    "proxy_total_delta": -0.0009840000000000144,
+    "reasoning_api_call_count": 1,
+    "reasoning_judge_model": "gpt-5.6",
+    "reasoning_judge_offline_only": true,
+    "reasoning_score_after": 95.0,
+    "reasoning_score_before": 95.66666666666667,
+    "reasoning_token_after": 10661,
+    "reasoning_token_before": 10915,
+    "reasoning_token_saved": 254,
+    "target_qids": [
+      "res_b_013"
+    ]
+  },
+  "next_step": "该方向达到三轮上限并封闭。保留生产默认1800和显式实验参数，仅A2已验证res_b_015补丁进入A8。转入下一新方向或按计划开始外部研究，不做官网上传。",
+  "pipeline_stage": "submission_reasoning_generation",
+  "promotion_result": "reject_patch_keep_a8_direction_exhausted",
+  "question_types": [
+    "multiple_choice"
+  ],
+  "recorded_at": "2026-07-23T23:37:41+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "reasoning_oversized_evidence_payload_token_cost",
+  "status": "completed_not_effective_direction_exhausted",
+  "submission_effect": "rejected_patch_not_uploaded",
+  "target_qids": [
+    "res_b_013"
+  ]
+}
+```
