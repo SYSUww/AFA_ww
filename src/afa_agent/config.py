@@ -8,6 +8,12 @@ from typing import Any
 
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[2]
+STRUCTURED_OUTPUT_LOCAL = "json_object_local_schema"
+STRUCTURED_OUTPUT_NATIVE = "native_json_schema_strict"
+STRUCTURED_OUTPUT_MODES = (
+    STRUCTURED_OUTPUT_LOCAL,
+    STRUCTURED_OUTPUT_NATIVE,
+)
 _MODEL_ENV_FIELDS = {
     "LLM": {
         "api_key": "LLM_API_KEY",
@@ -48,6 +54,7 @@ class ModelConfig:
     read_timeout_seconds: int = 120
     max_retries: int = 2
     retry_backoff_seconds: float = 2.0
+    structured_output_mode: str = STRUCTURED_OUTPUT_LOCAL
 
 
 @dataclass(slots=True)
@@ -97,6 +104,14 @@ def build_model_config(
         return None
     prefix, values = selected
     timeout_seconds = _env_int(env, f"{prefix}_TIMEOUT_SECONDS", 120)
+    structured_output_mode = str(
+        env.get(f"{prefix}_STRUCTURED_OUTPUT_MODE", STRUCTURED_OUTPUT_LOCAL)
+    ).strip()
+    if structured_output_mode not in STRUCTURED_OUTPUT_MODES:
+        raise ValueError(
+            f"{prefix}_STRUCTURED_OUTPUT_MODE must be one of "
+            + ", ".join(STRUCTURED_OUTPUT_MODES)
+        )
     return ModelConfig(
         api_key=values["api_key"],
         api_base=values["api_base"],
@@ -113,6 +128,7 @@ def build_model_config(
         retry_backoff_seconds=_env_float(
             env, f"{prefix}_RETRY_BACKOFF_SECONDS", 2.0
         ),
+        structured_output_mode=structured_output_mode,
     )
 
 

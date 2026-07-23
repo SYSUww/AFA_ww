@@ -11,7 +11,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-from afa_agent.b_board.calculation import CalculationExecutor, CalculationPlanError
+from afa_agent.b_board.calculation import (
+    CalculationExecutor,
+    CalculationPlanError,
+    check_variable_grounding,
+)
+from afa_agent.b_board.calculation_schema import (
+    CALCULATION_PLAN_SCHEMA,
+    CALCULATION_PLAN_SCHEMA_VERSION,
+    validate_calculation_plan_schema,
+)
 from afa_agent.b_board.io import (
     BAnswer,
     BQuestion,
@@ -25,7 +34,7 @@ from afa_agent.b_board.submission_policy import (
     require_allowed_submission_model,
 )
 from afa_agent.client import OpenAICompatibleClient, capture_llm_usage, extract_json_object
-from afa_agent.config import build_run_config
+from afa_agent.config import STRUCTURED_OUTPUT_NATIVE, build_run_config
 from afa_agent.domains.generic_retriever import GenericBM25Retriever
 from afa_agent.domains.registry import get_plugin
 from afa_agent.io_utils import ensure_dir, read_json, write_json, write_jsonl
@@ -44,16 +53,30 @@ DEFAULT_STRATEGY_PATH = ROOT / "configs" / "autoresearch" / "evidence_gate_rescu
 
 
 CALCULATION_SYSTEM_PROMPT = """你是金融长文计算题的结构化求解器。只使用题目和给定证据，不补充未给出的事实。
-输出一个 JSON 对象，字段为 variables、steps、outputs、decision_summary。
+输出一个 JSON 对象，字段为 variables、steps、outputs、supporting_evidence_ids、decision_summary。
 variables: [{name,value,value_type,unit,evidence_ids}]，value_type 仅 decimal/date/text，所有变量必须给 evidence_ids。
+variables 只能放证据或题目中逐字出现的原始输入，禁止放任何经加减乘除、比例换算、排序、计数或日期运算得到的派生结果；evidence_ids 也禁止引用 step id。所有派生结果必须只在 steps 中计算，后续步骤和 outputs 直接引用对应 step id。
+题目明确给出的目标期假设值优先于材料中的历史值；例如题目给出2026年增速时，必须使用该增速计算2026年结果，不得误用材料中的2025年历史增速。已抽取且与目标公式相关的题目输入不得在依赖链中遗漏。
 凡是要进入 decimal0、decimal1、decimal2、percent2 输出或算术步骤的数值变量，value_type 必须是 decimal，禁止写成 text。百分数变量的正确示例为 {"name":"毛利率","value":"5.55","value_type":"decimal","unit":"%","evidence_ids":["原证据ID"]}；也可保留 value 中的 %，但 value_type 仍必须为 decimal 且 unit 必须为 %。
 每个变量的 value 必须以同一数值或日期直接出现在所引证据中，unit 也必须与证据一致；不得把 5.55% 擅自写成 0.0555。
 只有证据同一片段明确写出单位时才填 unit；表格只有裸金额但未标单位时必须填空字符串，不得推断或补写“元”。比率或百分比计算可直接使用同口径原始金额。
 执行器会按 unit 自动处理百分数：金额÷带 % 的变量时会把百分数转为比率；带 % 的变量÷另一个带 % 的变量会约去百分数单位；金额×带 % 的变量也会自动除以 100；1 减带 % 的变量会先统一为比率。
 百分点差必须使用 pct_point_delta：若输入是 ratio，执行器会自动乘 100 转成百分点；若输入本来带 %，则直接作差。pct_change 已直接返回百分数，ratio 使用 percent 格式输出时也会自动乘 100。以上情况均不得再手工重复缩放。
 金额加减前必须显式统一尺度，禁止把亿元、万元、元的裸数直接相加减。可用乘除步骤换算，例如 1亿元=10000万元；人数与人均金额相乘时，1万人×1元=1万元。执行器会校验尺度但不会猜测或代做换算，跨尺度直接加减会触发重试。
+同一道题只能选择一套统一尺度：若统一为元，则1亿元乘100000000、1万人乘10000后再乘元；若统一为万元，则1亿元乘10000，而“万人×元”已经直接得到万元，禁止再把万人额外乘10000。不得只转换加减式的一侧。
+分段或保底规则必须逐情形执行证据条件；当条款规定差额小于等于0时给付为0，应使用 max(差额,0) 后再汇总，禁止把负给付额直接相加。
+“全年”数值必须覆盖同一年度内所有应计组成部分。若年末方案明确是在扣除已实施中期金额后的剩余分配，则全年金额=中期已实施金额+年末剩余金额；若材料已明确给出全年合计，则不得重复相加。
+supporting_evidence_ids 用于记录决定公式或分段条件、但不直接提供数值变量的规则证据；必须原样填写已给 evidence_id。凡是使用保底、分段、门槛、“小于/大于等于”或“中期+年末”等规则时，必须把对应条款或说明加入 supporting_evidence_ids。
 证据缺变量时不要用“无法计算”等文本冒充数值输出；该题应让计划校验失败并等待重新检索。
 steps: [{id,op,args,...}]，引用写成 {"ref":"变量或步骤id"}。
+通用算术的 args 必须是有序数组，禁止写成 {"a":...,"b":...}：例如
+{"id":"s1","op":"div","args":[{"ref":"净利润"},{"ref":"营业收入"}]}、
+{"id":"s2","op":"sub","args":[{"ref":"旧值"},{"ref":"新值"}]}、
+{"id":"s3","op":"mul","args":[{"ref":"金额"},{"ref":"比例"}]}。
+常数字面量必须写 {"literal":"100","value_type":"decimal","unit":""}，禁止写 {"value":"100","value_type":"decimal"}。禁止使用 assign；需要给派生结果命名时直接使用 step id。
+count_gte/count_gt 必须写成 {"id":"s1","op":"count_gte","args":[{"ref":"金额1"},{"ref":"金额2"}],"threshold":{"ref":"门槛"}}。
+sort_desc 必须是独立 step，写成 {"id":"rank","op":"sort_desc","items":[{"label":"甲","source":{"ref":"甲指标"}},{"label":"乙","source":{"ref":"乙指标"}}]}，文本排序输出再引用 {"ref":"rank"}；禁止把 sort_desc 或 items 直接塞进 output。
+已知“基数”和“增长率”而要求新值时，禁止误用 pct_change；应先用 mul 计算增量，再用 add 得到新值。pct_change 只用于同时已知 new 和 old 时计算同比变化率。
 方向性运算禁止使用位置参数：pct_change 必须写 new 和 old 字段，严格按
 (new / old - 1) * 100 计算；pct_point_delta 也必须写 new 和 old，严格按 new - old 计算。
 日期运算使用具名参数：date_add_days 的 args 写 {"date":{"ref":"日期变量"},"days":{"ref":"天数变量"}}；
@@ -102,6 +125,7 @@ SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推�
 
 RUNNER_VERSION = "b_actual_v11_staged_answer_reasoning"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
+CALCULATION_PLAN_NORMALIZATION_VERSION = "qwen37_structure_contract_v3_schema"
 RUN_MODE_SUBMISSION = "submission"
 RUN_MODE_RESEARCH = "research"
 RUN_MODES = (RUN_MODE_SUBMISSION, RUN_MODE_RESEARCH)
@@ -685,7 +709,14 @@ class BBoardActualRunner:
         candidate_doc_ids: list[str],
         locator: Mapping[str, Any],
     ) -> BAnswerArtifact:
-        query = "\n".join([question.question, question.type, "数值 公式 单位 日期 条款 计算"])
+        query = "\n".join(
+            [
+                question.question,
+                question.type,
+                "数值 公式 单位 日期 条款 计算",
+                _calculation_semantic_query_terms(question.question),
+            ]
+        )
         hits = self.retrievers[question.domain].search(
             candidate_doc_ids,
             query,
@@ -723,15 +754,37 @@ class BBoardActualRunner:
                     ),
                 },
             ]
-            response = self.client.chat_json(messages)
+            if (
+                self.config.model.structured_output_mode
+                == STRUCTURED_OUTPUT_NATIVE
+            ):
+                response = self.client.chat_json(
+                    messages,
+                    response_schema=CALCULATION_PLAN_SCHEMA,
+                    schema_name=CALCULATION_PLAN_SCHEMA_VERSION,
+                )
+            else:
+                response = self.client.chat_json(messages)
             usage.add(response.token_usage)
             plan: dict[str, Any] | None = None
-            plan_normalizations: list[dict[str, str]] = []
+            plan_normalizations: list[dict[str, Any]] = []
             try:
                 plan = extract_json_object(response.content)
-                plan, plan_normalizations = _normalize_calculation_numeric_literals(
+                plan, numeric_normalizations = _normalize_calculation_numeric_literals(
                     plan
                 )
+                plan, structure_normalizations = _normalize_calculation_plan_structure(
+                    plan,
+                    evidence_text_by_id={
+                        str(item["unit_id"]): str(item.get("text", ""))
+                        for item in evidence_items
+                    },
+                )
+                plan_normalizations = [
+                    *numeric_normalizations,
+                    *structure_normalizations,
+                ]
+                validate_calculation_plan_schema(plan)
                 result = self.calculator.execute(
                     plan,
                     expected_slots=question.answer_slots,
@@ -752,26 +805,61 @@ class BBoardActualRunner:
                         for index in range(1, question.answer_slots + 1)
                     ),
                 )
+                _validate_calculation_result_semantics(question, result.trace)
                 available = {str(item["unit_id"]) for item in evidence_items}
-                missing = sorted(set(result.used_evidence_ids) - available)
+                raw_supporting_evidence_ids = plan.get(
+                    "supporting_evidence_ids",
+                    [],
+                )
+                if not isinstance(raw_supporting_evidence_ids, list):
+                    raise CalculationPlanError(
+                        "supporting_evidence_ids must be a list"
+                    )
+                supporting_evidence_ids = [
+                    str(item)
+                    for item in raw_supporting_evidence_ids
+                    if str(item)
+                ]
+                combined_evidence_ids = list(
+                    dict.fromkeys(
+                        [
+                            *result.used_evidence_ids,
+                            *supporting_evidence_ids,
+                        ]
+                    )
+                )
+                missing = sorted(set(combined_evidence_ids) - available)
                 if missing:
                     raise CalculationPlanError("Plan cited unknown evidence IDs: " + ",".join(missing))
-                selected_evidence = [item for item in evidence_items if str(item["unit_id"]) in result.used_evidence_ids]
+                selected_evidence = [
+                    item
+                    for item in evidence_items
+                    if str(item["unit_id"]) in combined_evidence_ids
+                ]
                 artifact = BAnswerArtifact(
                     qid=question.qid,
                     domain=question.domain,
                     answer_format=question.answer_format,
                     answer_slot_count=question.answer_slots,
                     answer_parts=list(result.answer_parts),
-                    used_evidence_ids=list(result.used_evidence_ids),
+                    used_evidence_ids=combined_evidence_ids,
                     evidence_items=selected_evidence,
                     decision_summary=str(plan.get("decision_summary", "")).strip(),
                     decision_trace={
                         "source": "structured_calculation_plan",
                         "format_forced": False,
+                        "calculation_plan_schema_version": (
+                            CALCULATION_PLAN_SCHEMA_VERSION
+                        ),
+                        "calculation_structured_output_mode": (
+                            response.response_format_mode
+                        ),
                         "calculation_plan_normalizations": plan_normalizations,
                     },
-                    calculation_trace=result.trace,
+                    calculation_trace={
+                        **result.trace,
+                        "supporting_evidence_ids": supporting_evidence_ids,
+                    },
                     token_usage=usage.to_dict(),
                     locator={
                         **dict(locator),
@@ -795,6 +883,9 @@ class BBoardActualRunner:
                         "error_type": exc.__class__.__name__,
                         "error": str(exc)[:1000],
                         "plan": plan,
+                        "structured_output_mode": (
+                            response.response_format_mode
+                        ),
                         "plan_normalizations": (
                             plan_normalizations
                             if plan is not None
@@ -805,48 +896,72 @@ class BBoardActualRunner:
                 added_ids: list[str] = []
                 retry_query = ""
                 if attempt_number < 3:
-                    retry_query = _calculation_retry_query(question, plan, exc)
-                    retry_hits = self.retrievers[question.domain].search(
-                        candidate_doc_ids,
-                        retry_query,
-                        top_k=max(12, self.calculation_top_k),
-                        unit_type_boosts={
-                            "metric_row": 2.4,
-                            "formula_block": 2.0,
-                            "clause_block": 1.5,
-                            "article": 1.3,
-                        },
-                        ensure_per_doc=True,
-                        expand_neighbors=True,
-                    )
-                    phrase_hits = _diagnostic_phrase_evidence(
-                        self.retrievers[question.domain],
-                        candidate_doc_ids,
-                        f"{question.question}\n{retry_query}",
-                        top_k=max(12, self.calculation_top_k),
-                    )
-                    evidence_items, added_ids = _merge_calculation_evidence(
-                        evidence_items,
-                        [
-                            *phrase_hits,
-                            *[_normalize_evidence(hit.to_dict()) for hit in retry_hits],
-                        ],
-                        max_items=1 + self.calculation_top_k * 3,
-                    )
-                    retrieval_round = {
-                        "after_attempt": attempt_number,
-                        "query": retry_query,
-                        "phrase_overlay_count": len(phrase_hits),
-                        "added_evidence_ids": added_ids,
-                        "evidence_count": len(evidence_items),
-                    }
+                    structural_error = _is_calculation_plan_structure_error(exc)
+                    if structural_error:
+                        retrieval_round = {
+                            "after_attempt": attempt_number,
+                            "query": "",
+                            "phrase_overlay_count": 0,
+                            "added_evidence_ids": [],
+                            "evidence_count": len(evidence_items),
+                            "skipped_reason": "deterministic_plan_structure_error",
+                        }
+                    else:
+                        retry_query = _calculation_retry_query(
+                            question, plan, exc
+                        )
+                        retry_hits = self.retrievers[question.domain].search(
+                            candidate_doc_ids,
+                            retry_query,
+                            top_k=max(12, self.calculation_top_k),
+                            unit_type_boosts={
+                                "metric_row": 2.4,
+                                "formula_block": 2.0,
+                                "clause_block": 1.5,
+                                "article": 1.3,
+                            },
+                            ensure_per_doc=True,
+                            expand_neighbors=True,
+                        )
+                        phrase_hits = _diagnostic_phrase_evidence(
+                            self.retrievers[question.domain],
+                            candidate_doc_ids,
+                            f"{question.question}\n{retry_query}",
+                            top_k=max(12, self.calculation_top_k),
+                        )
+                        evidence_items, added_ids = _merge_calculation_evidence(
+                            evidence_items,
+                            [
+                                *phrase_hits,
+                                *[
+                                    _normalize_evidence(hit.to_dict())
+                                    for hit in retry_hits
+                                ],
+                            ],
+                            max_items=1 + self.calculation_top_k * 3,
+                        )
+                        retrieval_round = {
+                            "after_attempt": attempt_number,
+                            "query": retry_query,
+                            "phrase_overlay_count": len(phrase_hits),
+                            "added_evidence_ids": added_ids,
+                            "evidence_count": len(evidence_items),
+                        }
                     retrieval_rounds.append(retrieval_round)
                     diagnostics[-1]["retrieval"] = retrieval_round
-                feedback = (
-                    f"上一次计划无法本地重放：{exc}。"
-                    f"已按缺失变量定向补充 {len(added_ids)} 条新证据。"
-                    "请重新检查全部证据、补齐变量并只输出完整 JSON。"
-                )
+                if _is_calculation_plan_structure_error(exc):
+                    feedback = (
+                        f"上一次计划因结构错误无法本地重放：{exc}。"
+                        "本轮未扩检索；请只修正计划结构：variables仅保留证据逐字出现的"
+                        "原始输入，派生量全部放steps，通用args使用数组，常数使用literal，"
+                        "并让outputs直接引用有效变量或step id。只输出完整JSON。"
+                    )
+                else:
+                    feedback = (
+                        f"上一次计划无法本地重放：{exc}。"
+                        f"已按缺失变量定向补充 {len(added_ids)} 条新证据。"
+                        "请重新检查全部证据、补齐变量并只输出完整 JSON。"
+                    )
         assert last_error is not None
         raise BAnswerGenerationError(
             f"Calculation failed after {len(diagnostics)} grounded replay attempts: {last_error}",
@@ -1250,6 +1365,9 @@ class BBoardActualRunner:
         public_model = {
             "model_name": self.config.model.model_name,
             "temperature": self.config.model.temperature,
+            "structured_output_mode": (
+                self.config.model.structured_output_mode
+            ),
             "api_base_sha256": hashlib.sha256(self.config.model.api_base.encode("utf-8")).hexdigest(),
         }
         strategy_payload = {
@@ -1262,6 +1380,18 @@ class BBoardActualRunner:
                 "trace_schema_version": 2,
                 "grounding_required": True,
                 "iterative_retrieval_version": CALCULATION_RETRIEVAL_VERSION,
+                "plan_normalization_version": (
+                    CALCULATION_PLAN_NORMALIZATION_VERSION
+                ),
+                "plan_schema_version": CALCULATION_PLAN_SCHEMA_VERSION,
+                "plan_schema_sha256": hashlib.sha256(
+                    json.dumps(
+                        CALCULATION_PLAN_SCHEMA,
+                        ensure_ascii=False,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                ).hexdigest(),
             },
         }
         return build_run_fingerprint(
@@ -1318,6 +1448,9 @@ class BBoardActualRunner:
                 "model": {
                     "model_name": self.config.model.model_name,
                     "temperature": self.config.model.temperature,
+                    "structured_output_mode": (
+                        self.config.model.structured_output_mode
+                    ),
                 },
                 "locator_attempt_id": self.locator_attempt_id,
             },
@@ -1448,6 +1581,802 @@ def _normalize_calculation_numeric_literals(
             }
         )
     return normalized_plan, normalizations
+
+
+def _normalize_calculation_plan_structure(
+    plan: Mapping[str, Any],
+    *,
+    evidence_text_by_id: Mapping[str, str] | None = None,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Repair only deterministic Qwen plan-shape errors.
+
+    The pass never invents values or changes operand order. It normalizes
+    schema synonyms, replaces explicit step aliases, and prunes nodes that
+    cannot affect any output.
+    """
+
+    normalized = copy.deepcopy(dict(plan))
+    normalizations: list[dict[str, Any]] = []
+    if "supporting_evidence_ids" not in normalized:
+        normalized["supporting_evidence_ids"] = []
+        normalizations.append(
+            {"reason": "default_empty_supporting_evidence_ids"}
+        )
+    if "decision_summary" not in normalized:
+        normalized["decision_summary"] = ""
+        normalizations.append({"reason": "default_empty_decision_summary"})
+    elif not isinstance(normalized.get("decision_summary"), str):
+        raw_summary = normalized["decision_summary"]
+        if isinstance(raw_summary, list):
+            normalized["decision_summary"] = "\n".join(
+                str(item).strip() for item in raw_summary if str(item).strip()
+            )
+        else:
+            normalized["decision_summary"] = str(raw_summary)
+        normalizations.append(
+            {"reason": "stringify_decision_summary"}
+        )
+    raw_support = normalized.get("supporting_evidence_ids")
+    if isinstance(raw_support, list) and any(
+        not isinstance(item, str) for item in raw_support
+    ):
+        normalized["supporting_evidence_ids"] = [
+            str(item) for item in raw_support
+        ]
+        normalizations.append(
+            {"reason": "stringify_supporting_evidence_ids"}
+        )
+    variables = normalized.get("variables")
+    steps = normalized.get("steps")
+    outputs = normalized.get("outputs")
+    if not isinstance(variables, list) or not isinstance(steps, list):
+        return normalized, normalizations
+    if not isinstance(outputs, list):
+        return normalized, normalizations
+    for variable in variables:
+        if not isinstance(variable, dict):
+            continue
+        raw_evidence_ids = variable.get("evidence_ids")
+        if isinstance(raw_evidence_ids, list) and any(
+            not isinstance(item, str) for item in raw_evidence_ids
+        ):
+            variable["evidence_ids"] = [
+                str(item) for item in raw_evidence_ids
+            ]
+            normalizations.append(
+                {
+                    "reason": "stringify_variable_evidence_ids",
+                    "variable": str(variable.get("name", "")),
+                }
+            )
+
+    normalized["steps"] = _normalize_calculation_literal_nodes(
+        steps,
+        normalizations,
+        path="steps",
+    )
+    steps = normalized["steps"]
+    for step in steps:
+        if not isinstance(step, dict):
+            continue
+        removed_metadata = [
+            key
+            for key in ("description", "explanation", "note")
+            if key in step
+        ]
+        for key in removed_metadata:
+            step.pop(key, None)
+        if removed_metadata:
+            normalizations.append(
+                {
+                    "reason": "drop_nonsemantic_step_metadata",
+                    "step_id": str(step.get("id", "")),
+                    "removed_keys": removed_metadata,
+                }
+            )
+        op = str(step.get("op", "")).strip()
+        raw_args = step.get("args")
+        if (
+            op in {"pct_change", "pct_point_delta"}
+            and isinstance(raw_args, Mapping)
+            and set(raw_args) == {"new", "old"}
+        ):
+            step["new"] = raw_args["new"]
+            step["old"] = raw_args["old"]
+            step.pop("args", None)
+            normalizations.append(
+                {
+                    "reason": "directional_args_to_named_fields",
+                    "step_id": str(step.get("id", "")),
+                    "op": op,
+                }
+            )
+            continue
+        if op == "sort_desc" and raw_args == [] and isinstance(
+            step.get("items"),
+            list,
+        ):
+            step.pop("args", None)
+            normalizations.append(
+                {
+                    "reason": "drop_empty_sort_args",
+                    "step_id": str(step.get("id", "")),
+                }
+            )
+            continue
+        if not isinstance(raw_args, Mapping):
+            continue
+        converted_args: list[Any] | None = None
+        role_order = None
+        if op in {"add", "mul", "sub", "div"} and set(raw_args) == {"a", "b"}:
+            role_order = ("a", "b")
+        elif (
+            op in {"add", "mul", "mean", "max", "min"}
+            and set(raw_args) == {"a"}
+        ):
+            role_order = ("a",)
+        elif op == "sub" and set(raw_args) == {"minuend", "subtrahend"}:
+            role_order = ("minuend", "subtrahend")
+        elif op == "div" and set(raw_args) == {"dividend", "divisor"}:
+            role_order = ("dividend", "divisor")
+        elif op == "div" and set(raw_args) == {"numerator", "denominator"}:
+            role_order = ("numerator", "denominator")
+        elif op == "mul" and set(raw_args) == {"multiplicand", "multiplier"}:
+            role_order = ("multiplicand", "multiplier")
+        elif op == "abs" and set(raw_args) == {"a"}:
+            role_order = ("a",)
+        elif (
+            op == "abs"
+            and set(raw_args) == {"literal"}
+            and isinstance(raw_args.get("literal"), Mapping)
+            and "ref" in raw_args["literal"]
+        ):
+            converted_args = [raw_args["literal"]]
+        elif (
+            op in {"add", "mul", "mean", "max", "min"}
+            and set(raw_args) == {"items"}
+            and isinstance(raw_args.get("items"), list)
+            and not _contains_labeled_sort_item(raw_args["items"])
+        ):
+            converted_args = list(raw_args["items"])
+        elif (
+            op in {"max", "min"}
+            and set(raw_args) == {"items"}
+            and isinstance(raw_args.get("items"), list)
+            and raw_args["items"]
+            and all(
+                isinstance(item, Mapping)
+                and set(item) == {"label", "source"}
+                for item in raw_args["items"]
+            )
+        ):
+            converted_args = [
+                item["source"] for item in raw_args["items"]
+            ]
+        elif (
+            op in {"count_gte", "count_gt"}
+            and set(raw_args) == {"items", "threshold"}
+            and isinstance(raw_args.get("items"), list)
+        ):
+            converted_args = list(raw_args["items"])
+            step["threshold"] = raw_args["threshold"]
+        elif (
+            op == "sort_desc"
+            and set(raw_args) == {"items"}
+            and isinstance(raw_args.get("items"), list)
+        ):
+            converted_args = []
+            step["items"] = list(raw_args["items"])
+        if role_order is not None:
+            converted_args = [raw_args[role] for role in role_order]
+        if converted_args is None:
+            continue
+        if op == "sort_desc":
+            step.pop("args", None)
+        else:
+            step["args"] = converted_args
+        normalizations.append(
+            {
+                "reason": "named_args_to_ordered_schema",
+                "step_id": str(step.get("id", "")),
+                "op": op,
+                "before_keys": sorted(str(key) for key in raw_args),
+            }
+        )
+
+    passthrough_aliases = {
+        str(step.get("id", "")).strip(): target
+        for step in steps
+        if isinstance(step, Mapping)
+        and str(step.get("id", "")).strip()
+        and (target := _passthrough_calculation_target(step))
+    }
+    if passthrough_aliases:
+        for step in steps:
+            if (
+                isinstance(step, dict)
+                and str(step.get("id", "")).strip()
+                not in passthrough_aliases
+            ):
+                _rewrite_calculation_refs(step, passthrough_aliases)
+        for output in outputs:
+            if not isinstance(output, dict):
+                continue
+            source = output.get("source")
+            if isinstance(source, str) and source in passthrough_aliases:
+                output["source"] = {"ref": passthrough_aliases[source]}
+            else:
+                _rewrite_calculation_refs(output, passthrough_aliases)
+        normalized["steps"] = [
+            step
+            for step in steps
+            if not (
+                isinstance(step, Mapping)
+                and str(step.get("id", "")).strip()
+                in passthrough_aliases
+            )
+        ]
+        steps = normalized["steps"]
+        normalizations.append(
+            {
+                "reason": "passthrough_step_aliases",
+                "aliases": dict(sorted(passthrough_aliases.items())),
+            }
+        )
+
+    step_ids = {
+        str(step.get("id", "")).strip()
+        for step in steps
+        if isinstance(step, Mapping) and str(step.get("id", "")).strip()
+    }
+    for index, output in enumerate(outputs, start=1):
+        if not isinstance(output, dict):
+            continue
+        if (
+            str(output.get("source", "")).strip() == "sort_desc"
+            and isinstance(output.get("items"), list)
+        ):
+            step_id = f"__output_sort_desc_{index}"
+            suffix = 1
+            while step_id in step_ids:
+                suffix += 1
+                step_id = f"__output_sort_desc_{index}_{suffix}"
+            step_ids.add(step_id)
+            steps.append(
+                {
+                    "id": step_id,
+                    "op": "sort_desc",
+                    "items": output.pop("items"),
+                }
+            )
+            output["source"] = {"ref": step_id}
+            normalizations.append(
+                {
+                    "reason": "inline_output_sort_to_step",
+                    "output_slot": index,
+                    "step_id": step_id,
+                }
+            )
+
+    steps_by_id = {
+        str(step.get("id", "")).strip(): step
+        for step in steps
+        if isinstance(step, Mapping) and str(step.get("id", "")).strip()
+    }
+    aliases: dict[str, str] = {}
+    for variable in variables:
+        if not isinstance(variable, Mapping):
+            continue
+        name = str(variable.get("name", "")).strip()
+        evidence_ids = [
+            str(item).strip()
+            for item in variable.get("evidence_ids", [])
+            if str(item).strip()
+        ]
+        if len(evidence_ids) != 1 or evidence_ids[0] not in steps_by_id:
+            continue
+        target = evidence_ids[0]
+        if name in _calculation_reference_names(
+            steps_by_id[target],
+            {*steps_by_id, name},
+        ):
+            continue
+        aliases[name] = target
+    if aliases:
+        for step in steps:
+            if isinstance(step, dict):
+                _rewrite_calculation_refs(step, aliases)
+        for output in outputs:
+            if not isinstance(output, dict):
+                continue
+            source = output.get("source")
+            if isinstance(source, str) and source in aliases:
+                output["source"] = {"ref": aliases[source]}
+            else:
+                _rewrite_calculation_refs(output, aliases)
+        normalized["variables"] = [
+            variable
+            for variable in variables
+            if not (
+                isinstance(variable, Mapping)
+                and str(variable.get("name", "")).strip() in aliases
+            )
+        ]
+        variables = normalized["variables"]
+        normalizations.append(
+            {
+                "reason": "derived_variable_step_aliases",
+                "aliases": dict(sorted(aliases.items())),
+            }
+        )
+
+    variable_names = {
+        str(variable.get("name", "")).strip()
+        for variable in variables
+        if isinstance(variable, Mapping)
+        and str(variable.get("name", "")).strip()
+    }
+    steps_by_id = {
+        str(step.get("id", "")).strip(): step
+        for step in steps
+        if isinstance(step, Mapping) and str(step.get("id", "")).strip()
+    }
+    symbols = {*variable_names, *steps_by_id}
+    needed_variables: set[str] = set()
+    needed_steps: set[str] = set()
+
+    def visit(name: str) -> None:
+        if name in variable_names:
+            needed_variables.add(name)
+            return
+        if name not in steps_by_id or name in needed_steps:
+            return
+        needed_steps.add(name)
+        dependencies = _calculation_reference_names(
+            steps_by_id[name],
+            symbols,
+        )
+        for dependency in dependencies:
+            visit(dependency)
+
+    output_references: set[str] = set()
+    for output in outputs:
+        if isinstance(output, Mapping):
+            output_references.update(
+                _calculation_reference_names(
+                    output.get("source"),
+                    symbols,
+                )
+            )
+    for reference in output_references:
+        visit(reference)
+
+    if output_references:
+        pruned_variables = sorted(variable_names - needed_variables)
+        pruned_steps = sorted(set(steps_by_id) - needed_steps)
+        if pruned_variables:
+            normalized["variables"] = [
+                variable
+                for variable in variables
+                if not (
+                    isinstance(variable, Mapping)
+                    and str(variable.get("name", "")).strip()
+                    in pruned_variables
+                )
+            ]
+        if pruned_steps:
+            normalized["steps"] = [
+                step
+                for step in steps
+                if not (
+                    isinstance(step, Mapping)
+                    and str(step.get("id", "")).strip() in pruned_steps
+                )
+            ]
+        if pruned_variables or pruned_steps:
+            normalizations.append(
+                {
+                    "reason": "prune_non_output_dependencies",
+                    "pruned_variable_names": pruned_variables,
+                    "pruned_step_ids": pruned_steps,
+                }
+            )
+    if evidence_text_by_id:
+        normalizations.extend(
+            _normalize_ratio_only_table_units(
+                normalized,
+                evidence_text_by_id,
+            )
+        )
+    return normalized, normalizations
+
+
+def _normalize_ratio_only_table_units(
+    plan: dict[str, Any],
+    evidence_text_by_id: Mapping[str, str],
+) -> list[dict[str, Any]]:
+    """Drop an absent table scale only when it cancels inside a ratio."""
+
+    variables = plan.get("variables")
+    steps = plan.get("steps")
+    outputs = plan.get("outputs")
+    if not isinstance(variables, list) or not isinstance(steps, list):
+        return []
+    if not isinstance(outputs, list):
+        return []
+    variables_by_name = {
+        str(item.get("name", "")).strip(): item
+        for item in variables
+        if isinstance(item, dict) and str(item.get("name", "")).strip()
+    }
+    symbols = {
+        *variables_by_name,
+        *{
+            str(item.get("id", "")).strip()
+            for item in steps
+            if isinstance(item, Mapping)
+            and str(item.get("id", "")).strip()
+        },
+    }
+    use_ops: dict[str, set[str]] = {
+        name: set() for name in variables_by_name
+    }
+    div_pairs: list[tuple[str, str]] = []
+    for step in steps:
+        if not isinstance(step, Mapping):
+            continue
+        op = str(step.get("op", "")).strip()
+        refs = _calculation_reference_names(step, symbols)
+        for ref in refs & set(variables_by_name):
+            use_ops[ref].add(op)
+        args = step.get("args")
+        if op == "div" and isinstance(args, list) and len(args) == 2:
+            left = _direct_calculation_ref(args[0])
+            right = _direct_calculation_ref(args[1])
+            if left in variables_by_name and right in variables_by_name:
+                div_pairs.append((left, right))
+    for output in outputs:
+        if not isinstance(output, Mapping):
+            continue
+        for ref in _calculation_reference_names(
+            output.get("source"),
+            symbols,
+        ) & set(variables_by_name):
+            use_ops[ref].add("output")
+
+    safe_ops = {
+        "div",
+        "max",
+        "min",
+        "pct_change",
+        "pct_point_delta",
+        "sort_desc",
+    }
+    clearable_units = {
+        "元",
+        "千元",
+        "万元",
+        "百万元",
+        "亿元",
+    }
+
+    def ratio_only(name: str) -> bool:
+        return bool(use_ops[name]) and use_ops[name] <= safe_ops and "div" in use_ops[name]
+
+    missing_unit: set[str] = set()
+    blank_verified: set[str] = set()
+    for name, variable in variables_by_name.items():
+        unit = "".join(str(variable.get("unit", "")).split())
+        if unit not in clearable_units or not ratio_only(name):
+            continue
+        evidence_ids = [
+            str(item)
+            for item in variable.get("evidence_ids", [])
+            if str(item)
+        ]
+        check = check_variable_grounding(
+            name=name,
+            value=variable.get("value"),
+            value_type=str(variable.get("value_type", "decimal")),
+            unit=unit,
+            evidence_ids=evidence_ids,
+            evidence_text_by_id=evidence_text_by_id,
+        )
+        blank_check = check_variable_grounding(
+            name=name,
+            value=variable.get("value"),
+            value_type=str(variable.get("value_type", "decimal")),
+            unit="",
+            evidence_ids=evidence_ids,
+            evidence_text_by_id=evidence_text_by_id,
+        )
+        if blank_check["verified"]:
+            blank_verified.add(name)
+        if check["reason"] == "unit_not_found" and blank_check["verified"]:
+            missing_unit.add(name)
+
+    to_clear = set(missing_unit)
+    for left, right in div_pairs:
+        left_variable = variables_by_name[left]
+        right_variable = variables_by_name[right]
+        left_unit = "".join(str(left_variable.get("unit", "")).split())
+        right_unit = "".join(str(right_variable.get("unit", "")).split())
+        if (
+            left_unit
+            and left_unit == right_unit
+            and (left in missing_unit or right in missing_unit)
+            and left in blank_verified
+            and right in blank_verified
+            and ratio_only(left)
+            and ratio_only(right)
+        ):
+            to_clear.update({left, right})
+    if not to_clear:
+        return []
+    for name in to_clear:
+        variables_by_name[name]["unit"] = ""
+    return [
+        {
+            "reason": "clear_absent_same_scale_ratio_units",
+            "variable_names": sorted(to_clear),
+        }
+    ]
+
+
+def _direct_calculation_ref(value: Any) -> str:
+    if isinstance(value, Mapping) and "ref" in value:
+        return str(value["ref"])
+    return ""
+
+
+def _normalize_calculation_literal_nodes(
+    value: Any,
+    normalizations: list[dict[str, Any]],
+    *,
+    path: str,
+) -> Any:
+    if (
+        _is_calculation_operand_path(path)
+        and not isinstance(value, bool)
+        and isinstance(value, (int, float))
+    ):
+        normalizations.append(
+            {
+                "reason": "bare_numeric_operand_to_literal",
+                "path": path,
+            }
+        )
+        return {
+            "literal": value,
+            "value_type": "decimal",
+            "unit": "",
+        }
+    if (
+        _is_calculation_operand_path(path)
+        and isinstance(value, str)
+        and _NUMERIC_LITERAL_RE.fullmatch(value.strip()) is not None
+    ):
+        normalizations.append(
+            {
+                "reason": "bare_numeric_operand_to_literal",
+                "path": path,
+            }
+        )
+        return {
+            "literal": value.strip(),
+            "value_type": "decimal",
+            "unit": "",
+        }
+    if isinstance(value, list):
+        return [
+            _normalize_calculation_literal_nodes(
+                item,
+                normalizations,
+                path=f"{path}[{index}]",
+            )
+            for index, item in enumerate(value)
+        ]
+    if not isinstance(value, Mapping):
+        return value
+    payload = dict(value)
+    keys = set(payload)
+    if (
+        "value" in payload
+        and "ref" not in payload
+        and "literal" not in payload
+        and keys <= {"value", "value_type", "unit"}
+    ):
+        payload["literal"] = payload.pop("value")
+        normalizations.append(
+            {
+                "reason": "value_object_to_literal",
+                "path": path,
+            }
+        )
+    if "literal" in payload and "ref" not in payload:
+        literal_text = str(payload.get("literal", "")).strip()
+        if (
+            "value_type" not in payload
+            and _NUMERIC_LITERAL_RE.fullmatch(literal_text) is not None
+        ):
+            payload["value_type"] = "decimal"
+            normalizations.append(
+                {
+                    "reason": "numeric_literal_default_value_type",
+                    "path": path,
+                }
+            )
+        if (
+            payload.get("value_type") == "decimal"
+            and "unit" not in payload
+        ):
+            payload["unit"] = ""
+            normalizations.append(
+                {
+                    "reason": "numeric_literal_default_empty_unit",
+                    "path": path,
+                }
+            )
+    return {
+        key: _normalize_calculation_literal_nodes(
+            item,
+            normalizations,
+            path=f"{path}.{key}",
+        )
+        for key, item in payload.items()
+    }
+
+
+def _is_calculation_operand_path(path: str) -> bool:
+    terminal = path.rsplit(".", 1)[-1]
+    if terminal in {
+        "id",
+        "label",
+        "literal",
+        "name",
+        "op",
+        "ref",
+        "unit",
+        "value",
+        "value_type",
+    }:
+        return False
+    return any(
+        marker in path
+        for marker in (".args", ".threshold", ".new", ".old", ".source")
+    )
+
+
+def _passthrough_calculation_target(step: Mapping[str, Any]) -> str:
+    if str(step.get("op", "")).strip() not in {"assign", "raw"}:
+        return ""
+    raw_args = step.get("args")
+    candidates: list[Any]
+    if isinstance(raw_args, list) and len(raw_args) == 1:
+        candidates = [raw_args[0]]
+    elif isinstance(raw_args, Mapping):
+        if "ref" in raw_args:
+            candidates = [raw_args]
+        elif set(raw_args) in ({"literal"}, {"value"}):
+            candidates = [next(iter(raw_args.values()))]
+        else:
+            return ""
+    else:
+        return ""
+    candidate = candidates[0]
+    if isinstance(candidate, Mapping) and "ref" in candidate:
+        return str(candidate["ref"]).strip()
+    return ""
+
+
+def _contains_labeled_sort_item(items: Sequence[Any]) -> bool:
+    return any(
+        isinstance(item, Mapping)
+        and ("label" in item or "source" in item)
+        for item in items
+    )
+
+
+def _rewrite_calculation_refs(
+    value: Any,
+    aliases: Mapping[str, str],
+) -> None:
+    if isinstance(value, list):
+        for item in value:
+            _rewrite_calculation_refs(item, aliases)
+        return
+    if not isinstance(value, dict):
+        return
+    if "ref" in value and str(value["ref"]) in aliases:
+        value["ref"] = aliases[str(value["ref"])]
+    for key, item in value.items():
+        if key not in {"id", "label", "name", "op"}:
+            _rewrite_calculation_refs(item, aliases)
+
+
+def _calculation_reference_names(
+    value: Any,
+    symbols: set[str],
+) -> set[str]:
+    if isinstance(value, Mapping):
+        names = (
+            {str(value["ref"])}
+            if "ref" in value and str(value["ref"]) in symbols
+            else set()
+        )
+        for key, nested in value.items():
+            if key not in {"id", "label", "name", "op", "format", "ref"}:
+                names.update(_calculation_reference_names(nested, symbols))
+        return names
+    if isinstance(value, list):
+        names: set[str] = set()
+        for nested in value:
+            names.update(_calculation_reference_names(nested, symbols))
+        return names
+    if isinstance(value, str) and value in symbols:
+        return {value}
+    return set()
+
+
+def _is_calculation_plan_structure_error(exc: Exception) -> bool:
+    message = str(exc)
+    structural_markers = (
+        "args must be a list",
+        "args must be a list or supported named object",
+        "named args mismatch",
+        "requires named 'new' and 'old' operands",
+        "Invalid decimal:",
+        "Unknown reference:",
+        "Unsupported operation:",
+        "Invalid or duplicate step id:",
+        "sort_desc requires items",
+        "sort_desc item",
+        "CalculationPlan schema violation",
+        "supporting_evidence_ids must be a list",
+        "percentage-point output must have percent_points value_kind",
+    )
+    return any(marker in message for marker in structural_markers)
+
+
+def _calculation_semantic_query_terms(question_text: str) -> str:
+    """Add narrow rule phrases for calculation questions with semantic traps."""
+
+    compact = _compact_text(question_text)
+    terms: list[str] = []
+    if "分红" in compact and ("全年" in compact or "年度" in compact):
+        terms.append(
+            "中期分红 已派发 年末分红 剩余待分配 扣除 全年合计 每10股"
+        )
+    if "保险金" in compact and any(
+        marker in compact for marker in ("情形", "合计", "累计")
+    ):
+        terms.append(
+            "给付条件 小于 大于等于 身故保险金 为零 差额"
+        )
+    return " ".join(terms)
+
+
+def _validate_calculation_result_semantics(
+    question: BQuestion,
+    trace: Mapping[str, Any],
+) -> None:
+    """Reject a dimensionally valid result that violates an explicit unit ask."""
+
+    if "百分点" not in _compact_text(question.question):
+        return
+    outputs = trace.get("outputs", [])
+    if not isinstance(outputs, list):
+        raise CalculationPlanError("Calculation trace outputs must be a list")
+    for output in outputs:
+        if not isinstance(output, Mapping):
+            continue
+        value_kind = str(output.get("value_kind", "")).strip()
+        if value_kind in {"text", "date"}:
+            continue
+        if value_kind != "percent_points":
+            raise CalculationPlanError(
+                "percentage-point output must have percent_points value_kind"
+            )
 
 
 def _calculation_evidence_payload(

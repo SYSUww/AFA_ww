@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import unittest
 from unittest.mock import patch
 
@@ -67,6 +68,50 @@ class ClientUsageLedgerTests(unittest.TestCase):
         with patch("afa_agent.client.requests.post", return_value=response):
             with self.assertRaisesRegex(ValueError, "must equal"):
                 self.client.chat_json([{"role": "user", "content": "bad usage"}])
+
+    def test_native_strict_schema_is_explicit_and_recorded(self) -> None:
+        response = FakeHTTPResponse(
+            {
+                "choices": [{"message": {"content": '{"value":"ok"}'}}],
+                "usage": {
+                    "prompt_tokens": 10,
+                    "completion_tokens": 2,
+                    "total_tokens": 12,
+                },
+            }
+        )
+        schema = {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["value"],
+            "properties": {"value": {"type": "string"}},
+        }
+        with patch(
+            "afa_agent.client.requests.post",
+            return_value=response,
+        ) as post:
+            with capture_llm_usage() as ledger:
+                result = self.client.chat_json(
+                    [{"role": "user", "content": "strict"}],
+                    response_schema=schema,
+                    schema_name="probe-v1",
+                )
+
+        payload = json.loads(post.call_args.kwargs["data"])
+        self.assertEqual(payload["response_format"]["type"], "json_schema")
+        self.assertTrue(payload["response_format"]["json_schema"]["strict"])
+        self.assertEqual(
+            payload["response_format"]["json_schema"]["name"],
+            "probe-v1",
+        )
+        self.assertEqual(
+            result.response_format_mode,
+            "native_json_schema_strict",
+        )
+        self.assertEqual(
+            ledger.calls[0]["response_format_mode"],
+            "native_json_schema_strict",
+        )
 
 
 if __name__ == "__main__":

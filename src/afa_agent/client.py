@@ -6,7 +6,7 @@ import time
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import Any, Iterator
+from typing import Any, Iterator, Mapping
 
 import requests
 
@@ -19,17 +19,25 @@ class LLMResponse:
     content: str
     token_usage: TokenUsage
     raw_payload: dict[str, Any]
+    response_format_mode: str = "json_object_local_schema"
 
 
 @dataclass(slots=True)
 class LLMUsageLedger:
     calls: list[dict[str, Any]]
 
-    def record(self, model_name: str, usage: TokenUsage) -> None:
+    def record(
+        self,
+        model_name: str,
+        usage: TokenUsage,
+        *,
+        response_format_mode: str = "json_object_local_schema",
+    ) -> None:
         self.calls.append(
             {
                 "call_index": len(self.calls) + 1,
                 "model_name": model_name,
+                "response_format_mode": response_format_mode,
                 "token_usage": usage.to_dict(),
             }
         )
@@ -63,13 +71,39 @@ class OpenAICompatibleClient:
     def __init__(self, config: ModelConfig):
         self.config = config
 
-    def chat_json(self, messages: list[dict[str, str]]) -> LLMResponse:
+    def chat_json(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        response_schema: Mapping[str, Any] | None = None,
+        schema_name: str = "response",
+    ) -> LLMResponse:
         url = self.config.api_base.rstrip("/") + "/chat/completions"
+        if response_schema is None:
+            response_format = {"type": "json_object"}
+            response_format_mode = "json_object_local_schema"
+        else:
+            normalized_schema_name = re.sub(
+                r"[^A-Za-z0-9_-]+",
+                "_",
+                str(schema_name).strip(),
+            ).strip("_")
+            if not normalized_schema_name:
+                raise ValueError("schema_name must contain an alphanumeric character")
+            response_format = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": normalized_schema_name,
+                    "strict": True,
+                    "schema": dict(response_schema),
+                },
+            }
+            response_format_mode = "native_json_schema_strict"
         payload = {
             "model": self.config.model_name,
             "messages": messages,
             "temperature": self.config.temperature,
-            "response_format": {"type": "json_object"},
+            "response_format": response_format,
         }
         last_error: Exception | None = None
         max_attempts = max(1, self.config.max_retries + 1)
@@ -109,8 +143,17 @@ class OpenAICompatibleClient:
         _validate_raw_usage(usage)
         ledger = _ACTIVE_USAGE_LEDGER.get()
         if ledger is not None:
-            ledger.record(self.config.model_name, usage)
-        return LLMResponse(content=content, token_usage=usage, raw_payload=parsed)
+            ledger.record(
+                self.config.model_name,
+                usage,
+                response_format_mode=response_format_mode,
+            )
+        return LLMResponse(
+            content=content,
+            token_usage=usage,
+            raw_payload=parsed,
+            response_format_mode=response_format_mode,
+        )
 
 
 def extract_json_object(text: str) -> dict[str, Any]:

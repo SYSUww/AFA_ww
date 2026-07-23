@@ -81,6 +81,41 @@ class RunConfigEnvironmentTests(unittest.TestCase):
         assert config.model is not None
         self.assertEqual(config.model.model_name, "qwen3.7-plus-2026-05-26")
 
+    def test_structured_output_mode_requires_explicit_native_opt_in(self) -> None:
+        self.write_env(
+            "\n".join(
+                (
+                    "OPENAI_API_KEY=openai-key",
+                    "OPENAI_BASE_URL=https://openai.example/v1",
+                    "OPENAI_MODEL=qwen3.7-plus-2026-05-26",
+                    "OPENAI_STRUCTURED_OUTPUT_MODE=native_json_schema_strict",
+                )
+            )
+        )
+
+        config = self.build()
+
+        assert config.model is not None
+        self.assertEqual(
+            config.model.structured_output_mode,
+            "native_json_schema_strict",
+        )
+
+    def test_unknown_structured_output_mode_is_rejected(self) -> None:
+        self.write_env(
+            "\n".join(
+                (
+                    "OPENAI_API_KEY=openai-key",
+                    "OPENAI_BASE_URL=https://openai.example/v1",
+                    "OPENAI_MODEL=qwen3.7-plus-2026-05-26",
+                    "OPENAI_STRUCTURED_OUTPUT_MODE=auto",
+                )
+            )
+        )
+
+        with self.assertRaisesRegex(ValueError, "must be one of"):
+            self.build()
+
     def test_explicit_openai_selection_overrides_complete_llm_configuration(self) -> None:
         self.write_env(
             "\n".join(

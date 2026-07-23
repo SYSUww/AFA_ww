@@ -24,7 +24,11 @@ from afa_agent.b_board.runner import (
     BAnswerGenerationError,
     BBoardActualRunner,
     _artifact_from_dict,
+    _calculation_semantic_query_terms,
+    _is_calculation_plan_structure_error,
+    _normalize_calculation_plan_structure,
     _normalize_calculation_numeric_literals,
+    _validate_calculation_result_semantics,
 )
 from afa_agent.client import LLMResponse
 from afa_agent.config import ModelConfig, RunConfig
@@ -154,6 +158,327 @@ class BBoardRunnerModeTests(unittest.TestCase):
 
         self.assertEqual(normalized, plan)
         self.assertEqual(changes, [])
+
+    def test_structure_normalization_repairs_args_literals_and_prunes_unused_derived_values(
+        self,
+    ) -> None:
+        plan = {
+            "variables": [
+                {
+                    "name": "金额",
+                    "value": "10",
+                    "value_type": "decimal",
+                    "unit": "元",
+                    "evidence_ids": ["u1"],
+                },
+                {
+                    "name": "数量",
+                    "value": "2",
+                    "value_type": "decimal",
+                    "unit": "",
+                    "evidence_ids": ["u1"],
+                },
+                {
+                    "name": "未落地派生值",
+                    "value": "500",
+                    "value_type": "decimal",
+                    "unit": "",
+                    "evidence_ids": ["u1"],
+                },
+            ],
+            "steps": [
+                {
+                    "id": "s1",
+                    "op": "div",
+                    "args": {
+                        "a": {"ref": "金额"},
+                        "b": {"ref": "数量"},
+                    },
+                },
+                {
+                    "id": "s2",
+                    "op": "mul",
+                    "args": {
+                        "a": {"ref": "s1"},
+                        "b": {
+                            "value": "100",
+                            "value_type": "decimal",
+                        },
+                    },
+                },
+            ],
+            "outputs": [{"source": "s2", "format": "decimal2"}],
+        }
+
+        normalized, changes = _normalize_calculation_plan_structure(plan)
+        result = CalculationExecutor().execute(
+            normalized,
+            expected_slots=1,
+            evidence_text_by_id={"u1": "金额为10元，数量为2。"},
+        )
+
+        self.assertEqual(result.answer_parts, ("500.00",))
+        self.assertEqual(
+            [item["name"] for item in normalized["variables"]],
+            ["金额", "数量"],
+        )
+        self.assertIsInstance(normalized["steps"][0]["args"], list)
+        self.assertEqual(
+            normalized["steps"][1]["args"][1]["literal"],
+            "100",
+        )
+        self.assertEqual(
+            {
+                item["reason"]
+                for item in changes
+            },
+            {
+                "default_empty_decision_summary",
+                "default_empty_supporting_evidence_ids",
+                "named_args_to_ordered_schema",
+                "numeric_literal_default_empty_unit",
+                "prune_non_output_dependencies",
+                "value_object_to_literal",
+            },
+        )
+
+    def test_structure_normalization_rewrites_explicit_step_aliases(self) -> None:
+        plan = {
+            "variables": [
+                {
+                    "name": "总额",
+                    "value": "100",
+                    "value_type": "decimal",
+                    "unit": "亿元",
+                    "evidence_ids": ["u1"],
+                },
+                {
+                    "name": "占比",
+                    "value": "60",
+                    "value_type": "decimal",
+                    "unit": "%",
+                    "evidence_ids": ["u1"],
+                },
+                {
+                    "name": "派生总额",
+                    "value": "60",
+                    "value_type": "decimal",
+                    "unit": "亿元",
+                    "evidence_ids": ["s1"],
+                },
+            ],
+            "steps": [
+                {
+                    "id": "s1",
+                    "op": "mul",
+                    "args": {
+                        "a": {"ref": "总额"},
+                        "b": {"ref": "占比"},
+                    },
+                }
+            ],
+            "outputs": [{"source": "派生总额", "format": "decimal2"}],
+        }
+
+        normalized, changes = _normalize_calculation_plan_structure(plan)
+        result = CalculationExecutor().execute(
+            normalized,
+            expected_slots=1,
+            evidence_text_by_id={"u1": "总额为100亿元，占比为60%。"},
+        )
+
+        self.assertEqual(result.answer_parts, ("60.00",))
+        self.assertNotIn(
+            "派生总额",
+            [item["name"] for item in normalized["variables"]],
+        )
+        self.assertEqual(normalized["outputs"][0]["source"], {"ref": "s1"})
+        self.assertIn(
+            "derived_variable_step_aliases",
+            [item["reason"] for item in changes],
+        )
+
+    def test_structure_normalization_repairs_count_and_inline_sort(self) -> None:
+        plan = {
+            "variables": [
+                {
+                    "name": "甲",
+                    "value": "1",
+                    "value_type": "decimal",
+                    "unit": "元",
+                    "evidence_ids": ["u1"],
+                },
+                {
+                    "name": "乙",
+                    "value": "2",
+                    "value_type": "decimal",
+                    "unit": "元",
+                    "evidence_ids": ["u1"],
+                },
+                {
+                    "name": "门槛",
+                    "value": "1",
+                    "value_type": "decimal",
+                    "unit": "元",
+                    "evidence_ids": ["u1"],
+                },
+            ],
+            "steps": [
+                {
+                    "id": "count",
+                    "op": "count_gte",
+                    "args": {
+                        "items": [{"ref": "甲"}, {"ref": "乙"}],
+                        "threshold": {"ref": "门槛"},
+                    },
+                }
+            ],
+            "outputs": [
+                {
+                    "source": "sort_desc",
+                    "format": "text",
+                    "items": [
+                        {"label": "甲", "source": {"ref": "甲"}},
+                        {"label": "乙", "source": {"ref": "乙"}},
+                    ],
+                },
+                {"source": "count", "format": "decimal0"},
+            ],
+        }
+
+        normalized, changes = _normalize_calculation_plan_structure(plan)
+        result = CalculationExecutor().execute(
+            normalized,
+            expected_slots=2,
+            evidence_text_by_id={"u1": "甲为1元，乙为2元，门槛为1元。"},
+        )
+
+        self.assertEqual(result.answer_parts, ("乙>甲", "2"))
+        count = next(
+            item for item in normalized["steps"] if item["id"] == "count"
+        )
+        self.assertEqual(count["threshold"], {"ref": "门槛"})
+        self.assertIsInstance(count["args"], list)
+        self.assertIn(
+            "inline_output_sort_to_step",
+            [item["reason"] for item in changes],
+        )
+
+    def test_structure_normalization_clears_absent_same_scale_units_only_for_ratio(
+        self,
+    ) -> None:
+        plan = {
+            "variables": [
+                {
+                    "name": "甲现金流",
+                    "value": "20",
+                    "value_type": "decimal",
+                    "unit": "千元",
+                    "evidence_ids": ["a"],
+                },
+                {
+                    "name": "甲收入",
+                    "value": "100",
+                    "value_type": "decimal",
+                    "unit": "千元",
+                    "evidence_ids": ["a"],
+                },
+            ],
+            "steps": [
+                {
+                    "id": "现金流率",
+                    "op": "div",
+                    "args": [
+                        {"ref": "甲现金流"},
+                        {"ref": "甲收入"},
+                    ],
+                }
+            ],
+            "outputs": [
+                {
+                    "source": {"ref": "现金流率"},
+                    "format": "percent2",
+                }
+            ],
+        }
+
+        normalized, changes = _normalize_calculation_plan_structure(
+            plan,
+            evidence_text_by_id={"a": "甲现金流为20，甲收入为100。"},
+        )
+        result = CalculationExecutor().execute(
+            normalized,
+            expected_slots=1,
+            evidence_text_by_id={"a": "甲现金流为20，甲收入为100。"},
+        )
+
+        self.assertEqual(result.answer_parts, ("20.00%",))
+        self.assertEqual(
+            [item["unit"] for item in normalized["variables"]],
+            ["", ""],
+        )
+        self.assertIn(
+            "clear_absent_same_scale_ratio_units",
+            [item["reason"] for item in changes],
+        )
+
+    def test_schema_errors_skip_retrieval_but_grounding_errors_do_not(self) -> None:
+        self.assertTrue(
+            _is_calculation_plan_structure_error(
+                ValueError("mul args must be a list")
+            )
+        )
+        self.assertFalse(
+            _is_calculation_plan_structure_error(
+                ValueError(
+                    "Variables are not grounded in cited evidence: 金额[value_not_found]"
+                )
+            )
+        )
+
+    def test_calculation_semantic_query_terms_cover_rule_evidence(self) -> None:
+        self.assertIn(
+            "中期分红",
+            _calculation_semantic_query_terms(
+                "两家公司2025年度全年每10股分红差额是多少？"
+            ),
+        )
+        self.assertIn(
+            "给付条件",
+            _calculation_semantic_query_terms(
+                "不同情形下累计身故保险金合计是多少？"
+            ),
+        )
+        self.assertEqual(
+            _calculation_semantic_query_terms("营业收入是多少？"),
+            "",
+        )
+
+    def test_percentage_point_question_rejects_ratio_output(self) -> None:
+        question = BQuestion(
+            qid="q-pct-point",
+            domain="fin",
+            split="B",
+            question="两家公司的指标相差多少个百分点？",
+            options={},
+            answer_format="freeform",
+            type="计算题",
+            answer_slots=1,
+            answer_slot_templates=("0.00",),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "percentage-point output must have percent_points value_kind",
+        ):
+            _validate_calculation_result_semantics(
+                question,
+                {"outputs": [{"value_kind": "ratio", "value": "0.10"}]},
+            )
+        _validate_calculation_result_semantics(
+            question,
+            {"outputs": [{"value_kind": "percent_points", "value": "10.00"}]},
+        )
 
     def test_reasoning_prompt_requires_explicit_auditable_structure(self) -> None:
         self.assertEqual(

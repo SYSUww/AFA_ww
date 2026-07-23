@@ -42,6 +42,33 @@ class BBoardCalculationTests(unittest.TestCase):
         self.assertEqual(result.answer_parts, ("30.00",))
         self.assertEqual(result.trace["outputs"][0]["value_kind"], "amount")
 
+    def test_grounding_accepts_exact_chinese_integer_wording(self):
+        result = CalculationExecutor().execute(
+            {
+                "variables": [
+                    {
+                        "name": "后续公告周期",
+                        "value": "30",
+                        "value_type": "decimal",
+                        "unit": "日",
+                        "evidence_ids": ["rule"],
+                    }
+                ],
+                "steps": [],
+                "outputs": [
+                    {
+                        "source": "后续公告周期",
+                        "format": "decimal0",
+                    }
+                ],
+            },
+            expected_slots=1,
+            evidence_text_by_id={"rule": "此后每三十日应当公告一次。"},
+        )
+
+        self.assertEqual(result.answer_parts, ("30",))
+        self.assertTrue(result.trace["grounding_verified"])
+
     def test_format_migration_guard_rejects_value_changes(self):
         self.assertTrue(_answers_differ_only_in_format(["40.05", "67.10"], ["40.05%", "67.1"]))
         self.assertFalse(_answers_differ_only_in_format(["0.08"], ["8.00%"]))
@@ -478,6 +505,88 @@ class BBoardCalculationTests(unittest.TestCase):
     def test_calculation_prompt_requires_explicit_amount_scale_conversion(self):
         self.assertIn("1亿元=10000万元", CALCULATION_SYSTEM_PROMPT)
         self.assertIn("1万人×1元=1万元", CALCULATION_SYSTEM_PROMPT)
+        self.assertIn("1亿元乘100000000", CALCULATION_SYSTEM_PROMPT)
+        self.assertIn("max(差额,0)", CALCULATION_SYSTEM_PROMPT)
+        self.assertIn("全年金额=中期已实施金额+年末剩余金额", CALCULATION_SYSTEM_PROMPT)
+        self.assertIn("supporting_evidence_ids", CALCULATION_SYSTEM_PROMPT)
+
+    def test_count_scale_conversion_exposes_mixed_yuan_and_wanyuan_subtraction(
+        self,
+    ):
+        plan = {
+            "variables": [
+                {
+                    "name": "APP自营GMV",
+                    "value": "21",
+                    "unit": "亿元",
+                    "evidence_ids": ["q"],
+                },
+                {
+                    "name": "会员人数",
+                    "value": "24.01",
+                    "unit": "万人",
+                    "evidence_ids": ["q"],
+                },
+                {
+                    "name": "人均消费",
+                    "value": "2960",
+                    "unit": "元",
+                    "evidence_ids": ["q"],
+                },
+            ],
+            "steps": [
+                {
+                    "id": "人数",
+                    "op": "mul",
+                    "args": [
+                        {"ref": "会员人数"},
+                        {"literal": "10000", "value_type": "decimal"},
+                    ],
+                },
+                {
+                    "id": "会员消费",
+                    "op": "mul",
+                    "args": [
+                        {"ref": "人数"},
+                        {"ref": "人均消费"},
+                    ],
+                },
+                {
+                    "id": "APP自营GMV万元",
+                    "op": "mul",
+                    "args": [
+                        {"ref": "APP自营GMV"},
+                        {"literal": "10000", "value_type": "decimal"},
+                    ],
+                },
+                {
+                    "id": "普通用户消费",
+                    "op": "sub",
+                    "args": [
+                        {"ref": "APP自营GMV万元"},
+                        {"ref": "会员消费"},
+                    ],
+                },
+            ],
+            "outputs": [
+                {
+                    "source": {"ref": "普通用户消费"},
+                    "format": "decimal2",
+                }
+            ],
+        }
+
+        with self.assertRaisesRegex(
+            CalculationPlanError,
+            "sub amount unit mismatch: 万元 vs 元",
+        ):
+            CalculationExecutor().execute(
+                plan,
+                expected_slots=1,
+                evidence_text_by_id={
+                    "q": "APP自营GMV为21亿元，会员人数24.01万人，人均消费2960元。"
+                },
+            )
 
     def test_percentage_and_sorting(self):
         result = CalculationExecutor().execute(

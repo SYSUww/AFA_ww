@@ -578,6 +578,19 @@ def _infer_multiplication_unit(
             if converted:
                 return converted
         return currency_units[0]
+    if len(count_units) == 1:
+        scalar = _explicit_scalar_product(
+            arg_specs,
+            arg_units,
+            scalar_values,
+        )
+        if scalar is not None and scalar != 0:
+            converted = _count_unit_for_factor(
+                _COUNT_UNIT_FACTORS[count_units[0]] / scalar
+            )
+            if converted:
+                return converted
+        return count_units[0]
     return _first_known_unit(arg_units) if len([unit for unit in arg_units if unit]) == 1 else ""
 
 
@@ -599,6 +612,19 @@ def _infer_division_unit(
         return numerator_unit
     if numerator_unit in _CURRENCY_UNIT_FACTORS and denominator_unit in _CURRENCY_UNIT_FACTORS:
         return ""
+    if numerator_unit in _COUNT_UNIT_FACTORS and not denominator_unit:
+        scalar = (
+            _scalar_decimal(arg_specs[1], scalar_values)
+            if len(arg_specs) > 1
+            else None
+        )
+        if scalar is not None and scalar != 0:
+            converted = _count_unit_for_factor(
+                _COUNT_UNIT_FACTORS[numerator_unit] * scalar
+            )
+            if converted:
+                return converted
+        return numerator_unit
     return numerator_unit
 
 
@@ -639,6 +665,17 @@ def _scalar_decimal(spec: Any, scalar_values: Mapping[str, Decimal]) -> Decimal 
 def _currency_unit_for_factor(factor: Decimal) -> str:
     return next(
         (unit for unit, candidate in _CURRENCY_UNIT_FACTORS.items() if candidate == factor),
+        "",
+    )
+
+
+def _count_unit_for_factor(factor: Decimal) -> str:
+    return next(
+        (
+            unit
+            for unit, candidate in _COUNT_UNIT_FACTORS.items()
+            if candidate == factor
+        ),
         "",
     )
 
@@ -1160,6 +1197,15 @@ def _value_appears(value: Any, value_type: str, text: str) -> bool:
                     return True
             except CalculationPlanError:
                 continue
+        if target == target.to_integral_value():
+            chinese = _integer_to_chinese(int(target))
+            if chinese and re.search(
+                rf"(?<![负零〇一二两三四五六七八九十百千万亿])"
+                rf"{re.escape(chinese)}"
+                rf"(?![零〇一二两三四五六七八九十百千万亿])",
+                text,
+            ):
+                return True
         return False
     if value_type == "date":
         target = _date(value)
@@ -1184,3 +1230,53 @@ def _unit_appears(unit: str, text: str) -> bool:
         "元/股": ("元/股", "元／股", "每股"),
     }
     return any(token in text for token in aliases.get(normalized, (normalized,)))
+
+
+def check_variable_grounding(
+    *,
+    name: str,
+    value: Any,
+    value_type: str,
+    unit: str,
+    evidence_ids: Sequence[str],
+    evidence_text_by_id: Mapping[str, str],
+) -> dict[str, Any]:
+    """Expose the executor's literal grounding result to plan normalizers."""
+
+    return _grounding_check(
+        name=name,
+        value=value,
+        value_type=value_type,
+        unit=unit,
+        evidence_ids=evidence_ids,
+        evidence_text_by_id=evidence_text_by_id,
+    )
+
+
+def _integer_to_chinese(value: int) -> str:
+    if value < 0:
+        positive = _integer_to_chinese(-value)
+        return f"负{positive}" if positive else ""
+    if value > 9999:
+        return ""
+    if value == 0:
+        return "零"
+    digits = "零一二三四五六七八九"
+    units = ("", "十", "百", "千")
+    chars: list[str] = []
+    pending_zero = False
+    for position in range(3, -1, -1):
+        factor = 10**position
+        digit = value // factor
+        value %= factor
+        if digit == 0:
+            if chars and value:
+                pending_zero = True
+            continue
+        if pending_zero:
+            chars.append("零")
+            pending_zero = False
+        if not (digit == 1 and position == 1 and not chars):
+            chars.append(digits[digit])
+        chars.append(units[position])
+    return "".join(chars)
