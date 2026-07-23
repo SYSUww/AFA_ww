@@ -1671,6 +1671,111 @@ class BBoardRunnerModeTests(unittest.TestCase):
         self.assertEqual(trace["refine_prompt_version"], SUBMISSION_REASONING_REFINE_PROMPT_VERSION)
         self.assertEqual(len(runner.client.messages), 2)
 
+    def test_reasoning_refinement_hard_fallback_avoids_retry(self) -> None:
+        runner = object.__new__(BBoardActualRunner)
+        runner.config = SimpleNamespace(
+            model=SimpleNamespace(
+                model_name="qwen3.7-plus-2026-05-26",
+                structured_output_mode="native_json_schema_strict",
+            )
+        )
+        runner.client = _QueuedClient(
+            [
+                _response(
+                    '{"logical_issues":"因果链缺少中间推导",'
+                    '"completeness_issues":null,"clarity_issues":[],'
+                    '"verification_questions":[],"must_preserve_facts":"证据支持A",'
+                    '"comment":"删除这个非契约字段"}',
+                    10,
+                    2,
+                    response_format_mode="native_json_schema_strict",
+                ),
+                _response(
+                    '{"answer_parts":"A","reasoning":"定位题干监管条件，'
+                    '证据直接支持该条件成立，因此可推出题干判断成立。",'
+                    '"comment":"删除这个非契约字段"}',
+                    12,
+                    3,
+                    response_format_mode="native_json_schema_strict",
+                ),
+            ]
+        )
+
+        result = runner.refine_submission_reasoning(
+            _question(),
+            _artifact(),
+        )
+
+        self.assertEqual(result.answer_parts, ["A"])
+        self.assertTrue(result.decision_summary.endswith("最终答案为A。"))
+        self.assertEqual(len(runner.client.messages), 2)
+        self.assertEqual(
+            [item["schema_name"] for item in runner.client.kwargs],
+            ["reasoning_feedback_v1", "reasoning_refine_v1"],
+        )
+        trace = result.decision_trace["submission_reasoning_refinement"]
+        self.assertEqual(trace["feedback_format_retry_count"], 0)
+        self.assertEqual(trace["refine_format_retry_count"], 0)
+        self.assertTrue(trace["feedback_payload_normalizations"])
+        self.assertTrue(trace["refine_payload_normalizations"])
+        self.assertEqual(
+            result.token_usage,
+            {
+                "prompt_tokens": 32,
+                "completion_tokens": 10,
+                "total_tokens": 42,
+            },
+        )
+
+    def test_reasoning_refinement_retries_only_invalid_feedback_stage(
+        self,
+    ) -> None:
+        runner = object.__new__(BBoardActualRunner)
+        runner.config = SimpleNamespace(
+            model=SimpleNamespace(model_name="qwen3.7-plus-2026-05-26")
+        )
+        runner.client = _QueuedClient(
+            [
+                _response(
+                    '{"logical_issues":[],"completeness_issues":[],'
+                    '"clarity_issues":[],"verification_questions":[]}',
+                    10,
+                    2,
+                ),
+                _response(
+                    '{"logical_issues":[],"completeness_issues":[],'
+                    '"clarity_issues":[],"verification_questions":[],'
+                    '"must_preserve_facts":["证据支持A"]}',
+                    11,
+                    2,
+                ),
+            ]
+        )
+
+        result = runner.refine_submission_reasoning(
+            _question(),
+            _artifact(),
+        )
+
+        self.assertEqual(result.answer_parts, ["A"])
+        self.assertEqual(len(runner.client.messages), 2)
+        self.assertIn(
+            "上一次响应未通过当前阶段",
+            runner.client.messages[1][1]["content"],
+        )
+        trace = result.decision_trace["submission_reasoning_refinement"]
+        self.assertEqual(trace["mode"], "preserved_no_material_issues")
+        self.assertEqual(trace["feedback_format_retry_count"], 1)
+        self.assertEqual(trace["refine_api_call_count"], 0)
+        self.assertEqual(
+            result.token_usage,
+            {
+                "prompt_tokens": 31,
+                "completion_tokens": 9,
+                "total_tokens": 40,
+            },
+        )
+
     def test_reasoning_refinement_preserves_original_when_feedback_has_no_issues(self) -> None:
         runner = object.__new__(BBoardActualRunner)
         runner.config = SimpleNamespace(model=SimpleNamespace(model_name="gpt-5.5"))
@@ -1741,6 +1846,12 @@ class BBoardRunnerModeTests(unittest.TestCase):
                     12,
                     3,
                 ),
+                _response(
+                    '{"answer_parts":["B"],"reasoning":"第二次响应仍然错误改变冻结答案，'
+                    '因此当前修订阶段必须失败，但冻结答案本身保持不变。"}',
+                    13,
+                    3,
+                ),
             ]
         )
 
@@ -1749,7 +1860,12 @@ class BBoardRunnerModeTests(unittest.TestCase):
 
         self.assertEqual(
             raised.exception.token_usage,
-            {"prompt_tokens": 32, "completion_tokens": 10, "total_tokens": 42},
+            {"prompt_tokens": 45, "completion_tokens": 13, "total_tokens": 58},
+        )
+        self.assertEqual(len(runner.client.messages), 3)
+        self.assertIn(
+            "上一次响应未通过当前阶段",
+            runner.client.messages[2][1]["content"],
         )
 
     def test_cli_defaults_to_submission_and_accepts_research(self) -> None:

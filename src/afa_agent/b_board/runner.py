@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 from afa_agent.b_board.calculation import (
     CalculationExecutor,
@@ -22,10 +22,18 @@ from afa_agent.b_board.calculation_schema import (
     validate_calculation_plan_schema,
 )
 from afa_agent.b_board.reasoning_schema import (
+    REASONING_FEEDBACK_SCHEMA,
+    REASONING_FEEDBACK_SCHEMA_VERSION,
+    REASONING_REFINE_SCHEMA,
+    REASONING_REFINE_SCHEMA_VERSION,
     SUBMISSION_REASONING_NORMALIZATION_VERSION,
     SUBMISSION_REASONING_SCHEMA,
     SUBMISSION_REASONING_SCHEMA_VERSION,
+    normalize_reasoning_feedback_payload,
+    normalize_reasoning_refine_payload,
     normalize_submission_reasoning_payload,
+    validate_reasoning_feedback_schema,
+    validate_reasoning_refine_schema,
     validate_submission_reasoning_schema,
 )
 from afa_agent.b_board.io import (
@@ -355,6 +363,83 @@ class BBoardActualRunner:
             "reasoning_api_usage_ledger": {
                 "call_count": len(usage_ledger.calls),
                 "calls": usage_ledger.calls,
+            },
+        }
+        return _refresh_combined_api_usage_ledger(artifact)
+
+    def refine_reasoning_one(
+        self,
+        question: BQuestion,
+        reasoning_artifact: BAnswerArtifact,
+    ) -> BAnswerArtifact:
+        """Refine only frozen reasoning and append the raw refinement usage."""
+
+        frozen = _artifact_from_dict(reasoning_artifact.to_dict())
+        frozen_signature = _answer_artifact_signature(frozen)
+        prior_reasoning_ledger = dict(
+            reasoning_artifact.decision_trace.get(
+                "reasoning_api_usage_ledger"
+            )
+            or {}
+        )
+        prior_reasoning_calls = [
+            dict(item)
+            for item in prior_reasoning_ledger.get("calls", [])
+            if isinstance(item, Mapping)
+        ]
+        with capture_llm_usage() as usage_ledger:
+            try:
+                artifact = self.refine_submission_reasoning(
+                    question,
+                    frozen,
+                )
+            except Exception as exc:
+                diagnostics = list(getattr(exc, "diagnostics", []))
+                diagnostics.append(
+                    {
+                        "stage": "api_usage_ledger",
+                        "pipeline_stage": "reasoning_refinement",
+                        "calls": usage_ledger.calls,
+                    }
+                )
+                raise BAnswerGenerationError(
+                    str(exc),
+                    token_usage=usage_ledger.total(),
+                    diagnostics=diagnostics,
+                ) from exc
+
+        if _answer_artifact_signature(artifact) != frozen_signature:
+            raise BAnswerGenerationError(
+                "Submission reasoning refinement mutated the frozen answer artifact",
+                token_usage=usage_ledger.total(),
+                diagnostics=[
+                    {
+                        "stage": "api_usage_ledger",
+                        "pipeline_stage": "reasoning_refinement",
+                        "calls": usage_ledger.calls,
+                    }
+                ],
+            )
+        refinement_usage = usage_ledger.total()
+        artifact.token_usage = _add_token_usage(
+            reasoning_artifact.token_usage,
+            refinement_usage,
+        )
+        reasoning_calls = _reindex_calls(
+            [*prior_reasoning_calls, *usage_ledger.calls]
+        )
+        artifact.decision_trace = {
+            **artifact.decision_trace,
+            "reasoning_refinement_stage": {
+                "status": "complete",
+                "answer_artifact_frozen": True,
+                "answer_artifact_sha256": frozen_signature,
+                "new_api_call_count": len(usage_ledger.calls),
+                "new_token_usage": refinement_usage,
+            },
+            "reasoning_api_usage_ledger": {
+                "call_count": len(reasoning_calls),
+                "calls": reasoning_calls,
             },
         }
         return _refresh_combined_api_usage_ledger(artifact)
@@ -1374,6 +1459,126 @@ class BBoardActualRunner:
             if str(normalized.get("unit_id", "")) not in existing_ids
         ][:12]
 
+    def _call_reasoning_refinement_contract(
+        self,
+        *,
+        base_messages: list[dict[str, str]],
+        stage: str,
+        prompt_version: str,
+        response_schema: Mapping[str, Any],
+        schema_name: str,
+        normalize_payload: Callable[
+            [Mapping[str, Any]],
+            tuple[dict[str, Any], list[dict[str, Any]]],
+        ],
+        validate_payload: Callable[[Mapping[str, Any]], None],
+        retry_instruction: str,
+    ) -> tuple[
+        dict[str, Any],
+        dict[str, int],
+        dict[str, Any],
+        list[dict[str, Any]],
+    ]:
+        """Normalize and validate one refinement stage before a scoped retry."""
+
+        usage = {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+        }
+        diagnostics: list[dict[str, Any]] = []
+        payload_normalizations: list[dict[str, Any]] = []
+        response_format_modes: list[str] = []
+        format_retry_count = 0
+        for format_attempt in range(1, 3):
+            messages = base_messages
+            if format_attempt > 1:
+                messages = [
+                    base_messages[0],
+                    {
+                        "role": "user",
+                        "content": (
+                            base_messages[1]["content"]
+                            + "\n\n上一次响应未通过当前阶段的结构契约。"
+                            + retry_instruction
+                        ),
+                    },
+                ]
+            if (
+                getattr(
+                    self.config.model,
+                    "structured_output_mode",
+                    "",
+                )
+                == STRUCTURED_OUTPUT_NATIVE
+            ):
+                response = self.client.chat_json(
+                    messages,
+                    response_schema=response_schema,
+                    schema_name=schema_name,
+                )
+            else:
+                response = self.client.chat_json(messages)
+            response_format_modes.append(response.response_format_mode)
+            usage = _add_token_usage(
+                usage,
+                response.token_usage.to_dict(),
+            )
+            diagnostic: dict[str, Any] = {
+                "stage": stage,
+                "format_attempt": format_attempt,
+                "prompt_version": prompt_version,
+                "schema_version": schema_name,
+                "response_format_mode": response.response_format_mode,
+                "response_preview": response.content[:1000],
+                "token_usage": response.token_usage.to_dict(),
+            }
+            diagnostics.append(diagnostic)
+            current_normalizations: list[dict[str, Any]] = []
+            try:
+                raw_payload = extract_json_object(response.content)
+                payload, current_normalizations = normalize_payload(
+                    raw_payload
+                )
+                diagnostic["payload_normalizations"] = (
+                    current_normalizations
+                )
+                validate_payload(payload)
+                if (
+                    response.token_usage.prompt_tokens <= 0
+                    or response.token_usage.completion_tokens <= 0
+                ):
+                    raise ValueError(
+                        f"{stage} API response is missing positive raw usage"
+                    )
+            except Exception as exc:
+                diagnostic["error_type"] = exc.__class__.__name__
+                diagnostic["error"] = str(exc)[:1000]
+                retryable = "missing positive raw usage" not in str(exc)
+                if format_attempt == 1 and retryable:
+                    format_retry_count += 1
+                    diagnostic["retry_action"] = (
+                        f"{stage}_only_same_evidence_no_answer_retry"
+                    )
+                    continue
+                raise BAnswerGenerationError(
+                    f"{stage} failed: {exc}",
+                    token_usage=usage,
+                    diagnostics=diagnostics,
+                ) from exc
+            payload_normalizations.extend(current_normalizations)
+            return (
+                payload,
+                usage,
+                {
+                    "api_call_count": len(diagnostics),
+                    "format_retry_count": format_retry_count,
+                    "response_format_modes": response_format_modes,
+                },
+                payload_normalizations,
+            )
+        raise AssertionError("reasoning refinement contract loop exhausted")
+
     def refine_submission_reasoning(
         self,
         question: BQuestion,
@@ -1381,14 +1586,19 @@ class BBoardActualRunner:
     ) -> BAnswerArtifact:
         """Run one evidence-grounded feedback/refine pass while freezing the answer."""
 
+        reasoning_evidence = (
+            artifact.reasoning_evidence_items or artifact.evidence_items
+        )
         evidence_payload = [
             {
                 "unit_id": str(item.get("unit_id", "")),
                 "doc_id": str(item.get("doc_id", "")),
-                "title": " > ".join(str(value) for value in item.get("title_path", [])),
+                "title": " > ".join(
+                    str(value) for value in item.get("title_path", [])
+                ),
                 "text": str(item.get("text", ""))[:1800],
             }
-            for item in artifact.evidence_items[:12]
+            for item in reasoning_evidence[:12]
         ]
         shared_payload = {
             "qid": question.qid,
@@ -1398,25 +1608,48 @@ class BBoardActualRunner:
             "reasoning": artifact.decision_summary,
             "evidence": evidence_payload,
         }
-        feedback_response = self.client.chat_json(
-            [
-                {"role": "system", "content": SUBMISSION_REASONING_FEEDBACK_SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": json.dumps(shared_payload, ensure_ascii=False, sort_keys=True),
-                },
-            ]
-        )
+        try:
+            feedback, feedback_usage, feedback_contract, feedback_normalizations = (
+                self._call_reasoning_refinement_contract(
+                    base_messages=[
+                        {
+                            "role": "system",
+                            "content": SUBMISSION_REASONING_FEEDBACK_SYSTEM_PROMPT,
+                        },
+                        {
+                            "role": "user",
+                            "content": json.dumps(
+                                shared_payload,
+                                ensure_ascii=False,
+                                sort_keys=True,
+                            ),
+                        },
+                    ],
+                    stage="submission_reasoning_feedback",
+                    prompt_version=SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
+                    response_schema=REASONING_FEEDBACK_SCHEMA,
+                    schema_name=REASONING_FEEDBACK_SCHEMA_VERSION,
+                    normalize_payload=normalize_reasoning_feedback_payload,
+                    validate_payload=validate_reasoning_feedback_schema,
+                    retry_instruction=(
+                        "只输出Schema要求的五个数组字段；没有问题时使用空数组，"
+                        "不要添加解释或其他字段。"
+                    ),
+                )
+            )
+        except BAnswerGenerationError as exc:
+            raise BAnswerGenerationError(
+                str(exc),
+                token_usage=_add_token_usage(
+                    artifact.token_usage,
+                    exc.token_usage,
+                ),
+                diagnostics=exc.diagnostics,
+            ) from exc
         combined_usage = _add_token_usage(
-            artifact.token_usage, feedback_response.token_usage.to_dict()
+            artifact.token_usage,
+            feedback_usage,
         )
-        diagnostics: list[dict[str, Any]] = [
-            {
-                "stage": "submission_reasoning_feedback",
-                "prompt_version": SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
-                "response_preview": feedback_response.content[:1000],
-            }
-        ]
         feedback_keys = (
             "logical_issues",
             "completeness_issues",
@@ -1424,29 +1657,39 @@ class BBoardActualRunner:
             "verification_questions",
             "must_preserve_facts",
         )
-        try:
-            feedback = extract_json_object(feedback_response.content)
-            if any(not isinstance(feedback.get(key), list) for key in feedback_keys):
-                raise ValueError("reasoning feedback is missing required list fields")
-            if (
-                feedback_response.token_usage.prompt_tokens <= 0
-                or feedback_response.token_usage.completion_tokens <= 0
-            ):
-                raise ValueError("reasoning feedback API response is missing positive raw usage")
-        except Exception as exc:
-            diagnostics[0]["error_type"] = exc.__class__.__name__
-            diagnostics[0]["error"] = str(exc)[:1000]
-            raise BAnswerGenerationError(
-                f"Submission reasoning feedback failed: {exc}",
-                token_usage=combined_usage,
-                diagnostics=diagnostics,
-            ) from exc
-
         material_feedback = bool(
             feedback["logical_issues"]
             or feedback["clarity_issues"]
             or len(feedback["completeness_issues"]) >= 2
         )
+        refinement_trace: dict[str, Any] = {
+            "feedback_prompt_version": (
+                SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION
+            ),
+            "feedback_schema_version": REASONING_FEEDBACK_SCHEMA_VERSION,
+            "refine_prompt_version": (
+                SUBMISSION_REASONING_REFINE_PROMPT_VERSION
+            ),
+            "refine_schema_version": REASONING_REFINE_SCHEMA_VERSION,
+            "policy_version": SUBMISSION_REASONING_REFINE_POLICY_VERSION,
+            "model_name": self.config.model.model_name,
+            "feedback": {key: feedback[key] for key in feedback_keys},
+            "feedback_token_usage": feedback_usage,
+            "feedback_payload_normalizations": feedback_normalizations,
+            "feedback_api_call_count": feedback_contract["api_call_count"],
+            "feedback_format_retry_count": (
+                feedback_contract["format_retry_count"]
+            ),
+            "feedback_response_format_modes": (
+                feedback_contract["response_format_modes"]
+            ),
+            "refine_token_usage": None,
+            "refine_payload_normalizations": [],
+            "refine_api_call_count": 0,
+            "refine_format_retry_count": 0,
+            "refine_response_format_modes": [],
+            "answer_parts_preserved": True,
+        }
         if not material_feedback:
             has_reported_issue = any(
                 feedback[key]
@@ -1458,23 +1701,14 @@ class BBoardActualRunner:
                 )
             )
             artifact.token_usage = combined_usage
+            refinement_trace["mode"] = (
+                "preserved_conservative_gate"
+                if has_reported_issue
+                else "preserved_no_material_issues"
+            )
             artifact.decision_trace = {
                 **artifact.decision_trace,
-                "submission_reasoning_refinement": {
-                    "feedback_prompt_version": SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
-                    "refine_prompt_version": SUBMISSION_REASONING_REFINE_PROMPT_VERSION,
-                    "policy_version": SUBMISSION_REASONING_REFINE_POLICY_VERSION,
-                    "model_name": self.config.model.model_name,
-                    "mode": (
-                        "preserved_conservative_gate"
-                        if has_reported_issue
-                        else "preserved_no_material_issues"
-                    ),
-                    "feedback": {key: feedback[key] for key in feedback_keys},
-                    "feedback_token_usage": feedback_response.token_usage.to_dict(),
-                    "refine_token_usage": None,
-                    "answer_parts_preserved": True,
-                },
+                "submission_reasoning_refinement": refinement_trace,
             }
             return artifact
 
@@ -1482,60 +1716,86 @@ class BBoardActualRunner:
             **shared_payload,
             "feedback": {key: feedback[key] for key in feedback_keys},
         }
-        refine_response = self.client.chat_json(
-            [
-                {"role": "system", "content": SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": json.dumps(refine_payload, ensure_ascii=False, sort_keys=True),
-                },
-            ]
-        )
-        combined_usage = _add_token_usage(combined_usage, refine_response.token_usage.to_dict())
-        diagnostics.append(
-            {
-                "stage": "submission_reasoning_refine",
-                "prompt_version": SUBMISSION_REASONING_REFINE_PROMPT_VERSION,
-                "response_preview": refine_response.content[:1000],
-            }
-        )
-        try:
-            payload = extract_json_object(refine_response.content)
-            answer_parts = payload.get("answer_parts")
-            if not isinstance(answer_parts, list) or [str(item) for item in answer_parts] != artifact.answer_parts:
-                raise ValueError("submission reasoning refinement changed answer_parts")
-            reasoning = str(payload.get("reasoning", "")).strip()
+
+        def validate_refine_payload(payload: Mapping[str, Any]) -> None:
+            validate_reasoning_refine_schema(payload)
+            answer_parts = payload["answer_parts"]
+            if [str(item) for item in answer_parts] != artifact.answer_parts:
+                raise ValueError(
+                    "submission reasoning refinement changed answer_parts"
+                )
+            reasoning = str(payload["reasoning"]).strip()
             if len(re.sub(r"\s+", "", reasoning)) < 20:
-                raise ValueError("refined submission reasoning is shorter than 20 non-whitespace characters")
-            if (
-                refine_response.token_usage.prompt_tokens <= 0
-                or refine_response.token_usage.completion_tokens <= 0
-            ):
-                raise ValueError("reasoning refinement API response is missing positive raw usage")
-        except Exception as exc:
-            diagnostics[-1]["error_type"] = exc.__class__.__name__
-            diagnostics[-1]["error"] = str(exc)[:1000]
+                raise ValueError(
+                    "refined submission reasoning is shorter than 20 "
+                    "non-whitespace characters"
+                )
+
+        try:
+            payload, refine_usage, refine_contract, refine_normalizations = (
+                self._call_reasoning_refinement_contract(
+                    base_messages=[
+                        {
+                            "role": "system",
+                            "content": SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT,
+                        },
+                        {
+                            "role": "user",
+                            "content": json.dumps(
+                                refine_payload,
+                                ensure_ascii=False,
+                                sort_keys=True,
+                            ),
+                        },
+                    ],
+                    stage="submission_reasoning_refine",
+                    prompt_version=SUBMISSION_REASONING_REFINE_PROMPT_VERSION,
+                    response_schema=REASONING_REFINE_SCHEMA,
+                    schema_name=REASONING_REFINE_SCHEMA_VERSION,
+                    normalize_payload=lambda raw: (
+                        normalize_reasoning_refine_payload(
+                            raw,
+                            frozen_answer_parts=artifact.answer_parts,
+                        )
+                    ),
+                    validate_payload=validate_refine_payload,
+                    retry_instruction=(
+                        "不要改变frozen_answer_parts；只输出answer_parts和"
+                        "reasoning两个字段，answer_parts必须是数组。"
+                    ),
+                )
+            )
+        except BAnswerGenerationError as exc:
             raise BAnswerGenerationError(
-                f"Submission reasoning refinement failed: {exc}",
-                token_usage=combined_usage,
-                diagnostics=diagnostics,
+                str(exc),
+                token_usage=_add_token_usage(
+                    combined_usage,
+                    exc.token_usage,
+                ),
+                diagnostics=exc.diagnostics,
             ) from exc
+        combined_usage = _add_token_usage(combined_usage, refine_usage)
+        reasoning = str(payload["reasoning"]).strip()
 
         artifact.decision_summary = reasoning
         artifact.token_usage = combined_usage
+        refinement_trace.update(
+            {
+                "mode": "refined_material_issues",
+                "refine_token_usage": refine_usage,
+                "refine_payload_normalizations": refine_normalizations,
+                "refine_api_call_count": refine_contract["api_call_count"],
+                "refine_format_retry_count": (
+                    refine_contract["format_retry_count"]
+                ),
+                "refine_response_format_modes": (
+                    refine_contract["response_format_modes"]
+                ),
+            }
+        )
         artifact.decision_trace = {
             **artifact.decision_trace,
-            "submission_reasoning_refinement": {
-                "feedback_prompt_version": SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
-                "refine_prompt_version": SUBMISSION_REASONING_REFINE_PROMPT_VERSION,
-                "policy_version": SUBMISSION_REASONING_REFINE_POLICY_VERSION,
-                "model_name": self.config.model.model_name,
-                "mode": "refined_material_issues",
-                "feedback": {key: feedback[key] for key in feedback_keys},
-                "feedback_token_usage": feedback_response.token_usage.to_dict(),
-                "refine_token_usage": refine_response.token_usage.to_dict(),
-                "answer_parts_preserved": True,
-            },
+            "submission_reasoning_refinement": refinement_trace,
         }
         return artifact
 
@@ -4051,6 +4311,7 @@ def _answer_artifact_signature(artifact: BAnswerArtifact) -> str:
         "api_usage_ledger",
         "reasoning_api_usage_ledger",
         "reasoning_retry_failure_history",
+        "reasoning_refinement_stage",
         "reasoning_stage",
         "submission_reasoning",
         "submission_reasoning_refinement",

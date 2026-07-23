@@ -10,6 +10,8 @@ SUBMISSION_REASONING_SCHEMA_VERSION = "submission_reasoning_v1"
 SUBMISSION_REASONING_NORMALIZATION_VERSION = (
     "deterministic_payload_normalization_v3_explicit_frozen_conclusion"
 )
+REASONING_FEEDBACK_SCHEMA_VERSION = "reasoning_feedback_v1"
+REASONING_REFINE_SCHEMA_VERSION = "reasoning_refine_v1"
 
 SUBMISSION_REASONING_SCHEMA: dict[str, Any] = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -41,6 +43,52 @@ SUBMISSION_REASONING_SCHEMA: dict[str, Any] = {
 
 _VALIDATOR = Draft202012Validator(SUBMISSION_REASONING_SCHEMA)
 _ALLOWED_KEYS = frozenset(SUBMISSION_REASONING_SCHEMA["properties"])
+
+REASONING_FEEDBACK_SCHEMA: dict[str, Any] = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": False,
+    "required": [
+        "logical_issues",
+        "completeness_issues",
+        "clarity_issues",
+        "verification_questions",
+        "must_preserve_facts",
+    ],
+    "properties": {
+        field_name: {
+            "type": "array",
+            "items": {"type": "string"},
+        }
+        for field_name in (
+            "logical_issues",
+            "completeness_issues",
+            "clarity_issues",
+            "verification_questions",
+            "must_preserve_facts",
+        )
+    },
+}
+
+REASONING_REFINE_SCHEMA: dict[str, Any] = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["answer_parts", "reasoning"],
+    "properties": {
+        "answer_parts": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string"},
+        },
+        "reasoning": {"type": "string"},
+    },
+}
+
+_FEEDBACK_VALIDATOR = Draft202012Validator(REASONING_FEEDBACK_SCHEMA)
+_REFINE_VALIDATOR = Draft202012Validator(REASONING_REFINE_SCHEMA)
+_FEEDBACK_KEYS = tuple(REASONING_FEEDBACK_SCHEMA["properties"])
+_REFINE_KEYS = frozenset(REASONING_REFINE_SCHEMA["properties"])
 
 
 def normalize_submission_reasoning_payload(
@@ -144,8 +192,158 @@ def normalize_submission_reasoning_payload(
 
 
 def validate_submission_reasoning_schema(payload: Mapping[str, Any]) -> None:
+    _validate_schema(
+        payload,
+        validator=_VALIDATOR,
+        contract_name="SubmissionReasoning",
+    )
+
+
+def normalize_reasoning_feedback_payload(
+    payload: Mapping[str, Any],
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Normalize representation-only feedback drift before a model retry."""
+
+    normalized = copy.deepcopy(dict(payload))
+    normalizations: list[dict[str, Any]] = []
+    extra_keys = sorted(str(key) for key in normalized if key not in _FEEDBACK_KEYS)
+    if extra_keys:
+        normalized = {
+            key: value for key, value in normalized.items() if key in _FEEDBACK_KEYS
+        }
+        normalizations.append(
+            {
+                "reason": "drop_noncontract_fields",
+                "removed_keys": extra_keys,
+            }
+        )
+    for field_name in _FEEDBACK_KEYS:
+        value = normalized.get(field_name)
+        if value is None and field_name in normalized:
+            normalized[field_name] = []
+            normalizations.append(
+                {
+                    "reason": "null_feedback_field_to_empty_array",
+                    "field": field_name,
+                }
+            )
+        elif isinstance(value, str) and value.strip():
+            normalized[field_name] = [value.strip()]
+            normalizations.append(
+                {
+                    "reason": "feedback_string_to_array",
+                    "field": field_name,
+                }
+            )
+    return normalized, normalizations
+
+
+def validate_reasoning_feedback_schema(payload: Mapping[str, Any]) -> None:
+    _validate_schema(
+        payload,
+        validator=_FEEDBACK_VALIDATOR,
+        contract_name="ReasoningFeedback",
+    )
+
+
+def normalize_reasoning_refine_payload(
+    payload: Mapping[str, Any],
+    *,
+    frozen_answer_parts: Sequence[str],
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Repair only answer-shape and explicit-conclusion representation drift."""
+
+    normalized = copy.deepcopy(dict(payload))
+    normalizations: list[dict[str, Any]] = []
+    extra_keys = sorted(str(key) for key in normalized if key not in _REFINE_KEYS)
+    if extra_keys:
+        normalized = {
+            key: value for key, value in normalized.items() if key in _REFINE_KEYS
+        }
+        normalizations.append(
+            {
+                "reason": "drop_noncontract_fields",
+                "removed_keys": extra_keys,
+            }
+        )
+
+    expected = [str(item) for item in frozen_answer_parts]
+    answer_parts = normalized.get("answer_parts")
+    if (
+        isinstance(answer_parts, str)
+        and len(expected) == 1
+        and answer_parts == expected[0]
+    ):
+        normalized["answer_parts"] = [answer_parts]
+        normalizations.append(
+            {"reason": "single_frozen_answer_string_to_array"}
+        )
+    elif (
+        isinstance(answer_parts, list)
+        and len(expected) == 1
+        and len(answer_parts) > 1
+        and all(isinstance(item, str) for item in answer_parts)
+        and "".join(answer_parts) == expected[0]
+    ):
+        normalized["answer_parts"] = [expected[0]]
+        normalizations.append(
+            {
+                "reason": "join_exact_split_single_slot_answer_parts",
+                "part_count": len(answer_parts),
+            }
+        )
+
+    reasoning = normalized.get("reasoning")
+    if (
+        normalized.get("answer_parts") == expected
+        and isinstance(reasoning, str)
+        and reasoning.strip()
+    ):
+        compact_reasoning = "".join(reasoning.split()).replace(",", "")
+        missing_parts = [
+            part
+            for part in expected
+            if "".join(part.split()).replace(",", "") not in compact_reasoning
+        ]
+        if missing_parts:
+            separator = (
+                ""
+                if reasoning.rstrip().endswith(("。", "！", "？", ";", "；"))
+                else "。"
+            )
+            conclusion = (
+                f"最终答案为{expected[0]}。"
+                if len(expected) == 1
+                else f"最终答案依次为{'；'.join(expected)}。"
+            )
+            normalized["reasoning"] = (
+                f"{reasoning.rstrip()}{separator}{conclusion}"
+            )
+            normalizations.append(
+                {
+                    "reason": "append_exact_frozen_answer_conclusion",
+                    "missing_parts": missing_parts,
+                }
+            )
+    return normalized, normalizations
+
+
+def validate_reasoning_refine_schema(payload: Mapping[str, Any]) -> None:
+    _validate_schema(
+        payload,
+        validator=_REFINE_VALIDATOR,
+        contract_name="ReasoningRefine",
+    )
+
+
+def _validate_schema(
+    payload: Mapping[str, Any],
+    *,
+    validator: Draft202012Validator,
+    contract_name: str,
+) -> None:
     errors = sorted(
-        _VALIDATOR.iter_errors(dict(payload)),
+        validator.iter_errors(dict(payload)),
         key=lambda item: [str(part) for part in item.absolute_path],
     )
     if not errors:
@@ -153,5 +351,5 @@ def validate_submission_reasoning_schema(payload: Mapping[str, Any]) -> None:
     error = errors[0]
     path = ".".join(str(part) for part in error.absolute_path) or "<root>"
     raise ValueError(
-        f"SubmissionReasoning schema violation at {path}: {error.message}"
+        f"{contract_name} schema violation at {path}: {error.message}"
     )

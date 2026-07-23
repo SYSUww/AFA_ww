@@ -34402,3 +34402,252 @@
   ]
 }
 ```
+
+## b-loop-qwen37-reasoning-refinement-structured-output-contract-a1
+
+- recorded_at: `2026-07-23T22:55:14+00:00`
+
+```json
+{
+  "approach": "先读取日志，再为reasoning feedback与refine分别加入版本化strict Schema、确定性representation归一化、Schema再校验和同阶段最多一次格式重试；新增refine_reasoning_one冻结答案封装与逐调用usage合并。在线只对最低两题res_b_009、reg_b_018执行Qwen3.7 reasoning-only反馈/修订，并用固定GPT-5.6单独重评。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_reasoning_refinement_structured_a1_lowtail2",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "answer_stage_retry": false,
+          "base_commit": "5019cae",
+          "evidence_retrieval_on_format_error": false,
+          "fallback_policy": "deterministic_normalize_validate_then_stage_only_retry",
+          "feedback_schema": "reasoning_feedback_v1",
+          "model": "qwen3.7-plus-2026-05-26",
+          "reference_answer_access": false,
+          "refine_schema": "reasoning_refine_v1"
+        },
+        "domains": [
+          "regulatory",
+          "research"
+        ],
+        "hypothesis": "对reasoning低分题执行反馈与修订前，先给两个子阶段加入原生strict schema、本地确定性格式归一化和同阶段最多一次重试，可避免模型格式漂移浪费调用，同时保证冻结答案、证据和答案阶段不被重跑。",
+        "pipeline_stage": "submission_reasoning_feedback_and_refine",
+        "question_types": [
+          "calculation",
+          "multi"
+        ],
+        "root_cause_cluster": "qwen37_reasoning_refinement_format_drift",
+        "target_qids": [
+          "reg_b_018",
+          "res_b_009"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "59f63afcb877da749abbcf2e8421398989bc5fe8f767b7423843ca20739941b7",
+    "schema_version": 1,
+    "semantic_sha256": "773a8272481a7b239023751b61458dc8b74bb2ff440f62a8de8d723d4934bb77",
+    "sha256": "c7af563683e9e8f64615fc8cfb35e7c3655841f4fb9737341b4feb6af1d1a097"
+  },
+  "change_vector": {
+    "answer_stage_retry": false,
+    "base_commit": "5019cae",
+    "evidence_retrieval_on_format_error": false,
+    "fallback_policy": "deterministic_normalize_validate_then_stage_only_retry",
+    "feedback_schema": "reasoning_feedback_v1",
+    "model": "qwen3.7-plus-2026-05-26",
+    "reference_answer_access": false,
+    "refine_schema": "reasoning_refine_v1"
+  },
+  "direction_id": "qwen37_reasoning_refinement_structured_output_contract",
+  "domains": [
+    "research",
+    "regulatory"
+  ],
+  "effect": "基础设施目标达成：在线3次Qwen调用全部为native_json_schema_strict，格式重试0，答案阶段调用0，冻结答案变化0；合成usage逐调用可加总。质量候选未晋级：res_b_009实际改写后reasoning 84.6667降至83.0000，新增25099 Token；reg_b_018被保守门禁保持原文。",
+  "experiment_id": "b-loop-qwen37-reasoning-refinement-structured-output-contract-a1",
+  "failure_analysis": "res_b_009反馈同时提出逻辑、完整性、清晰度多个问题，修订器把更多细节堆入摘要，完整性88升91，但逻辑76降72、清晰度90降86，说明“多问题一次性扩写”恶化了主因果链且Token代价过高。reg_b_018原文未变却影子分88.6667重评为94.6667，属于评测波动，按冻结因果累积规则继承旧分，不能记为+6收益。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "answer_stage_retry": false,
+            "base_commit": "5019cae",
+            "evidence_retrieval_on_format_error": false,
+            "fallback_policy": "deterministic_normalize_validate_then_stage_only_retry",
+            "feedback_schema": "reasoning_feedback_v1",
+            "model": "qwen3.7-plus-2026-05-26",
+            "reference_answer_access": false,
+            "refine_schema": "reasoning_refine_v1"
+          },
+          "domains": [
+            "regulatory",
+            "research"
+          ],
+          "hypothesis": "对reasoning低分题执行反馈与修订前，先给两个子阶段加入原生strict schema、本地确定性格式归一化和同阶段最多一次重试，可避免模型格式漂移浪费调用，同时保证冻结答案、证据和答案阶段不被重跑。",
+          "pipeline_stage": "submission_reasoning_feedback_and_refine",
+          "question_types": [
+            "calculation",
+            "multi"
+          ],
+          "root_cause_cluster": "qwen37_reasoning_refinement_format_drift",
+          "target_qids": [
+            "reg_b_018",
+            "res_b_009"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "59f63afcb877da749abbcf2e8421398989bc5fe8f767b7423843ca20739941b7",
+      "schema_version": 1,
+      "semantic_sha256": "773a8272481a7b239023751b61458dc8b74bb2ff440f62a8de8d723d4934bb77",
+      "sha256": "c7af563683e9e8f64615fc8cfb35e7c3655841f4fb9737341b4feb6af1d1a097"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "answer_stage_retry": false,
+              "base_commit": "5019cae",
+              "evidence_retrieval_on_format_error": false,
+              "fallback_policy": "deterministic_normalize_validate_then_stage_only_retry",
+              "feedback_schema": "reasoning_feedback_v1",
+              "model": "qwen3.7-plus-2026-05-26",
+              "reference_answer_access": false,
+              "refine_schema": "reasoning_refine_v1"
+            },
+            "domains": [
+              "regulatory",
+              "research"
+            ],
+            "hypothesis": "对reasoning低分题执行反馈与修订前，先给两个子阶段加入原生strict schema、本地确定性格式归一化和同阶段最多一次重试，可避免模型格式漂移浪费调用，同时保证冻结答案、证据和答案阶段不被重跑。",
+            "pipeline_stage": "submission_reasoning_feedback_and_refine",
+            "question_types": [
+              "calculation",
+              "multi"
+            ],
+            "root_cause_cluster": "qwen37_reasoning_refinement_format_drift",
+            "target_qids": [
+              "reg_b_018",
+              "res_b_009"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "59f63afcb877da749abbcf2e8421398989bc5fe8f767b7423843ca20739941b7",
+        "schema_version": 1,
+        "semantic_sha256": "773a8272481a7b239023751b61458dc8b74bb2ff440f62a8de8d723d4934bb77",
+        "sha256": "c7af563683e9e8f64615fc8cfb35e7c3655841f4fb9737341b4feb6af1d1a097"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "execute",
+      "reason": "No comparable historical experiment was found",
+      "related_experiment_ids": [],
+      "similarity": null
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "ab9d60e738a93f551829c9d5141566b302c956128d9bdb063eb2f0504d000581",
+      "size": 1364238
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "44697092b72c8fe5cf974b7624e3aaa1b65d6d591ff16210d5aed51ba83ea2fd",
+      "size": 1118715
+    },
+    "related_log_sections": [
+      "b-loop-i023-gpt56-answer-error-audit-v2",
+      "B0-actual-evaluation",
+      "b-loop-calculation_failure_recovery-a1-v6-replay-legacy19",
+      "b-loop-calculation_failure_recovery-a2-named-date-args",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a1",
+      "b-loop-regulatory-composite-clause-dedup-coverage-a2-effective-reporting-fee",
+      "b-loop-financial-reports-company-year-metric-bundle-a1",
+      "b-loop-financial-contracts-subject-clause-binding-a2-option-subjects",
+      "b-loop-financial-contracts-subject-clause-binding-a3-full-bundles",
+      "b-loop-research-financial-multi-clause-evidence-bundle-a1",
+      "b-loop-research-cross-industry-technology-path-bundle-a1",
+      "b-loop-calculation-failure-recovery-a3-incumbent-trace-revalidation",
+      "b-loop-insurance-product-identity-evidence-binding-a1",
+      "b-loop-research-question-precision-override-a1",
+      "b-loop-research-remaining-choice-evidence-coverage-a1",
+      "b-loop-financial-reports-claim-conditioned-evidence-alignment-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-a1",
+      "b-loop-research-institutional-change-effect-res-b-008-b1",
+      "b-loop-research-structural-cost-reduction-res-b-009-a1",
+      "b-loop-research-staged-autonomy-direct-entailment-res-b-017-a1",
+      "b-loop-financial-contract-full-convertible-subject-extraction-fc-b-018-a1",
+      "b-loop-i023-suspect-case-optimization-v3",
+      "b-loop-answer-reasoning-stage-decoupling-a1",
+      "b-loop-qwen37-integrated-full100-candidate-a3"
+    ],
+    "reviewed_at": "2026-07-23T22:41:42+00:00"
+  },
+  "hypothesis": "对reasoning低分题执行反馈与修订前，先给两个子阶段加入原生strict Schema、本地确定性格式归一化和同阶段最多一次重试，可避免模型格式漂移浪费调用，同时保证冻结答案、证据和答案阶段不被重跑。",
+  "material_delta": {
+    "refinement_local_hard_fallback": true,
+    "refinement_native_structured_output": true,
+    "stage_scoped_format_retry": true
+  },
+  "metrics": {
+    "answer_parts_changed_count": 0,
+    "answer_stage_api_call_count": 0,
+    "compileall_passed": true,
+    "format_retry_count": 0,
+    "full100_causal_reasoning_score_after": 95.71666666666667,
+    "full100_reasoning_score_before": 95.73333333333333,
+    "full100_token_efficiency_if_res_patch_applied": 72.01344,
+    "full100_token_if_res_patch_applied": 1399328,
+    "git_diff_check_passed": true,
+    "native_strict_call_count": 3,
+    "new_qwen_api_call_count": 3,
+    "new_qwen_token_total": 26219,
+    "official_accuracy": null,
+    "official_submission_count": 0,
+    "official_total_score": null,
+    "official_upload_performed": false,
+    "online_payload_normalization_count": 0,
+    "reg_b_018_causal_score_after": 88.66666666666667,
+    "reg_b_018_raw_reevaluation_score": 94.66666666666667,
+    "reg_b_018_reasoning_changed": false,
+    "reg_b_018_score_before": 88.66666666666667,
+    "res_b_009_new_token_total": 25099,
+    "res_b_009_reasoning_changed": true,
+    "res_b_009_score_after": 83.0,
+    "res_b_009_score_before": 84.66666666666667,
+    "res_b_009_score_delta": -1.6666666666666714,
+    "synthetic_hard_fallback_without_retry_verified": true,
+    "synthetic_stage_only_retry_verified": true,
+    "target_causal_score_after": 85.83333333333334,
+    "target_causal_score_delta": -0.8333333333333286,
+    "target_qids": [
+      "res_b_009",
+      "reg_b_018"
+    ],
+    "target_score_before": 86.66666666666667,
+    "tests_passed": 336,
+    "usage_complete": true
+  },
+  "next_step": "保留并推送refinement strict Schema与阶段隔离基础设施，但拒绝本轮reasoning patch。A2只处理res_b_009：把修订门禁改为单一最高优先级问题、限制长度并禁止引入原摘要未使用的新旁支事实；若仍不提升则停止该题自修订。reg_b_018不再重复改写。",
+  "pipeline_stage": "submission_reasoning_feedback_and_refine",
+  "promotion_result": "promote_format_contract_only_reject_reasoning_patch",
+  "question_types": [
+    "multi",
+    "calculation"
+  ],
+  "recorded_at": "2026-07-23T22:55:14+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "qwen37_reasoning_refinement_format_drift",
+  "status": "completed_mixed_not_promoted",
+  "submission_effect": "local_reasoning_patch_rejected_not_officially_uploaded",
+  "target_qids": [
+    "res_b_009",
+    "reg_b_018"
+  ]
+}
+```
