@@ -34141,3 +34141,264 @@
   ]
 }
 ```
+
+## b-loop-qwen37-integrated-full100-candidate-a3
+
+- recorded_at: `2026-07-23T22:39:32+00:00`
+
+```json
+{
+  "approach": "重读实验日志后，将90题A2、8题精确冻结reasoning补丁、reg_b_015=AC证据链产物、res_b_005计算checkpoint按qid与逐调用usage合成100题；再以代码仅追加冻结答案结论的28题覆盖源重组，不改答案、原reasoning正文或usage。对最终CSV运行固定GPT-5.6离线影子评测和Qwen候选终检。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_integrated_full100_candidate_a3_reasoning_fixed",
+  "candidate_fingerprint": {
+    "components": {
+      "context": {},
+      "identity": {
+        "change_vector": {
+          "assembly": "usage_verified_four_source_composite_v1",
+          "base_commit": "72ce844",
+          "model": "qwen3.7-plus-2026-05-26",
+          "official_answer_lock_injection": false,
+          "reasoning_normalization": "deterministic_payload_normalization_v3_explicit_frozen_conclusion",
+          "reasoning_shadow_judge": "gpt-5.6",
+          "reference_answer_access": false,
+          "structured_output_mode": "native_json_schema_strict"
+        },
+        "domains": [
+          "financial_contracts",
+          "financial_reports",
+          "insurance",
+          "regulatory",
+          "research"
+        ],
+        "hypothesis": "将a2中90题完整产物、8题已冻结答案reasoning补丁、reg_b_015证据链答案和res_b_005已复核计算checkpoint按逐调用usage合成，再用确定性冻结结论兜底修复reasoning终结格式，可形成100题qwen3.7完整候选并完成gpt-5.6影子评分，同时不向生产prompt注入pseudo99或官网答案锁。",
+        "pipeline_stage": "end_to_end_candidate_validation",
+        "question_types": [
+          "calculation",
+          "extraction",
+          "mcq",
+          "multi",
+          "tf"
+        ],
+        "root_cause_cluster": "integrated_candidate_completeness_and_score",
+        "target_qids": [
+          "all_100"
+        ]
+      }
+    },
+    "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "direction_sha256": "ee2eb3df189b9ad92f3faec01a8b73fe0b0395d1c8c69ff74406d9685758ee96",
+    "schema_version": 1,
+    "semantic_sha256": "a845f6621e5e2ae01bbe3926f9f3bb0fd4ae45ada0bd883ec8b4530e034b6295",
+    "sha256": "3e0c844b08977ffdb1b94948effbc16f7e25929cb2fcfa1c3ed22951b14c0fdf"
+  },
+  "change_vector": {
+    "assembly": "usage_verified_four_source_composite_v1",
+    "base_commit": "72ce844",
+    "model": "qwen3.7-plus-2026-05-26",
+    "official_answer_lock_injection": false,
+    "reasoning_normalization": "deterministic_payload_normalization_v3_explicit_frozen_conclusion",
+    "reasoning_shadow_judge": "gpt-5.6",
+    "reference_answer_access": false,
+    "structured_output_mode": "native_json_schema_strict"
+  },
+  "direction_id": "qwen37_integrated_full100_candidate",
+  "domains": [
+    "financial_contracts",
+    "financial_reports",
+    "insurance",
+    "regulatory",
+    "research"
+  ],
+  "effect": "得到100/100完整、Qwen3.7单一生产模型、247次可追溯原始调用的候选；reasoning格式遗漏26降至0，GPT-5.6影子评测100题全成功，reasoning=95.7333，Token效率=72.51542。与pseudo99参考等价96/100，但它不是官网准确率。",
+  "experiment_id": "b-loop-qwen37-integrated-full100-candidate-a3",
+  "failure_analysis": "候选不能晋级：ins_b_016生产证据与Qwen稳定支持ABD，但既有官网提交方程锁定BD，终检因此报official_answer_lock_regression。其余fc_b_014、fin_b_018、ins_b_003只是不匹配pseudo99，不能当作官网错误。当前未获授权，不得把BD作为隐藏标签注入Qwen或伪装成证据结论。",
+  "history_review": {
+    "candidate_fingerprint": {
+      "components": {
+        "context": {},
+        "identity": {
+          "change_vector": {
+            "assembly": "usage_verified_four_source_composite_v1",
+            "base_commit": "72ce844",
+            "model": "qwen3.7-plus-2026-05-26",
+            "official_answer_lock_injection": false,
+            "reasoning_normalization": "deterministic_payload_normalization_v3_explicit_frozen_conclusion",
+            "reasoning_shadow_judge": "gpt-5.6",
+            "reference_answer_access": false,
+            "structured_output_mode": "native_json_schema_strict"
+          },
+          "domains": [
+            "financial_contracts",
+            "financial_reports",
+            "insurance",
+            "regulatory",
+            "research"
+          ],
+          "hypothesis": "将a2中90题完整产物、8题已冻结答案reasoning补丁、reg_b_015证据链答案和res_b_005已复核计算checkpoint按逐调用usage合成，再用确定性冻结结论兜底修复reasoning终结格式，可形成100题qwen3.7完整候选并完成gpt-5.6影子评分，同时不向生产prompt注入pseudo99或官网答案锁。",
+          "pipeline_stage": "end_to_end_candidate_validation",
+          "question_types": [
+            "calculation",
+            "extraction",
+            "mcq",
+            "multi",
+            "tf"
+          ],
+          "root_cause_cluster": "integrated_candidate_completeness_and_score",
+          "target_qids": [
+            "all_100"
+          ]
+        }
+      },
+      "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "direction_sha256": "ee2eb3df189b9ad92f3faec01a8b73fe0b0395d1c8c69ff74406d9685758ee96",
+      "schema_version": 1,
+      "semantic_sha256": "a845f6621e5e2ae01bbe3926f9f3bb0fd4ae45ada0bd883ec8b4530e034b6295",
+      "sha256": "3e0c844b08977ffdb1b94948effbc16f7e25929cb2fcfa1c3ed22951b14c0fdf"
+    },
+    "executable": true,
+    "history_decision": {
+      "candidate_fingerprint": {
+        "components": {
+          "context": {},
+          "identity": {
+            "change_vector": {
+              "assembly": "usage_verified_four_source_composite_v1",
+              "base_commit": "72ce844",
+              "model": "qwen3.7-plus-2026-05-26",
+              "official_answer_lock_injection": false,
+              "reasoning_normalization": "deterministic_payload_normalization_v3_explicit_frozen_conclusion",
+              "reasoning_shadow_judge": "gpt-5.6",
+              "reference_answer_access": false,
+              "structured_output_mode": "native_json_schema_strict"
+            },
+            "domains": [
+              "financial_contracts",
+              "financial_reports",
+              "insurance",
+              "regulatory",
+              "research"
+            ],
+            "hypothesis": "将a2中90题完整产物、8题已冻结答案reasoning补丁、reg_b_015证据链答案和res_b_005已复核计算checkpoint按逐调用usage合成，再用确定性冻结结论兜底修复reasoning终结格式，可形成100题qwen3.7完整候选并完成gpt-5.6影子评分，同时不向生产prompt注入pseudo99或官网答案锁。",
+            "pipeline_stage": "end_to_end_candidate_validation",
+            "question_types": [
+              "calculation",
+              "extraction",
+              "mcq",
+              "multi",
+              "tf"
+            ],
+            "root_cause_cluster": "integrated_candidate_completeness_and_score",
+            "target_qids": [
+              "all_100"
+            ]
+          }
+        },
+        "context_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "direction_sha256": "ee2eb3df189b9ad92f3faec01a8b73fe0b0395d1c8c69ff74406d9685758ee96",
+        "schema_version": 1,
+        "semantic_sha256": "a845f6621e5e2ae01bbe3926f9f3bb0fd4ae45ada0bd883ec8b4530e034b6295",
+        "sha256": "3e0c844b08977ffdb1b94948effbc16f7e25929cb2fcfa1c3ed22951b14c0fdf"
+      },
+      "comparable_attempt_count": 0,
+      "decision": "refine_existing",
+      "reason": "A similar experiment exists, but the candidate declares a material implementation delta",
+      "related_experiment_ids": [
+        "b-loop-qwen37-integrated-full100-candidate-a1",
+        "b-loop-qwen37-integrated-full100-candidate-a2"
+      ],
+      "similarity": 0.769408
+    },
+    "log_snapshot": {
+      "exists": true,
+      "sha256": "a32acbeda51a0b7a0c634fe5e93761ddf319f99d130a32700146042cfbe897b7",
+      "size": 1352610
+    },
+    "max_comparable_attempts": 3,
+    "registry_snapshot": {
+      "exists": true,
+      "sha256": "92944eb956b20b68015610044996be3b6872f7e2771b41b4d3a7b873031500a6",
+      "size": 1109054
+    },
+    "related_log_sections": [
+      "b-loop-qwen37-compliance-and-score-loop-scaffold-a1",
+      "b-loop-qwen37-compliance-and-score-loop-scaffold-a2",
+      "b-loop-qwen37-full100-independent-baseline-a1",
+      "b-loop-qwen37-full100-independent-baseline-a1-metric-correction",
+      "b-loop-qwen37-structured-output-contract-a2-full100",
+      "b-loop-qwen37-integrated-full100-candidate-a1",
+      "b-loop-qwen37-integrated-full100-candidate-a2",
+      "b-loop-qwen37-calculation-checkpoint-revalidation-a1"
+    ],
+    "reviewed_at": "2026-07-23T22:39:32+00:00"
+  },
+  "hypothesis": "将A2中90题完整产物、8题已冻结答案reasoning补丁、reg_b_015证据链答案和res_b_005已复核计算checkpoint按逐调用usage合成，再用确定性冻结结论兜底修复reasoning终结格式，可形成100题Qwen3.7完整候选并完成GPT-5.6影子评分，同时不向生产Prompt注入pseudo99或官网答案锁。",
+  "material_delta": {
+    "complete_question_count": "99_to_100",
+    "reasoning_omission_failures": "26_to_0",
+    "sealed_shadow_evaluation": true
+  },
+  "metrics": {
+    "answer_completed_count": 100,
+    "compliance_passed": false,
+    "generation_model": "qwen3.7-plus-2026-05-26",
+    "generation_token_total": 1374229,
+    "official_accuracy": null,
+    "official_lock_regression_count": 1,
+    "official_lock_regressions": [
+      {
+        "candidate": [
+          "ABD"
+        ],
+        "locked": [
+          "BD"
+        ],
+        "qid": "ins_b_016"
+      }
+    ],
+    "official_submission_count": 0,
+    "official_total_score": null,
+    "official_upload_performed": false,
+    "proxy_total_score": null,
+    "raw_call_count": 247,
+    "reasoning_completed_count": 100,
+    "reasoning_dimension_means": {
+      "clarity": 96.53,
+      "completeness": 94.78,
+      "logical": 95.89
+    },
+    "reasoning_judge_token_total_offline_only": 79896,
+    "reasoning_shadow_failure_count": 0,
+    "reasoning_shadow_score": 95.73333333333333,
+    "reference_equivalent_match_count": 96,
+    "reference_mismatch_qids": [
+      "fc_b_014",
+      "fin_b_018",
+      "ins_b_003",
+      "ins_b_016"
+    ],
+    "target_question_count": 100,
+    "tests_passed": 331,
+    "token_efficiency_score": 72.51541999999999,
+    "usage_complete": true
+  },
+  "next_step": "qwen37_integrated_full100_candidate方向已到3轮，停止追加。继续以独立reasoning低分badcase方向优化res_b_009、reg_b_018等项；最终候选是否引入求解器外、明确标注的benchmark correction层处理ins_b_016，需用户显式决策。在此之前保留证据驱动ABD，不做官网提交。",
+  "pipeline_stage": "end_to_end_candidate_validation",
+  "promotion_result": "blocked_by_official_lock_evidence_conflict",
+  "question_types": [
+    "calculation",
+    "extraction",
+    "mcq",
+    "multi",
+    "tf"
+  ],
+  "recorded_at": "2026-07-23T22:39:32+00:00",
+  "registry_schema_version": 1,
+  "root_cause_cluster": "integrated_candidate_completeness_and_score",
+  "status": "completed_not_promotable",
+  "submission_effect": "local_complete_candidate_not_officially_uploaded",
+  "target_qids": [
+    "all_100"
+  ]
+}
+```
