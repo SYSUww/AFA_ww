@@ -505,6 +505,37 @@ F3 是该方向的第三次也是最后一次材料性尝试。后续只做同�
 }
 ```
 
+## 2026-07-25 A2 配置合规重放：最终 100 题候选
+
+该运行不是 `generic_anchor_first_document_candidates` 的第四次方向试验，而是对该
+方向已选中的 A2 配置，在完成 provenance、冻结答案、usage、intent、transport 和
+Prompt 审计修复后做一次全量可复现验收。检索和生成超参数保持 A2 不变。
+
+```json
+{
+  "experiment_id": "b-compliance-repair-final-direct-anchor-first-full100",
+  "status": "running",
+  "history_reviewed_before_attempt": true,
+  "experiment_role": "promotion_reproduction_not_new_direction_attempt",
+  "selected_direction": "generic_anchor_first_document_candidates",
+  "selected_direction_attempt": 2,
+  "frozen_source_commit": "3c37915fc88168c7ed74079c40615fb506718b2c",
+  "run_config": {
+    "document_candidate_strategy": "anchor_first",
+    "evidence_quota_strategy": "primary_guard",
+    "calculation_mode": "direct",
+    "output_contract": "joint",
+    "evidence_compaction": "off",
+    "workers": 8,
+    "max_format_retries": 1
+  },
+  "promotion_gate": "100/100完整、usage可观测、合规审计通过；相对旧A2的70/100 proxy和600848 Token不得显著退化。",
+  "official_accuracy": null,
+  "official_submission_count": 0,
+  "run_dir": "artifacts/b_board_actual/compliance_repair/final_direct_anchor_first_full100"
+}
+```
+
 ## 2026-07-25 自适应多报告计算证据 A3：指标槽覆盖
 
 本轮开始前已复核本日志中的 A1/A2。A3 只新增通用的“主体 × 指标 ×
