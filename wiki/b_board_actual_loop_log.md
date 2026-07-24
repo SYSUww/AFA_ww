@@ -161,6 +161,93 @@
 }
 ```
 
+## b-loop-qwen37-calculation-top12-protocol-v2
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-top12-protocol-v2",
+  "direction_id": "calculation_research_slice_protocol",
+  "supersedes": "b-loop-qwen37-calculation-top12-token-slice-v1 promotion_protocol中的自动full26确认",
+  "selection_source": "artifacts/b_board_actual/qwen37_three_badcase_token_candidate_c2",
+  "selection_rule": "仍按C2中26道calculation的answer_usage_ledger与reasoning_usage_ledger之和降序动态取前12并冻结；同分按QID稳定排序。研究方向可先只运行通用策略实际影响的Top12子集，再冻结未受影响题组装完整Top12因果对照。",
+  "selected_question_count": 12,
+  "all26_question_count": 26,
+  "top12_total_token": 356953,
+  "all26_total_token": 506331,
+  "token_coverage_ratio": 0.7049795489511801,
+  "question_reduction_ratio": 0.5384615384615384,
+  "promotion_protocol": "后续每个方向默认只验证冻结Top12，不再自动扩到26题。要求完整Top12因果组装后冻结答案签名一致、grounding/replay通过，并比较answer、reasoning与总Token；pseudo99一致性不是官网Accuracy，不上传官网。",
+  "recorded_at": "2026-07-24T22:49:50+08:00",
+  "status": "active_protocol",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-evidence-compaction-a1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-evidence-compaction-a1",
+  "direction_id": "query_anchored_table_line_projection",
+  "direction_attempt_count": 1,
+  "direction_round_limit": 3,
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_round": "b-loop-qwen37-calculation-guarded-adaptive-thinking-a2-causal-top12",
+    "active_slice_protocol": "b-loop-qwen37-calculation-top12-protocol-v2"
+  },
+  "approach": "保持C2默认thinking、完整计算Prompt、native strict、检索命中ID、文档ID与顺序不变；仅对长表格证据保留原始行中的题面词元、显式年份、表头、单位和公式上下文。压缩规则不重写文本，也不使用QID、历史答案、文档ID或题面全文路由；grounding/replay只允许读取实际发送给模型的投影文本。离线先动态识别Top12中实际被规则改变的5题，其余7题冻结不重跑。",
+  "artifact_path": "artifacts/b_board_actual/calc_top12_evidence_compaction_a1",
+  "offline_projection": {
+    "top12_question_count": 12,
+    "affected_question_count": 5,
+    "unaffected_frozen_question_count": 7,
+    "first_attempt_original_chars": 29680,
+    "first_attempt_projected_chars": 24301,
+    "first_attempt_char_delta": -5379
+  },
+  "metrics": {
+    "expected_affected_question_count": 5,
+    "answer_completed_count": 4,
+    "answer_failed_count": 1,
+    "pseudo99_answer_match_count": 2,
+    "pseudo99_answer_mismatch_count": 2,
+    "pseudo99_answer_mismatch_qids": [
+      "ins_b_019",
+      "res_b_005"
+    ],
+    "failed_qids": [
+      "res_b_012"
+    ],
+    "generation_tokens_including_failure": 118278,
+    "affected5_c2_answer_tokens": 144798,
+    "invalid_incomplete_token_delta": -26520,
+    "completed4_answer_tokens": 79864,
+    "completed4_c2_answer_tokens": 90951,
+    "completed4_invalid_token_delta": -11087,
+    "matched2_answer_tokens": 60673,
+    "matched2_c2_answer_tokens": 54239,
+    "matched2_token_delta": 6434,
+    "matched2_token_increase_ratio": 0.11862386769667582,
+    "gpt56_judge_call_count": 0
+  },
+  "failure_breakdown": {
+    "res_b_012": "三轮计划均把万元与元直接相减，触发本地单位维度门禁；答案摘要虽写出67.1，但结构化replay不合规",
+    "fin_b_019": "答案一致但使用3次调用",
+    "fin_b_018": "答案一致但使用2次调用且Token由11570增至21550",
+    "ins_b_019": "输出从pseudo99的211.50漂移到212.00",
+    "res_b_005": "输出从pseudo99的22.27%漂移到-64.65%"
+  },
+  "effect": "不完整运行的总Token下降不能视为收益。仅两道保持冻结答案的题，Token反而增加6434（11.86%）；另外两题答案漂移、一题失败，说明仅凭题面词元压缩表格行会丢失关键行语义并放大随机重试。本方向没有正向信号，不消耗A2/A3。",
+  "promotion_result": "rejected_early_stop_after_a1",
+  "score_type": "offline_top12_causal_slice_pseudo99_comparison_not_official",
+  "next_step": "停止证据文本压缩，不推送该分支。下一方向继续先重读日志，只跑Top12；优先优化不改变证据语义的调用控制或对题面自包含计算做通用检索旁路。",
+  "recorded_at": "2026-07-24T22:52:00+08:00",
+  "status": "rejected",
+  "submission_effect": "none"
+}
+```
+
 ## b-loop-qwen37-calculation-joint-reasoning-a1-shadow
 
 ```json
