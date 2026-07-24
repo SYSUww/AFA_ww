@@ -22,6 +22,242 @@
 }
 ```
 
+## b-loop-qwen37-four-answer-semantic-binding-audit-a1
+
+```json
+{
+  "change_vector": {
+    "answer_change_applied": false,
+    "audit": "direct_source_period_scope_operator_and_official_lock_reconciliation_v1",
+    "benchmark_correction_applied": false,
+    "model_calls": 0,
+    "source_candidate": "artifacts/b_board_actual/qwen37_integrated_full100_candidate_a13_reasoning_provenance"
+  },
+  "direction_id": "qwen37_calculation_semantic_binding_and_benchmark_conflict",
+  "domains": [
+    "financial_contracts",
+    "financial_reports",
+    "insurance"
+  ],
+  "effect": "确认A13相对pseudo99参考的4个差异恰为fc_b_014、fin_b_018、ins_b_003、ins_b_016。前三题均有直接材料与确定性复算支持参考答案，属于Qwen计算语义绑定错误；ins_b_016则是材料逐字支持ABD、历史官网差分锁定BD的benchmark冲突。若只修前三题，参考等价匹配可由96/100升至99/100；若再经明确授权在求解器外应用ins_b_016=BD，则参考等价匹配可到100/100。以上均为离线参考匹配推演，不是新的官网准确率。",
+  "experiment_id": "b-loop-qwen37-four-answer-semantic-binding-audit-a1",
+  "failure_analysis": "当前计算验证主要检查变量字面值是否能在证据中找到、算式是否可重放，未充分验证变量的年份、统计口径、单期/汇总角色，也未要求每个关键运算符由条款语义支撑。因此fc_b_014把已披露的三年平均值14.41误标为2025单年值，fin_b_018把2024比较列62.33%绑定为2025资产负债率，ins_b_003在没有条款支持时把基本保险金额与账户价值相加；三题仍可错误通过grounding_verified与replay_verified。ins_b_016不是该类错误，不能混入通用求解规则。",
+  "history_review": {
+    "reviewed_sections": [
+      "b-loop-qwen37-insurance-product-identity-clause-audit-a1",
+      "b-loop-qwen37-integrated-full100-candidate-a3",
+      "b-loop-qwen37-calculation-retrieval-retry-audit-a1"
+    ],
+    "official_lock_source": "configs/b_board/official_answer_locks.json",
+    "reference_source": "artifacts/b_board_actual/references/pseudo99_from_official98_ins016_bd_v1/reference_answers.json"
+  },
+  "metrics": {
+    "current_candidate_reference_equivalent_match_count": 96,
+    "direct_source_supported_correction_count": 3,
+    "model_call_count": 0,
+    "official_accuracy": null,
+    "official_lock_conflict_count": 1,
+    "proxy_match_after_three_semantic_corrections": 99,
+    "proxy_match_after_three_corrections_and_benchmark_override": 100,
+    "token_delta": 0
+  },
+  "qid_audit": [
+    {
+      "qid": "fc_b_014",
+      "current_answer": [
+        "13.50"
+      ],
+      "evidence_answer": [
+        "14.41"
+      ],
+      "reference_answer": [
+        "14.41"
+      ],
+      "evidence": "artifacts/extracted_cleaned/financial_contracts/text14.md:47",
+      "root_cause": "把材料已明确披露的2023-2025三年平均值14.41误绑定为2025单年值后重复平均",
+      "classification": "aggregation_scope_binding_error",
+      "confidence": "very_high"
+    },
+    {
+      "qid": "fin_b_018",
+      "current_answer": [
+        "2.65",
+        "7.42"
+      ],
+      "evidence_answer": [
+        "2.58",
+        "7.65"
+      ],
+      "reference_answer": [
+        "2.58",
+        "7.65"
+      ],
+      "evidence": [
+        "artifacts/extracted_cleaned/financial_reports/annual_midea_2025_report.md:1457",
+        "artifacts/extracted_cleaned/financial_reports/annual_midea_2025_report.md:4529"
+      ],
+      "deterministic_replay": "1/(1-0.6117)=2.575328354...->2.58; 19.70/2.575328354...=7.64951...->7.65",
+      "root_cause": "把2024比较列资产负债率62.33%误绑定为题目要求的2025值，ROE则使用2025值19.70%",
+      "classification": "period_column_binding_error",
+      "confidence": "very_high"
+    },
+    {
+      "qid": "ins_b_003",
+      "current_answer": [
+        "412.00"
+      ],
+      "evidence_answer": [
+        "366.00"
+      ],
+      "reference_answer": [
+        "366.00"
+      ],
+      "evidence": "artifacts/extracted_cleaned/insurance/2.md:79",
+      "deterministic_replay": "max(90*160%,100)+(120-45)+max(100-35,72)+max(100-25,68)=144+75+72+75=366",
+      "root_cause": "国寿增益宝条款要求年龄比例乘基本保险金额与账户价值取较大值，模型无条款依据地执行90+100",
+      "classification": "contract_operator_semantics_error",
+      "confidence": "very_high"
+    },
+    {
+      "qid": "ins_b_016",
+      "current_answer": [
+        "ABD"
+      ],
+      "evidence_answer": [
+        "ABD"
+      ],
+      "reference_answer": [
+        "BD"
+      ],
+      "official_locked_answer": [
+        "BD"
+      ],
+      "evidence": [
+        "artifacts/extracted_cleaned/insurance/2.md:118",
+        "artifacts/extracted_cleaned/insurance/4.md:151",
+        "artifacts/extracted_cleaned/insurance/8.md:86",
+        "artifacts/extracted_cleaned/insurance/16.md:142"
+      ],
+      "official_constraint_log": "wiki/b_board_actual_loop_log.md:28626",
+      "root_cause": "给定材料与平台隐藏标签不可消解冲突",
+      "classification": "benchmark_label_conflict_not_qwen_reasoning_error",
+      "confidence": "official_BD_locked_and_evidence_ABD_direct"
+    }
+  ],
+  "next_step": "下一轮不得把四题统一当作缺证据处理。优先为前三类错误设计答案盲的语义门禁：变量必须绑定period与aggregation_scope，比较表必须选题目目标年份列，关键max/add/sub/mul运算必须引用规则证据；随后只重跑fc_b_014、fin_b_018、ins_b_003验证是否自然得到14.41、2.58/7.65、366.00。ins_b_016保持独立：生产证据答案仍为ABD；面向官网最终提交时，如采用用户明确批准的benchmark correction，应在求解器外显式记录ABD->BD，reasoning不得伪称材料支持BD。",
+  "pipeline_stage": "answer_semantic_validation_audit",
+  "promotion_result": "three_direct_source_corrections_identified_one_benchmark_conflict_pending_explicit_layer",
+  "question_types": [
+    "calculation",
+    "multi"
+  ],
+  "recorded_at": "2026-07-24T11:12:40+08:00",
+  "root_cause_cluster": "literal_grounding_without_period_scope_or_operator_semantics",
+  "score_type": "offline_reference_match_and_direct_source_audit_not_official",
+  "status": "completed_audit",
+  "submission_effect": "no_candidate_change_no_model_call"
+}
+```
+
+## b-loop-qwen37-three-semantic-badcase-repair-feasibility-a1
+
+```json
+{
+  "change_vector": {
+    "answer_change_applied": false,
+    "code_change_applied": false,
+    "diagnosis": "captured_trace_replay_plus_live_retrieval_reconstruction_v1",
+    "model_calls": 0,
+    "source_candidate": "artifacts/b_board_actual/qwen37_integrated_full100_candidate_a13_reasoning_provenance"
+  },
+  "direction_id": "qwen37_three_semantic_badcase_repair",
+  "domains": [
+    "financial_contracts",
+    "financial_reports",
+    "insurance"
+  ],
+  "effect": "三题均可修复，但必须采用首轮证据前置加确定性语义门禁的双层方案。0.2秒捕获trace回放稳定复现三题答案错误且grounding_verified=true、replay_verified=true，说明当前字面值/单位校验和数学回放不足以阻止语义错误。",
+  "experiment_id": "b-loop-qwen37-three-semantic-badcase-repair-feasibility-a1",
+  "failure_analysis": "fc_b_014的正确14.41汇总证据已在首轮前8条中，错误来自把2023-2025年均值误标成2025单年值，继续扩检索无效。fin_b_018的2025资产负债率61.17%证据位于当前BM25第10名，首轮只发送8条；年份门禁只识别完整年月日，不识别2025年度或表格目标列。ins_b_003所需国寿增益宝身故金额条款原本是每文档锚点，但邻居扩展后被高分相邻块挤到首轮第10名；执行器只校验数字与单位，不校验add/max/mul是否由条款支持。",
+  "history_review": {
+    "reviewed_sections": [
+      "b-loop-qwen37-four-answer-semantic-binding-audit-a1",
+      "b-loop-qwen37-calculation-retrieval-retry-audit-a1"
+    ],
+    "replay_source": "artifacts/b_board_actual/qwen37_integrated_full100_candidate_a13_reasoning_provenance/answers.json"
+  },
+  "hypotheses": [
+    {
+      "rank": 1,
+      "hypothesis": "变量grounding只匹配字面值和单位，未绑定年份与aggregation_scope",
+      "status": "confirmed",
+      "evidence": [
+        "src/afa_agent/b_board/calculation.py:_grounding_check",
+        "src/afa_agent/b_board/runner.py:_validate_calculation_variable_period_binding"
+      ]
+    },
+    {
+      "rank": 2,
+      "hypothesis": "计算回放只验证运算可执行性，未要求关键运算符引用规则证据",
+      "status": "confirmed",
+      "evidence": "ins_b_003的90+100错误add仍通过grounding与replay"
+    },
+    {
+      "rank": 3,
+      "hypothesis": "首轮8条截断和邻居扩展破坏了目标年份/多文档规则覆盖",
+      "status": "confirmed",
+      "evidence": {
+        "fin_b_018_target_evidence_rank": 10,
+        "fin_b_018_first_prompt_limit": 8,
+        "ins_b_003_guoshou_rule_rank_after_neighbor_expansion": 10
+      }
+    },
+    {
+      "rank": 4,
+      "hypothesis": "Prompt缺少已披露汇总指标不得作为单期值重复计算的通用契约",
+      "status": "confirmed",
+      "evidence": "现有Prompt仅对全年分红已有合计不得重复相加，未覆盖平均值等一般汇总指标"
+    }
+  ],
+  "metrics": {
+    "deterministic_repro_runtime_seconds": 0.2,
+    "model_call_count": 0,
+    "official_accuracy": null,
+    "reproduced_badcase_count": 3,
+    "wrong_but_grounding_verified_count": 3,
+    "wrong_but_replay_verified_count": 3
+  },
+  "proposed_repair": {
+    "layer_1_first_pass_evidence": [
+      "fc_b_014类：把与题目期间和聚合口径同时匹配的直接汇总披露置前，不增加首轮证据条数",
+      "fin_b_018类：从题目抽取目标报告年度和指标名，优先目标年度文档中的精确指标行",
+      "ins_b_003类：多产品保险计算首轮每个产品至少保留一条保险责任或公式条款，邻居扩展不得挤掉原始每文档锚点"
+    ],
+    "layer_2_semantic_gates": [
+      "变量增加或派生period与aggregation_scope校验，禁止把年均/累计/合计值重命名为单期值",
+      "年度报告比较表必须把题目目标年度绑定到对应列，不能只凭数字和单位通过",
+      "保险金额中的关键max/min/mul/sub运算必须有规则证据，最终跨产品add可由题面合计要求支持"
+    ],
+    "layer_3_prompt": [
+      "证据直接披露题目要求的汇总指标时，不得将其作为某一单期值再次平均或累加",
+      "优先使用题目指定年度的报告期列，比较列只能在题目明确要求时使用",
+      "不得仅根据题面出现多个金额自行选择add/max/sub，运算关系必须来自条款"
+    ]
+  },
+  "next_step": "若进入实现轮次，先写三个真实模式回归测试并看红，再实现证据覆盖和语义门禁；只重跑fc_b_014、fin_b_018、ins_b_003。第一轮目标是三题自然输出14.41、2.58/7.65、366.00且首轮证据仍为8条；若任一题进入额外模型重试，则继续优化首轮路由而不是接受Token回退。",
+  "pipeline_stage": "repair_feasibility_diagnosis",
+  "promotion_result": "repairable_recommend_implementation",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-24T11:45:00+08:00",
+  "root_cause_cluster": "semantic_binding_and_prompt_evidence_coverage",
+  "score_type": "offline_diagnosis_not_official",
+  "status": "completed_diagnosis",
+  "submission_effect": "no_candidate_change_no_model_call"
+}
+```
+
 ## b-loop-i023-gpt56-answer-error-audit-v2
 
 - recorded_at: `2026-07-22`
@@ -38145,5 +38381,205 @@
   "score_type": "candidate_unchanged",
   "status": "completed_effective",
   "submission_effect": "no_new_submission_candidate"
+}
+```
+
+## b-loop-qwen37-calculation-retrieval-retry-audit-a1
+
+```json
+{
+  "approach": "进入新的Token效率分析前重读A13与传输重试日志；从A13完整answers.json逐题提取CalculationPlan答案调用、calculation_retrieval_rounds、追加证据ID、最终supporting_evidence_ids/used_evidence_ids和重试usage。严格区分正常答案/reasoning调用、同证据结构修复和真实重新检索，不调用模型、不修改答案。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_integrated_full100_candidate_a13_reasoning_provenance/answers.json",
+  "direction_id": "qwen37_calculation_retry_retrieval_attribution",
+  "effect": "A13有10/26道计算题触发14次答案重试，其中13次执行本地定向重新检索并追加证据、1次fin_b_019为同证据结构修复。14次重试消耗187000 Token，占A13总Token 14.6883%。逐题证据交集显示，仅fc_b_005与fin_b_019的最终supporting/used evidence引用了重检索新增证据；其余8题虽然追加证据，最终未引用任何新增证据，不能直接认定为真实缺证据。",
+  "experiment_id": "b-loop-qwen37-calculation-retrieval-retry-audit-a1",
+  "failure_analysis": "新增证据未进入最终引用并不单独证明重试完全无价值，模型可能受新增上下文影响后改正计划；但它足以否定将全部13次重检索无条件前置。若把所有二次检索统一并入首轮，会让当前16/26道一次成功的计算题承担额外Prompt，可能反而增加总Token。只有新增证据确实进入最终证据链的题可作为首轮覆盖候选。",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_experiment_id": "b-loop-qwen37-usage-safe-transport-retry-a1",
+    "new_material_delta": "从HTTP传输重试转向CalculationPlan失败后的本地重新检索归因；本轮只读审计，不构成新的模型尝试。"
+  },
+  "metrics": {
+    "a13_total_token": 1273122,
+    "calculation_question_count": 26,
+    "calculation_retry_question_count": 10,
+    "calculation_retry_call_count": 14,
+    "calculation_retry_token": 187000,
+    "calculation_retry_token_share": 0.1468830167101032,
+    "same_evidence_structure_repair_count": 1,
+    "targeted_retrieval_round_count": 13,
+    "validated_first_pass_prefetch_candidates": [
+      "fc_b_005",
+      "fin_b_019"
+    ],
+    "validated_candidate_retry_token": 62560,
+    "no_added_evidence_in_final_reference_qids": [
+      "fc_b_001",
+      "fc_b_014",
+      "fin_b_013",
+      "fin_b_015",
+      "fin_b_016",
+      "fin_b_017",
+      "ins_b_019",
+      "res_b_012"
+    ],
+    "no_added_evidence_in_final_reference_retry_token": 124440
+  },
+  "per_qid_retrieval_audit": [
+    {
+      "qid": "fc_b_001",
+      "retry_calls": 1,
+      "retry_token": 6228,
+      "retrieval_rounds": [
+        {
+          "intent": "补查2022-2025矿业板块主营业务毛利率及收入合计",
+          "added_evidence_count": 13
+        }
+      ],
+      "added_evidence_used_in_final": false
+    },
+    {
+      "qid": "fc_b_005",
+      "retry_calls": 2,
+      "retry_token": 27601,
+      "retrieval_rounds": [
+        {
+          "intent": "补查冠鸿智能2023-06-30与2023-12-31两次评估基准日及评估增值率",
+          "added_evidence_count": 24
+        },
+        {
+          "intent": "继续补齐2023-12-31基准日评估增值率",
+          "added_evidence_count": 3
+        }
+      ],
+      "added_evidence_used_in_final": true,
+      "final_added_evidence_ids": [
+        "text08::sec_9::chunk_6"
+      ]
+    },
+    {
+      "qid": "fc_b_014",
+      "retry_calls": 1,
+      "retry_token": 9550,
+      "retrieval_rounds": [
+        {
+          "intent": "补查西部证券2023-2025归母净利润并计算三年平均值",
+          "added_evidence_count": 4
+        }
+      ],
+      "added_evidence_used_in_final": false
+    },
+    {
+      "qid": "fin_b_013",
+      "retry_calls": 1,
+      "retry_token": 11768,
+      "retrieval_rounds": [
+        {
+          "intent": "补查比亚迪2024/2025境外收入和营业收入合计原始金额",
+          "added_evidence_count": 13
+        }
+      ],
+      "added_evidence_used_in_final": false
+    },
+    {
+      "qid": "fin_b_015",
+      "retry_calls": 2,
+      "retry_token": 21993,
+      "retrieval_rounds": [
+        {
+          "intent": "补查宁德时代与美的集团经营现金流净额和营业收入",
+          "added_evidence_count": 15
+        },
+        {
+          "intent": "继续补齐两家公司经营现金流率计算所需原始金额",
+          "added_evidence_count": 6
+        }
+      ],
+      "added_evidence_used_in_final": false
+    },
+    {
+      "qid": "fin_b_016",
+      "retry_calls": 1,
+      "retry_token": 12589,
+      "retrieval_rounds": [
+        {
+          "intent": "补查宁德时代、美的集团、中国建筑、招商银行2025全年每10股现金分红",
+          "added_evidence_count": 10
+        }
+      ],
+      "added_evidence_used_in_final": false
+    },
+    {
+      "qid": "fin_b_017",
+      "retry_calls": 1,
+      "retry_token": 10356,
+      "retrieval_rounds": [
+        {
+          "intent": "补查中国移动EBITDA、EBITDA率和报告营业收入",
+          "added_evidence_count": 10
+        }
+      ],
+      "added_evidence_used_in_final": false
+    },
+    {
+      "qid": "fin_b_019",
+      "retry_calls": 2,
+      "retry_token": 34959,
+      "retrieval_rounds": [
+        {
+          "intent": "修复CalculationPlan结构错误，不重新检索",
+          "added_evidence_count": 0
+        },
+        {
+          "intent": "补查比亚迪、宁德时代、美的集团资产负债率以计算权益乘数",
+          "added_evidence_count": 26
+        }
+      ],
+      "added_evidence_used_in_final": true,
+      "final_added_evidence_ids": [
+        "annual_byd_2025_report::sec_22::chunk_14",
+        "annual_catl_2025_report::sec_14::chunk_2"
+      ]
+    },
+    {
+      "qid": "ins_b_019",
+      "retry_calls": 1,
+      "retry_token": 12742,
+      "retrieval_rounds": [
+        {
+          "intent": "补查四份保险合同对应年度的退保现金价值或解除规则",
+          "added_evidence_count": 4
+        }
+      ],
+      "added_evidence_used_in_final": false
+    },
+    {
+      "qid": "res_b_012",
+      "retry_calls": 2,
+      "retry_token": 39214,
+      "retrieval_rounds": [
+        {
+          "intent": "围绕题面GMV、自营占比、会员人数与人均消费补查计算输入",
+          "added_evidence_count": 6
+        },
+        {
+          "intent": "继续补查同一题面计算变量及单位换算",
+          "added_evidence_count": 2
+        }
+      ],
+      "added_evidence_used_in_final": false
+    }
+  ],
+  "next_step": "若用户确认改代码，下一次只为fc_b_005和fin_b_019增加答案盲的首轮短语覆盖：分别前置双评估基准日/增值率与三家公司资产负债率检索；不得把包含模型推导值的完整retry_query写死。其余8题先修错误分流或计划结构，不前置无效证据。修改后先做只读检索命中审计，再决定是否消耗Qwen运行。",
+  "pipeline_stage": "calculation_retrieval_audit",
+  "promotion_result": "read_only_attribution_complete_no_code_change",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-24T10:58:31+08:00",
+  "root_cause_cluster": "calculation_retry_retrieval_overrouting",
+  "score_type": "offline_trace_audit_not_official",
+  "status": "completed_audit",
+  "submission_effect": "no_candidate_change_no_model_call"
 }
 ```
