@@ -418,12 +418,19 @@
     "gpt56_used_only_for_frozen_reasoning_shadow_judging": true,
     "assembled_candidate_submission_eligible": false
   },
+  "git_promotion": {
+    "branch": "codex/b-board-calc-ranking-evidence-top12",
+    "implementation_commit": "1877845",
+    "initial_log_commit": "b9c44f7",
+    "remote": "origin",
+    "pushed": true
+  },
   "effect": "把多主体排序所需的同一候选证据前置后，fin_b_019从三次调用降为一次，保持冻结答案、grounding和replay，同时答案Token下降61.86%、reasoning Token也下降1502且影子分提高0.33。完整Top12与100题因果组装均保持C2答案一致，最终公式净提升。",
-  "promotion_result": "effective_top12_gate_passed_branch_push_pending",
+  "promotion_result": "effective_top12_gate_passed_branch_pushed",
   "score_type": "offline_pseudo99_manual_scenario_projection_with_gpt56_shadow_not_official",
   "next_step": "A1已形成强正收益，不消耗A2/A3；创建并推送独立分支。后续新方向继续按Top12 protocol v2验证，真实提交仍需独立资格门和用户明确授权。",
   "recorded_at": "2026-07-24T23:11:00+08:00",
-  "status": "effective_pending_push",
+  "status": "effective_promoted_branch_pushed",
   "submission_effect": "none"
 }
 ```
