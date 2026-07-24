@@ -325,12 +325,19 @@
     "gpt56_used_only_for_frozen_reasoning_shadow_judging": true,
     "assembled_candidate_submission_eligible": false
   },
+  "git_promotion": {
+    "branch": "codex/b-board-calc-self-contained-top12",
+    "implementation_commit": "90f8bac",
+    "initial_log_commit": "4aefe02",
+    "remote": "origin",
+    "pushed": true
+  },
   "effect": "题面自包含计算不再把无关检索文档送入首轮模型，res_b_012保持67.1、grounding/replay和单次调用不变，答案Token下降66.45%；reasoning虽增加661 Token，但合计仍减少5215，且影子质量提高1分。完整Top12和100题因果组装均保持C2答案一致，最终公式净提升。",
-  "promotion_result": "effective_top12_gate_passed_branch_push_pending",
+  "promotion_result": "effective_top12_gate_passed_branch_pushed",
   "score_type": "offline_pseudo99_manual_scenario_projection_with_gpt56_shadow_not_official",
   "next_step": "该方向达到3次上限并晋级，停止继续修改同一方向。后续新方向继续按Top12 protocol v2验证；真实提交仍需独立提交资格门和用户明确授权。",
   "recorded_at": "2026-07-24T23:00:00+08:00",
-  "status": "effective_pending_push",
+  "status": "effective_promoted_branch_pushed",
   "submission_effect": "none"
 }
 ```
