@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from enum import Enum
 import re
 from typing import Any, Mapping, Sequence
 
@@ -33,8 +34,29 @@ class CalculationResult:
     trace: dict[str, Any]
 
 
+class CalculationErrorCode(str, Enum):
+    PLAN_STRUCTURE_INVALID = "PLAN_STRUCTURE_INVALID"
+    EVIDENCE_INSUFFICIENT = "EVIDENCE_INSUFFICIENT"
+    GROUNDING_FAILED = "GROUNDING_FAILED"
+    PERIOD_BINDING_FAILED = "PERIOD_BINDING_FAILED"
+    UNIT_BINDING_FAILED = "UNIT_BINDING_FAILED"
+    DEPENDENCY_INVALID = "DEPENDENCY_INVALID"
+    OUTPUT_CONTRACT_INVALID = "OUTPUT_CONTRACT_INVALID"
+
+
 class CalculationPlanError(ValueError):
-    pass
+    def __init__(
+        self,
+        message: str,
+        *,
+        error_code: CalculationErrorCode = (
+            CalculationErrorCode.PLAN_STRUCTURE_INVALID
+        ),
+        details: Mapping[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.error_code = error_code
+        self.details = dict(details or {})
 
 
 class CalculationExecutor:
@@ -98,13 +120,24 @@ class CalculationExecutor:
             item["verified"] for item in grounding_checks
         )
         if evidence_text_by_id is not None and not grounding_verified:
+            failed_names = [
+                str(item["name"])
+                for item in grounding_checks
+                if not item["verified"]
+            ]
             failed = [
                 f'{item["name"]}[{item["reason"]}]'
                 for item in grounding_checks
                 if not item["verified"]
             ]
             raise CalculationPlanError(
-                "Variables are not grounded in cited evidence: " + ",".join(failed)
+                "Variables are not grounded in cited evidence: "
+                + ",".join(failed),
+                error_code=CalculationErrorCode.GROUNDING_FAILED,
+                details={
+                    "failed_variables": failed,
+                    "required_terms": failed_names,
+                },
             )
 
         aggregation_scope_checks = _validate_disclosed_aggregate_scope(
@@ -469,6 +502,138 @@ class CalculationExecutor:
         raise CalculationPlanError(f"Unsupported operation: {op!r}")
 
 
+def normalize_amount_unit_conversions(
+    plan: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Insert deterministic currency conversions before add/sub operations."""
+
+    raw_variables = plan.get("variables", [])
+    raw_steps = plan.get("steps", [])
+    if not isinstance(raw_variables, list) or not isinstance(raw_steps, list):
+        return []
+    units: dict[str, str] = {}
+    scalar_values: dict[str, Decimal] = {}
+    for item in raw_variables:
+        if not isinstance(item, Mapping):
+            continue
+        name = str(item.get("name", "")).strip()
+        if not name:
+            continue
+        unit = _normalize_amount_unit(item.get("unit", ""))
+        units[name] = unit
+        if not unit:
+            try:
+                scalar_values[name] = _decimal(item.get("value"))
+            except CalculationPlanError:
+                pass
+
+    occupied_ids = {
+        str(item.get("id", "")).strip()
+        for item in raw_steps
+        if isinstance(item, Mapping) and str(item.get("id", "")).strip()
+    }
+    normalized_steps: list[Any] = []
+    changes: list[dict[str, Any]] = []
+    for raw_step in raw_steps:
+        if not isinstance(raw_step, dict):
+            normalized_steps.append(raw_step)
+            continue
+        step = raw_step
+        step_id = str(step.get("id", "")).strip()
+        op = str(step.get("op", "")).strip()
+        arg_specs = _operation_arg_specs(op, step)
+        arg_units = [_unit_for_spec(spec, units) for spec in arg_specs]
+        if op in {"add", "sub"}:
+            target_unit = next(
+                (
+                    unit
+                    for unit in arg_units
+                    if unit in _CURRENCY_UNIT_FACTORS
+                ),
+                "",
+            )
+            converted_args = list(arg_specs)
+            for arg_index, (spec, source_unit) in enumerate(
+                zip(arg_specs, arg_units)
+            ):
+                if (
+                    not target_unit
+                    or source_unit not in _CURRENCY_UNIT_FACTORS
+                    or source_unit == target_unit
+                    or not isinstance(spec, Mapping)
+                    or set(spec) != {"ref"}
+                ):
+                    continue
+                base_id = f"__unit_{step_id or 'step'}_{arg_index + 1}"
+                conversion_id = base_id
+                suffix = 2
+                while conversion_id in occupied_ids:
+                    conversion_id = f"{base_id}_{suffix}"
+                    suffix += 1
+                occupied_ids.add(conversion_id)
+                factor = (
+                    _CURRENCY_UNIT_FACTORS[source_unit]
+                    / _CURRENCY_UNIT_FACTORS[target_unit]
+                )
+                conversion_step = {
+                    "id": conversion_id,
+                    "op": "mul",
+                    "args": [
+                        dict(spec),
+                        {
+                            "literal": _serialize_value(factor),
+                            "value_type": "decimal",
+                            "unit": "",
+                        },
+                    ],
+                }
+                normalized_steps.append(conversion_step)
+                converted_args[arg_index] = {"ref": conversion_id}
+                units[conversion_id] = target_unit
+                changes.append(
+                    {
+                        "reason": "insert_currency_unit_conversion",
+                        "step_id": step_id,
+                        "argument_index": arg_index,
+                        "source_unit": source_unit,
+                        "target_unit": target_unit,
+                        "factor": _serialize_value(factor),
+                        "conversion_step_id": conversion_id,
+                    }
+                )
+            if converted_args != arg_specs:
+                step["args"] = converted_args
+                arg_specs = converted_args
+                arg_units = [_unit_for_spec(spec, units) for spec in arg_specs]
+
+        normalized_steps.append(step)
+        if not step_id:
+            continue
+        result_unit = ""
+        if op in {"add", "sub", "mean", "abs", "max", "min", "mul", "div"}:
+            if op in {"add", "sub"}:
+                result_unit = _first_known_unit(arg_units)
+            elif op == "mul":
+                result_unit = _infer_multiplication_unit(
+                    arg_specs,
+                    arg_units,
+                    scalar_values,
+                )
+            elif op == "div":
+                result_unit = _infer_division_unit(
+                    arg_specs,
+                    arg_units,
+                    scalar_values,
+                )
+            else:
+                result_unit = _first_known_unit(arg_units)
+        elif op in {"pct_change", "pct_point_delta"}:
+            result_unit = "%"
+        units[step_id] = result_unit
+    plan["steps"] = normalized_steps
+    return changes
+
+
 def _require_list(plan: Mapping[str, Any], key: str, *, allow_missing: bool = False) -> list[Any]:
     value = plan.get(key, [] if allow_missing else None)
     if not isinstance(value, list):
@@ -528,7 +693,13 @@ def _validate_amount_unit_scales(plan: Mapping[str, Any]) -> None:
                 if len(set(currency_units)) > 1:
                     raise CalculationPlanError(
                         f"{op} amount unit mismatch: {' vs '.join(currency_units)}; "
-                        "convert explicitly before add/sub (1亿元=10000万元)"
+                        "convert explicitly before add/sub (1亿元=10000万元)",
+                        error_code=CalculationErrorCode.UNIT_BINDING_FAILED,
+                        details={
+                            "step_id": step_id,
+                            "operation": op,
+                            "argument_units": arg_units,
+                        },
                     )
                 result_unit = currency_units[0] if currency_units else _first_known_unit(arg_units)
             elif op == "mul":

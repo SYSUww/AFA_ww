@@ -8,8 +8,12 @@ from afa_agent.b_board.calculation import (
     CalculationExecutor,
     CalculationPlanError,
     _answers_differ_only_in_format,
+    normalize_amount_unit_conversions,
 )
 from afa_agent.b_board.io import BQuestion
+from afa_agent.b_board.calculation_schema import (
+    validate_calculation_plan_schema,
+)
 from afa_agent.b_board.runner import (
     CALCULATION_SYSTEM_PROMPT,
     _calculation_operator_shape_hint,
@@ -21,6 +25,71 @@ from afa_agent.b_board.runner import (
 
 
 class BBoardCalculationTests(unittest.TestCase):
+    def test_generic_currency_unit_repair_inserts_replayable_conversion(self):
+        plan = {
+            "variables": [
+                {
+                    "name": "资产",
+                    "value": "1",
+                    "value_type": "decimal",
+                    "unit": "亿元",
+                    "evidence_ids": ["q"],
+                },
+                {
+                    "name": "负债",
+                    "value": "20",
+                    "value_type": "decimal",
+                    "unit": "百万元",
+                    "evidence_ids": ["q"],
+                },
+            ],
+            "steps": [
+                {
+                    "id": "差额",
+                    "op": "sub",
+                    "args": [{"ref": "资产"}, {"ref": "负债"}],
+                }
+            ],
+            "outputs": [
+                {"source": {"ref": "差额"}, "format": "decimal2"}
+            ],
+            "supporting_evidence_ids": ["q"],
+            "decision_summary": "资产与负债差额。",
+        }
+
+        changes = normalize_amount_unit_conversions(plan)
+        validate_calculation_plan_schema(plan)
+        result = CalculationExecutor().execute(
+            plan,
+            expected_slots=1,
+            evidence_text_by_id={"q": "资产为1亿元，负债为20百万元。"},
+        )
+
+        self.assertEqual(result.answer_parts, ("0.80",))
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0]["source_unit"], "百万元")
+        self.assertEqual(changes[0]["target_unit"], "亿元")
+        self.assertEqual(changes[0]["factor"], "0.01")
+        self.assertEqual(plan["steps"][-1]["op"], "sub")
+
+    def test_generic_currency_unit_repair_is_noop_for_matching_units(self):
+        plan = {
+            "variables": [
+                {"name": "a", "value": "10", "unit": "万元"},
+                {"name": "b", "value": "2", "unit": "万元"},
+            ],
+            "steps": [
+                {
+                    "id": "c",
+                    "op": "sub",
+                    "args": [{"ref": "a"}, {"ref": "b"}],
+                }
+            ],
+        }
+
+        self.assertEqual(normalize_amount_unit_conversions(plan), [])
+        self.assertEqual(len(plan["steps"]), 1)
+
     def test_operator_shape_hint_is_question_conditioned_and_answer_blind(self):
         hint = _calculation_operator_shape_hint(
             "计算同比增速，并按指标从高到低排序；最晚应从何时开始公示。"

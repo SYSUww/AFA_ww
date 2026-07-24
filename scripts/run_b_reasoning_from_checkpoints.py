@@ -24,6 +24,7 @@ from afa_agent.b_board.runner import (
     _answer_checkpoint_from_completed_artifact,
     _answer_artifact_signature,
     _artifact_from_dict,
+    finalize_calculation_answer_summary_reasoning,
     _sum_tokens,
 )
 from afa_agent.b_board.submission_policy import is_allowed_submission_model
@@ -74,6 +75,22 @@ def parse_args() -> argparse.Namespace:
             "thinking is enabled"
         ),
     )
+    parser.add_argument(
+        "--reuse-answer-summary",
+        action="store_true",
+        help=(
+            "Shadow-test the frozen Qwen calculation decision_summary as "
+            "reasoning without issuing another model call."
+        ),
+    )
+    parser.add_argument(
+        "--reuse-completed-reasoning",
+        action="store_true",
+        help=(
+            "Copy the completed Qwen reasoning rows and original usage from "
+            "the source run for an immutable comparison slice."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -87,6 +104,11 @@ def _sha256(path: Path) -> str:
 
 def main() -> None:
     args = parse_args()
+    if args.reuse_answer_summary and args.reuse_completed_reasoning:
+        raise ValueError(
+            "--reuse-answer-summary and --reuse-completed-reasoning are "
+            "mutually exclusive"
+        )
     answer_run = (ROOT / args.answer_run).resolve()
     output_dir = (ROOT / args.output_dir).resolve()
     if output_dir.exists() and any(output_dir.iterdir()):
@@ -109,7 +131,11 @@ def main() -> None:
     missing_questions = sorted(set(qids) - set(question_by_qid))
     if missing_questions:
         raise ValueError(f"unknown qids: {missing_questions}")
-    checkpoint_path = answer_run / "answer_artifacts.json"
+    checkpoint_path = (
+        answer_run / "answers.json"
+        if args.reuse_completed_reasoning
+        else answer_run / "answer_artifacts.json"
+    )
     checkpoints_recovered_from_completed_rows = False
     if checkpoint_path.is_file():
         source_rows = read_json(checkpoint_path)
@@ -138,28 +164,42 @@ def main() -> None:
         "on": True,
         "off": False,
     }[args.thinking_mode]
-    runner = BBoardActualRunner(
-        questions=[question_by_qid[qid] for qid in qids],
-        reasoning_evidence_char_limit=args.evidence_char_limit,
-        reasoning_enable_thinking=thinking_mode,
-        reasoning_thinking_budget=args.thinking_budget,
-        run_mode=RUN_MODE_SUBMISSION,
-    )
-    if runner.config.model.model_name != model_name:
-        raise ValueError(
-            "configured Qwen model does not match answer run: "
-            f"{runner.config.model.model_name!r} != {model_name!r}"
+    runner = None
+    if not (
+        args.reuse_answer_summary
+        or args.reuse_completed_reasoning
+    ):
+        runner = BBoardActualRunner(
+            questions=[question_by_qid[qid] for qid in qids],
+            reasoning_evidence_char_limit=args.evidence_char_limit,
+            reasoning_enable_thinking=thinking_mode,
+            reasoning_thinking_budget=args.thinking_budget,
+            run_mode=RUN_MODE_SUBMISSION,
         )
+        if runner.config.model.model_name != model_name:
+            raise ValueError(
+                "configured Qwen model does not match answer run: "
+                f"{runner.config.model.model_name!r} != {model_name!r}"
+            )
 
     results = []
     usage_rows = []
     for index, qid in enumerate(qids, start=1):
         answer_artifact = source_artifacts[qid]
         answer_signature = _answer_artifact_signature(answer_artifact)
-        result = runner.reasoning_one(
-            question_by_qid[qid],
-            answer_artifact,
-        )
+        if args.reuse_completed_reasoning:
+            result = _artifact_from_dict(answer_artifact.to_dict())
+        elif args.reuse_answer_summary:
+            result = finalize_calculation_answer_summary_reasoning(
+                _artifact_from_dict(answer_artifact.to_dict()),
+                require_joint_contract=False,
+            )
+        else:
+            assert runner is not None
+            result = runner.reasoning_one(
+                question_by_qid[qid],
+                answer_artifact,
+            )
         if _answer_artifact_signature(result) != answer_signature:
             raise ValueError(f"{qid}: reasoning changed frozen answer artifact")
         validate_b_answer(
@@ -245,6 +285,20 @@ def main() -> None:
         "reasoning_evidence_char_limit": args.evidence_char_limit,
         "reasoning_enable_thinking": thinking_mode,
         "reasoning_thinking_budget": args.thinking_budget,
+        "reasoning_source": (
+            "answer_stage_decision_summary"
+            if args.reuse_answer_summary
+            else "completed_qwen_reasoning"
+            if args.reuse_completed_reasoning
+            else "dedicated_qwen_reasoning_call"
+        ),
+        "reasoning_source_compliance_status": (
+            "legacy_shadow_not_submission_eligible"
+            if args.reuse_answer_summary
+            else "source_run_lineage"
+            if args.reuse_completed_reasoning
+            else "dedicated_qwen_call"
+        ),
         "submission_eligible": False,
         "submission_ineligibility_reasons": [
             "partial_reasoning_patch_requires_full_assembly"

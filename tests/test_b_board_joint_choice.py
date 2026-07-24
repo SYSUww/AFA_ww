@@ -17,7 +17,7 @@ from afa_agent.b_board.runner import (
 from afa_agent.client import LLMResponse
 from afa_agent.models import RetrievalHit, TokenUsage
 from scripts.build_b_board_overlay_candidate import (
-    _reject_research_only_joint_artifacts,
+    _reject_research_only_artifacts,
 )
 from scripts.analyze_b_joint_choice import (
     _sha256 as analysis_sha256,
@@ -244,10 +244,94 @@ class JointChoicePayloadTests(unittest.TestCase):
             ValueError,
             "cannot be overlaid into a submission",
         ):
-            _reject_research_only_joint_artifacts(
+            _reject_research_only_artifacts(
                 [artifact],
                 run_dir=Path("/tmp/research-joint"),
             )
+
+    def test_submission_overlay_rejects_calculation_joint_reasoning(
+        self,
+    ) -> None:
+        artifact = BAnswerArtifact(
+            qid="calc_q1",
+            domain="financial_reports",
+            answer_format="calculation",
+            answer_slot_count=1,
+            answer_parts=["12.34"],
+            used_evidence_ids=["u1"],
+            evidence_items=[{"unit_id": "u1", "text": "证据"}],
+            decision_summary=(
+                "定位指标并按原始数值完成计算。最终答案为12.34。"
+            ),
+            decision_trace={
+                "calculation_joint_reasoning_enabled": True,
+                "submission_reasoning": {
+                    "generation_mode": (
+                        "calculation_plan_answer_and_reasoning"
+                    )
+                },
+            },
+            calculation_trace={
+                "grounding_verified": True,
+                "replay_verified": True,
+            },
+            token_usage={
+                "prompt_tokens": 10,
+                "completion_tokens": 5,
+                "total_tokens": 15,
+            },
+            locator={},
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "cannot be overlaid into a submission",
+        ):
+            _reject_research_only_artifacts(
+                [artifact],
+                run_dir=Path("/tmp/research-calculation-joint"),
+            )
+
+    def test_submission_overlay_rejects_guarded_adaptive_calculation(
+        self,
+    ) -> None:
+        artifact = BAnswerArtifact(
+            qid="calc_q1",
+            domain="financial_reports",
+            answer_format="calculation",
+            answer_slot_count=1,
+            answer_parts=["12.34"],
+            used_evidence_ids=["u1"],
+            evidence_items=[{"unit_id": "u1", "text": "证据"}],
+            decision_summary="根据证据完成计算，最终答案为12.34。",
+            decision_trace={
+                "calculation_guarded_adaptive_thinking_enabled": True,
+            },
+            calculation_trace={
+                "grounding_verified": True,
+                "replay_verified": True,
+            },
+            token_usage={
+                "prompt_tokens": 10,
+                "completion_tokens": 5,
+                "total_tokens": 15,
+            },
+            locator={},
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "cannot be overlaid into a submission",
+        ):
+            _reject_research_only_artifacts(
+                [artifact],
+                run_dir=Path("/tmp/research-calculation-adaptive"),
+            )
+        _reject_research_only_artifacts(
+            [artifact],
+            run_dir=Path("/tmp/research-calculation-adaptive"),
+            allow_guarded_adaptive=True,
+        )
 
     def test_joint_generation_is_research_only(self) -> None:
         runner = object.__new__(BBoardActualRunner)

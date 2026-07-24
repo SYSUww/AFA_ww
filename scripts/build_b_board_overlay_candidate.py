@@ -22,6 +22,7 @@ from afa_agent.b_board.io import (
     write_b_submission,
 )
 from afa_agent.b_board.runner import (
+    CALCULATION_JOINT_REASONING_PROMPT_VERSION,
     BAnswerArtifact,
     _answer_checkpoint_from_completed_artifact,
     _artifact_from_dict,
@@ -53,6 +54,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--question-root", default="upload_b/question_b")
     parser.add_argument("--submission-template", default="upload_b/submit.csv")
+    parser.add_argument(
+        "--research-only",
+        action="store_true",
+        help=(
+            "Build an audit-ready research composite without marking it "
+            "submission-eligible. Required when an overlay contains a "
+            "research-only guarded-adaptive calculation artifact."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -106,28 +116,64 @@ def _validate_artifact_call_models(
             )
 
 
-def _reject_research_only_joint_artifacts(
+def _reject_research_only_artifacts(
     artifacts: list[BAnswerArtifact],
     *,
     run_dir: Path,
+    allow_guarded_adaptive: bool = False,
 ) -> None:
     joint_qids = [
         artifact.qid
         for artifact in artifacts
         if (
             "joint_choice_generation" in artifact.decision_trace
+            or artifact.decision_trace.get(
+                "calculation_joint_reasoning_enabled"
+            )
+            is True
             or str(
                 dict(
                     artifact.decision_trace.get("submission_reasoning")
                     or {}
                 ).get("generation_mode", "")
             ).startswith("joint_")
+            or str(
+                dict(
+                    artifact.decision_trace.get("submission_reasoning")
+                    or {}
+                ).get("generation_mode", "")
+            )
+            == "calculation_plan_answer_and_reasoning"
+            or str(
+                dict(
+                    artifact.decision_trace.get("submission_reasoning")
+                    or {}
+                ).get("prompt_version", "")
+            )
+            in {
+                CALCULATION_JOINT_REASONING_PROMPT_VERSION,
+                "answer_stage_decision_summary_legacy_shadow_v1",
+            }
         )
     ]
     if joint_qids:
         raise ValueError(
             f"{run_dir}: research-only joint answer/reasoning artifacts "
             f"cannot be overlaid into a submission candidate: {joint_qids}"
+        )
+    adaptive_qids = [
+        artifact.qid
+        for artifact in artifacts
+        if artifact.decision_trace.get(
+            "calculation_guarded_adaptive_thinking_enabled"
+        )
+        is True
+    ]
+    if adaptive_qids and not allow_guarded_adaptive:
+        raise ValueError(
+            f"{run_dir}: research-only guarded-adaptive calculation "
+            "artifacts cannot be overlaid into a submission candidate: "
+            f"{adaptive_qids}"
         )
 
 
@@ -136,6 +182,7 @@ def main() -> None:
     base_run = _resolve(args.base_run)
     overlay_runs = [_resolve(path) for path in args.overlay_run]
     output_dir = _resolve(args.output_dir)
+    research_only = bool(args.research_only)
     if output_dir.exists() and any(output_dir.iterdir()):
         raise FileExistsError(f"output directory is not empty: {output_dir}")
 
@@ -151,9 +198,10 @@ def main() -> None:
         raise ValueError(f"{base_run}: base model is not allowlisted Qwen")
 
     base_artifacts = _load_artifacts(base_run)
-    _reject_research_only_joint_artifacts(
+    _reject_research_only_artifacts(
         base_artifacts,
         run_dir=base_run,
+        allow_guarded_adaptive=research_only,
     )
     overlay_artifact_groups: list[list[BAnswerArtifact]] = []
     overlay_lineage: list[dict[str, Any]] = []
@@ -169,9 +217,10 @@ def main() -> None:
                 f"match base model {base_model_name!r}"
             )
         artifacts = _load_artifacts(run_dir)
-        _reject_research_only_joint_artifacts(
+        _reject_research_only_artifacts(
             artifacts,
             run_dir=run_dir,
+            allow_guarded_adaptive=research_only,
         )
         overlay_artifact_groups.append(artifacts)
         overlay_lineage.append(
@@ -207,7 +256,9 @@ def main() -> None:
     answer_ledger_path = output_dir / "answer_usage_ledger.jsonl"
     reasoning_ledger_path = output_dir / "reasoning_usage_ledger.jsonl"
     usage_ledger_path = output_dir / "usage_ledger.jsonl"
-    submission_path = output_dir / "submit.csv"
+    submission_path = output_dir / (
+        "research_submit.csv" if research_only else "submit.csv"
+    )
     write_json(
         answer_artifacts_path,
         [item.to_dict() for item in answer_checkpoints],
@@ -250,7 +301,7 @@ def main() -> None:
         "completed_at": datetime.now().isoformat(timespec="seconds"),
         "status": "complete",
         "stage": "full",
-        "run_mode": "submission",
+        "run_mode": "research" if research_only else "submission",
         "model": dict(base_manifest.get("model") or {}),
         "expected_question_count": len(questions),
         "answered_question_count": len(merged),
@@ -277,10 +328,16 @@ def main() -> None:
         "answer_usage_ledger_path": str(answer_ledger_path),
         "reasoning_usage_ledger_path": str(reasoning_ledger_path),
         "usage_ledger_path": str(usage_ledger_path),
-        "submission_eligible": True,
-        "submission_ineligibility_reasons": [],
-        "submission_path": str(submission_path),
-        "research_submission_path": None,
+        "submission_eligible": not research_only,
+        "submission_ineligibility_reasons": (
+            ["research_overlay_is_not_submission_eligible"]
+            if research_only
+            else []
+        ),
+        "submission_path": None if research_only else str(submission_path),
+        "research_submission_path": (
+            str(submission_path) if research_only else None
+        ),
         "base_run": {
             "run_dir": str(base_run),
             "manifest_sha256": _sha256(base_run / "run_manifest.json"),

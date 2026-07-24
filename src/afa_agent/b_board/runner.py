@@ -8,18 +8,31 @@ import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 from afa_agent.b_board.calculation import (
+    CalculationErrorCode,
     CalculationExecutor,
     CalculationPlanError,
     check_variable_grounding,
+    normalize_amount_unit_conversions,
 )
 from afa_agent.b_board.calculation_schema import (
     CALCULATION_PLAN_SCHEMA,
     CALCULATION_PLAN_SCHEMA_VERSION,
     validate_calculation_plan_schema,
+)
+from afa_agent.b_board.calculation_profile import (
+    CALCULATION_PROFILE_SCHEMA,
+    CALCULATION_PROFILE_SCHEMA_VERSION,
+    CALCULATION_THINKING_POLICY_VERSION,
+    CalculationProfile,
+    build_calculation_profile_messages,
+    calculation_profile_solver_guidance,
+    infer_calculation_thinking_policy,
+    parse_calculation_profile,
 )
 from afa_agent.b_board.reasoning_schema import (
     REASONING_FEEDBACK_SCHEMA,
@@ -73,6 +86,7 @@ from afa_agent.run_metadata import (
     build_run_fingerprint,
     validate_resume_fingerprint,
 )
+from afa_agent.text_utils import tokenize_zh_primary
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -121,7 +135,75 @@ next_workday 的 args 写 {"date":{"ref":"日期变量"}}；days_between 的 arg
 sort_desc 使用 items:[{label,source}]。outputs 数量必须等于答案槽数；每项为 {source,format}。
 format 仅 raw,decimal0,decimal1,decimal2,percent2,date_cn,text。中间过程不得舍入，最终才按格式四舍五入。
 格式优先级为：题干具体要求 > README通用规则 > 提交模板占位。题干未规定时，README要求百分数答案带%并保留两位小数，其他数值不带单位并保留两位小数。
-证据 ID 必须原样使用给定 evidence_id。题目本身给出的数值可引用 question:<qid>。只输出 JSON。"""
+证据 ID 必须原样使用给定 evidence_id。题目本身给出的数值统一引用 question:input。只输出 JSON。"""
+
+CALCULATION_FULL_PROMPT_VERSION = "calculation_full_v2_question_input"
+CALCULATION_MODULAR_PROMPT_VERSION = "calculation_domain_modular_v1"
+CALCULATION_JOINT_REASONING_PROMPT_VERSION = (
+    "calculation_joint_submission_reasoning_v1"
+)
+CALCULATION_JOINT_REASONING_PROMPT_SUFFIX = f"""本次输出中的decision_summary会原样作为最终提交reasoning，且其生成成本已经包含在本次计算计划调用的原始usage中。不得依赖后续模型改写或代码补写。
+decision_summary必须是具体、可审计的中文推理摘要：
+1. 说明题目所需主体、期间、指标、合同或规则口径；
+2. 写出决定答案的原始事实、必要公式、单位换算、条件分支和推导结果；直接提取题也要说明提取的对象与数值；
+3. 多答案按outputs槽位顺序说明，排序题写明排序依据和差值，保险题逐合同说明适用规则后再汇总；
+4. 明确写出与outputs格式化结果完全一致的最终答案，不得出现与最终结果矛盾的中间近似值；最后一句必须严格使用以下格式：单槽为“最终答案为<槽1>。”，多槽为“最终答案依次为<槽1>；<槽2>；……。”；
+5. 不得输出evidence_id、unit_id、step id、JSON字段名、“本地重放”或生成流程说明，不得补充证据外事实。
+去除空白后不少于20个字符，通常控制在120至360个中文字符。只输出既定JSON对象，不新增字段。
+prompt_version={CALCULATION_JOINT_REASONING_PROMPT_VERSION}。"""
+CALCULATION_CORE_SYSTEM_PROMPT = """你是金融长文计算题的结构化求解器。只使用题目和给定证据，不补充未给出的事实。
+只输出一个JSON对象，字段严格为variables、steps、outputs、supporting_evidence_ids、decision_summary。
+
+variables格式为[{name,value,value_type,unit,evidence_ids}]。value_type仅decimal、date、text。
+每个变量只能是题目或证据中逐字出现的原始输入，value与unit必须能在所引evidence_id中直接核验；题目输入统一引用question:input。派生值、换算值、排序、计数和日期运算结果只能放在steps，禁止伪装成证据变量。
+只有证据明确写出单位时才填写unit；裸数填空字符串。缺少原始变量时不得猜测或用“无法计算”冒充数值，应该让本地校验拒绝计划。
+
+steps格式为[{id,op,...}]，引用写{"ref":"变量或步骤id"}，常量写{"literal":"数值","value_type":"decimal","unit":""}。
+add、sub、mul、div、mean、abs、max、min的args必须是有序数组。
+pct_change和pct_point_delta必须使用new、old具名字段；pct_change计算(new/old-1)*100，pct_point_delta计算new-old。
+count_gte、count_gt使用args数组和threshold；sort_desc使用items:[{label,source}]；日期运算date_add_days、next_workday、days_between使用date、days、start、end具名字段。
+允许op仅为add,sub,mul,div,mean,abs,max,min,pct_change,pct_point_delta,count_gte,count_gt,sort_desc,date_add_days,next_workday,days_between。
+
+outputs数量必须等于答案槽数，每项为{source,format}，source必须引用变量或step。
+format仅raw,decimal0,decimal1,decimal2,percent2,date_cn,text。中间过程不得舍入，最终才按题干要求四舍五入；题干未规定时，百分数带%并保留两位，其他数值不带单位并保留两位。
+supporting_evidence_ids记录决定公式、条件、分段、门槛或聚合口径但不直接提供变量值的规则证据，必须原样引用给定evidence_id。
+decision_summary简要说明原始事实、公式和结果，不得补充证据外信息。"""
+
+CALCULATION_DOMAIN_SYSTEM_PROMPTS: dict[str, str] = {
+    "financial_reports": """领域约束：财务报告。
+主体、报告年度、指标口径和表格列必须同时绑定。目标年度值应来自目标年度报告的本报告期列；不得把上年比较列或其他年度报告中的值改名为目标年度值。
+题目要求分地区、分产品等表格行时，行标签与数值必须来自同一证据行。要求使用原始金额计算比率或百分点时，必须分别以同期间分子除以分母，再计算差值；禁止直接拿展示百分比替代。
+金额运算前显式统一亿元、万元、元等尺度。比例变量保留证据中的%单位，执行器会自动处理百分数与比率，禁止重复乘除100。
+排序必须覆盖题面列出的全部主体。全年分红应采用同一年度完整口径：若年末方案是扣除中期后的剩余额，则先用add合并；若证据已披露全年合计则不得重复相加。""",
+    "financial_contracts": """领域约束：募集说明书、评估报告和交易文件。
+严格绑定评估基准日、报告期、主体和指标；多个基准日或多个答案槽必须分别使用各自证据事实，不得复制同一结果。
+若证据直接披露与题目同期间、同指标、同单位的平均值，该值就是目标聚合结果，不得将它当成单期值再次平均。
+金额、股本和每股指标计算前统一亿元、万元、元、万股等尺度；最终仅输出题目要求的数值格式。""",
+    "insurance": """领域约束：保险合同。
+每份合同必须独立匹配其产品、状态、保单年度、年龄和给付或退保条款，再汇总；不得跨产品复用比例或条件。
+条款规定“取较大者/较小者”时必须使用max/min，禁止相加；规定差额不小于0时先用max(差额,0)。给付比例乘基本保险金额后，再与账户价值或现金价值比较。
+分段费率逐行匹配边界，题目所处年度不得套用相邻区间。使用任何分段、门槛、给付条件或比较规则时，把对应条款加入supporting_evidence_ids。""",
+    "regulatory": """领域约束：监管规则。
+区分自然日、工作日、受理当日是否计入以及“期满后次一工作日”等口径；日期计算必须使用日期步骤，不凭常识直接填写结果。
+单笔门槛、次数、主体和独立事项分别判断后再计数。减半、折半、加倍等调整必须保留原始数值，并在steps中用div或mul计算，禁止把派生数值写成证据变量。""",
+    "research": """领域约束：研究材料与题设情景。
+题目明确给出的目标期假设优先于材料历史值；材料只提供基期事实时，先提取同口径基期，再按题设变化计算目标期。
+必须保持销量、单耗、金额、人数、比例和期间口径一致；百分比变化区分同比增速与百分点差。不得用外部常识补足材料中缺失的基期变量。""",
+}
+
+
+def _calculation_system_prompt(domain: str) -> str:
+    domain_prompt = CALCULATION_DOMAIN_SYSTEM_PROMPTS.get(str(domain).strip())
+    if domain_prompt is None:
+        raise ValueError(f"Unsupported calculation domain: {domain!r}")
+    return "\n\n".join(
+        [
+            CALCULATION_CORE_SYSTEM_PROMPT,
+            domain_prompt,
+            f"prompt_version={CALCULATION_MODULAR_PROMPT_VERSION}",
+        ]
+    )
+
 
 SUBMISSION_REASONING_PROMPT_VERSION = (
     "b_submission_reasoning_v8_type_conditioned_concise"
@@ -171,6 +253,9 @@ SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推�
 
 RUNNER_VERSION = "b_actual_v31_three_semantic_badcases"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v3_semantic_first_pass"
+CALCULATION_STRUCTURED_RETRIEVAL_VERSION = (
+    "document_period_idf_round_robin_v3_typed_retry"
+)
 CALCULATION_PLAN_NORMALIZATION_VERSION = "qwen37_structure_contract_v3_schema"
 CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
     "insurance_surrender_rate_v1+question_target_date_binding_v1"
@@ -186,10 +271,14 @@ CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
     "+target_report_period_column_v1"
     "+insurance_benefit_operator_binding_v1"
 )
-CALCULATION_PROMPT_EVIDENCE_POLICY_VERSION = (
-    "progressive_8_16_24_v2_semantic_overlays"
+CALCULATION_STRUCTURED_PROMPT_EVIDENCE_POLICY_VERSION = (
+    "progressive_16_32_48_v5_typed_retry"
 )
-CALCULATION_PROMPT_HITS_PER_ATTEMPT = 8
+CALCULATION_BASELINE_PROMPT_EVIDENCE_POLICY_VERSION = (
+    "progressive_8_16_24_v1"
+)
+CALCULATION_STRUCTURED_PROMPT_HITS_PER_ATTEMPT = 16
+CALCULATION_BASELINE_PROMPT_HITS_PER_ATTEMPT = 8
 CALCULATION_OPERATOR_SHAPE_HINT_VERSION = (
     "question_conditioned_operator_shapes_v2_multi_policy"
 )
@@ -199,6 +288,15 @@ RUN_MODES = (RUN_MODE_SUBMISSION, RUN_MODE_RESEARCH)
 RUN_STAGE_FULL = "full"
 RUN_STAGE_ANSWER = "answer"
 RUN_STAGES = (RUN_STAGE_FULL, RUN_STAGE_ANSWER)
+CALCULATION_PROVIDER_FORMAT_NATIVE = "native"
+CALCULATION_PROVIDER_FORMAT_JSON_OBJECT = "json_object"
+CALCULATION_PROVIDER_FORMATS = (
+    CALCULATION_PROVIDER_FORMAT_NATIVE,
+    CALCULATION_PROVIDER_FORMAT_JSON_OBJECT,
+)
+CALCULATION_REPAIR_RETRY_VERSION = (
+    "seeded_json_no_thinking_same_evidence_v1"
+)
 
 
 @dataclass(slots=True)
@@ -273,6 +371,18 @@ class BBoardActualRunner:
         ),
         reasoning_enable_thinking: bool | None = None,
         reasoning_thinking_budget: int | None = None,
+        calculation_profile_enabled: bool = False,
+        calculation_modular_prompt_enabled: bool = False,
+        calculation_structured_retrieval_enabled: bool = False,
+        calculation_unit_repair_enabled: bool = False,
+        calculation_enable_thinking: bool | None = None,
+        calculation_thinking_budget: int | None = None,
+        calculation_provider_format: str = (
+            CALCULATION_PROVIDER_FORMAT_NATIVE
+        ),
+        calculation_repair_retry_enabled: bool = False,
+        calculation_guarded_adaptive_thinking_enabled: bool = False,
+        calculation_joint_reasoning_enabled: bool = False,
         run_mode: str = RUN_MODE_SUBMISSION,
     ) -> None:
         if reasoning_evidence_char_limit < 1:
@@ -306,6 +416,71 @@ class BBoardActualRunner:
             raise ValueError(
                 "reasoning_thinking_budget requires thinking to be enabled"
             )
+        if not isinstance(calculation_profile_enabled, bool):
+            raise TypeError("calculation_profile_enabled must be bool")
+        if not isinstance(calculation_modular_prompt_enabled, bool):
+            raise TypeError(
+                "calculation_modular_prompt_enabled must be bool"
+            )
+        if not isinstance(calculation_structured_retrieval_enabled, bool):
+            raise TypeError(
+                "calculation_structured_retrieval_enabled must be bool"
+            )
+        if not isinstance(calculation_unit_repair_enabled, bool):
+            raise TypeError(
+                "calculation_unit_repair_enabled must be bool"
+            )
+        if (
+            calculation_enable_thinking is not None
+            and not isinstance(calculation_enable_thinking, bool)
+        ):
+            raise TypeError(
+                "calculation_enable_thinking must be bool or None"
+            )
+        if (
+            calculation_thinking_budget is not None
+            and (
+                isinstance(calculation_thinking_budget, bool)
+                or not isinstance(calculation_thinking_budget, int)
+            )
+        ):
+            raise TypeError(
+                "calculation_thinking_budget must be int or None"
+            )
+        if (
+            calculation_thinking_budget is not None
+            and calculation_thinking_budget < 1
+        ):
+            raise ValueError(
+                "calculation_thinking_budget must be positive"
+            )
+        if (
+            calculation_thinking_budget is not None
+            and calculation_enable_thinking is False
+        ):
+            raise ValueError(
+                "calculation_thinking_budget requires thinking to be enabled"
+            )
+        if calculation_provider_format not in CALCULATION_PROVIDER_FORMATS:
+            raise ValueError(
+                "calculation_provider_format must be one of: "
+                + ", ".join(CALCULATION_PROVIDER_FORMATS)
+            )
+        if not isinstance(calculation_repair_retry_enabled, bool):
+            raise TypeError(
+                "calculation_repair_retry_enabled must be bool"
+            )
+        if not isinstance(
+            calculation_guarded_adaptive_thinking_enabled,
+            bool,
+        ):
+            raise TypeError(
+                "calculation_guarded_adaptive_thinking_enabled must be bool"
+            )
+        if not isinstance(calculation_joint_reasoning_enabled, bool):
+            raise TypeError(
+                "calculation_joint_reasoning_enabled must be bool"
+            )
         self.questions = list(questions)
         self.question_by_qid = {item.qid: item for item in questions}
         self.parsed_root = Path(parsed_root).resolve()
@@ -316,7 +491,73 @@ class BBoardActualRunner:
         self.reasoning_evidence_char_limit = reasoning_evidence_char_limit
         self.reasoning_enable_thinking = reasoning_enable_thinking
         self.reasoning_thinking_budget = reasoning_thinking_budget
+        self.calculation_profile_enabled = calculation_profile_enabled
+        self.calculation_modular_prompt_enabled = (
+            calculation_modular_prompt_enabled
+        )
+        self.calculation_structured_retrieval_enabled = (
+            calculation_structured_retrieval_enabled
+        )
+        self.calculation_unit_repair_enabled = (
+            calculation_unit_repair_enabled
+        )
+        self.calculation_enable_thinking = calculation_enable_thinking
+        self.calculation_thinking_budget = calculation_thinking_budget
+        self.calculation_provider_format = calculation_provider_format
+        self.calculation_repair_retry_enabled = (
+            calculation_repair_retry_enabled
+        )
+        self.calculation_guarded_adaptive_thinking_enabled = (
+            calculation_guarded_adaptive_thinking_enabled
+        )
+        self.calculation_joint_reasoning_enabled = (
+            calculation_joint_reasoning_enabled
+        )
         self.run_mode = _validate_run_mode(run_mode)
+        if (
+            calculation_guarded_adaptive_thinking_enabled
+            and (
+                calculation_enable_thinking is not None
+                or calculation_thinking_budget is not None
+            )
+        ):
+            raise ValueError(
+                "guarded adaptive thinking cannot be combined with an "
+                "explicit calculation thinking mode or budget"
+            )
+        if (
+            calculation_guarded_adaptive_thinking_enabled
+            and calculation_repair_retry_enabled
+        ):
+            raise ValueError(
+                "guarded adaptive thinking cannot be combined with "
+                "calculation repair retry because repair forces a "
+                "non-default retry thinking mode"
+            )
+        if (
+            calculation_guarded_adaptive_thinking_enabled
+            and calculation_joint_reasoning_enabled
+        ):
+            raise ValueError(
+                "guarded adaptive thinking and joint calculation reasoning "
+                "must be evaluated as separate research directions"
+            )
+        if (
+            calculation_guarded_adaptive_thinking_enabled
+            and self.run_mode != RUN_MODE_RESEARCH
+        ):
+            raise ValueError(
+                "guarded adaptive calculation thinking is research-only "
+                "until its Top-12 and full-26 promotion gates pass"
+            )
+        if (
+            calculation_joint_reasoning_enabled
+            and self.run_mode != RUN_MODE_RESEARCH
+        ):
+            raise ValueError(
+                "calculation joint reasoning is research-only until its "
+                "Top-12 and full-26 promotion gates pass"
+            )
         self.config = build_run_config(ROOT)
         if self.config.model is None:
             raise RuntimeError("Missing model config in .env")
@@ -395,7 +636,61 @@ class BBoardActualRunner:
         frozen_signature = _answer_artifact_signature(frozen)
         with capture_llm_usage() as usage_ledger:
             try:
-                artifact = self._attach_submission_reasoning(question, frozen)
+                if (
+                    getattr(
+                        self,
+                        "calculation_joint_reasoning_enabled",
+                        False,
+                    )
+                    and question.answer_format == "calculation"
+                ):
+                    joint_contract_status = str(
+                        frozen.decision_trace.get(
+                            "calculation_joint_reasoning_contract_status",
+                            "",
+                        )
+                    )
+                    if joint_contract_status == "valid":
+                        artifact = (
+                            finalize_calculation_answer_summary_reasoning(
+                                frozen,
+                                require_joint_contract=True,
+                            )
+                        )
+                    else:
+                        artifact = self._attach_submission_reasoning(
+                            question,
+                            frozen,
+                        )
+                        artifact.decision_trace = {
+                            **artifact.decision_trace,
+                            "submission_reasoning": {
+                                **dict(
+                                    artifact.decision_trace.get(
+                                        "submission_reasoning"
+                                    )
+                                    or {}
+                                ),
+                                "co_generated_with_answer": False,
+                                "joint_fallback_used": True,
+                                "joint_fallback_trigger": (
+                                    "calculation_joint_reasoning_contract_"
+                                    "invalid"
+                                ),
+                                "joint_contract_errors": list(
+                                    frozen.decision_trace.get(
+                                        "calculation_joint_reasoning_"
+                                        "contract_errors",
+                                        [],
+                                    )
+                                ),
+                            },
+                        }
+                else:
+                    artifact = self._attach_submission_reasoning(
+                        question,
+                        frozen,
+                    )
             except Exception as exc:
                 diagnostics = list(getattr(exc, "diagnostics", []))
                 diagnostics.append(
@@ -428,14 +723,25 @@ class BBoardActualRunner:
             answer_artifact.token_usage,
             reasoning_usage,
         )
+        prior_reasoning_stage = dict(
+            artifact.decision_trace.get("reasoning_stage") or {}
+        )
+        prior_reasoning_ledger = dict(
+            artifact.decision_trace.get(
+                "reasoning_api_usage_ledger"
+            )
+            or {}
+        )
         artifact.decision_trace = {
             **artifact.decision_trace,
             "reasoning_stage": {
+                **prior_reasoning_stage,
                 "status": "complete",
                 "answer_artifact_frozen": True,
                 "answer_artifact_sha256": frozen_signature,
             },
             "reasoning_api_usage_ledger": {
+                **prior_reasoning_ledger,
                 "call_count": len(usage_ledger.calls),
                 "calls": usage_ledger.calls,
             },
@@ -978,6 +1284,41 @@ class BBoardActualRunner:
                 "reasoning_usage_ledger_path": str(reasoning_ledger_path),
                 "usage_ledger_path": str(usage_ledger_path),
                 "run_mode": self.run_mode,
+                "calculation_modular_prompt_enabled": getattr(
+                    self,
+                    "calculation_modular_prompt_enabled",
+                    False,
+                ),
+                "calculation_structured_retrieval_enabled": getattr(
+                    self,
+                    "calculation_structured_retrieval_enabled",
+                    False,
+                ),
+                "calculation_unit_repair_enabled": getattr(
+                    self,
+                    "calculation_unit_repair_enabled",
+                    False,
+                ),
+                "calculation_thinking_budget": getattr(
+                    self,
+                    "calculation_thinking_budget",
+                    None,
+                ),
+                "calculation_enable_thinking": getattr(
+                    self,
+                    "calculation_enable_thinking",
+                    None,
+                ),
+                "calculation_provider_format": getattr(
+                    self,
+                    "calculation_provider_format",
+                    CALCULATION_PROVIDER_FORMAT_NATIVE,
+                ),
+                "calculation_repair_retry_enabled": getattr(
+                    self,
+                    "calculation_repair_retry_enabled",
+                    False,
+                ),
                 "reasoning_thinking_budget": getattr(
                     self,
                     "reasoning_thinking_budget",
@@ -1294,23 +1635,75 @@ class BBoardActualRunner:
         candidate_doc_ids: list[str],
         locator: Mapping[str, Any],
     ) -> BAnswerArtifact:
+        usage = TokenUsage()
+        structured_retrieval_enabled = getattr(
+            self,
+            "calculation_structured_retrieval_enabled",
+            False,
+        )
+        calculation_prompt_hits_per_attempt = (
+            CALCULATION_STRUCTURED_PROMPT_HITS_PER_ATTEMPT
+            if structured_retrieval_enabled
+            else CALCULATION_BASELINE_PROMPT_HITS_PER_ATTEMPT
+        )
+        calculation_prompt_evidence_policy = (
+            CALCULATION_STRUCTURED_PROMPT_EVIDENCE_POLICY_VERSION
+            if structured_retrieval_enabled
+            else CALCULATION_BASELINE_PROMPT_EVIDENCE_POLICY_VERSION
+        )
+        calculation_doc_ids = (
+            _select_calculation_document_scope(
+                question,
+                candidate_doc_ids,
+            )
+            if structured_retrieval_enabled
+            else list(candidate_doc_ids)
+        )
+        profile: CalculationProfile | None = None
+        if getattr(self, "calculation_profile_enabled", False):
+            profile_response = self.client.chat_json(
+                build_calculation_profile_messages(
+                    domain=question.domain,
+                    question=question.question,
+                    answer_format=question.answer_format,
+                    answer_slots=question.answer_slots,
+                    answer_slot_templates=question.answer_slot_templates,
+                ),
+                response_schema=CALCULATION_PROFILE_SCHEMA,
+                schema_name=CALCULATION_PROFILE_SCHEMA_VERSION,
+                extra_body={
+                    "enable_thinking": False,
+                    "max_completion_tokens": 1024,
+                },
+                call_role="calculation_profile",
+            )
+            usage.add(profile_response.token_usage)
+            profile = parse_calculation_profile(
+                extract_json_object(profile_response.content),
+                domain=question.domain,
+                expected_output_count=question.answer_slots,
+            )
+        profile_queries = (
+            profile.retrieval_queries()
+            if profile is not None
+            else ()
+        )
         query = "\n".join(
             [
                 question.question,
                 question.type,
-                "数值 公式 单位 日期 条款 计算",
-                _calculation_semantic_query_terms(question.question),
+                *profile_queries,
             ]
         )
         hits = self.retrievers[question.domain].search(
-            candidate_doc_ids,
+            calculation_doc_ids,
             query,
             top_k=self.calculation_top_k,
             unit_type_boosts={"metric_row": 1.8, "formula_block": 2.0, "clause_block": 1.5, "article": 1.3},
             ensure_per_doc=True,
             expand_neighbors=True,
         )
-        question_evidence_id = f"question:{question.qid}"
+        question_evidence_id = "question:input"
         question_evidence = {
             "unit_id": question_evidence_id,
             "doc_id": "__question__",
@@ -1321,81 +1714,335 @@ class BBoardActualRunner:
         generic_evidence = [
             _normalize_evidence(hit.to_dict()) for hit in hits
         ]
-        initial_phrase_evidence = calculation_first_pass_evidence_overlays(
+        initial_structured_evidence = (
+            _calculation_structured_first_pass_evidence(
+                self.retrievers[question.domain],
+                calculation_doc_ids,
+                question.question,
+                top_k=max(12, self.calculation_top_k),
+            )
+            if (
+                profile is None
+                and structured_retrieval_enabled
+            )
+            else []
+        )
+        initial_profile_evidence = _calculation_profile_evidence(
             self.retrievers[question.domain],
-            _calculation_phrase_overlay_doc_ids(
-                question,
-                candidate_doc_ids,
-            ),
-            (
-                f"{question.question}\n"
-                f"{_calculation_semantic_query_terms(question.question)}"
-            ),
+            calculation_doc_ids,
+            profile,
             top_k=max(12, self.calculation_top_k),
         )
         evidence_items, _ = _merge_calculation_evidence(
-            [question_evidence, *initial_phrase_evidence],
+            [
+                question_evidence,
+                *initial_structured_evidence,
+                *initial_profile_evidence,
+            ],
             generic_evidence,
             max_items=1 + self.calculation_top_k * 3,
         )
-        initial_phrase_evidence_ids = [
-            str(item["unit_id"]) for item in initial_phrase_evidence
+        initial_profile_evidence_ids = [
+            str(item["unit_id"]) for item in initial_profile_evidence
         ]
-        usage = TokenUsage()
+        initial_structured_evidence_ids = [
+            str(item["unit_id"]) for item in initial_structured_evidence
+        ]
         last_error: Exception | None = None
+        previous_error_fingerprint: tuple[str, tuple[str, ...]] | None = None
+        repair_seed_plan: dict[str, Any] | None = None
         feedback = ""
         diagnostics: list[dict[str, Any]] = []
         retrieval_rounds: list[dict[str, Any]] = []
+        calculation_attempt_modes: list[dict[str, Any]] = []
+        modular_prompt_enabled = getattr(
+            self,
+            "calculation_modular_prompt_enabled",
+            False,
+        )
+        calculation_prompt = (
+            _calculation_system_prompt(question.domain)
+            if modular_prompt_enabled
+            else CALCULATION_SYSTEM_PROMPT
+        )
+        calculation_prompt_version = (
+            CALCULATION_MODULAR_PROMPT_VERSION
+            if modular_prompt_enabled
+            else CALCULATION_FULL_PROMPT_VERSION
+        )
+        joint_reasoning_enabled = getattr(
+            self,
+            "calculation_joint_reasoning_enabled",
+            False,
+        )
+        if joint_reasoning_enabled:
+            calculation_prompt = "\n\n".join(
+                [
+                    calculation_prompt,
+                    CALCULATION_JOINT_REASONING_PROMPT_SUFFIX,
+                ]
+            )
+            calculation_prompt_version = "+".join(
+                [
+                    calculation_prompt_version,
+                    CALCULATION_JOINT_REASONING_PROMPT_VERSION,
+                ]
+            )
+        calculation_thinking_budget = getattr(
+            self,
+            "calculation_thinking_budget",
+            None,
+        )
+        calculation_request_kwargs: dict[str, Any] = {}
+        guarded_adaptive_thinking_enabled = getattr(
+            self,
+            "calculation_guarded_adaptive_thinking_enabled",
+            False,
+        )
+        adaptive_thinking_policy: dict[str, Any] = {}
+        calculation_enable_thinking = getattr(
+            self,
+            "calculation_enable_thinking",
+            None,
+        )
+        if (
+            calculation_enable_thinking is not None
+            or calculation_thinking_budget is not None
+        ):
+            calculation_request_kwargs["extra_body"] = {
+                "enable_thinking": (
+                    calculation_enable_thinking
+                    if calculation_enable_thinking is not None
+                    else True
+                ),
+                **(
+                    {"thinking_budget": calculation_thinking_budget}
+                    if calculation_thinking_budget is not None
+                    else {}
+                ),
+            }
         for attempt_number in range(1, 4):
+            use_repair_retry = (
+                getattr(
+                    self,
+                    "calculation_repair_retry_enabled",
+                    False,
+                )
+                and repair_seed_plan is not None
+            )
             evidence_payload = _calculation_evidence_payload(
                 evidence_items,
                 max_non_question_hits=(
-                    CALCULATION_PROMPT_HITS_PER_ATTEMPT * attempt_number
+                    calculation_prompt_hits_per_attempt
+                    * (1 if use_repair_retry else attempt_number)
                 ),
             )
-            semantic_constraints = _calculation_semantic_constraints(
-                question.question,
-                evidence_payload,
+            semantic_constraints = (
+                _extract_calculation_semantic_constraints(
+                    question.question,
+                    evidence_payload,
+                )
+                if guarded_adaptive_thinking_enabled
+                else []
             )
-            operator_shape_hint = _calculation_operator_shape_hint(
-                question.question
+            if (
+                guarded_adaptive_thinking_enabled
+                and attempt_number == 1
+            ):
+                adaptive_thinking_policy = (
+                    infer_calculation_thinking_policy(
+                        domain=question.domain,
+                        question=question.question,
+                        answer_slots=question.answer_slots,
+                        semantic_constraint_types=tuple(
+                            str(item.get("type", ""))
+                            for item in semantic_constraints
+                        ),
+                    ).to_dict()
+                )
+            profile_payload = profile.to_dict() if profile else {}
+            profile_guidance = calculation_profile_solver_guidance(
+                profile
             )
-            operator_shape_prompt = (
-                "与本题相关的合法 operator JSON 形状（仅约束字段形状，"
-                f"不得照抄示例值）：{operator_shape_hint}\n"
-                if operator_shape_hint
+            semantic_constraint_prompt = (
+                "运行时证据语义约束："
+                + json.dumps(
+                    semantic_constraints,
+                    ensure_ascii=False,
+                )
+                + "\n"
+                if guarded_adaptive_thinking_enabled
                 else ""
             )
             messages = [
-                {"role": "system", "content": CALCULATION_SYSTEM_PROMPT},
+                {
+                    "role": "system",
+                    "content": calculation_prompt,
+                },
                 {
                     "role": "user",
                     "content": (
-                        f"qid：{question.qid}\n题目：{question.question}\n答案槽数：{question.answer_slots}\n"
+                        f"题目：{question.question}\n答案槽数：{question.answer_slots}\n"
                         f"提交模板占位：{json.dumps(question.answer_slot_templates, ensure_ascii=False)}\n"
-                        f"题面与证据派生的计算口径约束："
-                        f"{json.dumps(semantic_constraints, ensure_ascii=False)}\n"
-                        f"{operator_shape_prompt}"
+                        f"结构化任务画像："
+                        f"{json.dumps(profile_payload, ensure_ascii=False)}\n"
+                        f"本画像要求的通用风险约束："
+                        f"{json.dumps(profile_guidance, ensure_ascii=False)}\n"
+                        f"{semantic_constraint_prompt}"
                         f"证据：{json.dumps(evidence_payload, ensure_ascii=False)}\n{feedback}"
                     ),
                 },
             ]
-            if (
+            attempt_request_kwargs = copy.deepcopy(
+                calculation_request_kwargs
+            )
+            if use_repair_retry:
+                attempt_request_kwargs["extra_body"] = {
+                    "enable_thinking": False,
+                }
+            elif (
+                guarded_adaptive_thinking_enabled
+                and attempt_number == 1
+            ):
+                adaptive_mode = str(
+                    adaptive_thinking_policy.get("mode", "default")
+                )
+                if adaptive_mode == "off":
+                    attempt_request_kwargs["extra_body"] = {
+                        "enable_thinking": False,
+                    }
+                elif adaptive_mode == "budget":
+                    attempt_request_kwargs["extra_body"] = {
+                        "enable_thinking": True,
+                        "thinking_budget": int(
+                            adaptive_thinking_policy[
+                                "thinking_budget"
+                            ]
+                        ),
+                    }
+            call_role = (
+                f"calculation_plan_repair_attempt_{attempt_number}"
+                if use_repair_retry
+                else f"calculation_plan_attempt_{attempt_number}"
+            )
+            attempt_mode = (
+                "seeded_json_no_thinking_repair"
+                if use_repair_retry
+                else (
+                    "guarded_adaptive_first_attempt_"
+                    + str(
+                        adaptive_thinking_policy.get(
+                            "mode",
+                            "default",
+                        )
+                    )
+                    if (
+                        guarded_adaptive_thinking_enabled
+                        and attempt_number == 1
+                    )
+                    else (
+                        "guarded_adaptive_default_retry"
+                        if guarded_adaptive_thinking_enabled
+                        else "full_generation"
+                    )
+                )
+            )
+            request_extra_body = dict(
+                attempt_request_kwargs.get("extra_body") or {}
+            )
+            request_enable_thinking = request_extra_body.get(
+                "enable_thinking"
+            )
+            attempt_record = {
+                "attempt": attempt_number,
+                "mode": attempt_mode,
+                "prompt_evidence_count": len(evidence_payload),
+                "request_thinking": {
+                    "mode": (
+                        "provider_default"
+                        if "enable_thinking" not in request_extra_body
+                        else (
+                            "enabled"
+                            if request_enable_thinking is True
+                            else "disabled"
+                        )
+                    ),
+                    "enable_thinking": request_enable_thinking,
+                    "thinking_budget": request_extra_body.get(
+                        "thinking_budget"
+                    ),
+                },
+                "status": "request_started",
+                "token_usage": None,
+            }
+            calculation_attempt_modes.append(attempt_record)
+            use_native_calculation_schema = (
                 self.config.model.structured_output_mode
                 == STRUCTURED_OUTPUT_NATIVE
-            ):
-                response = self.client.chat_json(
-                    messages,
-                    response_schema=CALCULATION_PLAN_SCHEMA,
-                    schema_name=CALCULATION_PLAN_SCHEMA_VERSION,
+                and getattr(
+                    self,
+                    "calculation_provider_format",
+                    CALCULATION_PROVIDER_FORMAT_NATIVE,
                 )
-            else:
-                response = self.client.chat_json(messages)
+                == CALCULATION_PROVIDER_FORMAT_NATIVE
+            )
+            try:
+                if use_native_calculation_schema:
+                    response = self.client.chat_json(
+                        messages,
+                        response_schema=CALCULATION_PLAN_SCHEMA,
+                        schema_name=CALCULATION_PLAN_SCHEMA_VERSION,
+                        call_role=call_role,
+                        **attempt_request_kwargs,
+                    )
+                else:
+                    response = self.client.chat_json(
+                        messages,
+                        call_role=call_role,
+                        **attempt_request_kwargs,
+                    )
+            except Exception as exc:
+                attempt_record.update(
+                    {
+                        "status": "request_failed",
+                        "error_type": exc.__class__.__name__,
+                        "error": str(exc)[:1000],
+                    }
+                )
+                raise BAnswerGenerationError(
+                    "Calculation model request failed before a usable "
+                    f"response: {exc}",
+                    token_usage=usage.to_dict(),
+                    diagnostics=[
+                        *diagnostics,
+                        {
+                            "attempt": attempt_number,
+                            "stage": "calculation_model_request",
+                            "calculation_guarded_adaptive_thinking_policy": (
+                                dict(adaptive_thinking_policy)
+                            ),
+                            "calculation_attempt_modes": copy.deepcopy(
+                                calculation_attempt_modes
+                            ),
+                        },
+                    ],
+                ) from exc
             usage.add(response.token_usage)
+            attempt_record.update(
+                {
+                    "status": "response_received",
+                    "response_format_mode": (
+                        response.response_format_mode
+                    ),
+                    "token_usage": response.token_usage.to_dict(),
+                }
+            )
             plan: dict[str, Any] | None = None
             plan_normalizations: list[dict[str, Any]] = []
+            joint_reasoning_contract_errors: list[str] = []
             try:
                 plan = extract_json_object(response.content)
+                raw_decision_summary = plan.get("decision_summary")
                 plan, numeric_normalizations = _normalize_calculation_numeric_literals(
                     plan
                 )
@@ -1411,8 +2058,38 @@ class BBoardActualRunner:
                     *numeric_normalizations,
                     *structure_normalizations,
                 ]
+                if joint_reasoning_enabled:
+                    if not isinstance(raw_decision_summary, str):
+                        raise CalculationPlanError(
+                            "joint decision_summary must be a model-generated "
+                            "string",
+                            error_code=(
+                                CalculationErrorCode.OUTPUT_CONTRACT_INVALID
+                            ),
+                        )
+                    if plan.get("decision_summary") != raw_decision_summary:
+                        raise CalculationPlanError(
+                            "joint decision_summary was modified during local "
+                            "normalization",
+                            error_code=(
+                                CalculationErrorCode.OUTPUT_CONTRACT_INVALID
+                            ),
+                        )
+                    if raw_decision_summary != raw_decision_summary.strip():
+                        joint_reasoning_contract_errors.append(
+                            "joint decision_summary contains leading or "
+                            "trailing whitespace and cannot be submitted "
+                            "verbatim"
+                        )
+                if getattr(
+                    self,
+                    "calculation_unit_repair_enabled",
+                    False,
+                ):
+                    plan_normalizations.extend(
+                        normalize_amount_unit_conversions(plan)
+                    )
                 validate_calculation_plan_schema(plan)
-                _validate_calculation_plan_has_required_inputs(plan)
                 _validate_calculation_required_sort_objects(question, plan)
                 _validate_full_year_dividend_component_dependency(
                     question,
@@ -1463,14 +2140,29 @@ class BBoardActualRunner:
                     ),
                 )
                 _validate_calculation_result_semantics(question, result.trace)
-                summary_normalization = (
-                    _validate_calculation_summary_output_consistency(
-                        plan,
-                        result.answer_parts,
+                if joint_reasoning_enabled:
+                    try:
+                        _validate_calculation_summary_output_consistency(
+                            plan,
+                            result.answer_parts,
+                            allow_deterministic_append=False,
+                        )
+                        _validate_calculation_joint_reasoning_summary(
+                            str(plan.get("decision_summary", "")),
+                            result.answer_parts,
+                            calculation_trace=result.trace,
+                        )
+                    except CalculationPlanError as exc:
+                        joint_reasoning_contract_errors.append(str(exc))
+                else:
+                    summary_normalization = (
+                        _validate_calculation_summary_output_consistency(
+                            plan,
+                            result.answer_parts,
+                        )
                     )
-                )
-                if summary_normalization is not None:
-                    plan_normalizations.append(summary_normalization)
+                    if summary_normalization is not None:
+                        plan_normalizations.append(summary_normalization)
                 available = {
                     str(item["evidence_id"]) for item in evidence_payload
                 }
@@ -1503,6 +2195,11 @@ class BBoardActualRunner:
                     for item in evidence_items
                     if str(item["unit_id"]) in combined_evidence_ids
                 ]
+                decision_summary = (
+                    raw_decision_summary
+                    if joint_reasoning_enabled
+                    else str(plan.get("decision_summary", "")).strip()
+                )
                 artifact = BAnswerArtifact(
                     qid=question.qid,
                     domain=question.domain,
@@ -1511,7 +2208,7 @@ class BBoardActualRunner:
                     answer_parts=list(result.answer_parts),
                     used_evidence_ids=combined_evidence_ids,
                     evidence_items=selected_evidence,
-                    decision_summary=str(plan.get("decision_summary", "")).strip(),
+                    decision_summary=decision_summary,
                     decision_trace={
                         "source": "structured_calculation_plan",
                         "format_forced": False,
@@ -1521,21 +2218,77 @@ class BBoardActualRunner:
                         "calculation_structured_output_mode": (
                             response.response_format_mode
                         ),
+                        "calculation_provider_format": getattr(
+                            self,
+                            "calculation_provider_format",
+                            CALCULATION_PROVIDER_FORMAT_NATIVE,
+                        ),
                         "calculation_plan_normalizations": plan_normalizations,
                         "calculation_prompt_evidence_policy": (
-                            CALCULATION_PROMPT_EVIDENCE_POLICY_VERSION
+                            calculation_prompt_evidence_policy
                         ),
                         "calculation_prompt_evidence_count": len(
                             evidence_payload
                         ),
-                        "calculation_operator_shape_hint_version": (
-                            CALCULATION_OPERATOR_SHAPE_HINT_VERSION
+                        "calculation_prompt_version": (
+                            calculation_prompt_version
                         ),
-                        "calculation_operator_shape_hint": (
-                            operator_shape_hint
+                        "calculation_prompt_domain": question.domain,
+                        "calculation_joint_reasoning_enabled": (
+                            joint_reasoning_enabled
+                        ),
+                        "calculation_joint_reasoning_contract_status": (
+                            "valid"
+                            if (
+                                joint_reasoning_enabled
+                                and not joint_reasoning_contract_errors
+                            )
+                            else (
+                                "fallback_required"
+                                if joint_reasoning_enabled
+                                else "disabled"
+                            )
+                        ),
+                        "calculation_joint_reasoning_contract_errors": (
+                            list(joint_reasoning_contract_errors)
+                        ),
+                        "calculation_joint_reasoning_raw_summary_sha256": (
+                            hashlib.sha256(
+                                raw_decision_summary.encode("utf-8")
+                            ).hexdigest()
+                            if joint_reasoning_enabled
+                            and isinstance(raw_decision_summary, str)
+                            else ""
+                        ),
+                        "calculation_joint_reasoning_summary_sha256": (
+                            hashlib.sha256(
+                                decision_summary.encode("utf-8")
+                            ).hexdigest()
+                            if joint_reasoning_enabled
+                            else ""
+                        ),
+                        "calculation_thinking_budget": (
+                            calculation_thinking_budget
+                        ),
+                        "calculation_enable_thinking": (
+                            calculation_enable_thinking
+                        ),
+                        "calculation_guarded_adaptive_thinking_enabled": (
+                            guarded_adaptive_thinking_enabled
+                        ),
+                        "calculation_guarded_adaptive_thinking_policy": (
+                            dict(adaptive_thinking_policy)
                         ),
                         "calculation_attempt_count": attempt_number,
                         "calculation_retry_count": attempt_number - 1,
+                        "calculation_repair_retry_count": sum(
+                            item["mode"]
+                            == "seeded_json_no_thinking_repair"
+                            for item in calculation_attempt_modes
+                        ),
+                        "calculation_attempt_modes": (
+                            calculation_attempt_modes
+                        ),
                         "calculation_prior_attempt_diagnostics": diagnostics,
                         "calculation_semantic_constraints": semantic_constraints,
                     },
@@ -1547,9 +2300,29 @@ class BBoardActualRunner:
                     locator={
                         **dict(locator),
                         "selected_doc_ids": candidate_doc_ids,
-                        "initial_phrase_evidence_ids": (
-                            initial_phrase_evidence_ids
+                        "calculation_scoped_doc_ids": calculation_doc_ids,
+                        "initial_profile_evidence_ids": (
+                            initial_profile_evidence_ids
                         ),
+                        "initial_structured_evidence_ids": (
+                            initial_structured_evidence_ids
+                        ),
+                        "calculation_period_anchors": (
+                            _extract_calculation_period_anchors(
+                                question.question
+                            )
+                            if profile is None
+                            else []
+                        ),
+                        "calculation_lexical_anchors": (
+                            _extract_calculation_lexical_anchors(
+                                self.retrievers[question.domain],
+                                question.question,
+                            )
+                            if profile is None
+                            else []
+                        ),
+                        "calculation_profile": profile_payload,
                         "calculation_retrieval_rounds": retrieval_rounds,
                     },
                 )
@@ -1579,17 +2352,53 @@ class BBoardActualRunner:
                         ),
                         "prompt_evidence_count": len(evidence_payload),
                         "prompt_evidence_policy": (
-                            CALCULATION_PROMPT_EVIDENCE_POLICY_VERSION
+                            calculation_prompt_evidence_policy
                         ),
                         "semantic_constraints": semantic_constraints,
+                        "calculation_guarded_adaptive_thinking_policy": (
+                            dict(adaptive_thinking_policy)
+                        ),
+                        "calculation_attempt_mode": copy.deepcopy(
+                            attempt_record
+                        ),
                     }
                 )
+                if not isinstance(
+                    exc,
+                    (CalculationPlanError, json.JSONDecodeError),
+                ):
+                    raise BAnswerGenerationError(
+                        "Calculation aborted after a non-retryable local "
+                        f"{exc.__class__.__name__}: {exc}",
+                        token_usage=usage.to_dict(),
+                        diagnostics=diagnostics,
+                    ) from exc
                 added_ids: list[str] = []
                 retry_query = ""
+                error_fingerprint = _calculation_error_fingerprint(exc)
+                repair_seed_plan = None
                 if attempt_number < 3:
+                    retry_terms = _calculation_error_retrieval_terms(exc)
+                    structured_retry_enabled = getattr(
+                        self,
+                        "calculation_structured_retrieval_enabled",
+                        False,
+                    )
+                    retrievable_error_codes = {
+                        CalculationErrorCode.EVIDENCE_INSUFFICIENT,
+                        CalculationErrorCode.GROUNDING_FAILED,
+                    }
+                    if structured_retry_enabled:
+                        retrievable_error_codes.add(
+                            CalculationErrorCode.PERIOD_BINDING_FAILED
+                        )
                     admitted_missing_input = (
-                        _calculation_plan_reports_missing_required_input(
-                            plan or {}
+                        isinstance(exc, CalculationPlanError)
+                        and exc.error_code in retrievable_error_codes
+                        and (
+                            bool(retry_terms)
+                            if structured_retry_enabled
+                            else True
                         )
                     )
                     semantic_binding_error = (
@@ -1622,48 +2431,82 @@ class BBoardActualRunner:
                             "skipped_reason": "deterministic_plan_structure_error",
                         }
                     else:
-                        retry_query = _calculation_retry_query(
-                            question, plan, exc
+                        retry_query = "\n".join(
+                            (
+                                [question.question, *retry_terms]
+                                if structured_retry_enabled
+                                else list(
+                                    profile.retrieval_queries()
+                                    if profile is not None
+                                    else (question.question,)
+                                )
+                            )
                         )
-                        retry_hits = self.retrievers[question.domain].search(
-                            candidate_doc_ids,
-                            retry_query,
-                            top_k=max(12, self.calculation_top_k),
-                            unit_type_boosts={
-                                "metric_row": 2.4,
-                                "formula_block": 2.0,
-                                "clause_block": 1.5,
-                                "article": 1.3,
-                            },
-                            ensure_per_doc=True,
-                            expand_neighbors=True,
-                        )
-                        phrase_hits = _diagnostic_phrase_evidence(
+                        if structured_retry_enabled:
+                            retry_hits = _calculation_typed_retry_evidence(
+                                self.retrievers[question.domain],
+                                calculation_doc_ids,
+                                question.question,
+                                retry_terms,
+                                top_k=max(12, self.calculation_top_k),
+                            )
+                        else:
+                            retry_hits = [
+                                _normalize_evidence(hit.to_dict())
+                                for hit in self.retrievers[
+                                    question.domain
+                                ].search(
+                                    calculation_doc_ids,
+                                    retry_query,
+                                    top_k=max(
+                                        12,
+                                        self.calculation_top_k,
+                                    ),
+                                    unit_type_boosts={
+                                        "metric_row": 2.4,
+                                        "formula_block": 2.0,
+                                        "clause_block": 1.5,
+                                        "article": 1.3,
+                                    },
+                                    ensure_per_doc=True,
+                                    expand_neighbors=True,
+                                )
+                            ]
+                        profile_hits = _calculation_profile_evidence(
                             self.retrievers[question.domain],
-                            candidate_doc_ids,
-                            f"{question.question}\n{retry_query}",
+                            calculation_doc_ids,
+                            profile,
                             top_k=max(12, self.calculation_top_k),
                         )
                         evidence_items, added_ids = _merge_calculation_evidence(
                             evidence_items,
                             [
-                                *phrase_hits,
-                                *[
-                                    _normalize_evidence(hit.to_dict())
-                                    for hit in retry_hits
-                                ],
+                                *profile_hits,
+                                *retry_hits,
                             ],
                             max_items=1 + self.calculation_top_k * 3,
                         )
                         retrieval_round = {
                             "after_attempt": attempt_number,
                             "query": retry_query,
-                            "phrase_overlay_count": len(phrase_hits),
+                            "typed_retry_terms": retry_terms,
+                            "profile_overlay_count": len(profile_hits),
                             "added_evidence_ids": added_ids,
                             "evidence_count": len(evidence_items),
                         }
                     retrieval_rounds.append(retrieval_round)
                     diagnostics[-1]["retrieval"] = retrieval_round
+                    repeated_without_new_evidence = (
+                        structured_retry_enabled
+                        and attempt_number >= 2
+                        and not added_ids
+                        and error_fingerprint == previous_error_fingerprint
+                    )
+                    if repeated_without_new_evidence:
+                        diagnostics[-1]["early_stop_reason"] = (
+                            "same_structured_error_without_new_evidence"
+                        )
+                        break
                 if _is_calculation_plan_semantic_binding_error(exc):
                     feedback = (
                         f"上一次计划因语义绑定错误无法本地重放：{exc}。"
@@ -1685,6 +2528,27 @@ class BBoardActualRunner:
                         f"已按缺失变量定向补充 {len(added_ids)} 条新证据。"
                         "请重新检查全部证据、补齐变量并只输出完整 JSON。"
                     )
+                if (
+                    attempt_number < 3
+                    and getattr(
+                        self,
+                        "calculation_repair_retry_enabled",
+                        False,
+                    )
+                    and plan is not None
+                    and _is_calculation_plan_repairable_structure_error(exc)
+                ):
+                    repair_seed_plan = copy.deepcopy(plan)
+                    feedback += (
+                        "以下是待修复的上一版完整JSON；保持正确字段、变量值、"
+                        "证据引用和操作顺序，只修改导致本地错误的最小结构："
+                        + json.dumps(
+                            repair_seed_plan,
+                            ensure_ascii=False,
+                            separators=(",", ":"),
+                        )
+                    )
+                previous_error_fingerprint = error_fingerprint
         assert last_error is not None
         raise BAnswerGenerationError(
             f"Calculation failed after {len(diagnostics)} grounded replay attempts: {last_error}",
@@ -2406,8 +3270,111 @@ class BBoardActualRunner:
             "answer_strategy": read_json(self.strategy_path),
             "calculation_contract": {
                 "prompt_sha256": hashlib.sha256(
-                    CALCULATION_SYSTEM_PROMPT.encode("utf-8")
+                    json.dumps(
+                        (
+                            {
+                                "core": CALCULATION_CORE_SYSTEM_PROMPT,
+                                "domains": (
+                                    CALCULATION_DOMAIN_SYSTEM_PROMPTS
+                                ),
+                                "version": (
+                                    CALCULATION_MODULAR_PROMPT_VERSION
+                                ),
+                            }
+                            if getattr(
+                                self,
+                                "calculation_modular_prompt_enabled",
+                                False,
+                            )
+                            else {
+                                "prompt": CALCULATION_SYSTEM_PROMPT,
+                                "version": (
+                                    CALCULATION_FULL_PROMPT_VERSION
+                                ),
+                            }
+                        ),
+                        ensure_ascii=False,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
                 ).hexdigest(),
+                "prompt_version": (
+                    CALCULATION_MODULAR_PROMPT_VERSION
+                    if getattr(
+                        self,
+                        "calculation_modular_prompt_enabled",
+                        False,
+                    )
+                    else CALCULATION_FULL_PROMPT_VERSION
+                ),
+                "modular_prompt_enabled": getattr(
+                    self,
+                    "calculation_modular_prompt_enabled",
+                    False,
+                ),
+                "structured_retrieval_enabled": getattr(
+                    self,
+                    "calculation_structured_retrieval_enabled",
+                    False,
+                ),
+                "unit_repair_enabled": getattr(
+                    self,
+                    "calculation_unit_repair_enabled",
+                    False,
+                ),
+                "thinking_budget": getattr(
+                    self,
+                    "calculation_thinking_budget",
+                    None,
+                ),
+                "enable_thinking": getattr(
+                    self,
+                    "calculation_enable_thinking",
+                    None,
+                ),
+                "provider_format": getattr(
+                    self,
+                    "calculation_provider_format",
+                    CALCULATION_PROVIDER_FORMAT_NATIVE,
+                ),
+                "repair_retry": {
+                    "enabled": getattr(
+                        self,
+                        "calculation_repair_retry_enabled",
+                        False,
+                    ),
+                    "version": CALCULATION_REPAIR_RETRY_VERSION,
+                },
+                "guarded_adaptive_thinking": {
+                    "enabled": getattr(
+                        self,
+                        "calculation_guarded_adaptive_thinking_enabled",
+                        False,
+                    ),
+                    "policy_version": (
+                        CALCULATION_THINKING_POLICY_VERSION
+                    ),
+                    "includes_runtime_semantic_constraint_guard": True,
+                    "retry_mode": "provider_default_after_first_attempt",
+                },
+                "joint_reasoning": {
+                    "enabled": getattr(
+                        self,
+                        "calculation_joint_reasoning_enabled",
+                        False,
+                    ),
+                    "prompt_version": (
+                        CALCULATION_JOINT_REASONING_PROMPT_VERSION
+                    ),
+                    "prompt_sha256": hashlib.sha256(
+                        CALCULATION_JOINT_REASONING_PROMPT_SUFFIX.encode(
+                            "utf-8"
+                        )
+                    ).hexdigest(),
+                    "accounting": (
+                        "answer_call_usage_with_zero_incremental_reasoning"
+                    ),
+                },
                 "trace_schema_version": 2,
                 "grounding_required": True,
                 "iterative_retrieval_version": CALCULATION_RETRIEVAL_VERSION,
@@ -2418,7 +3385,15 @@ class BBoardActualRunner:
                     CALCULATION_EVIDENCE_SEMANTIC_VERSION
                 ),
                 "prompt_evidence_policy_version": (
-                    CALCULATION_PROMPT_EVIDENCE_POLICY_VERSION
+                    (
+                        CALCULATION_STRUCTURED_PROMPT_EVIDENCE_POLICY_VERSION
+                        if getattr(
+                            self,
+                            "calculation_structured_retrieval_enabled",
+                            False,
+                        )
+                        else CALCULATION_BASELINE_PROMPT_EVIDENCE_POLICY_VERSION
+                    )
                 ),
                 "operator_shape_hint_version": (
                     CALCULATION_OPERATOR_SHAPE_HINT_VERSION
@@ -2475,6 +3450,51 @@ class BBoardActualRunner:
                 "locator_attempt_id": self.locator_attempt_id,
                 "workers": workers,
                 "calculation_top_k": self.calculation_top_k,
+                "calculation_modular_prompt_enabled": getattr(
+                    self,
+                    "calculation_modular_prompt_enabled",
+                    False,
+                ),
+                "calculation_structured_retrieval_enabled": getattr(
+                    self,
+                    "calculation_structured_retrieval_enabled",
+                    False,
+                ),
+                "calculation_unit_repair_enabled": getattr(
+                    self,
+                    "calculation_unit_repair_enabled",
+                    False,
+                ),
+                "calculation_thinking_budget": getattr(
+                    self,
+                    "calculation_thinking_budget",
+                    None,
+                ),
+                "calculation_enable_thinking": getattr(
+                    self,
+                    "calculation_enable_thinking",
+                    None,
+                ),
+                "calculation_provider_format": getattr(
+                    self,
+                    "calculation_provider_format",
+                    CALCULATION_PROVIDER_FORMAT_NATIVE,
+                ),
+                "calculation_repair_retry_enabled": getattr(
+                    self,
+                    "calculation_repair_retry_enabled",
+                    False,
+                ),
+                "calculation_guarded_adaptive_thinking_enabled": getattr(
+                    self,
+                    "calculation_guarded_adaptive_thinking_enabled",
+                    False,
+                ),
+                "calculation_joint_reasoning_enabled": getattr(
+                    self,
+                    "calculation_joint_reasoning_enabled",
+                    False,
+                ),
                 "reasoning_thinking_budget": getattr(
                     self,
                     "reasoning_thinking_budget",
@@ -2531,6 +3551,51 @@ class BBoardActualRunner:
                     ),
                 },
                 "locator_attempt_id": self.locator_attempt_id,
+                "calculation_modular_prompt_enabled": getattr(
+                    self,
+                    "calculation_modular_prompt_enabled",
+                    False,
+                ),
+                "calculation_structured_retrieval_enabled": getattr(
+                    self,
+                    "calculation_structured_retrieval_enabled",
+                    False,
+                ),
+                "calculation_unit_repair_enabled": getattr(
+                    self,
+                    "calculation_unit_repair_enabled",
+                    False,
+                ),
+                "calculation_thinking_budget": getattr(
+                    self,
+                    "calculation_thinking_budget",
+                    None,
+                ),
+                "calculation_enable_thinking": getattr(
+                    self,
+                    "calculation_enable_thinking",
+                    None,
+                ),
+                "calculation_provider_format": getattr(
+                    self,
+                    "calculation_provider_format",
+                    CALCULATION_PROVIDER_FORMAT_NATIVE,
+                ),
+                "calculation_repair_retry_enabled": getattr(
+                    self,
+                    "calculation_repair_retry_enabled",
+                    False,
+                ),
+                "calculation_guarded_adaptive_thinking_enabled": getattr(
+                    self,
+                    "calculation_guarded_adaptive_thinking_enabled",
+                    False,
+                ),
+                "calculation_joint_reasoning_enabled": getattr(
+                    self,
+                    "calculation_joint_reasoning_enabled",
+                    False,
+                ),
                 "reasoning_thinking_budget": getattr(
                     self,
                     "reasoning_thinking_budget",
@@ -3116,12 +4181,72 @@ def _normalize_calculation_plan_structure(
             )
     if evidence_text_by_id:
         normalizations.extend(
+            _normalize_units_absent_from_evidence(
+                normalized,
+                evidence_text_by_id,
+            )
+        )
+        normalizations.extend(
             _normalize_ratio_only_table_units(
                 normalized,
                 evidence_text_by_id,
             )
         )
     return normalized, normalizations
+
+
+def _normalize_units_absent_from_evidence(
+    plan: dict[str, Any],
+    evidence_text_by_id: Mapping[str, str],
+) -> list[dict[str, Any]]:
+    """Clear a model-supplied unit when the cited source only grounds the value."""
+
+    variables = plan.get("variables")
+    if not isinstance(variables, list):
+        return []
+    cleared: list[str] = []
+    for variable in variables:
+        if not isinstance(variable, dict):
+            continue
+        name = str(variable.get("name", "")).strip()
+        unit = str(variable.get("unit", "")).strip()
+        if not name or not unit:
+            continue
+        evidence_ids = [
+            str(item)
+            for item in variable.get("evidence_ids", [])
+            if str(item)
+        ]
+        check = check_variable_grounding(
+            name=name,
+            value=variable.get("value"),
+            value_type=str(variable.get("value_type", "decimal")),
+            unit=unit,
+            evidence_ids=evidence_ids,
+            evidence_text_by_id=evidence_text_by_id,
+        )
+        if check["reason"] != "unit_not_found":
+            continue
+        blank_check = check_variable_grounding(
+            name=name,
+            value=variable.get("value"),
+            value_type=str(variable.get("value_type", "decimal")),
+            unit="",
+            evidence_ids=evidence_ids,
+            evidence_text_by_id=evidence_text_by_id,
+        )
+        if not blank_check["verified"]:
+            continue
+        variable["unit"] = ""
+        cleared.append(name)
+    if not cleared:
+        return []
+    return [
+        {
+            "reason": "clear_unit_absent_from_cited_evidence",
+            "variable_names": sorted(cleared),
+        }
+    ]
 
 
 def _normalize_ratio_only_table_units(
@@ -3452,41 +4577,162 @@ def _calculation_reference_names(
 
 
 def _is_calculation_plan_structure_error(exc: Exception) -> bool:
-    message = str(exc)
-    structural_markers = (
-        "args must be a list",
-        "args must be a list or supported named object",
-        "named args mismatch",
-        "requires named 'new' and 'old' operands",
-        "Invalid decimal:",
-        "Unknown reference:",
-        "Unsupported operation:",
-        "Invalid or duplicate step id:",
-        "sort_desc requires items",
-        "sort_desc item",
-        "CalculationPlan schema violation",
-        "supporting_evidence_ids must be a list",
-        "percentage-point output must have percent_points value_kind",
-        "Aggregate-intensity plan must",
-        "decision_summary does not contain replayed output",
-        "Raw-amount ratio plan must",
-        "disclosed aggregate scope mismatch",
-        "calculation variable target report period mismatch",
-        "insurance maximum branch must use",
+    if isinstance(exc, json.JSONDecodeError):
+        return True
+    return (
+        isinstance(exc, CalculationPlanError)
+        and exc.error_code
+        in {
+            CalculationErrorCode.PLAN_STRUCTURE_INVALID,
+            CalculationErrorCode.PERIOD_BINDING_FAILED,
+            CalculationErrorCode.UNIT_BINDING_FAILED,
+            CalculationErrorCode.DEPENDENCY_INVALID,
+            CalculationErrorCode.OUTPUT_CONTRACT_INVALID,
+        }
     )
-    return any(marker in message for marker in structural_markers)
 
 
 def _is_calculation_plan_semantic_binding_error(exc: Exception) -> bool:
-    message = str(exc)
-    return any(
-        marker in message
-        for marker in (
-            "disclosed aggregate scope mismatch",
-            "calculation variable target report period mismatch",
-            "insurance maximum branch must use",
+    return (
+        isinstance(exc, CalculationPlanError)
+        and exc.error_code
+        in {
+            CalculationErrorCode.PERIOD_BINDING_FAILED,
+            CalculationErrorCode.DEPENDENCY_INVALID,
+            CalculationErrorCode.UNIT_BINDING_FAILED,
+        }
+    )
+
+
+def _is_calculation_plan_repairable_structure_error(
+    exc: Exception,
+) -> bool:
+    """Limit no-thinking repair to representation/output contract errors."""
+
+    return (
+        isinstance(exc, CalculationPlanError)
+        and exc.error_code
+        in {
+            CalculationErrorCode.PLAN_STRUCTURE_INVALID,
+            CalculationErrorCode.OUTPUT_CONTRACT_INVALID,
+        }
+    )
+
+
+def _calculation_error_retrieval_terms(exc: Exception) -> list[str]:
+    """Return validator-provided retrieval terms without parsing error text."""
+
+    if not isinstance(exc, CalculationPlanError):
+        return []
+    raw_terms = exc.details.get("required_terms", [])
+    if not isinstance(raw_terms, list):
+        return []
+    terms: list[str] = []
+    for raw_term in raw_terms:
+        term = re.sub(r"\s+", " ", str(raw_term)).strip()
+        if not term or term in terms:
+            continue
+        terms.append(term)
+        if len(terms) >= 12:
+            break
+    return terms
+
+
+def _calculation_error_fingerprint(
+    exc: Exception,
+) -> tuple[str, tuple[str, ...]]:
+    if isinstance(exc, CalculationPlanError):
+        return (
+            exc.error_code.value,
+            tuple(_calculation_error_retrieval_terms(exc)),
+        )
+    return (exc.__class__.__name__, ())
+
+
+def _calculation_typed_retry_evidence(
+    retriever: GenericBM25Retriever,
+    doc_ids: Sequence[str],
+    question_text: str,
+    retry_terms: Sequence[str],
+    *,
+    top_k: int,
+) -> list[dict[str, Any]]:
+    """Retrieve each structured missing field independently, then interleave."""
+
+    normalized_doc_ids = list(
+        dict.fromkeys(
+            str(doc_id).strip()
+            for doc_id in doc_ids
+            if str(doc_id).strip()
         )
     )
+    if not normalized_doc_ids or top_k < 1:
+        return []
+    unit_type_boosts = {
+        "metric_row": 2.4,
+        "formula_block": 2.0,
+        "clause_block": 1.5,
+        "article": 1.3,
+    }
+    queries = [
+        str(question_text).strip(),
+        *[
+            re.sub(r"\s+", " ", str(term)).strip()
+            for term in retry_terms
+            if str(term).strip()
+        ],
+    ]
+    groups: list[tuple[str, list[dict[str, Any]]]] = []
+    for query_index, query in enumerate(dict.fromkeys(queries)):
+        rows = [
+            _normalize_evidence(hit.to_dict())
+            for hit in retriever.search(
+                normalized_doc_ids,
+                query,
+                top_k=min(4, top_k),
+                unit_type_boosts=unit_type_boosts,
+                ensure_per_doc=query_index == 0,
+                expand_neighbors=True,
+            )
+        ]
+        groups.append((f"typed_retry_{query_index}", rows))
+
+    selected: list[dict[str, Any]] = []
+    selected_by_id: dict[str, dict[str, Any]] = {}
+    depth = 0
+    while len(selected) < top_k:
+        advanced = False
+        for source_name, rows in groups:
+            if depth >= len(rows):
+                continue
+            advanced = True
+            row = rows[depth]
+            unit_id = str(row.get("unit_id", "")).strip()
+            if not unit_id:
+                continue
+            existing = selected_by_id.get(unit_id)
+            if existing is not None:
+                sources = existing["metadata"].get(
+                    "calculation_typed_retry_sources",
+                    [],
+                )
+                existing["metadata"][
+                    "calculation_typed_retry_sources"
+                ] = list(dict.fromkeys([*sources, source_name]))
+                continue
+            row["metadata"] = {
+                **dict(row.get("metadata", {})),
+                "calculation_typed_retry_sources": [source_name],
+                "retrieval_source": "calculation_typed_retry",
+            }
+            selected_by_id[unit_id] = row
+            selected.append(row)
+            if len(selected) >= top_k:
+                break
+        if not advanced:
+            break
+        depth += 1
+    return selected
 
 
 def _calculation_semantic_query_terms(question_text: str) -> str:
@@ -3636,7 +4882,7 @@ def _calculation_operator_shape_hint(question_text: str) -> str:
     return "；".join(hints)
 
 
-def _calculation_semantic_constraints(
+def _extract_calculation_semantic_constraints(
     question_text: str,
     evidence_payload: Sequence[Mapping[str, Any]],
 ) -> list[dict[str, str]]:
@@ -3647,18 +4893,13 @@ def _calculation_semantic_constraints(
 
     constraints: list[dict[str, str]] = []
     compact_question = _compact_text(question_text)
-    disclosed_aggregate = _direct_disclosed_average_constraint(
+    disclosed_aggregate = _extract_direct_disclosed_average_constraint(
         compact_question,
         evidence_payload,
     )
     if disclosed_aggregate is not None:
         constraints.append(disclosed_aggregate)
-    if not (
-        "持平" in compact_question
-        and "乘用车" in compact_question
-        and "单车带电量" in compact_question
-        and "需求" in compact_question
-    ):
+    if "持平" not in compact_question or "需求" not in compact_question:
         return constraints
     base_year_match = re.search(r"与(20\d{2})年持平", compact_question)
     if base_year_match is None:
@@ -3669,13 +4910,15 @@ def _calculation_semantic_constraints(
     target_match = re.search(
         r"(?:提升|提高|变更|调整)至"
         r"([+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)"
-        r"\s*(kwh)",
+        r"\s*(kwh|千瓦时|万亿元|亿元|万元|元|万吨|吨|万户|户|万人|人|"
+        r"个百分点|%)",
         compact_question,
         flags=re.IGNORECASE,
     )
     if target_match is None:
         return constraints
     target_value = target_match.group(1).replace(",", "")
+    target_unit = target_match.group(2)
     question_evidence_id = next(
         (
             str(item.get("evidence_id", "")).strip()
@@ -3696,7 +4939,29 @@ def _calculation_semantic_constraints(
         column_index = years.index(base_year)
         for raw_line in str(item.get("text", "")).splitlines():
             cells = [cell.strip() for cell in raw_line.split("|")]
-            if len(cells) < 2 or "乘用车单车带电量" not in _compact_text(cells[0]):
+            if len(cells) < 2:
+                continue
+            raw_metric = _compact_text(cells[0])
+            metric = re.sub(
+                r"[（(][^）)]*(?:"
+                + re.escape(target_unit)
+                + r")[^）)]*[）)]",
+                "",
+                raw_metric,
+                flags=re.IGNORECASE,
+            ).strip()
+            metric_matches_question = (
+                metric in compact_question
+                or any(
+                    metric[-width:] in compact_question
+                    for width in range(
+                        min(len(metric), 12),
+                        3,
+                        -1,
+                    )
+                )
+            )
+            if len(metric) < 2 or not metric_matches_question:
                 continue
             values = cells[1:]
             if column_index >= len(values):
@@ -3715,14 +4980,15 @@ def _calculation_semantic_constraints(
                     "base_year": base_year,
                     "baseline_value": baseline,
                     "target_value": target_value,
-                    "unit": "kWh",
+                    "unit": target_unit,
+                    "metric": metric,
                     "constraint": (
-                        f"题面把新能源乘用车总体销量设为与{base_year}年持平，"
-                        f"并把同一总体口径的单车带电量调整至{target_value}kWh；"
-                        f"证据表中{base_year}年“乘用车单车带电量”为"
-                        f"{baseline}kWh。因此应按总体销量×总体单车带电量比较"
-                        "需求变化；除非题面明确给出各子车型变化，不得把总体"
-                        "单车带电量改写成纯电动或插混子类容量。"
+                        f"题面把总量设为与{base_year}年持平，并把同一总体"
+                        f"口径的“{metric}”调整至{target_value}{target_unit}；"
+                        f"证据表中{base_year}年同一指标为"
+                        f"{baseline}{target_unit}。因此需求变化必须比较同一"
+                        "总量与同一单位强度的乘积；除非题面明确给出子类别"
+                        "变化，不得把总体口径替换成子类口径。"
                     ),
                 }
             )
@@ -3746,7 +5012,7 @@ _VALUE_BEFORE_AVERAGE_RE = re.compile(
 )
 
 
-def _direct_disclosed_average_constraint(
+def _extract_direct_disclosed_average_constraint(
     compact_question: str,
     evidence_payload: Sequence[Mapping[str, Any]],
 ) -> dict[str, str] | None:
@@ -3840,14 +5106,17 @@ def _validate_aggregate_intensity_plan_binding(
     question_evidence_id = str(
         constraint.get("question_evidence_id", "")
     ).strip()
+    unit = str(constraint.get("unit", "")).strip()
     if (
         baseline_value is None
         or target_value is None
         or not evidence_id
         or not question_evidence_id
+        or not unit
     ):
         raise CalculationPlanError(
-            "Aggregate-intensity plan must have a complete derived constraint"
+            "Aggregate-intensity plan must have a complete derived constraint",
+            error_code=CalculationErrorCode.DEPENDENCY_INVALID,
         )
 
     variables = {
@@ -3871,7 +5140,9 @@ def _validate_aggregate_intensity_plan_binding(
             normalized_value = _normalize_decimal_text(
                 str(variable.get("value", "")).rstrip("%")
             )
-            unit = _compact_text(str(variable.get("unit", ""))).casefold()
+            variable_unit = _compact_text(
+                str(variable.get("unit", ""))
+            ).casefold()
             evidence_ids = {
                 str(item)
                 for item in variable.get("evidence_ids", [])
@@ -3879,7 +5150,7 @@ def _validate_aggregate_intensity_plan_binding(
             }
             if (
                 normalized_value == expected_value
-                and unit == "kwh"
+                and variable_unit == _compact_text(unit).casefold()
                 and (
                     required_evidence_id is None
                     or required_evidence_id in evidence_ids
@@ -3899,8 +5170,9 @@ def _validate_aggregate_intensity_plan_binding(
     if not baseline_names or not target_names:
         raise CalculationPlanError(
             "Aggregate-intensity plan must retain evidence baseline "
-            f"{baseline_value}kWh from {evidence_id} and question target "
-            f"{target_value}kWh as raw variables"
+            f"{baseline_value}{unit} from {evidence_id} and question target "
+            f"{target_value}{unit} as raw variables",
+            error_code=CalculationErrorCode.DEPENDENCY_INVALID,
         )
 
     symbols = {*variables, *steps}
@@ -3933,15 +5205,18 @@ def _validate_aggregate_intensity_plan_binding(
             return
     raise CalculationPlanError(
         "Aggregate-intensity plan must compute pct_change whose new dependency "
-        f"contains question target {target_value}kWh and whose old dependency "
-        f"contains evidence baseline {baseline_value}kWh; when aggregate volume "
-        "is unchanged, do not substitute a different-scope total"
+        f"contains question target {target_value}{unit} and whose old dependency "
+        f"contains evidence baseline {baseline_value}{unit}; when aggregate volume "
+        "is unchanged, do not substitute a different-scope total",
+        error_code=CalculationErrorCode.DEPENDENCY_INVALID,
     )
 
 
 def _validate_calculation_summary_output_consistency(
     plan: Mapping[str, Any],
     answer_parts: Sequence[str],
+    *,
+    allow_deterministic_append: bool = True,
 ) -> dict[str, Any] | None:
     summary = str(plan.get("decision_summary", "")).strip()
     if not summary:
@@ -3972,6 +5247,12 @@ def _validate_calculation_summary_output_consistency(
                 "decision_summary does not contain replayed output: "
                 + ", ".join(missing)
             )
+        if not allow_deterministic_append:
+            raise CalculationPlanError(
+                "joint decision_summary does not contain every replayed "
+                "output: " + ", ".join(missing),
+                error_code=CalculationErrorCode.OUTPUT_CONTRACT_INVALID,
+            )
         replay_suffix = "；".join(str(item) for item in answer_parts)
         if not isinstance(plan, dict):
             raise CalculationPlanError(
@@ -3986,6 +5267,300 @@ def _validate_calculation_summary_output_consistency(
             "answer_parts": [str(item) for item in answer_parts],
         }
     return None
+
+
+def _validate_calculation_joint_reasoning_summary(
+    summary: str,
+    answer_parts: Sequence[str],
+    *,
+    calculation_trace: Mapping[str, Any] | None = None,
+) -> None:
+    """Validate a model-written calculation summary used directly as reasoning."""
+
+    normalized_summary = str(summary).strip()
+    if len(re.sub(r"\s+", "", normalized_summary)) < 20:
+        raise CalculationPlanError(
+            "joint decision_summary is shorter than 20 non-whitespace "
+            "characters",
+            error_code=CalculationErrorCode.OUTPUT_CONTRACT_INVALID,
+        )
+    if re.search(
+        r"(?i)(?:evidence|unit|step)[ _-]?id|::|本地重放|JSON字段|生成流程",
+        normalized_summary,
+    ):
+        raise CalculationPlanError(
+            "joint decision_summary exposes internal identifiers or "
+            "post-processing language",
+            error_code=CalculationErrorCode.OUTPUT_CONTRACT_INVALID,
+        )
+    compact_summary = _compact_text(normalized_summary)
+    if not any(
+        cue in compact_summary
+        for cue in ("答案", "结果", "结论", "排序", "最终")
+    ):
+        raise CalculationPlanError(
+            "joint decision_summary has no explicit conclusion",
+            error_code=CalculationErrorCode.OUTPUT_CONTRACT_INVALID,
+        )
+    missing_text_outputs = []
+    for answer in answer_parts:
+        answer_text = str(answer).strip()
+        if _normalize_decimal_text(answer_text.rstrip("%")) is not None:
+            continue
+        if _compact_text(answer_text) not in compact_summary:
+            missing_text_outputs.append(answer_text)
+    if missing_text_outputs:
+        raise CalculationPlanError(
+            "joint decision_summary does not contain text outputs: "
+            + ", ".join(missing_text_outputs),
+            error_code=CalculationErrorCode.OUTPUT_CONTRACT_INVALID,
+        )
+    try:
+        validate_model_generated_frozen_answer_conclusion(
+            normalized_summary,
+            frozen_answer_parts=answer_parts,
+            contract_name="CalculationJointReasoning",
+        )
+    except ValueError as exc:
+        raise CalculationPlanError(
+            str(exc),
+            error_code=CalculationErrorCode.OUTPUT_CONTRACT_INVALID,
+        ) from exc
+    if calculation_trace is not None:
+        _validate_joint_reasoning_equation_results(
+            normalized_summary,
+            calculation_trace,
+        )
+
+
+def _validate_joint_reasoning_equation_results(
+    summary: str,
+    calculation_trace: Mapping[str, Any],
+) -> None:
+    """Reject explicit equation results that cannot come from the replay trace."""
+
+    allowed: set[str] = set()
+
+    def add_value(raw_value: Any) -> None:
+        normalized = _normalize_decimal_text(
+            str(raw_value).replace("%", "")
+        )
+        if normalized is None:
+            return
+        allowed.add(normalized)
+        try:
+            decimal_value = Decimal(normalized)
+        except InvalidOperation:
+            return
+        for places in range(0, 5):
+            quantum = Decimal(1).scaleb(-places)
+            rounded = decimal_value.quantize(
+                quantum,
+                rounding=ROUND_HALF_UP,
+            )
+            rounded_text = _normalize_decimal_text(format(rounded, "f"))
+            if rounded_text is not None:
+                allowed.add(rounded_text)
+
+    def visit(node: Any) -> None:
+        if isinstance(node, list):
+            for item in node:
+                visit(item)
+            return
+        if not isinstance(node, Mapping):
+            return
+        for key in ("value", "result", "literal"):
+            if key in node:
+                add_value(node[key])
+        for key, value in node.items():
+            if key not in {"evidence_ids", "matched_evidence_ids"}:
+                visit(value)
+
+    visit(calculation_trace.get("variables", []))
+    visit(calculation_trace.get("steps", []))
+    visit(calculation_trace.get("outputs", []))
+    inconsistent = []
+    for match in re.finditer(
+        r"(?:=|≈)\s*([+-]?\d[\d,]*(?:\.\d+)?)(?:%|万|亿|元|人|户|吨)?",
+        summary,
+    ):
+        trailing = summary[match.end() :].lstrip()
+        if trailing.startswith(("×", "÷", "*", "/", "+", "-", "－", "(")):
+            continue
+        raw_value = match.group(1)
+        normalized = _normalize_decimal_text(raw_value)
+        if normalized is not None and normalized not in allowed:
+            inconsistent.append(raw_value)
+    if inconsistent:
+        raise CalculationPlanError(
+            "joint decision_summary contains equation results outside the "
+            "verified calculation trace: "
+            + ", ".join(dict.fromkeys(inconsistent)),
+            error_code=CalculationErrorCode.OUTPUT_CONTRACT_INVALID,
+        )
+
+
+def finalize_calculation_answer_summary_reasoning(
+    artifact: BAnswerArtifact,
+    *,
+    require_joint_contract: bool,
+) -> BAnswerArtifact:
+    """Reuse the Qwen calculation-plan summary without another model call."""
+
+    if artifact.answer_format != "calculation":
+        raise ValueError(
+            f"{artifact.qid}: answer-summary reasoning only supports "
+            "calculation questions"
+        )
+    answer_stage = dict(
+        artifact.decision_trace.get("answer_stage") or {}
+    )
+    summary = str(answer_stage.get("decision_summary", "")).strip()
+    if (
+        answer_stage.get("status") != "complete"
+        or not answer_stage.get("answer_parts_frozen")
+        or not summary
+    ):
+        raise ValueError(
+            f"{artifact.qid}: calculation answer stage is not frozen"
+        )
+    if summary != str(artifact.decision_summary).strip():
+        raise ValueError(
+            f"{artifact.qid}: calculation answer summary changed after "
+            "answer freeze"
+        )
+    calculation_trace = dict(artifact.calculation_trace or {})
+    if not calculation_trace.get("grounding_verified"):
+        raise ValueError(
+            f"{artifact.qid}: calculation answer is not grounding verified"
+        )
+    if not calculation_trace.get("replay_verified"):
+        raise ValueError(
+            f"{artifact.qid}: calculation answer is not replay verified"
+        )
+    if require_joint_contract:
+        if not artifact.decision_trace.get(
+            "calculation_joint_reasoning_enabled"
+        ):
+            raise ValueError(
+                f"{artifact.qid}: answer was not generated with the joint "
+                "reasoning contract"
+            )
+        expected_summary_sha256 = str(
+            artifact.decision_trace.get(
+                "calculation_joint_reasoning_summary_sha256",
+                "",
+            )
+        )
+        actual_summary_sha256 = hashlib.sha256(
+            summary.encode("utf-8")
+        ).hexdigest()
+        if (
+            not expected_summary_sha256
+            or expected_summary_sha256 != actual_summary_sha256
+        ):
+            raise ValueError(
+                f"{artifact.qid}: joint reasoning summary hash does not "
+                "match the frozen answer-stage text"
+            )
+        _validate_calculation_joint_reasoning_summary(
+            summary,
+            artifact.answer_parts,
+            calculation_trace=calculation_trace,
+        )
+    elif len(re.sub(r"\s+", "", summary)) < 20:
+        raise ValueError(
+            f"{artifact.qid}: answer-stage summary is shorter than 20 "
+            "non-whitespace characters"
+        )
+
+    answer_ledger = dict(
+        artifact.decision_trace.get("answer_api_usage_ledger") or {}
+    )
+    answer_calls = [
+        dict(item)
+        for item in answer_ledger.get("calls", [])
+        if isinstance(item, Mapping)
+    ]
+    accounted_call_indexes = [
+        int(item.get("call_index", index))
+        for index, item in enumerate(answer_calls, start=1)
+    ]
+    calculation_plan_calls = [
+        item
+        for item in answer_calls
+        if str(item.get("call_role", "")).startswith(
+            "calculation_plan_"
+        )
+    ]
+    source_calls = (
+        calculation_plan_calls[-1:]
+        if calculation_plan_calls
+        else answer_calls[-1:]
+    )
+    if require_joint_contract:
+        if not answer_calls:
+            raise ValueError(
+                f"{artifact.qid}: joint reasoning has no answer usage ledger"
+            )
+        if not calculation_plan_calls or source_calls[-1] is not answer_calls[-1]:
+            raise ValueError(
+                f"{artifact.qid}: final answer call is not a calculation plan "
+                "call"
+            )
+    source_call_indexes = [
+        int(item.get("call_index", len(answer_calls)))
+        for item in source_calls
+    ]
+    artifact.reasoning_evidence_items = [
+        dict(item) for item in artifact.evidence_items
+    ]
+    artifact.decision_trace = {
+        **artifact.decision_trace,
+        "submission_reasoning": {
+            "prompt_version": (
+                CALCULATION_JOINT_REASONING_PROMPT_VERSION
+                if require_joint_contract
+                else "answer_stage_decision_summary_legacy_shadow_v1"
+            ),
+            "generation_mode": "calculation_plan_answer_and_reasoning",
+            "model_name": (
+                source_calls[-1].get("model_name", "")
+                if source_calls
+                else ""
+            ),
+            "grounding_status": "supported",
+            "grounding_verified": True,
+            "replay_verified": True,
+            "answer_parts_preserved": True,
+            "co_generated_with_answer": True,
+            "incremental_api_call_count": 0,
+            "source_answer_call_indexes": source_call_indexes,
+            "accounted_answer_call_indexes": accounted_call_indexes,
+            "token_usage": {
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0,
+            },
+        },
+        "reasoning_stage": {
+            "status": "complete",
+            "answer_artifact_frozen": True,
+            "co_generated_with_answer": True,
+            "incremental_api_call_count": 0,
+            "source_answer_call_indexes": source_call_indexes,
+            "accounted_answer_call_indexes": accounted_call_indexes,
+        },
+        "reasoning_api_usage_ledger": {
+            "accounting_semantics": "incremental_only",
+            "call_count": 0,
+            "calls": [],
+            "source_answer_call_indexes": source_call_indexes,
+            "accounted_answer_call_indexes": accounted_call_indexes,
+            "joint_usage_attributed_to": "answer_api_usage_ledger",
+        },
+    }
+    return artifact
 
 
 def _validate_calculation_plan_has_required_inputs(
@@ -4082,7 +5657,8 @@ def _validate_calculation_required_sort_objects(
     if missing:
         raise CalculationPlanError(
             "Calculation sort plan is missing required question objects: "
-            + ", ".join(missing)
+            + ", ".join(missing),
+            error_code=CalculationErrorCode.DEPENDENCY_INVALID,
         )
 
 
@@ -4217,7 +5793,8 @@ def _validate_full_year_dividend_component_dependency(
         raise CalculationPlanError(
             "Full-year dividend plan must add the evidenced midyear "
             f"{midyear_value} and post-midyear remaining {remaining_value} "
-            f"components from {doc_id} in an output-reachable step"
+            f"components from {doc_id} in an output-reachable step",
+            error_code=CalculationErrorCode.DEPENDENCY_INVALID,
         )
 
 
@@ -4311,7 +5888,15 @@ def _validate_calculation_table_row_label_binding(
                 period = f"{year}年" if year else ""
                 raise CalculationPlanError(
                     "Requested table row label binding requires a raw "
-                    f"{period}{label} variable"
+                    f"{period}{label} variable",
+                    error_code=CalculationErrorCode.EVIDENCE_INSUFFICIENT,
+                    details={
+                        "required_terms": [
+                            f"{period}{label}".strip(),
+                        ],
+                        "required_label": label,
+                        "required_year": year,
+                    },
                 )
             if any(
                 _variable_is_grounded_in_labeled_table_row(
@@ -4326,7 +5911,15 @@ def _validate_calculation_table_row_label_binding(
             raise CalculationPlanError(
                 "Requested table row label binding requires "
                 f"{period}{label} and its literal value in the same cited "
-                "table row; a value from another row cannot be renamed"
+                "table row; a value from another row cannot be renamed",
+                error_code=CalculationErrorCode.PERIOD_BINDING_FAILED,
+                details={
+                    "required_terms": [
+                        f"{period}{label}".strip(),
+                    ],
+                    "required_label": label,
+                    "required_year": year,
+                },
             )
 
 
@@ -4392,7 +5985,8 @@ def _validate_raw_amount_ratio_dependency(
     if not point_delta_steps:
         raise CalculationPlanError(
             "Raw-amount ratio plan must derive an output-reachable "
-            "pct_point_delta from original amount ratios"
+            "pct_point_delta from original amount ratios",
+            error_code=CalculationErrorCode.DEPENDENCY_INVALID,
         )
 
     def valid_ratio_step(operand: Any) -> tuple[bool, str]:
@@ -4423,7 +6017,8 @@ def _validate_raw_amount_ratio_dependency(
         raise CalculationPlanError(
             "Raw-amount ratio plan must derive pct_point_delta new and old "
             "from distinct div steps over original amount variables; "
-            "reported percentage variables cannot replace the raw ratios"
+            "reported percentage variables cannot replace the raw ratios",
+            error_code=CalculationErrorCode.DEPENDENCY_INVALID,
         )
 
 
@@ -4529,7 +6124,8 @@ def _validate_insurance_surrender_rate_binding(
     raise CalculationPlanError(
         "insurance surrender rate mismatch: "
         f"国寿增益宝第{policy_year}个保单年度的证据费率为{expected_rate}%，"
-        f"但计划未使用该费率；不得套用相邻年度区间"
+        f"但计划未使用该费率；不得套用相邻年度区间",
+        error_code=CalculationErrorCode.PERIOD_BINDING_FAILED,
     )
 
 
@@ -4648,7 +6244,8 @@ def _validate_insurance_benefit_operator_binding(
             "insurance maximum branch must use an evidence-grounded benefit "
             "rate in an output-reachable mul step, then compare that product "
             "with the other evidenced branch using max; do not add the two "
-            f"branches ({formula_doc_id})"
+            f"branches ({formula_doc_id})",
+            error_code=CalculationErrorCode.DEPENDENCY_INVALID,
         )
 
 
@@ -4699,7 +6296,13 @@ def _validate_calculation_variable_period_binding(
         raise CalculationPlanError(
             "calculation variable period binding mismatch: "
             f"变量“{name}”要求证据日期{','.join(missing_dates)}，"
-            "但其evidence_ids未引用包含该日期的证据；不得复制其他期间数值"
+            "但其evidence_ids未引用包含该日期的证据；不得复制其他期间数值",
+            error_code=CalculationErrorCode.PERIOD_BINDING_FAILED,
+            details={
+                "required_terms": [name, *missing_dates],
+                "variable_name": name,
+                "required_periods": missing_dates,
+            },
         )
 
 
@@ -4811,7 +6414,13 @@ def _validate_target_report_period_variable(
     raise CalculationPlanError(
         "calculation variable target report period mismatch: "
         f"变量“{name}”取值{value}必须来自{target_year}年报告的"
-        f"本报告期列，不得使用上年比较列{detail}"
+        f"本报告期列，不得使用上年比较列{detail}",
+        error_code=CalculationErrorCode.PERIOD_BINDING_FAILED,
+        details={
+            "required_terms": [name, f"{target_year}年"],
+            "variable_name": name,
+            "required_periods": [target_year],
+        },
     )
 
 
@@ -4885,6 +6494,327 @@ def _normalize_decimal_text(value: str) -> str | None:
     if "." in normalized:
         normalized = normalized.rstrip("0").rstrip(".")
     return normalized or "0"
+
+
+def _calculation_profile_evidence(
+    retriever: GenericBM25Retriever,
+    doc_ids: Sequence[str],
+    profile: CalculationProfile | None,
+    *,
+    top_k: int,
+) -> list[dict[str, Any]]:
+    """Retrieve evidence per model-declared fact without question-specific routing."""
+
+    if profile is None or not profile.required_facts or top_k < 1:
+        return []
+    per_fact_limit = max(
+        2,
+        min(4, top_k // max(1, len(profile.required_facts))),
+    )
+    rows_by_fact: list[list[dict[str, Any]]] = []
+    for fact_index, fact in enumerate(profile.required_facts):
+        query = fact.retrieval_query()
+        if not query:
+            continue
+        rows: list[dict[str, Any]] = []
+        for hit in retriever.search(
+            list(doc_ids),
+            query,
+            top_k=per_fact_limit,
+            unit_type_boosts={
+                "metric_row": 1.8,
+                "formula_block": 2.0,
+                "clause_block": 1.5,
+                "article": 1.3,
+            },
+            ensure_per_doc=False,
+            expand_neighbors=True,
+        ):
+            row = _normalize_evidence(hit.to_dict())
+            row["metadata"] = {
+                **dict(row.get("metadata", {})),
+                "calculation_profile_fact_indexes": [fact_index],
+                "retrieval_source": CALCULATION_PROFILE_SCHEMA_VERSION,
+            }
+            rows.append(row)
+        rows_by_fact.append(rows)
+
+    selected: list[dict[str, Any]] = []
+    selected_by_id: dict[str, dict[str, Any]] = {}
+    depth = 0
+    while len(selected) < top_k:
+        added = False
+        for rows in rows_by_fact:
+            if depth >= len(rows):
+                continue
+            added = True
+            row = rows[depth]
+            unit_id = str(row.get("unit_id", "")).strip()
+            if not unit_id:
+                continue
+            existing = selected_by_id.get(unit_id)
+            if existing is not None:
+                old_indexes = existing["metadata"].get(
+                    "calculation_profile_fact_indexes",
+                    [],
+                )
+                new_indexes = row["metadata"].get(
+                    "calculation_profile_fact_indexes",
+                    [],
+                )
+                existing["metadata"][
+                    "calculation_profile_fact_indexes"
+                ] = list(dict.fromkeys([*old_indexes, *new_indexes]))
+                continue
+            selected_by_id[unit_id] = row
+            selected.append(row)
+            if len(selected) >= top_k:
+                break
+        if not added:
+            break
+        depth += 1
+    return selected
+
+
+def _extract_calculation_period_anchors(
+    question_text: str,
+) -> list[str]:
+    """Extract explicit dates/years without interpreting question semantics."""
+
+    text = re.sub(r"\s+", "", str(question_text))
+    anchors: list[str] = []
+    patterns = (
+        r"(?:19|20)\d{2}年\d{1,2}月\d{1,2}日",
+        r"(?:19|20)\d{2}年",
+    )
+    for pattern in patterns:
+        for match in re.findall(pattern, text):
+            anchor = str(match).strip()
+            if anchor and anchor not in anchors:
+                anchors.append(anchor)
+    return anchors[:8]
+
+
+def _calculation_period_query(
+    question_text: str,
+    period_anchor: str,
+) -> str:
+    """Keep question semantics while removing competing explicit periods."""
+
+    without_full_dates = re.sub(
+        r"(?:19|20)\d{2}\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日",
+        " ",
+        str(question_text),
+    )
+    without_years = re.sub(
+        r"(?:19|20)\d{2}\s*年",
+        " ",
+        without_full_dates,
+    )
+    return "\n".join(
+        item
+        for item in (
+            str(period_anchor).strip(),
+            re.sub(r"\s+", " ", without_years).strip(),
+        )
+        if item
+    )
+
+
+def _extract_calculation_lexical_anchors(
+    retriever: GenericBM25Retriever,
+    question_text: str,
+    *,
+    max_anchors: int = 12,
+) -> list[str]:
+    """Select natural literal tokens, filtered by corpus IDF."""
+
+    if max_anchors < 1:
+        return []
+    anchors: list[str] = []
+    for token in tokenize_zh_primary(question_text):
+        cleaned = str(token).strip().casefold()
+        lexical = re.sub(r"[\W_]+", "", cleaned)
+        if (
+            len(lexical) < 2
+            or any(character.isdigit() for character in lexical)
+        ):
+            continue
+        idf = float(retriever.bm25.idf.get(cleaned, 0.0))
+        if idf <= 0:
+            continue
+        if cleaned in anchors:
+            continue
+        anchors.append(cleaned)
+        if len(anchors) >= max_anchors:
+            break
+    return anchors
+
+
+def _select_calculation_document_scope(
+    question: BQuestion,
+    candidate_doc_ids: Sequence[str],
+) -> list[str]:
+    """Narrow locator candidates using only domain and literal structure."""
+
+    candidates = list(
+        dict.fromkeys(
+            str(doc_id).strip()
+            for doc_id in candidate_doc_ids
+            if str(doc_id).strip()
+        )
+    )
+    if not candidates:
+        return []
+    if question.domain == "financial_reports":
+        years = [
+            anchor.removesuffix("年")
+            for anchor in _extract_calculation_period_anchors(
+                question.question
+            )
+            if re.fullmatch(r"(?:19|20)\d{2}年", anchor)
+        ]
+        if years:
+            matched = [
+                doc_id
+                for doc_id in candidates
+                if any(
+                    re.search(
+                        rf"(?<!\d){re.escape(year)}(?!\d)",
+                        doc_id,
+                    )
+                    for year in years
+                )
+            ]
+            if matched:
+                return matched
+        return candidates[: max(1, min(4, question.answer_slots + 1))]
+    if question.domain == "insurance":
+        requested_count = _requested_multi_contract_count(
+            question.question
+        )
+        return candidates[: requested_count or 1]
+    return candidates[:1]
+
+
+def _calculation_structured_first_pass_evidence(
+    retriever: GenericBM25Retriever,
+    doc_ids: Sequence[str],
+    question_text: str,
+    *,
+    top_k: int,
+) -> list[dict[str, Any]]:
+    """Cover every candidate document and explicit period before global BM25.
+
+    All queries retain the full question. The only derived anchors are locator
+    document membership and literal dates/years from the question.
+    """
+
+    normalized_doc_ids = [
+        str(doc_id).strip()
+        for doc_id in doc_ids
+        if str(doc_id).strip()
+    ]
+    if not normalized_doc_ids or top_k < 1:
+        return []
+    unit_type_boosts = {
+        "metric_row": 1.8,
+        "formula_block": 2.0,
+        "clause_block": 1.5,
+        "article": 1.3,
+    }
+    groups: list[tuple[str, list[dict[str, Any]]]] = []
+    per_doc_limit = max(
+        2,
+        min(6, top_k // max(1, len(normalized_doc_ids))),
+    )
+    for doc_index, doc_id in enumerate(normalized_doc_ids):
+        rows = [
+            _normalize_evidence(hit.to_dict())
+            for hit in retriever.search(
+                [doc_id],
+                question_text,
+                top_k=per_doc_limit,
+                unit_type_boosts=unit_type_boosts,
+                ensure_per_doc=False,
+                expand_neighbors=True,
+            )
+        ]
+        groups.append((f"document_{doc_index}", rows))
+
+    for period_index, anchor in enumerate(
+        _extract_calculation_period_anchors(question_text)
+    ):
+        rows = [
+            _normalize_evidence(hit.to_dict())
+            for hit in retriever.search(
+                normalized_doc_ids,
+                _calculation_period_query(question_text, anchor),
+                top_k=min(4, top_k),
+                unit_type_boosts=unit_type_boosts,
+                ensure_per_doc=False,
+                expand_neighbors=True,
+            )
+        ]
+        groups.append((f"period_{period_index}", rows))
+
+    for lexical_index, anchor in enumerate(
+        _extract_calculation_lexical_anchors(
+            retriever,
+            question_text,
+        )
+    ):
+        rows = [
+            _normalize_evidence(hit.to_dict())
+            for hit in retriever.search(
+                normalized_doc_ids,
+                anchor,
+                top_k=min(2, top_k),
+                unit_type_boosts=unit_type_boosts,
+                ensure_per_doc=False,
+                expand_neighbors=True,
+            )
+        ]
+        groups.append((f"lexical_{lexical_index}", rows))
+
+    selected: list[dict[str, Any]] = []
+    selected_by_id: dict[str, dict[str, Any]] = {}
+    depth = 0
+    while len(selected) < top_k:
+        added = False
+        for source_name, rows in groups:
+            if depth >= len(rows):
+                continue
+            added = True
+            row = rows[depth]
+            unit_id = str(row.get("unit_id", "")).strip()
+            if not unit_id:
+                continue
+            existing = selected_by_id.get(unit_id)
+            if existing is not None:
+                sources = existing["metadata"].get(
+                    "calculation_structured_sources",
+                    [],
+                )
+                existing["metadata"][
+                    "calculation_structured_sources"
+                ] = list(dict.fromkeys([*sources, source_name]))
+                continue
+            row["metadata"] = {
+                **dict(row.get("metadata", {})),
+                "calculation_structured_sources": [source_name],
+                "retrieval_source": (
+                    CALCULATION_STRUCTURED_RETRIEVAL_VERSION
+                ),
+            }
+            selected_by_id[unit_id] = row
+            selected.append(row)
+            if len(selected) >= top_k:
+                break
+        if not added:
+            break
+        depth += 1
+    return selected
 
 
 def _calculation_evidence_payload(

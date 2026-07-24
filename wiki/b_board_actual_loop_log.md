@@ -22,6 +22,304 @@
 }
 ```
 
+## b-loop-qwen37-calculation-guarded-adaptive-thinking-a1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-guarded-adaptive-thinking-a1",
+  "direction_id": "qwen37_calculation_guarded_adaptive_thinking_and_semantic_guard",
+  "direction_attempt_count": 1,
+  "direction_round_limit": 3,
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_round": "b-loop-qwen37-calculation-joint-reasoning-a3-dynamic-fallback",
+    "active_slice_protocol": "b-loop-qwen37-calculation-top12-token-slice-v1"
+  },
+  "approach": "按C2完整answer+reasoning Token动态排序后冻结Top12。策略仅使用领域、答案槽数、题面中的年份数量、显式公式、排序/核对结构及运行时证据语义约束，控制首次CalculationPlan调用；失败重试一律恢复provider default。研究模式只运行答案阶段，没有QID、历史答案、文档ID或题面全文匹配路由。",
+  "artifact_path": "artifacts/b_board_actual/calc_top12_guarded_adaptive_thinking_a1",
+  "policy_routes": {
+    "off_first_attempt_count": 2,
+    "budget4096_first_attempt_count": 1,
+    "provider_default_count": 9,
+    "default_on_all_retries": true
+  },
+  "metrics": {
+    "expected_question_count": 12,
+    "answer_completed_count": 8,
+    "answer_failed_count": 4,
+    "pseudo99_answer_match_count": 6,
+    "pseudo99_answer_mismatch_count": 2,
+    "pseudo99_answer_mismatch_qids": [
+      "fin_b_016",
+      "res_b_005"
+    ],
+    "answer_generation_tokens_including_failures": 222587,
+    "c2_top12_answer_tokens": 299050,
+    "invalid_incomplete_token_delta": -76463,
+    "adaptive_route_answer_completed_count": 3,
+    "adaptive_route_pseudo99_match_count": 3,
+    "adaptive_route_answer_tokens": 64101,
+    "adaptive_route_c2_answer_tokens": 115003,
+    "adaptive_route_token_delta": -50902,
+    "adaptive_route_token_reduction_ratio": 0.4426136709477144,
+    "gpt56_judge_call_count": 0
+  },
+  "failure_breakdown": {
+    "remote_read_timeout_360_seconds": 3,
+    "multi_entity_same_metric_grounding_failure": 1,
+    "adaptive_route_failure_count": 0,
+    "provider_default_route_failure_count": 4
+  },
+  "causal_scope": "该research开关同时启用首轮thinking分流、运行时证据语义约束注入及对应本地验证，属于组合方向，不把全部差异单独归因于thinking。",
+  "effect": "整轮未通过12/12答案门禁，不能把不完整运行的-76463 Token当成有效收益。因果切片中，真正改变thinking策略的3题全部完成且与pseudo99冻结答案一致，答案Token从115003降至64101，节省50902（44.26%）；4个失败和2个答案漂移均发生在未改变的provider-default题，其中3个为远端360秒超时。",
+  "promotion_result": "failed_full_top12_gate_continue_causal_a2",
+  "score_type": "offline_top12_answer_stage_pseudo99_comparison_not_official",
+  "next_step": "A2冻结C2中策略未命中的9题，只对由通用结构策略动态命中的3题生成独立Qwen reasoning；组装完整Top12因果候选后，用固定GPT-5.6按new.md评估reasoning并计算总分。只有答案、grounding/replay、reasoning质量和最终公式同时通过才允许晋级；不重跑26题。",
+  "recorded_at": "2026-07-24T22:04:45+08:00",
+  "status": "failed_gate_continue_direction",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-guarded-adaptive-thinking-a2-causal-top12
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-guarded-adaptive-thinking-a2-causal-top12",
+  "direction_id": "qwen37_calculation_guarded_adaptive_thinking_and_semantic_guard",
+  "direction_attempt_count": 2,
+  "direction_round_limit": 3,
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_round": "b-loop-qwen37-calculation-guarded-adaptive-thinking-a1",
+    "active_slice_protocol": "b-loop-qwen37-calculation-top12-token-slice-v1"
+  },
+  "approach": "为消除A1中未变更9题的远端超时和随机漂移噪声，冻结C2中通用结构策略未命中的9题；仅对策略动态命中的3题使用A1已通过grounding/replay且与pseudo99一致的答案checkpoint，独立调用Qwen3.7生成reasoning。将3题补丁覆盖到完整C2后，构建100题审计候选；没有复用GPT输出到提交，也没有按QID修改生产路由。",
+  "artifacts": {
+    "answer_run": "artifacts/b_board_actual/calc_top12_guarded_adaptive_thinking_a1",
+    "reasoning_patch": "artifacts/b_board_actual/calc_top12_guarded_adaptive_thinking_a2_reasoning3",
+    "gpt56_shadow_evaluation": "artifacts/b_board_actual/calc_top12_guarded_adaptive_thinking_a2_reasoning3/reasoning_eval_gpt56",
+    "assembled_research_candidate": "artifacts/b_board_actual/qwen37_calc_guarded_adaptive_thinking_a2_research_candidate",
+    "c2_proxy_scorecard": "artifacts/b_board_actual/qwen37_three_badcase_token_candidate_c2/proxy_scorecard.json",
+    "top12_c2_reasoning_judge": "artifacts/b_board_actual/calc_top12_joint_reasoning_incumbent_a1/reasoning_eval_gpt56/reasoning_scores.json",
+    "selected3_reasoning_judge": "artifacts/b_board_actual/calc_top12_guarded_adaptive_thinking_a2_reasoning3/reasoning_eval_gpt56/reasoning_scores.json",
+    "manual_scenario_projection": "artifacts/b_board_actual/qwen37_calc_guarded_adaptive_thinking_a2_research_candidate/manual_scenario_projection.json"
+  },
+  "metrics": {
+    "assembled_question_count": 100,
+    "assembled_answer_match_to_c2_count": 100,
+    "assembled_answer_diff_count": 0,
+    "selected_answer_count": 3,
+    "selected_answer_grounding_replay_pass_count": 3,
+    "selected_reasoning_completed_count": 3,
+    "selected_reasoning_qwen_call_count": 3,
+    "selected_reasoning_tokens": 19220,
+    "selected_reasoning_tokens_c2": 14795,
+    "selected_reasoning_score_c2": 96.8888888888889,
+    "selected_reasoning_score_after": 98.33333333333333,
+    "top12_reasoning_score_c2": 96.66666666666667,
+    "top12_reasoning_score_after": 97.02777777777777,
+    "full100_reasoning_score_c2": 95.93,
+    "full100_reasoning_score_projected": 95.97333333333333,
+    "full100_token_total_c2": 1258188,
+    "full100_token_total_after": 1211711,
+    "full100_token_delta": -46477,
+    "full100_token_reduction_ratio": 0.03693963064343325,
+    "token_efficiency_score_c2": 74.83624,
+    "token_efficiency_score_after": 75.76578,
+    "pseudo_accuracy_score": 99.0,
+    "proxy_total_score_c2": 93.246248,
+    "proxy_total_score_after": 93.445156,
+    "proxy_total_score_delta": 0.198908,
+    "gpt56_judge_call_count": 3
+  },
+  "audit": {
+    "submission_rows": 100,
+    "all_reasoning_minimum_20_chars": true,
+    "summary_prompt_tokens_match": true,
+    "summary_completion_tokens_match": true,
+    "summary_total_tokens_match": true,
+    "white_list_generation_model": "qwen3.7-plus-2026-05-26",
+    "gpt56_used_only_for_shadow_judging": true,
+    "assembled_candidate_submission_eligible": false,
+    "base_proxy_compliance_passed": false,
+    "base_proxy_compliance_note": "C2 proxy_scorecard因历史reasoning prompt版本与official lock检查未通过，未输出point proxy；本轮93.246248到93.445156仅为pseudo99场景手工投影，不是内部合规scorecard或官方分数。"
+  },
+  "effect": "通用首轮thinking分流在完整Top12因果组装中保持100/100答案与C2一致，Top12 reasoning由96.67升至97.03；全100题Token减少46477，Token效率提升0.92954。按pseudo99且准确率不变计算，代理总分提升0.198908。该结果是离线代理，不是官网准确率或官方总分。",
+  "promotion_result": "effective_top12_gate_passed_pending_commit_and_push",
+  "score_type": "offline_pseudo99_manual_scenario_projection_with_gpt56_shadow_not_official",
+  "next_step": "把有效实现提交到独立分支并推送；后续新方向继续先重读日志并使用Top12，不再默认全跑26题。官网提交仍需用户明确授权。",
+  "recorded_at": "2026-07-24T22:11:04+08:00",
+  "status": "effective_promoted",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-joint-reasoning-a1-shadow
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-joint-reasoning-a1-shadow",
+  "direction_id": "qwen37_calculation_joint_answer_reasoning",
+  "direction_attempt_count": 1,
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "baseline_experiment": "b-loop-qwen37-calculation-top12-token-slice-v1",
+    "prior_relevant_direction": "b-loop-qwen37-joint-choice-answer-reasoning-a1"
+  },
+  "approach": "冻结C2 Top12的答案、证据、CalculationTrace及answer usage，不重跑答案；把同一次Qwen CalculationPlan调用已经生成的answer_stage.decision_summary原文映射为reasoning，增量Qwen调用为0。用固定GPT-5.6 new.md judge同时复评该影子摘要与C2现有独立reasoning。该轮只验证一次联合调用的质量/Token上界，不作为合规提交候选。",
+  "artifacts": {
+    "shadow_candidate": "artifacts/b_board_actual/calc_top12_joint_reasoning_shadow_a1",
+    "incumbent_slice": "artifacts/b_board_actual/calc_top12_joint_reasoning_incumbent_a1",
+    "shadow_evaluation": "artifacts/b_board_actual/calc_top12_joint_reasoning_shadow_a1/reasoning_eval_gpt56",
+    "incumbent_evaluation": "artifacts/b_board_actual/calc_top12_joint_reasoning_incumbent_a1/reasoning_eval_gpt56"
+  },
+  "metrics": {
+    "expected_question_count": 12,
+    "answer_parts_preserved_count": 12,
+    "grounding_verified_count": 12,
+    "replay_verified_count": 12,
+    "incremental_qwen_call_count": 0,
+    "incumbent_top12_total_token": 356953,
+    "shadow_top12_total_token": 299050,
+    "token_saved": 57903,
+    "token_reduction_ratio": 0.1622154868517795,
+    "incumbent_reasoning_score": 96.66666666666667,
+    "shadow_reasoning_score": 92.41666666666667,
+    "reasoning_score_delta": -4.25,
+    "incumbent_reasoning_p10": 95.0,
+    "shadow_reasoning_p10": 80.66666666666667,
+    "strict_joint_contract_pass_count": 1,
+    "program_appended_summary_count": 5,
+    "explicit_numeric_contradiction_count": 3,
+    "projected_full100_token_before": 1258188,
+    "projected_full100_token_after": 1200285,
+    "projected_token_efficiency_before": 74.83624,
+    "projected_token_efficiency_after": 75.9943,
+    "projected_full100_reasoning_before": 95.93,
+    "projected_full100_reasoning_after": 95.42,
+    "projected_total_delta_at_equal_accuracy": 0.078612
+  },
+  "effect": "旧answer summary的平均reasoning虽下降4.25分，但小于Top12等准确率公式约6.43分的盈亏平衡阈值，理论总分仍增加0.078612，证明计算答案与reasoning一次联合调用值得进入A2。然而旧C2中5条summary经过代码补写、3条存在舍入数值矛盾，且只有1/12满足新的严格联合合约；依据new.md不得把这批旧summary视为合规候选。",
+  "implementation_followup": "新增显式research-only联合开关：Qwen CalculationPlan的decision_summary必须在同一次响应中成为可提交reasoning；禁止本地补写/字符串化，要求精确冻结结论、内部ID禁用、显式等式结果属于grounding/replay trace，并用SHA256锁定answer-stage文本。reasoning ledger为零增量调用，全部物理调用仍归answer ledger；overlay显式拒绝未晋级联合产物进入submission。",
+  "promotion_result": "shadow_positive_formula_but_noncompliant_not_promoted",
+  "score_type": "offline_top12_equal_accuracy_gpt56_shadow_not_official",
+  "next_step": "执行A2：使用固定Qwen3.7、native strict、默认8/16/24与完整计算Prompt，只新增通用联合reasoning合约；Top12必须全部完成、12/12冻结签名一致、grounding/replay通过、reasoning质量与最终公式净提升后，才允许跑26题。若严格summary门禁导致重试或失败，A3只允许基于结构化错误做动态回退到独立reasoning，不按QID路由。",
+  "recorded_at": "2026-07-24T20:49:24+08:00",
+  "status": "shadow_complete_not_promoted",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-joint-reasoning-a2
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-joint-reasoning-a2",
+  "direction_id": "qwen37_calculation_joint_answer_reasoning",
+  "direction_attempt_count": 2,
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_round": "b-loop-qwen37-calculation-joint-reasoning-a1-shadow",
+    "active_slice_protocol": "b-loop-qwen37-calculation-top12-token-slice-v1"
+  },
+  "approach": "按C2完整answer+reasoning usage动态排序得到的Top12切片运行；固定qwen3.7-plus-2026-05-26、native strict、默认thinking、完整计算Prompt和5 workers，只新增通用联合reasoning合约。联合summary不允许本地补写或改写，并要求冻结答案精确结论和replay数值一致。没有使用QID、固定题目片段、历史答案或文档ID路由。",
+  "artifact_path": "artifacts/b_board_actual/calc_top12_joint_reasoning_a2",
+  "metrics": {
+    "expected_question_count": 12,
+    "settled_question_count": 11,
+    "early_stopped_question_count": 1,
+    "early_stopped_qids": [
+      "ins_b_003"
+    ],
+    "successful_answer_count": 1,
+    "failed_answer_count": 10,
+    "successful_qids": [
+      "ins_b_019"
+    ],
+    "successful_answer_matches_pseudo99_count": 1,
+    "qwen_physical_call_count": 26,
+    "prompt_tokens": 217026,
+    "completion_tokens": 104954,
+    "total_tokens": 321980,
+    "same_11_qid_baseline_tokens": 287897,
+    "same_11_qid_token_delta": 34083,
+    "same_11_qid_token_increase_ratio": 0.11838608946949777,
+    "full_top12_baseline_tokens": 299050,
+    "a2_settled_11_vs_full_top12_token_delta": 22930,
+    "a2_settled_11_vs_full_top12_token_increase_ratio": 0.07667614111352616,
+    "incremental_reasoning_call_count": 0,
+    "gpt56_judge_call_count": 0
+  },
+  "failure_breakdown": {
+    "joint_reasoning_contract_caused_answer_retry_or_failure": 4,
+    "calculation_grounding_unit_or_table_binding": 3,
+    "remote_read_timeout_360_seconds": 3,
+    "early_stopped_after_gate_impossible": 1
+  },
+  "effect": "严格联合合约把reasoning文本失败耦合进CalculationPlan重试，导致11道已收敛题就发生26次物理调用并消耗321980 Token；这已经比完整Top12基线高22930 Token，且仅1题成功。A2在第10个失败后已不可能满足12/12门禁，因此等待已发请求收敛后主动早停最后1题；不生成GPT-5.6 reasoning评分，不扩到26题，不上传官网。",
+  "promotion_result": "rejected_joint_reasoning_must_not_trigger_answer_recalculation",
+  "score_type": "incomplete_offline_top12_answer_stage_pseudo99_comparison_not_official",
+  "next_step": "A3采用通用结构化错误分流：计算答案、grounding和replay通过后立即冻结；联合summary合约失败不得触发CalculationPlan重算，只对该题动态回退到独立Qwen reasoning。分流仅依据summary校验状态，不按QID、题面片段、答案或文档ID路由。仍先跑Top12，只有12/12答案门禁和总分公式净提升才允许全26确认。",
+  "recorded_at": "2026-07-24T21:12:10+08:00",
+  "status": "rejected_incomplete_early_stopped",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-joint-reasoning-a3-dynamic-fallback
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-joint-reasoning-a3-dynamic-fallback",
+  "direction_id": "qwen37_calculation_joint_answer_reasoning",
+  "direction_attempt_count": 3,
+  "direction_round_limit": 3,
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_round": "b-loop-qwen37-calculation-joint-reasoning-a2",
+    "active_slice_protocol": "b-loop-qwen37-calculation-top12-token-slice-v1"
+  },
+  "approach": "保持Top12、Qwen3.7快照、native strict、默认thinking、完整计算Prompt、检索和5 workers不变；只按结构化summary校验状态解耦答案与reasoning。计算答案、grounding和replay一旦通过立即冻结；联合summary合约失败不得触发CalculationPlan重算，只动态回退到独立Qwen reasoning。没有使用QID、题面片段、历史答案或文档ID路由。",
+  "artifact_path": "artifacts/b_board_actual/calc_top12_joint_reasoning_a3_dynamic_fallback",
+  "metrics": {
+    "expected_question_count": 12,
+    "answer_completed_count": 8,
+    "answer_failed_count": 4,
+    "pseudo99_answer_match_count": 6,
+    "pseudo99_answer_mismatch_count": 2,
+    "pseudo99_answer_mismatch_qids": [
+      "fin_b_016",
+      "res_b_005"
+    ],
+    "joint_reasoning_direct_pass_count": 2,
+    "dedicated_reasoning_fallback_count": 6,
+    "answer_physical_call_count": 26,
+    "reasoning_physical_call_count": 6,
+    "total_physical_call_count": 32,
+    "answer_tokens_including_failures": 339573,
+    "reasoning_tokens": 37560,
+    "generation_total_tokens": 377133,
+    "top12_baseline_total_tokens": 356953,
+    "total_token_delta": 20180,
+    "total_token_increase_ratio": 0.05653405350284211,
+    "gpt56_judge_call_count": 0
+  },
+  "failure_breakdown": {
+    "calculation_grounding_or_period_binding": 3,
+    "remote_read_timeout_360_seconds": 1,
+    "joint_reasoning_contract_caused_answer_retry_or_failure": 0
+  },
+  "effect": "动态分流修复了A2的架构耦合：联合summary不再导致计算答案重跑，8个成功答案中2个可以零增量reasoning、6个只补独立reasoning。但答案侧仍有4题失败且2题相对pseudo99漂移；全部成功和失败调用合计377133 Token，比C2 Top12基线增加20180。未满足12/12答案门禁，也未降低Token，因此不运行GPT-5.6、不扩到26题、不上传官网。",
+  "promotion_result": "rejected_direction_exhausted_keep_research_only",
+  "score_type": "offline_top12_full_chain_pseudo99_comparison_not_official",
+  "next_step": "该方向达到3次上限，停止继续优化联合生成。保留research-only实现和解耦测试作为证据，不进入submission。下一新方向必须先重读本日志，继续使用动态Top12；优先减少计算答案侧的长thinking、三轮grounding失败和360秒超时，同时不得牺牲冻结答案一致性。",
+  "recorded_at": "2026-07-24T21:33:57+08:00",
+  "status": "rejected_direction_stopped",
+  "submission_effect": "none"
+}
+```
+
 ## b-loop-qwen37-reasoning-thinking-budget-768-c3
 
 ```json
@@ -39214,5 +39512,984 @@
   "score_type": "offline_posthoc_oracle_projection_not_official",
   "status": "completed_effective_research_signal",
   "submission_effect": "no_official_upload_default_submission_chain_unchanged"
+}
+```
+
+## b-loop-qwen37-calculation-profile-no-hardcoding-a1-a3
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-profile-no-hardcoding-a1-a3",
+  "direction_id": "qwen37_calculation_profile_no_hardcoding",
+  "direction_attempt_count": 3,
+  "approach": "执行前重读本日志与qwen37_structured_output_handoff。新增独立CalculationProfile严格Schema；Profile请求只包含domain、题目、答案格式、槽数和模板，不包含QID、参考答案、历史结果、文档ID或证据。由Qwen3.7关闭thinking生成task_types、required_facts、operators、outputs、complexity和risk_checks；required_facts以round-robin方式驱动BM25首轮检索。新增AST审计，禁止生产计算链按QID、固定题目片段、regex、历史答案或文档ID路由；重试分类开始改为结构化CalculationErrorCode。",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_experiment_id": "b-loop-qwen37-calculation-retrieval-retry-audit-a1",
+    "new_material_delta": "拒绝上一轮建议的按题首轮短语覆盖，改为模型生成通用required_facts；删除答案调用链对固定实体和诊断短语overlay的依赖。"
+  },
+  "attempts": [
+    {
+      "attempt": "A1",
+      "artifact_path": "artifacts/b_board_actual/calc26_profile_a1",
+      "result": "26题并行Profile探针23成功、3个原生strict响应JSON截断。23个成功调用共12473 Token；A1探针脚本未把3个解析失败响应的usage落盘，因此该Token仅为下界，A1不得用于晋级或完整Token比较。",
+      "success_count": 23,
+      "failure_count": 3,
+      "recorded_success_token_lower_bound": 12473
+    },
+    {
+      "attempt": "A2",
+      "artifact_path": "artifacts/b_board_actual/calc26_profile_a2_format",
+      "result": "对A1失败集合重跑并完整保存响应与usage；1题成功，2题completion_tokens均达到1024并截断。失败内容显示operators数组重复输出同一通用算子，不是题目语义或检索错误。",
+      "success_count": 1,
+      "failure_count": 2,
+      "token_total": 3154
+    },
+    {
+      "attempt": "A3",
+      "artifact_path": "artifacts/b_board_actual/calc26_profile_a3_bounded_schema",
+      "result": "移除DashScope不支持的uniqueItems，改用通用maxItems限制数组长度；A2剩余2题均首次返回合法Profile，总Token1276。",
+      "success_count": 2,
+      "failure_count": 0,
+      "token_total": 1276
+    }
+  ],
+  "effect": "Profile接口和无hard-coding防线已通过；原生strict最小能力探针成功，单题正常Profile约400-700 Token。A1-A3共同覆盖26/26 Profile，但尚未生成26题答案、reasoning或完整可比Token，因此只晋级工程基础，不宣称总分提升。",
+  "hardcoding_policy": {
+    "qid_branching": false,
+    "question_fragment_routing": false,
+    "historical_answer_mapping": false,
+    "document_id_mapping": false,
+    "exception_message_routing": false,
+    "generic_domain_rules_allowed": true,
+    "model_generated_required_facts": true
+  },
+  "verification": {
+    "new_profile_and_hardcoding_tests": "11/11 passed",
+    "calculation_regression_tests": "128/128 passed",
+    "native_schema_probe": "supported",
+    "model": "qwen3.7-plus",
+    "answer_generation_performed": false,
+    "official_submission_performed": false
+  },
+  "promotion_result": "engineering_gate_passed_full26_answer_token_promotion_pending",
+  "score_type": "profile_only_research_not_official",
+  "next_step": "进入新方向：使用最终bounded Profile Schema跑完整26题answer阶段。所有Profile、CalculationPlan、失败和重试usage必须完整落盘；以26题冻结答案、grounding/replay与506331基线Token为晋级门槛，不允许按题回退或事后白名单。",
+  "recorded_at": "2026-07-24T16:20:00+08:00",
+  "status": "completed_profile_direction",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-profile-answer-a1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-profile-answer-a1",
+  "direction_id": "qwen37_calculation_profile_answer",
+  "direction_attempt_count": 1,
+  "approach": "使用固定快照qwen3.7-plus-2026-05-26、native strict、5 workers，对全部26道calculation统一执行Profile加CalculationPlan answer阶段；不传QID给模型，不使用参考答案或按题路由。",
+  "artifact_path": "artifacts/b_board_actual/calc26_profile_answer_a1",
+  "effect": "首个领域的4题均在模型调用完成后因本地artifact记录仍引用已删除变量operator_shape_hint而失败；旧catch-all重试把同一本地NameError误判为可重试错误，导致每题执行1次Profile和3次CalculationPlan。发现后立即中止，未继续消耗全部26题。",
+  "metrics": {
+    "completed_failure_rows": 4,
+    "recorded_call_count": 16,
+    "recorded_prompt_tokens": 91409,
+    "recorded_completion_tokens": 19591,
+    "recorded_total_tokens": 111000,
+    "successful_answer_count": 0,
+    "inflight_calls_at_interrupt": true,
+    "complete_usage_available": false
+  },
+  "failure_analysis": "根因是本地集成变量清理不完整，不是模型、证据或Profile失败。中断时其他worker存在不可恢复的在途调用，因此111000只是已落盘下界；本轮不能用于Token晋级或正式申报。",
+  "fix": "删除artifact中的旧operator_shape_hint引用；只允许CalculationPlanError和JSONDecodeError进入模型重试，NameError等本地实现异常立即终止，防止同类错误重复付费。",
+  "verification_after_fix": "397/397 tests passed; compileall and git diff --check passed",
+  "promotion_result": "rejected_local_integration_failure_incomplete_usage",
+  "score_type": "invalid_aborted_research_run_not_official",
+  "next_step": "A2从全新运行目录重新执行26题；不得复用A1答案或把A1下界Token加入候选比较，但日志保留其实际失败成本。",
+  "recorded_at": "2026-07-24T16:26:00+08:00",
+  "status": "rejected",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-profile-answer-a2
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-profile-answer-a2",
+  "direction_id": "qwen37_calculation_profile_answer",
+  "direction_attempt_count": 2,
+  "approach": "修复A1本地artifact引用与非重试异常后，从新目录统一运行26题；模型固定qwen3.7-plus-2026-05-26，native strict，5 workers，Profile与全部CalculationPlan调用均记录call_role和原始usage。",
+  "artifact_path": "artifacts/b_board_actual/calc26_profile_answer_a2",
+  "metrics": {
+    "expected_question_count": 26,
+    "successful_answer_count": 21,
+    "failed_answer_count": 5,
+    "successful_reference_match_count": 21,
+    "successful_reference_mismatch_count": 0,
+    "zero_retry_success_count": 15,
+    "one_retry_success_count": 2,
+    "two_retry_success_count": 4,
+    "successful_answer_token": 320245,
+    "failed_recorded_token": 114158,
+    "generation_token_total": 434403,
+    "old_calc26_answer_token_baseline": 404667,
+    "answer_token_delta_vs_baseline": 29736
+  },
+  "failure_analysis": {
+    "table_row_binding": 1,
+    "ungrounded_model_supplied_unit": 2,
+    "dashscope_http_500": 1,
+    "dashscope_read_timeout": 1
+  },
+  "effect": "21个成功答案全部保持pseudo99冻结签名，证明Profile链未造成已完成题的答案漂移；但5题失败且完整answer生成Token高于旧基线29736，A2不晋级。",
+  "fix_for_a3": "required_facts新增通用source_kind，由table_row、contract_clause、period_components自动派生风险检查；风险检查以通用模块显式注入求解Prompt。新增证据驱动单位规范化：若模型单位未在所引证据出现、而相同数值在空单位下可验证，则只清空该单位，不创造或换算数值。服务500/超时不自动重发，A3新运行统一重试。",
+  "hardcoding_audit": "passed; no QID, fixed question fragment, historical answer or document-ID routing",
+  "promotion_result": "rejected_incomplete_and_token_increase",
+  "score_type": "offline_answer_stage_not_official",
+  "next_step": "A3为本方向最后一轮，必须完整26题、26/26冻结签名一致且answer总Token低于404667才可晋级；否则停止本方向并保留旧生产基线。",
+  "recorded_at": "2026-07-24T16:47:00+08:00",
+  "status": "rejected",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-profile-answer-a3
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-profile-answer-a3",
+  "direction_id": "qwen37_calculation_profile_answer",
+  "direction_attempt_count": 3,
+  "approach": "执行前重读本日志。使用A2后的通用source_kind风险约束和证据驱动单位规范化，从全新目录对26道calculation统一运行answer阶段；模型固定qwen3.7-plus-2026-05-26，native strict，5 workers，不向模型传QID、参考答案、历史答案或文档ID，不做按题回退。",
+  "artifact_path": "artifacts/b_board_actual/calc26_profile_answer_a3",
+  "metrics": {
+    "expected_question_count": 26,
+    "successful_answer_count": 22,
+    "failed_answer_count": 4,
+    "successful_reference_match_count": 21,
+    "successful_reference_mismatch_count": 1,
+    "mismatch": {
+      "qid": "res_b_005",
+      "candidate_answer": "-0.54%",
+      "frozen_reference_answer": "22.27%",
+      "recorded_token": 52403,
+      "retry_count": 2
+    },
+    "zero_retry_success_count": 16,
+    "one_retry_success_count": 2,
+    "two_retry_success_count": 4,
+    "successful_answer_token": 357838,
+    "failed_recorded_token": 114566,
+    "generation_token_total": 472404,
+    "old_calc26_answer_token_baseline": 404667,
+    "answer_generation_token_delta_vs_baseline": 67737
+  },
+  "failure_analysis": {
+    "period_binding_failure": [
+      "fin_b_014"
+    ],
+    "provider_read_timeout": [
+      "fin_b_013",
+      "fin_b_015"
+    ],
+    "conditional_operator_binding_failure": [
+      "ins_b_003"
+    ]
+  },
+  "effect": "A3未达到完整性、冻结答案一致性或Token门槛：仅22/26完成，res_b_005发生答案漂移，成功与失败调用合计472404 Token，比旧26题answer基线404667增加67737。该方向已用满3轮，停止继续尝试；不运行reasoning影子评测、不创建有效优化分支、不上传官网。",
+  "hardcoding_audit": "passed; no QID, fixed question fragment, historical answer or document-ID routing",
+  "promotion_result": "rejected_max_direction_rounds_exhausted",
+  "score_type": "offline_answer_stage_not_official",
+  "next_step": "将CalculationProfile保留为显式research-only开关并默认关闭。开始新的通用无Profile计算链方向：使用同一固定Qwen3.7快照、通用领域检索和结构化计算计划跑完整26题；每个新方向仍最多3轮，完整26题且冻结答案、grounding/replay门禁通过后才进入reasoning与总分联评。",
+  "recorded_at": "2026-07-24T17:06:00+08:00",
+  "status": "rejected",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-generic-nohardcode-answer-a1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-generic-nohardcode-answer-a1",
+  "direction_id": "qwen37_calculation_generic_nohardcode",
+  "direction_attempt_count": 1,
+  "approach": "执行前重读本日志。默认关闭已淘汰的CalculationProfile前置调用，仅以题目、题型、attempt_43候选文档、通用BM25和结构化CalculationPlan运行26道calculation答案阶段；固定qwen3.7-plus-2026-05-26、native strict、5 workers，不使用QID、固定题目片段、历史答案或文档ID路由。全部成功与失败模型usage均落盘。",
+  "artifact_path": "artifacts/b_board_actual/calc26_generic_nohardcode_answer_a1",
+  "metrics": {
+    "expected_question_count": 26,
+    "successful_answer_count": 22,
+    "failed_answer_count": 4,
+    "successful_pseudo99_match_count": 18,
+    "successful_pseudo99_mismatch_count": 4,
+    "zero_retry_success_count": 13,
+    "one_retry_success_count": 7,
+    "two_retry_success_count": 2,
+    "successful_answer_token": 335819,
+    "failed_recorded_token": 117779,
+    "generation_token_total": 453598,
+    "old_calc26_answer_token_baseline": 404667,
+    "answer_generation_token_delta_vs_baseline": 48931
+  },
+  "answer_drift": {
+    "fc_b_005": {
+      "candidate": [
+        "1468.47%",
+        "1468.47%"
+      ],
+      "pseudo99_reference": [
+        "1468.47%",
+        "740.58%"
+      ]
+    },
+    "fc_b_014": {
+      "candidate": [
+        "13.41"
+      ],
+      "pseudo99_reference": [
+        "14.41"
+      ]
+    },
+    "fin_b_016": {
+      "candidate": [
+        "宁德时代>美的集团>招商银行>中国建筑",
+        "76.77"
+      ],
+      "pseudo99_reference": [
+        "宁德时代>美的集团>招商银行>中国建筑",
+        "76.92"
+      ]
+    },
+    "fin_b_017": {
+      "candidate": [
+        "1049226.01",
+        "0.09%"
+      ],
+      "pseudo99_reference": [
+        "1049321.98",
+        "0.08%"
+      ]
+    }
+  },
+  "failure_analysis": {
+    "table_row_period_binding": [
+      "fin_b_013"
+    ],
+    "missing_grounded_period_value": [
+      "fin_b_015"
+    ],
+    "conditional_operator_dependency": [
+      "ins_b_003"
+    ],
+    "provider_read_timeout": [
+      "res_b_005"
+    ]
+  },
+  "effect": "移除Profile没有降低全26题成本：总生成453598 Token，比旧answer基线增加48931；同时仅22/26完成，成功题中4题与pseudo99冻结签名不一致。该结果不是官网Accuracy，pseudo99一致性也不是真实正确率。A1不晋级，不运行reasoning评测，不上传官网。",
+  "root_cause": "13个零重试成功题成本较低，但9个成功题发生重试，4个最终失败题也消耗完整计划调用；通用整题BM25首轮没有稳定覆盖多槽、多对象和多期间所需的各组原始事实，导致后续完整上下文重试放大Token与延迟。",
+  "hardcoding_audit": "passed; no QID, fixed question fragment, historical answer or document-ID routing",
+  "promotion_result": "rejected_incomplete_answer_drift_and_token_increase",
+  "score_type": "offline_answer_stage_pseudo99_comparison_not_official",
+  "next_step": "A2只改变首轮检索组织：按题目自然标点做通用子句分解，对各子句独立BM25并round-robin合并，再补整题检索；不增加模型调用、不识别特定题意、不写固定业务短语。目标是让多槽、多对象、多期间事实在首轮证据中获得覆盖，降低重试与答案漂移。",
+  "recorded_at": "2026-07-24T17:25:00+08:00",
+  "status": "rejected",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-generic-nohardcode-answer-a2
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-generic-nohardcode-answer-a2",
+  "direction_id": "qwen37_calculation_generic_nohardcode",
+  "direction_attempt_count": 2,
+  "approach": "执行前重读本日志。A2只改变首轮检索组织：按题目自然标点做通用子句分解，各子句独立BM25后round-robin合并，再以整题检索补齐；不识别QID、答案、文档ID、实体类型或固定业务短语，不增加模型调用。",
+  "artifact_path": "artifacts/b_board_actual/calc26_generic_nohardcode_answer_a2_clause",
+  "protocol_change": "用户在运行中将后续实验协议改为只测试C2总Token最高的12道计算题，因此主动停止本次26题运行。停止时存在在途请求，已记录usage只是下界，本轮不可用于完整Token比较。",
+  "partial_metrics": {
+    "recorded_question_count": 11,
+    "successful_answer_count": 8,
+    "failed_answer_count": 3,
+    "successful_pseudo99_match_count": 5,
+    "successful_pseudo99_mismatch_count": 3,
+    "recorded_token_lower_bound": 214528,
+    "inflight_usage_complete": false
+  },
+  "failure_analysis": {
+    "table_row_period_binding": [
+      "fin_b_013"
+    ],
+    "cross_report_period_binding": [
+      "fin_b_014",
+      "fin_b_019"
+    ],
+    "answer_drift": [
+      "fc_b_014",
+      "fin_b_016",
+      "fin_b_017"
+    ]
+  },
+  "effect": "子句切分会丢失跨子句的年份与主体上下文，早期结果已经显示跨年度报告和比较列混用风险升高；该方向即使未完成也不具备继续投入价值。撤销其默认生产路径，不运行reasoning、不上传官网。",
+  "promotion_result": "rejected_interrupted_protocol_change_and_early_quality_regression",
+  "score_type": "incomplete_offline_answer_stage_not_official",
+  "next_step": "终止本方向，不做A3。后续使用C2中answer+reasoning总Token最高的固定Top12研究切片；每轮只跑Top12，候选通过切片门禁后再做一次全26题确认。",
+  "recorded_at": "2026-07-24T17:38:00+08:00",
+  "status": "rejected",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-top12-token-slice-v1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-top12-token-slice-v1",
+  "direction_id": "calculation_research_slice_protocol",
+  "selection_source": "artifacts/b_board_actual/qwen37_three_badcase_token_candidate_c2",
+  "selection_rule": "在26道calculation中，按C2的answer_usage_ledger与reasoning_usage_ledger之和降序，取前12；同分按QID稳定排序。该切片只控制研究评测范围，不进入生产答案路由。",
+  "selected_qids": [
+    "res_b_012",
+    "fin_b_019",
+    "fc_b_005",
+    "fin_b_015",
+    "fin_b_016",
+    "fin_b_013",
+    "ins_b_019",
+    "fin_b_017",
+    "res_b_005",
+    "ins_b_003",
+    "fin_b_018",
+    "fin_b_014"
+  ],
+  "baseline": {
+    "top12_answer_token": 299050,
+    "top12_reasoning_token": 57903,
+    "top12_total_token": 356953,
+    "all26_answer_token": 404667,
+    "all26_reasoning_token": 101664,
+    "all26_total_token": 506331,
+    "answer_token_coverage_ratio": 0.7390026861592372,
+    "reasoning_token_coverage_ratio": 0.5695526440037771,
+    "total_token_coverage_ratio": 0.7049795489511801
+  },
+  "promotion_protocol": "每轮先要求Top12全部完成、12/12 pseudo99冻结签名一致、grounding/replay通过，并分别比较answer、reasoning和总Token。Top12有效候选才允许做一次全26题确认；pseudo99一致性不是官网Accuracy，不上传官网。",
+  "recorded_at": "2026-07-24T17:38:00+08:00",
+  "status": "active_protocol",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-domain-prompt-a1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-domain-prompt-a1",
+  "direction_id": "qwen37_calculation_domain_modular_prompt",
+  "direction_attempt_count": 1,
+  "approach": "执行前重读日志并切换到Top12协议。保持通用整题BM25、结构化CalculationPlan、默认thinking和全部本地校验不变，只把统一3921字符系统Prompt拆成核心契约加domain模块；实际发送长度为1383至1554字符，静态减少60%至65%。domain只取题目元数据，不按QID、题目片段、答案或文档ID路由。",
+  "artifact_path": "artifacts/b_board_actual/calc_top12_domain_prompt_a1",
+  "metrics": {
+    "expected_question_count": 12,
+    "successful_answer_count": 7,
+    "failed_answer_count": 5,
+    "successful_pseudo99_match_count": 3,
+    "successful_pseudo99_mismatch_count": 4,
+    "successful_answer_token": 197675,
+    "failed_recorded_token": 148449,
+    "generation_token_total": 346124,
+    "top12_answer_token_baseline": 299050,
+    "answer_generation_token_delta_vs_baseline": 47074
+  },
+  "answer_drift_qids": [
+    "fc_b_005",
+    "fin_b_016",
+    "fin_b_017",
+    "res_b_005"
+  ],
+  "failure_analysis": {
+    "unit_scale_dependency": [
+      "res_b_012"
+    ],
+    "missing_grounded_period_value": [
+      "fin_b_015"
+    ],
+    "table_row_period_binding": [
+      "fin_b_013"
+    ],
+    "insurance_rule_dependency": [
+      "ins_b_019"
+    ],
+    "provider_read_timeout": [
+      "ins_b_003"
+    ]
+  },
+  "effect": "缩短系统Prompt没有降低Top12完整生成成本：总计346124 Token，比基线增加47074；仅7/12完成且只有3个成功答案匹配pseudo99。输入缩短被长thinking与重试抵消。A1不晋级，不生成reasoning，不上传官网。",
+  "promotion_result": "rejected_incomplete_answer_drift_and_token_increase",
+  "score_type": "offline_top12_answer_stage_pseudo99_comparison_not_official",
+  "next_step": "模块化Prompt保留为显式research-only开关并默认关闭。新方向回到完整Prompt和原检索，只增加通用calculation thinking_budget参数；先在Top12测试固定预算，避免与Prompt缩短混合归因。",
+  "recorded_at": "2026-07-24T17:58:00+08:00",
+  "status": "rejected",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-thinking-budget-a1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-thinking-budget-a1",
+  "direction_id": "qwen37_calculation_thinking_budget",
+  "direction_attempt_count": 1,
+  "approach": "执行前重读日志。使用Top12切片，恢复完整系统Prompt、通用整题BM25、原结构化Schema和全部本地校验，仅为每次CalculationPlan调用设置统一thinking_budget=4096；固定qwen3.7-plus-2026-05-26、native strict、5 workers。",
+  "artifact_path": "artifacts/b_board_actual/calc_top12_thinking4096_a1",
+  "metrics": {
+    "expected_question_count": 12,
+    "successful_answer_count": 9,
+    "failed_answer_count": 3,
+    "successful_pseudo99_match_count": 5,
+    "successful_pseudo99_mismatch_count": 4,
+    "successful_answer_token": 193247,
+    "failed_recorded_token": 99790,
+    "generation_token_total": 293037,
+    "top12_answer_token_baseline": 299050,
+    "answer_generation_token_delta_vs_baseline": -6013,
+    "answer_generation_token_reduction_ratio": 0.020107005517471993
+  },
+  "answer_drift_qids": [
+    "fin_b_015",
+    "fin_b_016",
+    "fin_b_017",
+    "res_b_005"
+  ],
+  "failed_qids": [
+    "fc_b_005",
+    "fin_b_013",
+    "ins_b_003"
+  ],
+  "effect": "成功题的单次调用明显变短，但3个失败题合计消耗99790 Token，导致Top12总成本仅下降2.01%；同时只有5/12题既完成又匹配pseudo99。4096没有造成JSON截断，主要失败仍是证据覆盖、期间表格行和合同依赖。A1不晋级，不生成reasoning，不上传官网。",
+  "promotion_result": "rejected_incomplete_and_answer_drift_despite_small_token_reduction",
+  "score_type": "offline_top12_answer_stage_pseudo99_comparison_not_official",
+  "next_step": "A2只将统一thinking_budget放宽到6144，其他变量不变；检查复杂多槽题签名是否恢复，以及失败成本是否仍抵消Token收益。",
+  "recorded_at": "2026-07-24T18:10:00+08:00",
+  "status": "rejected",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-thinking-budget-a2
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-thinking-budget-a2",
+  "direction_id": "qwen37_calculation_thinking_budget",
+  "direction_attempt_count": 2,
+  "approach": "执行前重读A1日志。Top12、完整Prompt、通用整题BM25、Schema与本地校验均不变，只把统一CalculationPlan thinking_budget从4096放宽到6144。",
+  "artifact_path": "artifacts/b_board_actual/calc_top12_thinking6144_a2",
+  "metrics": {
+    "expected_question_count": 12,
+    "successful_answer_count": 9,
+    "failed_answer_count": 3,
+    "successful_pseudo99_match_count": 5,
+    "successful_pseudo99_mismatch_count": 4,
+    "successful_answer_token": 224100,
+    "failed_recorded_token": 102380,
+    "generation_token_total": 326480,
+    "top12_answer_token_baseline": 299050,
+    "answer_generation_token_delta_vs_baseline": 27430
+  },
+  "answer_drift_qids": [
+    "fin_b_015",
+    "fin_b_016",
+    "fin_b_017",
+    "res_b_005"
+  ],
+  "failed_qids": [
+    "fc_b_005",
+    "fin_b_013",
+    "ins_b_003"
+  ],
+  "effect": "A2与A1得到相同数量和近似同集合的失败、漂移；放宽预算没有恢复证据口径正确性，且总Token高于基线27430。错误根因稳定指向多文档、多期间证据覆盖与绑定，不是thinking不足。",
+  "promotion_result": "rejected_same_quality_failures_and_token_increase",
+  "score_type": "offline_top12_answer_stage_pseudo99_comparison_not_official",
+  "next_step": "本方向提前停止，不做A3。保留thinking_budget研究参数但默认不设置。新方向只改变首轮检索覆盖：按候选文档逐文档检索，并按题面显式期间做带完整上下文的通用检索，round-robin合并；不识别业务短语、不增加模型调用。",
+  "recorded_at": "2026-07-24T18:20:00+08:00",
+  "status": "rejected",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-structured-retrieval-a1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-structured-retrieval-a1",
+  "direction_id": "qwen37_calculation_structured_first_pass_retrieval",
+  "direction_attempt_count": 1,
+  "approach": "执行前重读日志并使用Top12。默认thinking、完整Prompt、Schema和本地校验不变；以domain和题面结构通用收敛候选文档：财报按显式年份过滤报告，保险按合同数量保留locator前列文档，单来源领域保留locator第一名。首轮对每个范围内文档、每个显式期间和题面自然词锚点检索，round-robin合并，首轮证据由8条前置到16条。不使用QID、答案、固定业务短语或具体文档映射。",
+  "artifact_path": "artifacts/b_board_actual/calc_top12_structured_retrieval_a1",
+  "metrics": {
+    "expected_question_count": 12,
+    "successful_answer_count": 9,
+    "failed_answer_count": 3,
+    "successful_pseudo99_match_count": 7,
+    "successful_pseudo99_mismatch_count": 2,
+    "successful_answer_token": 200488,
+    "failed_recorded_token": 123642,
+    "generation_token_total": 324130,
+    "top12_answer_token_baseline": 299050,
+    "answer_generation_token_delta_vs_baseline": 25080,
+    "model_call_count": 23,
+    "top12_baseline_model_call_count": 24
+  },
+  "improvements": {
+    "res_b_012": "一次完成、签名匹配，53847降至17379 Token",
+    "fin_b_016": "恢复排序与差值签名",
+    "ins_b_003": "恢复366.00并通过合同分支依赖"
+  },
+  "answer_drift_qids": [
+    "fin_b_017",
+    "res_b_005"
+  ],
+  "failed_qids": [
+    "fc_b_005",
+    "fin_b_015",
+    "fin_b_013"
+  ],
+  "effect": "通用文档范围和结构覆盖把成功匹配从thinking方向的5题提高到7题，并修复fin_b_016与ins_b_003；但3个失败调用仍消耗123642 Token，总成本高于基线8.39%，仅少1次模型调用。A1不晋级，不生成reasoning。",
+  "promotion_result": "rejected_but_accuracy_signal_improved",
+  "score_type": "offline_top12_answer_stage_pseudo99_comparison_not_official",
+  "next_step": "A2保持文档范围、期间覆盖和16条首轮证据不变，只把自然词锚点由按题面顺序占位改为：最多24个自然词各检索少量候选，按实际BM25命中分合并为一个lexical pool后参与round-robin。目标是让后置核心指标不被公司全称和任务措辞挤出。",
+  "recorded_at": "2026-07-24T18:41:00+08:00",
+  "status": "rejected",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-structured-retrieval-a2
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-structured-retrieval-a2",
+  "direction_id": "qwen37_calculation_structured_first_pass_retrieval",
+  "direction_attempt_count": 2,
+  "approach": "执行前重读A1日志并继续使用Top12。保持文档范围、显式期间检索、16条首轮证据、完整Prompt、默认thinking和本地校验不变；只把自然词锚点扩到24个，将每个锚点的BM25命中去重后按实际分数排序，作为单一lexical pool参与round-robin。没有使用QID、答案、题目固定片段或文档ID映射。",
+  "artifact_path": "artifacts/b_board_actual/calc_top12_structured_retrieval_a2_lexical_pool",
+  "metrics": {
+    "expected_question_count": 12,
+    "successful_answer_count": 6,
+    "failed_answer_count": 6,
+    "successful_pseudo99_match_count": 3,
+    "successful_pseudo99_mismatch_count": 3,
+    "successful_answer_token": 116645,
+    "failed_recorded_token": 242038,
+    "generation_token_total": 358683,
+    "top12_answer_token_baseline": 299050,
+    "answer_generation_token_delta_vs_baseline": 59633,
+    "model_call_count": 23
+  },
+  "answer_drift_qids": [
+    "fin_b_017",
+    "res_b_005",
+    "fin_b_018"
+  ],
+  "failed_qids": [
+    "res_b_012",
+    "fc_b_005",
+    "fin_b_015",
+    "fin_b_016",
+    "fin_b_013",
+    "ins_b_003"
+  ],
+  "effect": "把自然词命中按不可跨查询直接比较的BM25分数汇成单一pool，破坏了A1的锚点多样性和稳定顺序：成功数由9降到6，匹配数由7降到3，失败成本升到242038 Token，总成本比基线高59633。fin_b_016另遇到一次provider read timeout且该次usage为0，但不足以解释整体退化。A2不晋级，不生成reasoning，不上传官网。",
+  "promotion_result": "rejected_quality_and_token_regression",
+  "score_type": "offline_top12_answer_stage_pseudo99_comparison_not_official",
+  "next_step": "回退到A1的12个自然词、逐锚点小组和round-robin。A3作为本方向最后一次尝试，只新增结构化失败定向：校验器返回缺失变量、期间或表格行字段；重试仅使用这些字段补检索；若没有新增证据且同类错误重复则提前终止，避免第三次相同消耗。",
+  "recorded_at": "2026-07-24T19:08:00+08:00",
+  "status": "rejected",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-structured-retrieval-a3
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-structured-retrieval-a3",
+  "direction_id": "qwen37_calculation_structured_first_pass_retrieval",
+  "direction_attempt_count": 3,
+  "approach": "执行前重读A2日志并恢复A1的12个自然词、逐锚点小组和round-robin。新增通用结构化失败协议：grounding、期间和表格行校验器通过CalculationErrorCode.details返回required_terms，重试只消费这些字段，不解析异常文案；第二次仍为相同结构化错误且没有新增证据时提前停止第三次调用。",
+  "artifact_path": "artifacts/b_board_actual/calc_top12_structured_retrieval_a3_typed_retry",
+  "metrics": {
+    "expected_question_count": 12,
+    "successful_answer_count": 8,
+    "failed_answer_count": 4,
+    "successful_pseudo99_match_count": 7,
+    "successful_pseudo99_mismatch_count": 1,
+    "successful_answer_token": 236658,
+    "failed_recorded_token": 96171,
+    "generation_token_total": 332829,
+    "top12_answer_token_baseline": 299050,
+    "answer_generation_token_delta_vs_baseline": 33779,
+    "answer_generation_token_increase_ratio": 0.11295268349774285,
+    "model_call_count": 23,
+    "attempt_1_calls": 11,
+    "attempt_2_calls": 10,
+    "attempt_3_calls": 2
+  },
+  "answer_drift_qids": [
+    "fin_b_015"
+  ],
+  "failed_qids": [
+    "fc_b_005",
+    "ins_b_019",
+    "fin_b_013",
+    "res_b_005"
+  ],
+  "early_stop_effect": {
+    "ins_b_019": "相同保险费率绑定错误且无新增证据，2次后停止",
+    "fin_b_013": "相同表格行期间绑定错误且无新增证据，2次后停止"
+  },
+  "effect": "A3保住7个冻结签名匹配，并用结构化早停避免两次第三轮重复消耗；但仅8/12完成，fin_b_015漂移，res_b_005发生一次provider read timeout，生成总Token仍比基线高33779。结构化检索三轮均未同时达到12/12质量门槛与Token下降，因此整个方向停止，不生成reasoning、不做26题全量、不上传官网。",
+  "promotion_result": "rejected_direction_exhausted_after_three_attempts",
+  "score_type": "offline_top12_answer_stage_pseudo99_comparison_not_official",
+  "next_step": "将结构化首轮检索保持为research-only而非默认生产路径。下一方向回到稳定基线检索，只做通用本地单位换算修复：当add/sub输入是可证明的同维货币单位时，按单位因子插入确定性换算节点并在本地重放，避免为了单位形状问题再次调用模型。",
+  "recorded_at": "2026-07-24T19:18:00+08:00",
+  "status": "rejected",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-unit-repair-a1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-unit-repair-a1",
+  "direction_id": "qwen37_calculation_deterministic_currency_unit_repair",
+  "direction_attempt_count": 1,
+  "approach": "执行前重读结构化检索A3日志。将失败的结构化文档范围、首轮扩检索和typed retry全部改为显式research-only开关并默认关闭，回到稳定基线检索。仅开启通用单位修复：add/sub输入属于已知同维货币单位时，以第一个金额输入为目标单位，按元、万元、百万元、亿元的确定因子插入mul换算节点；不新增事实、不改变原操作顺序。",
+  "artifact_path": "artifacts/b_board_actual/calc_top12_unit_repair_a1",
+  "metrics": {
+    "expected_question_count": 12,
+    "successful_answer_count": 8,
+    "failed_answer_count": 4,
+    "successful_pseudo99_match_count": 6,
+    "successful_pseudo99_mismatch_count": 2,
+    "successful_answer_token": 167544,
+    "failed_recorded_token": 121712,
+    "generation_token_total": 289256,
+    "top12_answer_token_baseline": 299050,
+    "answer_generation_token_delta_vs_baseline": -9794,
+    "answer_generation_token_reduction_ratio": 0.03275037619127236,
+    "model_call_count": 21,
+    "unit_repair_activation_count": 0
+  },
+  "answer_drift_qids": [
+    "fin_b_016",
+    "res_b_005"
+  ],
+  "failed_qids": [
+    "fc_b_005",
+    "fin_b_015",
+    "fin_b_013",
+    "ins_b_003"
+  ],
+  "offline_safety_replay": {
+    "source_artifact": "artifacts/b_board_actual/calc_top12_structured_retrieval_a3_typed_retry",
+    "res_b_012": "历史首轮计划触发万元与元换算；插入0.0001换算后仍因原计划额外除以10000而本地结果为0.0，不等于冻结签名67.1。",
+    "fin_b_017": "历史首轮计划所需变量无法仅从最终选中证据完整重放，不能建立安全晋级证据。"
+  },
+  "effect": "本轮总Token比基线低3.27%，但单位修复实际一次都未触发，下降只能视为模型采样波动；同时仅8/12完成、6个冻结签名匹配。历史失败计划还证明单位错误可能伴随补偿性多除或少除，机械补单位不保证语义正确。为避免扩大错误，本方向在A1后停止；保留为research-only开关，不生成reasoning、不上传官网。",
+  "promotion_result": "rejected_no_activation_and_offline_safety_counterexample",
+  "score_type": "offline_top12_answer_stage_pseudo99_comparison_not_official",
+  "next_step": "下一方向不改检索、Schema和本地校验，测量Qwen关闭thinking时的Top12答案质量与Token下限；若质量明显退化则不进入生产，只用结果判断是否值得继续做通用自适应thinking门。",
+  "recorded_at": "2026-07-24T19:34:00+08:00",
+  "status": "rejected",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-thinking-off-a1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-thinking-off-a1",
+  "direction_id": "qwen37_calculation_thinking_mode",
+  "direction_attempt_count": 1,
+  "approach": "执行前重读单位修复A1日志。保持稳定基线检索、完整Prompt、native strict Schema、全部本地校验和最多3轮重试不变，关闭结构化检索与单位修复，只为每次CalculationPlan请求设置enable_thinking=false，以测量无thinking的答案质量和Token下限。",
+  "artifact_path": "artifacts/b_board_actual/calc_top12_thinking_off_a1",
+  "metrics": {
+    "expected_question_count": 12,
+    "successful_answer_count": 7,
+    "failed_answer_count": 5,
+    "successful_pseudo99_match_count": 5,
+    "successful_pseudo99_mismatch_count": 2,
+    "successful_answer_token": 112903,
+    "failed_recorded_token": 137359,
+    "generation_token_total": 250262,
+    "top12_answer_token_baseline": 299050,
+    "answer_generation_token_delta_vs_baseline": -48788,
+    "answer_generation_token_reduction_ratio": 0.16314328707573984,
+    "model_call_count": 26,
+    "top12_baseline_model_call_count": 24,
+    "attempt_1_calls": 12,
+    "attempt_2_calls": 8,
+    "attempt_3_calls": 6
+  },
+  "answer_drift_qids": [
+    "fin_b_016",
+    "res_b_005"
+  ],
+  "failed_qids": [
+    "fin_b_019",
+    "fc_b_005",
+    "fin_b_015",
+    "fin_b_013",
+    "ins_b_003"
+  ],
+  "failure_analysis": {
+    "numeric_field_contains_percent_suffix": [
+      "fin_b_019",
+      "fc_b_005"
+    ],
+    "ordering_output_contract": [
+      "fin_b_015"
+    ],
+    "table_row_period_binding": [
+      "fin_b_013"
+    ],
+    "insurance_operator_dependency": [
+      "ins_b_003"
+    ]
+  },
+  "effect": "关闭thinking使总Token下降16.31%，但失败题更多且重试把模型调用从24次增加到26次；仅5/12既完成又匹配冻结签名。更严重的是fin_b_016与res_b_005通过本地重放却答案漂移，说明仅靠本地错误触发再开启thinking无法覆盖错误但格式合法的计划。A1不晋级，并因安全反例停止本方向，不做A2/A3、不生成reasoning、不上传官网。",
+  "promotion_result": "rejected_quality_regression_and_undetectable_answer_drift",
+  "score_type": "offline_top12_answer_stage_pseudo99_comparison_not_official",
+  "next_step": "已完成Profile、模块Prompt、thinking预算、结构化检索、单位修复和关闭thinking等内部方向。按loop协议开始外部调研Qwen3.7结构化输出、thinking控制和长文RAG Token优化的官方资料，再将新方向与现有失败日志碰撞；只采用不按题硬编码且能在Top12门禁验证的方案。",
+  "recorded_at": "2026-07-24T19:41:00+08:00",
+  "status": "rejected",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-json-object-a1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-json-object-a1",
+  "direction_id": "qwen37_calculation_provider_json_object",
+  "direction_attempt_count": 1,
+  "research_basis": "DashScope官方文档列出Qwen3.7-Plus支持structured output，并以response_format.type=json_object作为OpenAI兼容用法；Qwen Code官方文档提示复杂Schema与每次校验重试会重复增加输入成本。Context Cache不作为Token分优化，因为官方说明cached_tokens仍属于prompt_tokens。",
+  "approach": "默认thinking、完整Prompt、全部本地Schema/grounding/replay与3轮重试不变，只把provider response_format从native strict JSON Schema改为json_object；模型返回后仍执行原CALCULATION_PLAN_SCHEMA完整校验。",
+  "artifact_path": "artifacts/b_board_actual/calc_top12_json_object_a1",
+  "metrics": {
+    "expected_question_count": 12,
+    "successful_answer_count": 6,
+    "failed_answer_count": 6,
+    "successful_pseudo99_match_count": 5,
+    "successful_pseudo99_mismatch_count": 1,
+    "successful_answer_token": 123313,
+    "failed_recorded_token": 208738,
+    "generation_token_total": 332051,
+    "model_call_count": 24,
+    "prompt_token_total": 206760,
+    "completion_token_total": 125291,
+    "attempt_1_prompt_token_average": 8968
+  },
+  "answer_drift_qids": [
+    "res_b_005"
+  ],
+  "failed_qids": [
+    "fc_b_005",
+    "fin_b_015",
+    "fin_b_016",
+    "fin_b_013",
+    "ins_b_003",
+    "fin_b_014"
+  ],
+  "effect": "provider弱化为JSON object后，本地完整Schema捕获了缺steps、pct_change错误args等结构问题，但这些问题触发全模型重试；仅6/12完成、5个冻结签名匹配。随后发现本轮首轮证据仍被全局16条配置污染，不能将Token结果与C2做严格单变量比较。A1拒绝且标记为confounded，不生成reasoning、不上传官网。",
+  "promotion_result": "rejected_quality_regression_and_protocol_confounded",
+  "score_type": "offline_top12_answer_stage_pseudo99_comparison_not_official",
+  "next_step": "修正默认证据为8/16/24后执行A2；若A2仍出现显著Schema结构失败，则停止本方向。",
+  "recorded_at": "2026-07-24T19:54:00+08:00",
+  "status": "rejected_confounded",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-baseline-evidence-count-correction-v1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-baseline-evidence-count-correction-v1",
+  "direction_id": "calculation_experiment_protocol_correction",
+  "finding": "复核C2 artifact后确认稳定基线的证据策略是progressive_8_16_24_v1；结构化检索方向曾把CALCULATION_PROMPT_HITS_PER_ATTEMPT全局改为16，导致后续即使关闭结构化检索，首轮仍发送16条而不是8条证据。",
+  "affected_experiments": [
+    "b-loop-qwen37-calculation-unit-repair-a1",
+    "b-loop-qwen37-calculation-thinking-off-a1",
+    "b-loop-qwen37-calculation-json-object-a1"
+  ],
+  "interpretation": "上述实验的失败、答案漂移和不晋级结论仍有效，但其相对C2的精确Token增减混入了证据条数翻倍，不能作为单变量因果归因。尤其不能把unit-repair-a1的-3.27%或thinking-off-a1的-16.31%全部归因于对应开关。",
+  "code_correction": "默认稳定路径恢复8/16/24；只有calculation_structured_retrieval_enabled=true时使用16/32/48。实际策略写入fingerprint、diagnostics与artifact trace。",
+  "next_step": "JSON-object外部方向以A2重跑，保持默认8/16/24；A1仅保留质量失败证据，不用于严格Token比较。",
+  "recorded_at": "2026-07-24T19:56:00+08:00",
+  "status": "protocol_corrected",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-json-object-a2
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-json-object-a2",
+  "direction_id": "qwen37_calculation_provider_json_object",
+  "direction_attempt_count": 2,
+  "approach": "执行前重读A1与协议修正日志。默认检索严格恢复C2的8/16/24，默认thinking、完整Prompt、本地完整Schema/grounding/replay和3轮重试不变，只把provider response_format切换为json_object。",
+  "artifact_path": "artifacts/b_board_actual/calc_top12_json_object_a2_baseline8",
+  "metrics": {
+    "expected_question_count": 12,
+    "successful_answer_count": 8,
+    "failed_answer_count": 4,
+    "successful_pseudo99_match_count": 5,
+    "successful_pseudo99_mismatch_count": 3,
+    "successful_answer_token": 179320,
+    "failed_recorded_token": 128292,
+    "generation_token_total": 307612,
+    "top12_answer_token_baseline": 299050,
+    "answer_generation_token_delta_vs_baseline": 8562,
+    "answer_generation_token_increase_ratio": 0.02863066376860057,
+    "model_call_count": 27,
+    "top12_baseline_model_call_count": 24,
+    "prompt_token_total": 189430,
+    "baseline_prompt_token_total": 201198,
+    "prompt_token_delta": -11768,
+    "completion_token_total": 118182,
+    "baseline_completion_token_total": 97852,
+    "completion_token_delta": 20330,
+    "attempt_1_prompt_token_average": 5445.583333333333,
+    "baseline_attempt_1_prompt_token_average": 6024.333333333333,
+    "attempt_1_prompt_token_reduction_ratio": 0.09607346347345479
+  },
+  "answer_drift_qids": [
+    "fin_b_016",
+    "fin_b_017",
+    "res_b_005"
+  ],
+  "failed_qids": [
+    "fc_b_005",
+    "fin_b_015",
+    "fin_b_013",
+    "ins_b_003"
+  ],
+  "effect": "JSON object将首轮平均prompt降低9.61%，证明provider Schema占用输入Token；但弱约束导致pct_change/pct_point_delta形状错误等本地Schema失败，模型调用由24增至27，completion增加20330，总Token最终比基线高2.86%。仅5/12匹配且有3个错误但可重放的答案漂移。A2拒绝并提前停止本方向，不做A3、不生成reasoning、不上传官网。",
+  "promotion_result": "rejected_input_saving_overwhelmed_by_retry_and_quality_cost",
+  "score_type": "offline_top12_answer_stage_pseudo99_comparison_not_official",
+  "next_step": "回到native strict Schema。新方向保持首轮完整thinking；仅当本地错误属于结构或语义绑定且没有补证据时，把上一版完整JSON和结构化错误带入下一轮，并对该修复轮关闭thinking。缺证据重试继续原检索与thinking。",
+  "recorded_at": "2026-07-24T20:08:00+08:00",
+  "status": "rejected",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-seeded-repair-a1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-seeded-repair-a1",
+  "direction_id": "qwen37_calculation_seeded_no_thinking_repair",
+  "direction_attempt_count": 1,
+  "approach": "执行前重读JSON-object A2日志。恢复native strict、默认8/16/24与首轮默认thinking。若本地错误被现有结构分类器判为结构或语义绑定，则下一轮保持首轮证据条数，携带上一版完整JSON与错误反馈，并设置enable_thinking=false；缺证据检索仍走原路径。",
+  "artifact_path": "artifacts/b_board_actual/calc_top12_seeded_repair_a1",
+  "metrics": {
+    "expected_question_count": 12,
+    "successful_answer_count": 5,
+    "failed_answer_count": 7,
+    "successful_pseudo99_match_count": 2,
+    "successful_pseudo99_mismatch_count": 3,
+    "successful_answer_token": 64411,
+    "failed_recorded_token": 150926,
+    "generation_token_total": 215337,
+    "top12_answer_token_baseline": 299050,
+    "answer_generation_token_delta_vs_baseline": -83713,
+    "answer_generation_token_reduction_ratio": 0.27992977762915897,
+    "model_call_count": 26,
+    "repair_call_count": 12,
+    "repair_prompt_token": 76846,
+    "repair_completion_token": 12155,
+    "repair_total_token": 89001
+  },
+  "answer_drift_qids": [
+    "fc_b_005",
+    "fin_b_016",
+    "fin_b_017"
+  ],
+  "failed_qids": [
+    "fin_b_019",
+    "fin_b_015",
+    "fin_b_013",
+    "ins_b_019",
+    "res_b_005",
+    "ins_b_003",
+    "fin_b_018"
+  ],
+  "effect": "seeded修复显著压低completion并使总Token下降28.0%，但范围过宽：期间列、保险条款运算符、退保费率等语义错误被当作机械JSON修复，关闭thinking后反复保留了错误事实或依赖。仅2/12匹配，A1不晋级、不生成reasoning、不上传官网。",
+  "promotion_result": "rejected_token_reduction_with_severe_quality_regression",
+  "score_type": "offline_top12_answer_stage_pseudo99_comparison_not_official",
+  "next_step": "A2将repairable错误严格收窄为PLAN_STRUCTURE_INVALID或OUTPUT_CONTRACT_INVALID，并把期间、单位、条款运算符、排序覆盖、原始金额比例依赖等校验补上结构化语义错误码；这些错误继续使用完整thinking。",
+  "recorded_at": "2026-07-24T20:19:00+08:00",
+  "status": "rejected",
+  "submission_effect": "none"
+}
+```
+
+## b-loop-qwen37-calculation-seeded-repair-a2
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-seeded-repair-a2",
+  "direction_id": "qwen37_calculation_seeded_no_thinking_repair",
+  "direction_attempt_count": 2,
+  "approach": "执行前重读A1日志。保持native strict、默认thinking与8/16/24；将无thinking seeded repair严格限制到PLAN_STRUCTURE_INVALID和OUTPUT_CONTRACT_INVALID。为期间、单位、聚合依赖、排序覆盖、全年分红组件、原始金额比例、保险费率和保险最大值运算符补充结构化语义错误码，这些错误继续完整thinking。",
+  "artifact_path": "artifacts/b_board_actual/calc_top12_seeded_repair_a2_structure_only",
+  "metrics": {
+    "expected_question_count": 12,
+    "successful_answer_count": 6,
+    "failed_answer_count": 6,
+    "successful_pseudo99_match_count": 2,
+    "successful_pseudo99_mismatch_count": 4,
+    "successful_answer_token": 118618,
+    "failed_recorded_token": 166080,
+    "generation_token_total": 284698,
+    "top12_answer_token_baseline": 299050,
+    "answer_generation_token_delta_vs_baseline": -14352,
+    "answer_generation_token_reduction_ratio": 0.04799247617455275,
+    "model_call_count": 25,
+    "repair_call_count": 2,
+    "repair_total_token": 13954
+  },
+  "answer_drift_qids": [
+    "res_b_012",
+    "fin_b_015",
+    "fin_b_017",
+    "res_b_005"
+  ],
+  "failed_qids": [
+    "fin_b_019",
+    "fc_b_005",
+    "fin_b_016",
+    "fin_b_013",
+    "ins_b_003",
+    "fin_b_014"
+  ],
+  "effect": "收窄后仅2次纯结构修复，修复调用总计13954 Token；总Token比基线低4.80%，但仅6/12完成、2/12匹配。低Token主要来自失败与短输出，不是可晋级收益；首轮仍出现多个本地可重放但答案漂移。A2拒绝并提前停止本方向，不做A3、不生成reasoning、不跑26题、不上传官网。",
+  "promotion_result": "rejected_small_token_reduction_with_unacceptable_quality",
+  "score_type": "offline_top12_answer_stage_pseudo99_comparison_not_official",
+  "next_step": "本轮计算题内部方向与外部调研方向均已完成且无晋级候选。保留通用错误码、usage台账和显式research-only开关；默认生产路径保持native strict、8/16/24、默认thinking、无Profile、无模块Prompt、无结构化检索、无单位修复、无seeded repair。下一次新方向必须先重读本日志，并先证明能解决本地可重放但答案漂移问题。",
+  "recorded_at": "2026-07-24T20:36:00+08:00",
+  "status": "rejected",
+  "submission_effect": "none"
 }
 ```

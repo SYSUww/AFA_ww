@@ -189,6 +189,33 @@ def tokenize_zh(text: str) -> list[str]:
     return _tokenize_zh_with_jieba(text, _ensure_jieba_terms())
 
 
+def tokenize_zh_primary(text: str) -> list[str]:
+    """Tokenize without synthetic character bigrams.
+
+    This is useful when individual query anchors must remain natural lexical
+    units instead of recall-oriented cross-word bigrams.
+    """
+
+    normalized = normalize_whitespace(text).lower()
+    jieba = _ensure_jieba_terms()
+    tokens: list[str] = []
+    seen: set[str] = set()
+    for match in re.finditer(r"[a-z0-9_.%]+", normalized):
+        _append_unique(tokens, seen, match.group(0))
+    for match in re.finditer(
+        r"\d[\d,]*(?:\.\d+)?\s*(?:%|％|亿元|万元|元|年|月|日|股|倍)?",
+        normalized,
+    ):
+        _append_unique(tokens, seen, match.group(0).strip())
+    for term in DOMAIN_TERMS:
+        if term.lower() in normalized:
+            _append_unique(tokens, seen, term)
+    for token in jieba.lcut(normalized, cut_all=False):
+        if _keep_jieba_token(token):
+            _append_unique(tokens, seen, token)
+    return tokens
+
+
 def tokenize_zh_with_terms(text: str, extra_terms: Iterable[str]) -> list[str]:
     terms = [term.strip() for term in extra_terms if term and term.strip()]
     return _tokenize_zh_with_jieba(text, _ensure_extra_jieba_terms(terms), terms)

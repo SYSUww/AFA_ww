@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 import tempfile
@@ -8,10 +9,18 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from afa_agent.b_board.calculation import CalculationExecutor
+from afa_agent.b_board.calculation import (
+    CalculationErrorCode,
+    CalculationExecutor,
+    CalculationPlanError,
+)
 from afa_agent.b_board.io import BQuestion
 from afa_agent.b_board.runner import (
     CALCULATION_SYSTEM_PROMPT,
+    CALCULATION_JOINT_REASONING_PROMPT_SUFFIX,
+    CALCULATION_JOINT_REASONING_PROMPT_VERSION,
+    CALCULATION_STRUCTURED_RETRIEVAL_VERSION,
+    CALCULATION_MODULAR_PROMPT_VERSION,
     RUN_MODE_RESEARCH,
     RUN_MODE_SUBMISSION,
     RUN_STAGE_ANSWER,
@@ -31,17 +40,29 @@ from afa_agent.b_board.runner import (
     _answer_artifact_signature,
     _artifact_from_dict,
     _calculation_evidence_payload,
+    _calculation_error_fingerprint,
+    _calculation_error_retrieval_terms,
+    _calculation_period_query,
+    _calculation_structured_first_pass_evidence,
+    _calculation_typed_retry_evidence,
+    _calculation_system_prompt,
+    _extract_calculation_lexical_anchors,
+    _extract_calculation_period_anchors,
+    finalize_calculation_answer_summary_reasoning,
     calculation_first_pass_evidence_overlays,
     _calculation_phrase_overlay_doc_ids,
-    _calculation_semantic_constraints,
+    _extract_calculation_semantic_constraints,
     _calculation_semantic_query_terms,
     _is_calculation_plan_structure_error,
+    _is_calculation_plan_repairable_structure_error,
     _normalize_calculation_plan_structure,
     _normalize_calculation_numeric_literals,
     _reasoning_evidence_payload,
+    _select_calculation_document_scope,
     _submission_reasoning_style_hint,
     _validate_aggregate_intensity_plan_binding,
     _validate_calculation_summary_output_consistency,
+    _validate_calculation_joint_reasoning_summary,
     _validate_calculation_plan_has_required_inputs,
     _validate_calculation_required_sort_objects,
     _validate_calculation_table_row_label_binding,
@@ -139,6 +160,734 @@ def _response(
 
 
 class BBoardRunnerModeTests(unittest.TestCase):
+    def test_calculation_joint_reasoning_prompt_is_generic(self) -> None:
+        self.assertIn(
+            "decision_summary会原样作为最终提交reasoning",
+            CALCULATION_JOINT_REASONING_PROMPT_SUFFIX,
+        )
+        self.assertIn(
+            CALCULATION_JOINT_REASONING_PROMPT_VERSION,
+            CALCULATION_JOINT_REASONING_PROMPT_SUFFIX,
+        )
+        self.assertNotIn("fc_b_", CALCULATION_JOINT_REASONING_PROMPT_SUFFIX)
+        self.assertNotIn("fin_b_", CALCULATION_JOINT_REASONING_PROMPT_SUFFIX)
+        self.assertNotIn("ins_b_", CALCULATION_JOINT_REASONING_PROMPT_SUFFIX)
+
+    def test_joint_reasoning_summary_requires_auditable_text(self) -> None:
+        _validate_calculation_joint_reasoning_summary(
+            (
+                "定位2025年资产负债率，按权益乘数=1÷(1-资产负债率)"
+                "分别计算，再按净资产收益率除以权益乘数得到资产收益率。"
+                "最终答案依次为2.58；7.65。"
+            ),
+            ("2.58", "7.65"),
+        )
+
+        with self.assertRaisesRegex(
+            CalculationPlanError,
+            "internal identifiers",
+        ):
+            _validate_calculation_joint_reasoning_summary(
+                "依据text01::chunk_2完成计算，最终结果为2.58和7.65。",
+                ("2.58", "7.65"),
+            )
+        with self.assertRaisesRegex(
+            CalculationPlanError,
+            "text outputs",
+        ):
+            _validate_calculation_joint_reasoning_summary(
+                "比较两家公司指标并计算差额，最终结果为19.75。",
+                ("甲>乙", "19.75"),
+            )
+
+    def test_joint_summary_never_uses_deterministic_output_append(
+        self,
+    ) -> None:
+        plan = {
+            "decision_summary": "先提取原始值，再按题目公式完成计算。"
+        }
+
+        with self.assertRaisesRegex(
+            CalculationPlanError,
+            "joint decision_summary",
+        ):
+            _validate_calculation_summary_output_consistency(
+                plan,
+                ("12.34",),
+                allow_deterministic_append=False,
+            )
+        self.assertEqual(
+            plan["decision_summary"],
+            "先提取原始值，再按题目公式完成计算。",
+        )
+
+    def test_calculation_reasoning_reuses_answer_call_without_new_usage(
+        self,
+    ) -> None:
+        artifact = BAnswerArtifact(
+            qid="q_calc",
+            domain="financial_reports",
+            answer_format="calculation",
+            answer_slot_count=2,
+            answer_parts=["2.58", "7.65"],
+            used_evidence_ids=["u1"],
+            evidence_items=[{"unit_id": "u1", "text": "原始数据"}],
+            decision_summary=(
+                "定位2025年资产负债率，按权益乘数=1÷(1-资产负债率)"
+                "计算2.58，再以净资产收益率除以权益乘数得到7.65。"
+                "最终答案依次为2.58；7.65。"
+            ),
+            decision_trace={
+                "calculation_joint_reasoning_enabled": True,
+                "calculation_joint_reasoning_contract_status": "valid",
+                "calculation_joint_reasoning_contract_errors": [],
+                "answer_stage": {
+                    "status": "complete",
+                    "answer_parts_frozen": True,
+                    "decision_summary": (
+                        "定位2025年资产负债率，按权益乘数=1÷"
+                        "(1-资产负债率)计算2.58，再以净资产收益率"
+                        "除以权益乘数得到7.65。"
+                        "最终答案依次为2.58；7.65。"
+                    ),
+                },
+                "answer_api_usage_ledger": {
+                    "call_count": 1,
+                    "calls": [
+                        {
+                            "call_index": 1,
+                            "model_name": "qwen3.7-plus-2026-05-26",
+                            "response_format_mode": (
+                                "native_json_schema_strict"
+                            ),
+                            "call_role": "calculation_plan_attempt_1",
+                            "token_usage": {
+                                "prompt_tokens": 100,
+                                "completion_tokens": 50,
+                                "total_tokens": 150,
+                            },
+                        }
+                    ],
+                },
+                "api_usage_ledger": {
+                    "call_count": 1,
+                    "calls": [
+                        {
+                            "call_index": 1,
+                            "model_name": "qwen3.7-plus-2026-05-26",
+                            "response_format_mode": (
+                                "native_json_schema_strict"
+                            ),
+                            "call_role": "calculation_plan_attempt_1",
+                            "token_usage": {
+                                "prompt_tokens": 100,
+                                "completion_tokens": 50,
+                                "total_tokens": 150,
+                            },
+                        }
+                    ],
+                },
+            },
+            calculation_trace={
+                "grounding_verified": True,
+                "replay_verified": True,
+            },
+            token_usage={
+                "prompt_tokens": 100,
+                "completion_tokens": 50,
+                "total_tokens": 150,
+            },
+            locator={},
+        )
+        artifact.decision_trace[
+            "calculation_joint_reasoning_summary_sha256"
+        ] = hashlib.sha256(
+            artifact.decision_summary.encode("utf-8")
+        ).hexdigest()
+        frozen_signature = _answer_artifact_signature(artifact)
+
+        runner = BBoardActualRunner.__new__(BBoardActualRunner)
+        runner.calculation_joint_reasoning_enabled = True
+        question = BQuestion(
+            qid="q_calc",
+            domain="financial_reports",
+            split="B",
+            question="计算两个指标。",
+            options={},
+            answer_format="calculation",
+            type="计算题",
+            answer_slots=2,
+            answer_slot_templates=("999999.99", "999999.99"),
+        )
+
+        finalized = runner.reasoning_one(
+            question,
+            artifact,
+        )
+
+        self.assertEqual(
+            _answer_artifact_signature(finalized),
+            frozen_signature,
+        )
+        self.assertEqual(
+            finalized.token_usage,
+            {
+                "prompt_tokens": 100,
+                "completion_tokens": 50,
+                "total_tokens": 150,
+            },
+        )
+        self.assertEqual(
+            finalized.decision_trace[
+                "reasoning_api_usage_ledger"
+            ]["call_count"],
+            0,
+        )
+        self.assertTrue(
+            finalized.decision_trace["submission_reasoning"][
+                "co_generated_with_answer"
+            ]
+        )
+        self.assertEqual(
+            finalized.decision_trace["reasoning_stage"][
+                "incremental_api_call_count"
+            ],
+            0,
+        )
+        self.assertEqual(
+            finalized.decision_trace["api_usage_ledger"]["call_count"],
+            1,
+        )
+
+    def test_invalid_joint_summary_falls_back_without_recalculating_answer(
+        self,
+    ) -> None:
+        artifact = BAnswerArtifact(
+            qid="q_calc_fallback",
+            domain="financial_reports",
+            answer_format="calculation",
+            answer_slot_count=1,
+            answer_parts=["12.34"],
+            used_evidence_ids=["u1"],
+            evidence_items=[{"unit_id": "u1", "text": "原始数据"}],
+            decision_summary="计算完成，但联合摘要遗漏最终结论。",
+            decision_trace={
+                "calculation_joint_reasoning_enabled": True,
+                "calculation_joint_reasoning_contract_status": (
+                    "fallback_required"
+                ),
+                "calculation_joint_reasoning_contract_errors": [
+                    "joint decision_summary does not contain every replayed "
+                    "output: 12.34"
+                ],
+                "answer_stage": {
+                    "status": "complete",
+                    "answer_parts_frozen": True,
+                    "decision_summary": "计算完成，但联合摘要遗漏最终结论。",
+                },
+                "answer_api_usage_ledger": {
+                    "call_count": 1,
+                    "calls": [
+                        {
+                            "call_index": 1,
+                            "model_name": "qwen3.7-plus-2026-05-26",
+                            "response_format_mode": (
+                                "native_json_schema_strict"
+                            ),
+                            "call_role": "calculation_plan_attempt_1",
+                            "token_usage": {
+                                "prompt_tokens": 100,
+                                "completion_tokens": 50,
+                                "total_tokens": 150,
+                            },
+                        }
+                    ],
+                },
+                "api_usage_ledger": {
+                    "call_count": 1,
+                    "calls": [
+                        {
+                            "call_index": 1,
+                            "model_name": "qwen3.7-plus-2026-05-26",
+                            "response_format_mode": (
+                                "native_json_schema_strict"
+                            ),
+                            "call_role": "calculation_plan_attempt_1",
+                            "token_usage": {
+                                "prompt_tokens": 100,
+                                "completion_tokens": 50,
+                                "total_tokens": 150,
+                            },
+                        }
+                    ],
+                },
+            },
+            calculation_trace={
+                "grounding_verified": True,
+                "replay_verified": True,
+            },
+            token_usage={
+                "prompt_tokens": 100,
+                "completion_tokens": 50,
+                "total_tokens": 150,
+            },
+            locator={},
+        )
+        question = BQuestion(
+            qid="q_calc_fallback",
+            domain="financial_reports",
+            split="B",
+            question="计算一个指标。",
+            options={},
+            answer_format="calculation",
+            type="计算题",
+            answer_slots=1,
+            answer_slot_templates=("999999.99",),
+        )
+        runner = BBoardActualRunner.__new__(BBoardActualRunner)
+        runner.calculation_joint_reasoning_enabled = True
+
+        def attach_reasoning(
+            _runner: BBoardActualRunner,
+            _question: BQuestion,
+            frozen: BAnswerArtifact,
+        ) -> BAnswerArtifact:
+            frozen.decision_summary = (
+                "定位原始值并按题目要求完成计算，最终答案为12.34。"
+            )
+            frozen.decision_trace = {
+                **frozen.decision_trace,
+                "submission_reasoning": {
+                    "prompt_version": SUBMISSION_REASONING_PROMPT_VERSION,
+                    "answer_parts_preserved": True,
+                },
+            }
+            return frozen
+
+        with mock.patch.object(
+            BBoardActualRunner,
+            "_attach_submission_reasoning",
+            autospec=True,
+            side_effect=attach_reasoning,
+        ) as attach_mock:
+            finalized = runner.reasoning_one(question, artifact)
+
+        attach_mock.assert_called_once()
+        self.assertEqual(finalized.answer_parts, ["12.34"])
+        self.assertTrue(
+            finalized.decision_trace["submission_reasoning"][
+                "joint_fallback_used"
+            ]
+        )
+        self.assertEqual(
+            finalized.decision_trace["submission_reasoning"][
+                "joint_contract_errors"
+            ],
+            artifact.decision_trace[
+                "calculation_joint_reasoning_contract_errors"
+            ],
+        )
+
+    def test_joint_reasoning_rejects_unreplayed_equation_result(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(
+            CalculationPlanError,
+            "outside the verified calculation trace",
+        ):
+            _validate_calculation_joint_reasoning_summary(
+                (
+                    "按权益乘数公式计算，甲=3.44，乙=2.58，"
+                    "差值=0.86。最终答案依次为甲>乙；0.84。"
+                ),
+                ("甲>乙", "0.84"),
+                calculation_trace={
+                    "variables": [
+                        {"value": "70.74"},
+                        {"value": "61.17"},
+                    ],
+                    "steps": [
+                        {"result": "3.417634996582365"},
+                        {"result": "2.575328354365181"},
+                        {"result": "0.842306642217184"},
+                    ],
+                    "outputs": [
+                        {"value": "甲>乙"},
+                        {"value": "0.84"},
+                    ],
+                },
+            )
+
+    def test_calculation_period_anchors_are_literal_and_stable(self) -> None:
+        self.assertEqual(
+            _extract_calculation_period_anchors(
+                "比较 2024 年和 2025 年，并以 2023 年 12 月 31 日为基准。"
+            ),
+            ["2023年12月31日", "2024年", "2025年", "2023年"],
+        )
+        targeted = _calculation_period_query(
+            "比较2024年和2025年境外收入。",
+            "2024年",
+        )
+        self.assertIn("2024年", targeted)
+        self.assertNotIn("2025年", targeted)
+
+    def test_structured_calculation_retrieval_round_robins_documents(
+        self,
+    ) -> None:
+        retriever = GenericBM25Retriever(
+            [
+                {
+                    "unit_id": "d1-u1",
+                    "doc_id": "d1",
+                    "title_path": ["2024年营业收入"],
+                    "text": "2024年营业收入为100",
+                    "unit_type": "metric_row",
+                },
+                {
+                    "unit_id": "d1-u2",
+                    "doc_id": "d1",
+                    "title_path": ["2024年境外收入"],
+                    "text": "2024年境外收入为40",
+                    "unit_type": "metric_row",
+                },
+                {
+                    "unit_id": "d2-u1",
+                    "doc_id": "d2",
+                    "title_path": ["2025年营业收入"],
+                    "text": "2025年营业收入为120",
+                    "unit_type": "metric_row",
+                },
+                {
+                    "unit_id": "d2-u2",
+                    "doc_id": "d2",
+                    "title_path": ["2025年境外收入"],
+                    "text": "2025年境外收入为60",
+                    "unit_type": "metric_row",
+                },
+            ]
+        )
+        evidence = _calculation_structured_first_pass_evidence(
+            retriever,
+            ["d1", "d2"],
+            "比较2024年和2025年营业收入与境外收入。",
+            top_k=4,
+        )
+
+        self.assertEqual(
+            {item["doc_id"] for item in evidence[:2]},
+            {"d1", "d2"},
+        )
+        self.assertTrue(
+            all(
+                item["metadata"]["retrieval_source"]
+                == CALCULATION_STRUCTURED_RETRIEVAL_VERSION
+                for item in evidence
+            )
+        )
+
+    def test_calculation_lexical_anchors_use_corpus_idf(self) -> None:
+        retriever = GenericBM25Retriever(
+            [
+                {
+                    "unit_id": "u1",
+                    "doc_id": "d1",
+                    "title_path": ["分地区"],
+                    "text": "境外收入为60，营业收入为120",
+                    "unit_type": "metric_row",
+                },
+                {
+                    "unit_id": "u2",
+                    "doc_id": "d1",
+                    "title_path": ["利润"],
+                    "text": "净利润为10",
+                    "unit_type": "metric_row",
+                },
+            ]
+        )
+
+        anchors = _extract_calculation_lexical_anchors(
+            retriever,
+            "计算境外收入占营业收入的比例。",
+        )
+
+        self.assertTrue(
+            any("境外" in anchor for anchor in anchors),
+            anchors,
+        )
+
+    def test_calculation_document_scope_uses_generic_domain_structure(
+        self,
+    ) -> None:
+        financial = BQuestion(
+            qid="q-fin",
+            domain="financial_reports",
+            split="B",
+            question="比较甲乙公司2025年年度报告数据。",
+            options={},
+            answer_format="calculation",
+            type="计算题",
+            answer_slots=2,
+            answer_slot_templates=("数值", "数值"),
+        )
+        insurance = BQuestion(
+            qid="q-ins",
+            domain="insurance",
+            split="B",
+            question="四份合同分别计算后求和。",
+            options={},
+            answer_format="calculation",
+            type="计算题",
+            answer_slots=1,
+            answer_slot_templates=("数值",),
+        )
+        research = BQuestion(
+            qid="q-res",
+            domain="research",
+            split="B",
+            question="根据研究材料计算。",
+            options={},
+            answer_format="calculation",
+            type="计算题",
+            answer_slots=1,
+            answer_slot_templates=("数值",),
+        )
+
+        self.assertEqual(
+            _select_calculation_document_scope(
+                financial,
+                [
+                    "annual_alpha_2024_report",
+                    "annual_alpha_2025_report",
+                    "annual_beta_2025_report",
+                ],
+            ),
+            [
+                "annual_alpha_2025_report",
+                "annual_beta_2025_report",
+            ],
+        )
+        self.assertEqual(
+            _select_calculation_document_scope(
+                insurance,
+                ["d1", "d2", "d3", "d4", "d5"],
+            ),
+            ["d1", "d2", "d3", "d4"],
+        )
+        self.assertEqual(
+            _select_calculation_document_scope(
+                research,
+                ["rank1", "rank2"],
+            ),
+            ["rank1"],
+        )
+
+    def test_calculation_prompt_is_domain_modular(self) -> None:
+        financial_prompt = _calculation_system_prompt(
+            "financial_reports"
+        )
+        insurance_prompt = _calculation_system_prompt("insurance")
+
+        self.assertIn(
+            "目标年度值应来自目标年度报告的本报告期列",
+            financial_prompt,
+        )
+        self.assertNotIn("给付比例乘基本保险金额", financial_prompt)
+        self.assertIn("给付比例乘基本保险金额", insurance_prompt)
+        self.assertNotIn("目标年度报告的本报告期列", insurance_prompt)
+        self.assertIn(
+            f"prompt_version={CALCULATION_MODULAR_PROMPT_VERSION}",
+            financial_prompt,
+        )
+        self.assertIn("question:input", financial_prompt)
+
+    def test_calculation_prompt_rejects_unknown_domain(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "Unsupported calculation domain",
+        ):
+            _calculation_system_prompt("unknown")
+
+    def test_calculation_research_controls_validate_types(self) -> None:
+        with self.assertRaisesRegex(
+            TypeError,
+            "calculation_modular_prompt_enabled must be bool",
+        ):
+            BBoardActualRunner(
+                questions=[],
+                calculation_modular_prompt_enabled=1,  # type: ignore[arg-type]
+            )
+        with self.assertRaisesRegex(
+            TypeError,
+            "calculation_thinking_budget must be int or None",
+        ):
+            BBoardActualRunner(
+                questions=[],
+                calculation_thinking_budget="4096",  # type: ignore[arg-type]
+            )
+        with self.assertRaisesRegex(
+            ValueError,
+            "calculation_thinking_budget must be positive",
+        ):
+            BBoardActualRunner(
+                questions=[],
+                calculation_thinking_budget=0,
+            )
+        with self.assertRaisesRegex(
+            TypeError,
+            "calculation_structured_retrieval_enabled must be bool",
+        ):
+            BBoardActualRunner(
+                questions=[],
+                calculation_structured_retrieval_enabled=1,  # type: ignore[arg-type]
+            )
+        with self.assertRaisesRegex(
+            TypeError,
+            "calculation_unit_repair_enabled must be bool",
+        ):
+            BBoardActualRunner(
+                questions=[],
+                calculation_unit_repair_enabled=1,  # type: ignore[arg-type]
+            )
+        with self.assertRaisesRegex(
+            TypeError,
+            "calculation_enable_thinking must be bool or None",
+        ):
+            BBoardActualRunner(
+                questions=[],
+                calculation_enable_thinking="off",  # type: ignore[arg-type]
+            )
+        with self.assertRaisesRegex(
+            ValueError,
+            "calculation_thinking_budget requires thinking to be enabled",
+        ):
+            BBoardActualRunner(
+                questions=[],
+                calculation_enable_thinking=False,
+                calculation_thinking_budget=4096,
+            )
+        with self.assertRaisesRegex(
+            ValueError,
+            "calculation_provider_format must be one of",
+        ):
+            BBoardActualRunner(
+                questions=[],
+                calculation_provider_format="yaml",
+            )
+        with self.assertRaisesRegex(
+            TypeError,
+            "calculation_repair_retry_enabled must be bool",
+        ):
+            BBoardActualRunner(
+                questions=[],
+                calculation_repair_retry_enabled=1,  # type: ignore[arg-type]
+            )
+        with self.assertRaisesRegex(
+            TypeError,
+            "calculation_guarded_adaptive_thinking_enabled must be bool",
+        ):
+            BBoardActualRunner(
+                questions=[],
+                calculation_guarded_adaptive_thinking_enabled=1,  # type: ignore[arg-type]
+            )
+        with self.assertRaisesRegex(
+            ValueError,
+            "cannot be combined with an explicit calculation thinking",
+        ):
+            BBoardActualRunner(
+                questions=[],
+                calculation_guarded_adaptive_thinking_enabled=True,
+                calculation_thinking_budget=4096,
+                run_mode=RUN_MODE_RESEARCH,
+            )
+        with self.assertRaisesRegex(
+            ValueError,
+            "cannot be combined with calculation repair retry",
+        ):
+            BBoardActualRunner(
+                questions=[],
+                calculation_guarded_adaptive_thinking_enabled=True,
+                calculation_repair_retry_enabled=True,
+                run_mode=RUN_MODE_RESEARCH,
+            )
+
+    def test_guarded_adaptive_request_failure_records_actual_thinking(
+        self,
+    ) -> None:
+        class EmptyRetriever:
+            def search(self, *_args: object, **_kwargs: object) -> list[object]:
+                return []
+
+        class FailingClient:
+            def __init__(self) -> None:
+                self.kwargs: list[dict[str, object]] = []
+
+            def chat_json(
+                self,
+                _messages: list[dict[str, str]],
+                **kwargs: object,
+            ) -> LLMResponse:
+                self.kwargs.append(dict(kwargs))
+                raise TimeoutError("provider read timeout")
+
+        runner = object.__new__(BBoardActualRunner)
+        runner.calculation_structured_retrieval_enabled = False
+        runner.calculation_profile_enabled = False
+        runner.calculation_modular_prompt_enabled = False
+        runner.calculation_joint_reasoning_enabled = False
+        runner.calculation_guarded_adaptive_thinking_enabled = True
+        runner.calculation_repair_retry_enabled = False
+        runner.calculation_thinking_budget = None
+        runner.calculation_enable_thinking = None
+        runner.calculation_provider_format = "native"
+        runner.calculation_top_k = 18
+        runner.retrievers = {"research": EmptyRetriever()}
+        runner.config = SimpleNamespace(
+            model=SimpleNamespace(
+                structured_output_mode="native_json_schema_strict",
+            )
+        )
+        runner.client = FailingClient()
+        question = BQuestion(
+            qid="q_calc",
+            domain="research",
+            split="B",
+            question="已知总量100、占比60%、占比35%、人均70，计算结果。",
+            options={},
+            answer_format="calculation",
+            type="计算题",
+            answer_slots=1,
+            answer_slot_templates=("999999.99",),
+        )
+
+        with self.assertRaisesRegex(
+            BAnswerGenerationError,
+            "failed before a usable response",
+        ) as raised:
+            runner._answer_calculation(question, [], {})
+
+        self.assertEqual(
+            runner.client.kwargs[0]["extra_body"],
+            {"enable_thinking": False},
+        )
+        diagnostic = raised.exception.diagnostics[-1]
+        self.assertEqual(
+            diagnostic[
+                "calculation_guarded_adaptive_thinking_policy"
+            ]["mode"],
+            "off",
+        )
+        attempt = diagnostic["calculation_attempt_modes"][0]
+        self.assertEqual(attempt["status"], "request_failed")
+        self.assertEqual(
+            attempt["request_thinking"],
+            {
+                "mode": "disabled",
+                "enable_thinking": False,
+                "thinking_budget": None,
+            },
+        )
+
     def test_completed_artifact_recovers_exact_answer_checkpoint(self) -> None:
         artifact = _artifact()
         answer_call = {
@@ -509,7 +1258,7 @@ class BBoardRunnerModeTests(unittest.TestCase):
             [item["reason"] for item in changes],
         )
 
-    def test_structure_normalization_clears_absent_same_scale_units_only_for_ratio(
+    def test_structure_normalization_clears_absent_same_scale_ratio_units(
         self,
     ) -> None:
         plan = {
@@ -563,23 +1312,161 @@ class BBoardRunnerModeTests(unittest.TestCase):
             ["", ""],
         )
         self.assertIn(
-            "clear_absent_same_scale_ratio_units",
+            "clear_unit_absent_from_cited_evidence",
+            [item["reason"] for item in changes],
+        )
+
+    def test_structure_normalization_clears_any_unit_absent_from_cited_source(
+        self,
+    ) -> None:
+        plan = {
+            "variables": [
+                {
+                    "name": "甲",
+                    "value": "100",
+                    "value_type": "decimal",
+                    "unit": "元",
+                    "evidence_ids": ["u1"],
+                },
+                {
+                    "name": "乙",
+                    "value": "20",
+                    "value_type": "decimal",
+                    "unit": "元",
+                    "evidence_ids": ["u2"],
+                },
+            ],
+            "steps": [
+                {
+                    "id": "合计",
+                    "op": "add",
+                    "args": [{"ref": "甲"}, {"ref": "乙"}],
+                }
+            ],
+            "outputs": [{"source": {"ref": "合计"}, "format": "decimal2"}],
+            "supporting_evidence_ids": ["u1", "u2"],
+            "decision_summary": "合计120.00。",
+        }
+
+        normalized, changes = _normalize_calculation_plan_structure(
+            plan,
+            evidence_text_by_id={"u1": "甲为100", "u2": "乙为20"},
+        )
+
+        self.assertEqual(
+            [item["unit"] for item in normalized["variables"]],
+            ["", ""],
+        )
+        self.assertIn(
+            "clear_unit_absent_from_cited_evidence",
             [item["reason"] for item in changes],
         )
 
     def test_schema_errors_skip_retrieval_but_grounding_errors_do_not(self) -> None:
         self.assertTrue(
             _is_calculation_plan_structure_error(
-                ValueError("mul args must be a list")
+                CalculationPlanError("mul args must be a list")
             )
         )
         self.assertFalse(
             _is_calculation_plan_structure_error(
-                ValueError(
-                    "Variables are not grounded in cited evidence: 金额[value_not_found]"
+                CalculationPlanError(
+                    "Variables are not grounded in cited evidence",
+                    error_code=CalculationErrorCode.GROUNDING_FAILED,
                 )
             )
         )
+
+    def test_no_thinking_repair_excludes_semantic_binding_errors(self) -> None:
+        self.assertTrue(
+            _is_calculation_plan_repairable_structure_error(
+                CalculationPlanError("Unknown reference: s1")
+            )
+        )
+        for code in (
+            CalculationErrorCode.PERIOD_BINDING_FAILED,
+            CalculationErrorCode.UNIT_BINDING_FAILED,
+            CalculationErrorCode.DEPENDENCY_INVALID,
+            CalculationErrorCode.GROUNDING_FAILED,
+        ):
+            with self.subTest(code=code):
+                self.assertFalse(
+                    _is_calculation_plan_repairable_structure_error(
+                        CalculationPlanError(
+                            "semantic",
+                            error_code=code,
+                        )
+                    )
+                )
+
+    def test_typed_calculation_retry_terms_do_not_parse_error_message(self) -> None:
+        exc = CalculationPlanError(
+            "this message deliberately contains ignored words",
+            error_code=CalculationErrorCode.GROUNDING_FAILED,
+            details={
+                "required_terms": [
+                    " 2025年 境外 ",
+                    "营业收入",
+                    "营业收入",
+                ]
+            },
+        )
+
+        self.assertEqual(
+            _calculation_error_retrieval_terms(exc),
+            ["2025年 境外", "营业收入"],
+        )
+        self.assertEqual(
+            _calculation_error_fingerprint(exc),
+            (
+                CalculationErrorCode.GROUNDING_FAILED.value,
+                ("2025年 境外", "营业收入"),
+            ),
+        )
+        self.assertEqual(
+            _calculation_error_retrieval_terms(
+                CalculationPlanError("2025年 境外")
+            ),
+            [],
+        )
+
+    def test_typed_retry_retrieval_interleaves_structured_terms(self) -> None:
+        retriever = GenericBM25Retriever(
+            [
+                {
+                    "unit_id": "u-question",
+                    "doc_id": "d1",
+                    "title_path": ["指标"],
+                    "text": "营业收入为100。",
+                    "unit_type": "metric_row",
+                },
+                {
+                    "unit_id": "u-period",
+                    "doc_id": "d1",
+                    "title_path": ["分地区"],
+                    "text": "2025年境外收入为20。",
+                    "unit_type": "metric_row",
+                },
+                {
+                    "unit_id": "u-other",
+                    "doc_id": "d1",
+                    "title_path": ["其他"],
+                    "text": "无关说明。",
+                    "unit_type": "article",
+                },
+            ]
+        )
+
+        rows = _calculation_typed_retry_evidence(
+            retriever,
+            ["d1"],
+            "计算营业收入占比。",
+            ["2025年境外"],
+            top_k=4,
+        )
+
+        self.assertIn("u-question", [row["unit_id"] for row in rows])
+        self.assertIn("u-period", [row["unit_id"] for row in rows])
 
     def test_calculation_semantic_query_terms_cover_rule_evidence(self) -> None:
         self.assertIn(
@@ -602,7 +1489,7 @@ class BBoardRunnerModeTests(unittest.TestCase):
     def test_aggregate_intensity_constraint_is_derived_from_question_and_evidence(
         self,
     ) -> None:
-        constraints = _calculation_semantic_constraints(
+        constraints = _extract_calculation_semantic_constraints(
             (
                 "若2026年国内新能源乘用车销量与2025年持平，但单车带电量"
                 "从2025年的水平提升至56kWh，则动力电池需求同比增速是多少？"
@@ -642,17 +1529,47 @@ class BBoardRunnerModeTests(unittest.TestCase):
         self,
     ) -> None:
         self.assertEqual(
-            _calculation_semantic_constraints(
+            _extract_calculation_semantic_constraints(
                 "预计乘用车单车带电量提升至56kWh，需求是多少？",
                 [],
             ),
             [],
         )
 
+    def test_aggregate_intensity_constraint_generalizes_beyond_one_domain(
+        self,
+    ) -> None:
+        constraints = _extract_calculation_semantic_constraints(
+            (
+                "若2025年产品总量与2024年持平，但每件能耗提升至"
+                "12千瓦时，能源需求同比增速是多少？"
+            ),
+            [
+                {
+                    "doc_id": "__question__",
+                    "evidence_id": "question:q1",
+                    "title": "题目",
+                    "text": "产品总量持平，每件能耗提升至12千瓦时",
+                },
+                {
+                    "doc_id": "report",
+                    "evidence_id": "u1",
+                    "title": "2024 | 2025",
+                    "text": "每件能耗(千瓦时) | 10 | 11",
+                },
+            ],
+        )
+
+        self.assertEqual(len(constraints), 1)
+        self.assertEqual(constraints[0]["metric"], "每件能耗")
+        self.assertEqual(constraints[0]["baseline_value"], "10")
+        self.assertEqual(constraints[0]["target_value"], "12")
+        self.assertEqual(constraints[0]["unit"], "千瓦时")
+
     def test_direct_disclosed_average_constraint_binds_period_metric_and_value(
         self,
     ) -> None:
-        constraints = _calculation_semantic_constraints(
+        constraints = _extract_calculation_semantic_constraints(
             (
                 "根据募集说明书，计算2023年至2025年发行人归属于母公司"
                 "所有者的净利润的平均值（单位：亿元）为多少？"
@@ -1282,14 +2199,16 @@ class BBoardRunnerModeTests(unittest.TestCase):
         )
 
     def test_semantic_binding_failures_retry_with_same_evidence(self) -> None:
-        for message in (
-            "disclosed aggregate scope mismatch: aggregate value was mislabeled",
-            "calculation variable target report period mismatch: wrong column",
-            "insurance maximum branch must use an evidence-grounded benefit rate",
+        for code in (
+            CalculationErrorCode.PERIOD_BINDING_FAILED,
+            CalculationErrorCode.UNIT_BINDING_FAILED,
+            CalculationErrorCode.DEPENDENCY_INVALID,
         ):
-            with self.subTest(message=message):
+            with self.subTest(code=code):
                 self.assertTrue(
-                    _is_calculation_plan_structure_error(ValueError(message))
+                    _is_calculation_plan_structure_error(
+                        CalculationPlanError("semantic binding", error_code=code)
+                    )
                 )
 
     def test_calculation_evidence_payload_expands_progressively(self) -> None:
@@ -2744,6 +3663,9 @@ class BBoardRunnerModeTests(unittest.TestCase):
             args = run_b_board_actual.parse_args()
             self.assertEqual(args.run_mode, RUN_MODE_SUBMISSION)
             self.assertEqual(args.stage, RUN_STAGE_FULL)
+            self.assertFalse(
+                args.calculation_guarded_adaptive_thinking
+            )
         with mock.patch.object(
             sys,
             "argv",
@@ -2758,6 +3680,20 @@ class BBoardRunnerModeTests(unittest.TestCase):
             args = run_b_board_actual.parse_args()
             self.assertEqual(args.run_mode, RUN_MODE_RESEARCH)
             self.assertEqual(args.stage, RUN_STAGE_ANSWER)
+        with mock.patch.object(
+            sys,
+            "argv",
+            [
+                "run_b_board_actual.py",
+                "--run-mode",
+                RUN_MODE_RESEARCH,
+                "--calculation-guarded-adaptive-thinking",
+            ],
+        ):
+            args = run_b_board_actual.parse_args()
+            self.assertTrue(
+                args.calculation_guarded_adaptive_thinking
+            )
 
     def test_reasoning_checkpoint_cli_accepts_only_positive_thinking_budget(
         self,

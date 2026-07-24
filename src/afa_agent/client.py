@@ -35,15 +35,17 @@ class LLMUsageLedger:
         usage: TokenUsage,
         *,
         response_format_mode: str = "json_object_local_schema",
+        call_role: str = "",
     ) -> None:
-        self.calls.append(
-            {
-                "call_index": len(self.calls) + 1,
-                "model_name": model_name,
-                "response_format_mode": response_format_mode,
-                "token_usage": usage.to_dict(),
-            }
-        )
+        item = {
+            "call_index": len(self.calls) + 1,
+            "model_name": model_name,
+            "response_format_mode": response_format_mode,
+            "token_usage": usage.to_dict(),
+        }
+        if str(call_role).strip():
+            item["call_role"] = str(call_role).strip()
+        self.calls.append(item)
 
     def total(self) -> dict[str, int]:
         return {
@@ -81,6 +83,7 @@ class OpenAICompatibleClient:
         response_schema: Mapping[str, Any] | None = None,
         schema_name: str = "response",
         extra_body: Mapping[str, Any] | None = None,
+        call_role: str = "",
     ) -> LLMResponse:
         url = self.config.api_base.rstrip("/") + "/chat/completions"
         if response_schema is None:
@@ -172,6 +175,7 @@ class OpenAICompatibleClient:
                 self.config.model_name,
                 usage,
                 response_format_mode=response_format_mode,
+                call_role=call_role,
             )
         return LLMResponse(
             content=content,
