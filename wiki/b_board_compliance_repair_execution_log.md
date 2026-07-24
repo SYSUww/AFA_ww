@@ -432,6 +432,79 @@ F3 是该方向的第三次也是最后一次材料性尝试。后续只做同�
 }
 ```
 
+### H3 结果：verified calculation 第三轮关闭
+
+```json
+{
+  "experiment_id": "b-compliance-repair-verified-calculation-h3-anchor-first-calc26",
+  "status": "completed_not_promoted",
+  "direction": "verified_calculation_full_coverage",
+  "direction_attempt_count": 3,
+  "direction_closed": true,
+  "history_reviewed_before_attempt": true,
+  "official_accuracy": null,
+  "official_submission_count": 0,
+  "metrics": {
+    "question_count": 26,
+    "answered_question_count": 24,
+    "failed_question_count": 2,
+    "raw_call_count": 50,
+    "format_retry_count": 0,
+    "transport_attempt_count": 50,
+    "transport_rejection_count": 0,
+    "token_usage": {
+      "prompt_tokens": 312953,
+      "completion_tokens": 97467,
+      "total_tokens": 410420
+    },
+    "pseudo99_equivalent_match": "15/26",
+    "pseudo99_equivalent_accuracy_percent": 57.692308,
+    "sample_token_efficiency_score_not_full_run_comparable": 82.084,
+    "compliance_audit_passed": true,
+    "unobservable_usage_risk": false
+  },
+  "comparison_to_h2": {
+    "answered_question_delta": 3,
+    "pseudo99_match_delta": 3,
+    "token_delta": 40695,
+    "token_delta_percent": 11.00682
+  },
+  "failed_questions": [
+    {
+      "qid": "reg_b_016",
+      "error_code": "calculation_decimal_replay_error",
+      "error": "Unknown reference: 4999"
+    },
+    {
+      "qid": "res_b_012",
+      "error_code": "calculation_decimal_replay_error",
+      "error": "sub amount unit mismatch: 亿元 vs 万元"
+    }
+  ],
+  "pseudo99_mismatch_qids": [
+    "fin_b_013",
+    "fin_b_014",
+    "fin_b_015",
+    "fin_b_016",
+    "fin_b_019",
+    "ins_b_003",
+    "ins_b_018",
+    "ins_b_019",
+    "reg_b_016",
+    "res_b_005",
+    "res_b_012"
+  ],
+  "promotion_result": "rejected",
+  "reasons": [
+    "candidate_incomplete",
+    "pseudo_accuracy_materially_below_direct_baseline",
+    "token_usage_increased_vs_h2",
+    "strict_reasoning_score_unavailable"
+  ],
+  "decision": "不生成提交文件，不继续尝试verified calculation方向；后续回到direct生产链并优化通用检索、证据合并与首次调用质量。"
+}
+```
+
 ## 2026-07-25 自适应多报告计算证据 A3：指标槽覆盖
 
 本轮开始前已复核本日志中的 A1/A2。A3 只新增通用的“主体 × 指标 ×
