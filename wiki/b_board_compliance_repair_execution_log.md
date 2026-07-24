@@ -415,6 +415,23 @@ F3 是该方向的第三次也是最后一次材料性尝试。后续只做同�
 }
 ```
 
+### H3 冻结快照
+
+```json
+{
+  "status": "running",
+  "experiment_id": "b-compliance-repair-verified-calculation-h3-anchor-first-calc26",
+  "direction_attempt_count": 3,
+  "history_reviewed_before_attempt": true,
+  "frozen_source_commit": "3c37915fc88168c7ed74079c40615fb506718b2c",
+  "frozen_source_remote": "origin/codex/b-board-compliance-repair",
+  "frozen_source_tests": "passed",
+  "official_submission_count": 0,
+  "official_accuracy": null,
+  "run_dir": "artifacts/b_board_actual/compliance_repair/verified_calculation_h3_anchor_first_calc26"
+}
+```
+
 ## 2026-07-25 自适应多报告计算证据 A3：指标槽覆盖
 
 本轮开始前已复核本日志中的 A1/A2。A3 只新增通用的“主体 × 指标 ×
