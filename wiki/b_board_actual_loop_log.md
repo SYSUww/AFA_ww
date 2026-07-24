@@ -22,6 +22,131 @@
 }
 ```
 
+## b-loop-qwen37-three-semantic-badcase-accuracy-a1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-three-semantic-badcase-accuracy-a1",
+  "direction_id": "qwen37_three_badcase_accuracy_and_token",
+  "recorded_at": "2026-07-24T12:14:00+08:00",
+  "status": "promoted_offline",
+  "score_type": "offline_pseudo99_and_gpt56_shadow_not_official",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "reviewed_experiments": [
+      "b-loop-qwen37-four-answer-semantic-binding-audit-a1",
+      "b-loop-qwen37-three-semantic-badcase-repair-feasibility-a1",
+      "b-loop-qwen37-calculation-retrieval-retry-audit-a1"
+    ]
+  },
+  "approach": "在codex/b-board-three-badcase-accuracy上以TDD并行实现三类答案盲通用修复：已披露平均值聚合口径门禁、年度报告目标年度/比较列绑定、多合同保险公式证据覆盖与mul->max运算符门禁；首轮仍严格为题目加8条文档证据。新增answer-only阶段，先用Qwen3.7 Plus原生strict JSON Schema并发运行三题，冻结答案后再并发生成reasoning；没有重新运行答案。随后把三条完整artifact覆盖到A13的100题基线，重建usage ledger、manifest和submit.csv，并只对三条变化reasoning进行固定GPT-5.6影子评测。",
+  "artifacts": {
+    "answer_and_reasoning_patch": "artifacts/b_board_actual/qwen37_three_badcase_accuracy_a1",
+    "full100_candidate": "artifacts/b_board_actual/qwen37_three_badcase_candidate_a1",
+    "gpt56_shadow": "artifacts/b_board_actual/qwen37_three_badcase_accuracy_a1/reasoning_eval_gpt56_a1"
+  },
+  "model_contract": {
+    "production_model": "qwen3.7-plus-2026-05-26",
+    "structured_output_mode": "native_json_schema_strict",
+    "judge_model": "gpt-5.6",
+    "judge_tokens_included_in_submission": false
+  },
+  "metrics": {
+    "baseline_reference_equivalent_match_count": 96,
+    "candidate_reference_equivalent_match_count": 99,
+    "reference_question_count": 100,
+    "official_accuracy": null,
+    "assumed_accuracy_before": 96.0,
+    "assumed_accuracy_after": 99.0,
+    "baseline_reasoning_score": 95.91333333333334,
+    "candidate_reasoning_score": 95.92,
+    "reasoning_score_delta": 0.00666666666666,
+    "baseline_token_total": 1273122,
+    "candidate_token_total": 1261682,
+    "token_delta": -11440,
+    "baseline_token_efficiency_score": 74.53756,
+    "candidate_token_efficiency_score": 74.76636,
+    "token_efficiency_delta": 0.2288,
+    "baseline_proxy_total_at_96_accuracy": 91.681512,
+    "candidate_proxy_total_at_99_accuracy": 93.229272,
+    "proxy_total_delta": 1.54776,
+    "baseline_counterfactual_total_at_99_accuracy": 93.181512,
+    "reasoning_and_token_only_delta_at_equal_99_accuracy": 0.04776,
+    "answer_retry_count": 0,
+    "reasoning_retry_count": 0,
+    "new_model_call_count": 6
+  },
+  "per_qid": [
+    {
+      "qid": "fc_b_014",
+      "answer_before": ["13.50"],
+      "answer_after": ["14.41"],
+      "row_token_before": 19573,
+      "row_token_after": 7259,
+      "row_token_delta": -12314,
+      "answer_token_before": 14831,
+      "answer_token_after": 4712,
+      "answer_call_before": 2,
+      "answer_call_after": 1,
+      "reasoning_score_before": 99.0,
+      "reasoning_score_after": 96.0,
+      "per_qid_proxy_delta": 0.540256,
+      "retry_count": 0,
+      "promotion": "accuracy_and_token"
+    },
+    {
+      "qid": "fin_b_018",
+      "answer_before": ["2.65", "7.42"],
+      "answer_after": ["2.58", "7.65"],
+      "row_token_before": 17718,
+      "row_token_after": 16252,
+      "row_token_delta": -1466,
+      "answer_token_before": 13006,
+      "answer_token_after": 11570,
+      "answer_call_before": 1,
+      "answer_call_after": 1,
+      "reasoning_score_before": 96.0,
+      "reasoning_score_after": 99.0,
+      "per_qid_proxy_delta": 0.514864,
+      "retry_count": 0,
+      "promotion": "accuracy_and_token"
+    },
+    {
+      "qid": "ins_b_003",
+      "answer_before": ["412.00"],
+      "answer_after": ["366.00"],
+      "row_token_before": 17676,
+      "row_token_after": 20016,
+      "row_token_delta": 2340,
+      "answer_token_before": 11843,
+      "answer_token_after": 11153,
+      "answer_call_before": 1,
+      "answer_call_after": 1,
+      "reasoning_score_before": 97.0,
+      "reasoning_score_after": 97.66666666666667,
+      "per_qid_proxy_delta": 0.49264,
+      "retry_count": 0,
+      "promotion": "accuracy_gain_outweighs_row_token_increase"
+    }
+  ],
+  "evidence": {
+    "all_three_answers_match_direct_source_targets": true,
+    "all_three_first_answer_calls_succeeded": true,
+    "all_three_calculation_replay_verified": true,
+    "all_three_calculation_grounding_verified": true,
+    "first_prompt_document_hit_limit": 8
+  },
+  "limitations": [
+    "pseudo99参考尚未官网提交，99不是新的官网准确率",
+    "完整候选仍保留范围外ins_b_016=ABD，与历史官网锁定BD冲突",
+    "当前全量scorecard会把A13继承的旧reasoning prompt版本标为历史兼容失败；本轮增量因此采用变化三题重评、其余97题因果继承"
+  ],
+  "promotion_result": "promote_accuracy_branch_and_continue_token_direction",
+  "next_step": "开始新的Token方向前再次读取本条日志；冻结A1答案，使用900字符reasoning证据上限分别重跑三题reasoning。只在Token下降且按固定GPT-5.6重评后的总分不下降时晋级。不得重跑答案或改变三题答案。",
+  "submission_effect": "no_official_upload"
+}
+```
+
 ## b-loop-qwen37-four-answer-semantic-binding-audit-a1
 
 ```json

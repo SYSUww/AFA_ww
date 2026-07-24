@@ -29,6 +29,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--submission-template", default="upload_b/submit.csv")
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument(
+        "--qid",
+        action="append",
+        default=[],
+        help="Evaluate only these submission rows; may be repeated",
+    )
     parser.add_argument("--accuracy-score", type=float)
     parser.add_argument("--accuracy-source", default="")
     parser.add_argument(
@@ -56,6 +62,7 @@ def main() -> None:
         ROOT / args.question_root,
         ROOT / args.submission_template,
     )
+    questions = _select_questions(questions, args.qid)
     result = run_reasoning_evaluation(
         submission_path=ROOT / args.submission,
         questions=questions,
@@ -77,6 +84,17 @@ def main() -> None:
             indent=2,
         )
     )
+
+
+def _select_questions(questions, qids):
+    requested = list(dict.fromkeys(str(qid).strip() for qid in qids if str(qid).strip()))
+    if not requested:
+        return list(questions)
+    by_qid = {item.qid: item for item in questions}
+    unknown = sorted(set(requested) - set(by_qid))
+    if unknown:
+        raise ValueError(f"unknown qids: {unknown}")
+    return [by_qid[qid] for qid in requested]
 
 
 if __name__ == "__main__":

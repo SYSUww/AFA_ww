@@ -15,6 +15,7 @@ from afa_agent.b_board.reasoning_evaluation import (
 from afa_agent.client import LLMResponse
 from afa_agent.config import ModelConfig
 from afa_agent.models import TokenUsage
+from scripts.evaluate_b_board_reasoning import _select_questions
 
 
 def question(qid: str) -> BQuestion:
@@ -230,6 +231,19 @@ class FixedReasoningEvaluatorTests(unittest.TestCase):
         with self.assertRaisesRegex(Exception, "invalid reasoning judge response") as raised:
             FixedReasoningEvaluator(InvalidClient()).evaluate("这是足够长的推理过程文本，用于验证非法评分字段会被拒绝。")  # type: ignore[arg-type]
         self.assertEqual(getattr(raised.exception, "token_usage")["total_tokens"], 12)
+
+
+class ReasoningEvaluationCliTests(unittest.TestCase):
+    def test_select_questions_preserves_requested_order_and_rejects_unknown(
+        self,
+    ) -> None:
+        questions = [question("q1"), question("q2"), question("q3")]
+
+        selected = _select_questions(questions, ["q3", "q1", "q3"])
+
+        self.assertEqual([item.qid for item in selected], ["q3", "q1"])
+        with self.assertRaisesRegex(ValueError, "unknown qids"):
+            _select_questions(questions, ["q4"])
 
 
 if __name__ == "__main__":
