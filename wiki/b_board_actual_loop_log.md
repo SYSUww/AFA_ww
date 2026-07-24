@@ -38102,3 +38102,48 @@
   "submission_effect": "local_candidate_not_officially_uploaded"
 }
 ```
+
+## b-loop-qwen37-usage-safe-transport-retry-a1
+
+```json
+{
+  "approach": "新方向开始前重读A13日志，先审计选择题默认回退与HTTP重试。A13的format_forced、forced_options、invalid_model_answer、no_supported_fallback均为0，排除默认A风险；但client仅禁止ReadTimeout重发，仍会对ConnectionError、HTTP 500等RequestException及响应JSON解析ValueError自动重发。A1将传输重试策略收紧为retry_explicit_http_429_only_v1：只重试服务端明确429拒绝，其余可能已触发生成但无usage的歧义失败立即终止。",
+  "artifact_path": null,
+  "direction_id": "qwen37_usage_safe_transport_retry",
+  "effect": "新增自动化测试证明ReadTimeout、ConnectionError、HTTP 500和坏JSON响应均只dispatch一次；明确429可按max_retries重试，最终只记录成功响应的原始usage。策略版本进入run fingerprint，避免旧策略产物被误续跑。该改动不改变A13文本、答案、Token或代理分，只降低未来运行的未申报重复调用风险。",
+  "experiment_id": "b-loop-qwen37-usage-safe-transport-retry-a1",
+  "failure_analysis": "对POST生成请求而言，连接中断、网关500或坏响应体并不能证明服务端未生成；自动重发可能产生无法申报usage的隐藏调用。429是服务端明确拒绝，才保留为安全自动重试。该问题不能通过最终CSV反推，必须在客户端dispatch边界预防。",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_experiment_id": "b-loop-qwen37-reasoning-provenance-compliance-a3-thinking-selection-a13",
+    "new_material_delta": "从reasoning正文来源转向HTTP dispatch与原始usage可审计性；先用A13 trace排除默认A后再收紧传输重试。"
+  },
+  "metrics": {
+    "a13_ambiguous_choice_fallback_count": 0,
+    "a13_recorded_api_call_count": 235,
+    "candidate_content_changed": false,
+    "direction_attempt_count": 1,
+    "proxy_total_delta": 0.0,
+    "safe_retry_http_statuses": [
+      429
+    ],
+    "transport_cases_not_retried": [
+      "read_timeout",
+      "connection_error",
+      "http_500",
+      "invalid_json_response"
+    ]
+  },
+  "next_step": "该问题由确定性客户端策略和测试闭环，无需消耗Qwen模型尝试；运行全量测试后作为有效合规分支推送。A13仍为当前本地最佳合规候选，不做官网上传。",
+  "pipeline_stage": "model_api_transport",
+  "promotion_result": "effective_compliance_guard_no_candidate_change",
+  "question_types": [
+    "all"
+  ],
+  "recorded_at": "2026-07-24T09:23:34+08:00",
+  "root_cause_cluster": "ambiguous_transport_retry_without_observable_usage",
+  "score_type": "candidate_unchanged",
+  "status": "completed_effective",
+  "submission_effect": "no_new_submission_candidate"
+}
+```

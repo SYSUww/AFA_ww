@@ -14,6 +14,9 @@ from .config import ModelConfig
 from .models import TokenUsage
 
 
+TRANSPORT_RETRY_POLICY_VERSION = "retry_explicit_http_429_only_v1"
+
+
 @dataclass(slots=True)
 class LLMResponse:
     content: str
@@ -139,9 +142,17 @@ class OpenAICompatibleClient:
                 # the same request again would create an unobservable duplicate
                 # whose raw usage cannot be declared in the submission ledger.
                 raise
-            except (requests.RequestException, ValueError) as exc:
+            except ValueError:
+                # A response body already arrived. If it is malformed, the
+                # provider may still have generated billable tokens whose usage
+                # is now unavailable, so an automatic resend is not auditable.
+                raise
+            except requests.RequestException as exc:
                 last_error = exc
-                if attempt >= max_attempts - 1:
+                if (
+                    not _is_explicit_rate_limit_rejection(exc)
+                    or attempt >= max_attempts - 1
+                ):
                     raise
                 time.sleep(max(0.0, self.config.retry_backoff_seconds) * (attempt + 1))
         else:
@@ -219,3 +230,16 @@ def _validate_raw_usage(usage: TokenUsage) -> None:
         raise ValueError("model API usage fields must be non-negative integers")
     if usage.total_tokens != usage.prompt_tokens + usage.completion_tokens:
         raise ValueError("model API total_tokens must equal prompt_tokens + completion_tokens")
+
+
+def _is_explicit_rate_limit_rejection(
+    exc: requests.RequestException,
+) -> bool:
+    """Return whether the provider explicitly rejected the request pre-generation."""
+
+    response = getattr(exc, "response", None)
+    return (
+        isinstance(exc, requests.HTTPError)
+        and response is not None
+        and int(getattr(response, "status_code", 0)) == 429
+    )

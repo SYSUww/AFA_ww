@@ -11,11 +11,16 @@ from afa_agent.config import ModelConfig
 
 
 class FakeHTTPResponse:
-    def __init__(self, payload: dict) -> None:
+    def __init__(self, payload: dict, *, status_code: int = 200) -> None:
         self.payload = payload
+        self.status_code = status_code
 
     def raise_for_status(self) -> None:
-        return None
+        if self.status_code >= 400:
+            raise requests.HTTPError(
+                f"status={self.status_code}",
+                response=self,
+            )
 
     def json(self) -> dict:
         return self.payload
@@ -164,6 +169,97 @@ class ClientUsageLedgerTests(unittest.TestCase):
 
         self.assertEqual(post.call_count, 1)
         self.assertEqual(ledger.calls, [])
+
+    def test_connection_error_is_not_retried_after_post_dispatch(self) -> None:
+        client = OpenAICompatibleClient(
+            ModelConfig(
+                api_key="test",
+                api_base="https://example.invalid/v1",
+                model_name="qwen3.7-plus",
+                max_retries=2,
+            )
+        )
+        with patch(
+            "afa_agent.client.requests.post",
+            side_effect=requests.ConnectionError("ambiguous disconnect"),
+        ) as post:
+            with self.assertRaises(requests.ConnectionError):
+                client.chat_json([{"role": "user", "content": "ambiguous"}])
+
+        self.assertEqual(post.call_count, 1)
+
+    def test_http_500_is_not_retried_without_provider_usage(self) -> None:
+        client = OpenAICompatibleClient(
+            ModelConfig(
+                api_key="test",
+                api_base="https://example.invalid/v1",
+                model_name="qwen3.7-plus",
+                max_retries=2,
+            )
+        )
+        with patch(
+            "afa_agent.client.requests.post",
+            return_value=FakeHTTPResponse({}, status_code=500),
+        ) as post:
+            with self.assertRaises(requests.HTTPError):
+                client.chat_json([{"role": "user", "content": "server error"}])
+
+        self.assertEqual(post.call_count, 1)
+
+    def test_invalid_json_response_is_not_retried(self) -> None:
+        class InvalidJSONResponse(FakeHTTPResponse):
+            def json(self) -> dict:
+                raise ValueError("invalid response body")
+
+        client = OpenAICompatibleClient(
+            ModelConfig(
+                api_key="test",
+                api_base="https://example.invalid/v1",
+                model_name="qwen3.7-plus",
+                max_retries=2,
+            )
+        )
+        with patch(
+            "afa_agent.client.requests.post",
+            return_value=InvalidJSONResponse({}),
+        ) as post:
+            with self.assertRaisesRegex(ValueError, "invalid response body"):
+                client.chat_json([{"role": "user", "content": "bad json"}])
+
+        self.assertEqual(post.call_count, 1)
+
+    def test_explicit_http_429_rejection_can_retry(self) -> None:
+        client = OpenAICompatibleClient(
+            ModelConfig(
+                api_key="test",
+                api_base="https://example.invalid/v1",
+                model_name="qwen3.7-plus",
+                max_retries=2,
+                retry_backoff_seconds=0,
+            )
+        )
+        success = FakeHTTPResponse(
+            {
+                "choices": [{"message": {"content": "{}"}}],
+                "usage": {
+                    "prompt_tokens": 10,
+                    "completion_tokens": 2,
+                    "total_tokens": 12,
+                },
+            }
+        )
+        with patch(
+            "afa_agent.client.requests.post",
+            side_effect=[
+                FakeHTTPResponse({}, status_code=429),
+                success,
+            ],
+        ) as post:
+            with capture_llm_usage() as ledger:
+                client.chat_json([{"role": "user", "content": "rate limit"}])
+
+        self.assertEqual(post.call_count, 2)
+        self.assertEqual(ledger.total()["total_tokens"], 12)
 
 
 if __name__ == "__main__":

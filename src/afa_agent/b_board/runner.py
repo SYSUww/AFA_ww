@@ -50,7 +50,12 @@ from afa_agent.b_board.submission_policy import (
     is_allowed_submission_model,
     require_allowed_submission_model,
 )
-from afa_agent.client import OpenAICompatibleClient, capture_llm_usage, extract_json_object
+from afa_agent.client import (
+    TRANSPORT_RETRY_POLICY_VERSION,
+    OpenAICompatibleClient,
+    capture_llm_usage,
+    extract_json_object,
+)
 from afa_agent.config import STRUCTURED_OUTPUT_NATIVE, build_run_config
 from afa_agent.domains.generic_retriever import GenericBM25Retriever
 from afa_agent.domains.registry import get_plugin
@@ -156,7 +161,7 @@ SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推�
    该句必须由本次模型响应生成，不得省略或改写。
 不得提及“质检”、“反馈”、“草稿”或修订过程，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。只输出 JSON。prompt_version={SUBMISSION_REASONING_REFINE_PROMPT_VERSION}。"""
 
-RUNNER_VERSION = "b_actual_v28_reasoning_model_generated_conclusion"
+RUNNER_VERSION = "b_actual_v29_usage_safe_transport_retry"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 CALCULATION_PLAN_NORMALIZATION_VERSION = "qwen37_structure_contract_v3_schema"
 CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
@@ -1924,6 +1929,9 @@ class BBoardActualRunner:
             "max_retries": self.config.model.max_retries,
             "retry_backoff_seconds": (
                 self.config.model.retry_backoff_seconds
+            ),
+            "transport_retry_policy_version": (
+                TRANSPORT_RETRY_POLICY_VERSION
             ),
             "api_base_sha256": hashlib.sha256(self.config.model.api_base.encode("utf-8")).hexdigest(),
         }
