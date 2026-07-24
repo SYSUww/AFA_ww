@@ -935,18 +935,14 @@ class BBoardActualRunner:
         generic_evidence = [
             _normalize_evidence(hit.to_dict()) for hit in hits
         ]
-        initial_phrase_evidence = (
-            _diagnostic_phrase_evidence(
-                self.retrievers[question.domain],
-                candidate_doc_ids,
-                f"{question.question}\n{_calculation_semantic_query_terms(question.question)}",
-                top_k=max(12, self.calculation_top_k),
-            )
-            if (
-                _requested_calculation_table_row_labels(question.question)
-                or _requested_calculation_sort_objects(question.question)
-            )
-            else []
+        initial_phrase_evidence = calculation_first_pass_evidence_overlays(
+            self.retrievers[question.domain],
+            candidate_doc_ids,
+            (
+                f"{question.question}\n"
+                f"{_calculation_semantic_query_terms(question.question)}"
+            ),
+            top_k=max(12, self.calculation_top_k),
         )
         evidence_items, _ = _merge_calculation_evidence(
             [question_evidence, *initial_phrase_evidence],
@@ -4022,6 +4018,9 @@ def _validate_insurance_surrender_rate_binding(
 
 
 _EXPLICIT_CN_DATE_RE = re.compile(r"20\d{2}年\d{1,2}月\d{1,2}日")
+_TARGET_REPORT_YEAR_RE = re.compile(
+    r"(20\d{2})年?(?=年度报告|年报|报告)"
+)
 
 
 def _validate_calculation_variable_period_binding(
@@ -4029,17 +4028,23 @@ def _validate_calculation_variable_period_binding(
     plan: Mapping[str, Any],
     evidence_text_by_id: Mapping[str, str],
 ) -> None:
-    """Require a dated variable to cite evidence from the same target date."""
+    """Bind calculation variables to the requested date or report period."""
 
-    target_dates = set(_EXPLICIT_CN_DATE_RE.findall(_compact_text(question.question)))
-    if not target_dates:
-        return
+    compact_question = _compact_text(question.question)
+    target_dates = set(_EXPLICIT_CN_DATE_RE.findall(compact_question))
+    target_report_years = set(_TARGET_REPORT_YEAR_RE.findall(compact_question))
     raw_variables = plan.get("variables", [])
     if not isinstance(raw_variables, list):
         return
     for raw_variable in raw_variables:
         if not isinstance(raw_variable, Mapping):
             continue
+        if len(target_report_years) == 1:
+            _validate_target_report_period_variable(
+                raw_variable,
+                target_year=next(iter(target_report_years)),
+                evidence_text_by_id=evidence_text_by_id,
+            )
         name = str(raw_variable.get("name", "")).strip()
         variable_dates = set(_EXPLICIT_CN_DATE_RE.findall(_compact_text(name)))
         required_dates = variable_dates & target_dates
@@ -4061,6 +4066,127 @@ def _validate_calculation_variable_period_binding(
             f"变量“{name}”要求证据日期{','.join(missing_dates)}，"
             "但其evidence_ids未引用包含该日期的证据；不得复制其他期间数值"
         )
+
+
+def _validate_target_report_period_variable(
+    variable: Mapping[str, Any],
+    *,
+    target_year: str,
+    evidence_text_by_id: Mapping[str, str],
+) -> None:
+    """Bind a report metric to the target-year column, not its comparison column."""
+
+    name = _compact_text(str(variable.get("name", "")))
+    value = _normalize_decimal_text(
+        str(variable.get("value", "")).rstrip("%")
+    )
+    raw_evidence_ids = variable.get("evidence_ids", [])
+    if not name or value is None or not isinstance(raw_evidence_ids, list):
+        return
+
+    compared_values: list[str] = []
+    mismatched_report_ids: list[str] = []
+    for raw_evidence_id in raw_evidence_ids:
+        evidence_id = str(raw_evidence_id)
+        source_id = evidence_id.split("::", 1)[0]
+        source_years = set(re.findall(r"20\d{2}", source_id))
+        source_is_report = (
+            "report" in source_id.casefold()
+            or "年报" in source_id
+            or "报告" in source_id
+        )
+        if (
+            source_is_report
+            and source_years
+            and target_year not in source_years
+        ):
+            mismatched_report_ids.append(evidence_id)
+
+        text = str(evidence_text_by_id.get(evidence_id, ""))
+        lines = [line for line in text.splitlines() if "|" in line]
+        for row_index, line in enumerate(lines):
+            row_cells = _table_cells(line)
+            if len(row_cells) < 2:
+                continue
+            row_label = _compact_text(row_cells[0])
+            if (
+                len(row_label) < 2
+                or (
+                    row_label not in name
+                    and name not in row_label
+                )
+            ):
+                continue
+            header_cells: list[str] = []
+            for candidate in reversed(lines[:row_index]):
+                cells = _table_cells(candidate)
+                if len(cells) < len(row_cells):
+                    continue
+                compact_cells = [_compact_text(cell) for cell in cells]
+                if (
+                    "本报告期末" in compact_cells
+                    or any(target_year in cell for cell in compact_cells)
+                ):
+                    header_cells = compact_cells
+                    break
+            if not header_cells:
+                continue
+            target_column = next(
+                (
+                    index
+                    for index, cell in enumerate(header_cells)
+                    if cell == "本报告期末"
+                ),
+                None,
+            )
+            if target_column is None:
+                target_column = next(
+                    (
+                        index
+                        for index, cell in enumerate(header_cells)
+                        if target_year in cell
+                    ),
+                    None,
+                )
+            if target_column is None or target_column >= len(row_cells):
+                continue
+            target_value = _normalize_decimal_text(
+                row_cells[target_column].replace(",", "").rstrip("%")
+            )
+            if target_value is not None:
+                compared_values.append(target_value)
+                if (
+                    target_value == value
+                    and evidence_id not in mismatched_report_ids
+                ):
+                    return
+
+    if not compared_values and not mismatched_report_ids:
+        return
+    detail = (
+        f"；目标列候选值为{','.join(dict.fromkeys(compared_values))}"
+        if compared_values
+        else ""
+    )
+    if mismatched_report_ids:
+        detail += (
+            "；引用了非目标年度报告"
+            + ",".join(dict.fromkeys(mismatched_report_ids))
+        )
+    raise CalculationPlanError(
+        "calculation variable target report period mismatch: "
+        f"变量“{name}”取值{value}必须来自{target_year}年报告的"
+        f"本报告期列，不得使用上年比较列{detail}"
+    )
+
+
+def _table_cells(line: str) -> list[str]:
+    cells = [cell.strip() for cell in str(line).split("|")]
+    while cells and not cells[0]:
+        cells.pop(0)
+    while cells and not cells[-1]:
+        cells.pop()
+    return cells
 
 
 def _insurance_surrender_rate_from_evidence(
@@ -4272,6 +4398,30 @@ def _diagnostic_phrase_evidence(
             }
         )
     return evidence
+
+
+def calculation_first_pass_evidence_overlays(
+    retriever: GenericBM25Retriever,
+    doc_ids: Sequence[str],
+    query: str,
+    *,
+    top_k: int,
+) -> list[dict[str, Any]]:
+    """Select answer-blind metric or clause overlays for the first prompt."""
+
+    compact_query = _compact_text(query)
+    if not (
+        _TARGET_REPORT_YEAR_RE.search(compact_query)
+        or _requested_calculation_table_row_labels(query)
+        or _requested_calculation_sort_objects(query)
+    ):
+        return []
+    return _diagnostic_phrase_evidence(
+        retriever,
+        doc_ids,
+        query,
+        top_k=top_k,
+    )
 
 
 def _compact_text(value: str) -> str:

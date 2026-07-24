@@ -31,6 +31,7 @@ from afa_agent.b_board.runner import (
     _answer_artifact_signature,
     _artifact_from_dict,
     _calculation_evidence_payload,
+    calculation_first_pass_evidence_overlays,
     _calculation_semantic_constraints,
     _calculation_semantic_query_terms,
     _is_calculation_plan_structure_error,
@@ -54,6 +55,7 @@ from afa_agent.b_board.reasoning_schema import (
 )
 from afa_agent.client import LLMResponse
 from afa_agent.config import ModelConfig, RunConfig
+from afa_agent.domains.generic_retriever import GenericBM25Retriever
 from afa_agent.models import TokenUsage
 from afa_agent.run_metadata import RunFingerprintError, validate_resume_fingerprint
 from scripts import run_b_board_actual
@@ -1311,6 +1313,70 @@ class BBoardRunnerModeTests(unittest.TestCase):
         self.assertEqual(len(second), 12)
         self.assertEqual(second[-1]["evidence_id"], "u11")
 
+    def test_first_pass_overlays_prioritize_target_report_year_metric_row(
+        self,
+    ) -> None:
+        units = [
+            {
+                "unit_id": "annual_demo_2024_report::ratio",
+                "doc_id": "annual_demo_2024_report",
+                "domain": "financial_reports",
+                "unit_type": "paragraph",
+                "title_path": ["2024 年年度报告"],
+                "text": (
+                    "项目 | 本报告期末 | 上年末\n"
+                    "资产负债率 | 62.33% | 64.14%"
+                ),
+                "page_refs": [],
+                "parent_unit_id": None,
+                "metadata": {},
+            },
+            {
+                "unit_id": "annual_demo_2025_report::ratio",
+                "doc_id": "annual_demo_2025_report",
+                "domain": "financial_reports",
+                "unit_type": "paragraph",
+                "title_path": ["2025 年年度报告"],
+                "text": (
+                    "项目 | 本报告期末 | 上年末\n"
+                    "资产负债率 | 61.17% | 62.33%"
+                ),
+                "page_refs": [],
+                "parent_unit_id": None,
+                "metadata": {},
+            },
+        ]
+        retriever = GenericBM25Retriever(units)
+        question_text = (
+            "查阅某公司 2025 年年度报告中的资产负债率，"
+            "计算权益乘数。"
+        )
+
+        overlays = calculation_first_pass_evidence_overlays(
+            retriever,
+            ["annual_demo_2024_report", "annual_demo_2025_report"],
+            question_text,
+            top_k=8,
+        )
+        payload = _calculation_evidence_payload(
+            [
+                {
+                    "unit_id": "question:q1",
+                    "doc_id": "__question__",
+                    "title_path": ["题目"],
+                    "text": question_text,
+                },
+                *overlays,
+            ],
+            max_non_question_hits=8,
+        )
+
+        self.assertLessEqual(len(payload) - 1, 8)
+        self.assertEqual(
+            payload[1]["evidence_id"],
+            "annual_demo_2025_report::ratio",
+        )
+
     def test_percentage_point_question_rejects_ratio_output(self) -> None:
         question = BQuestion(
             qid="q-pct-point",
@@ -1473,6 +1539,76 @@ class BBoardRunnerModeTests(unittest.TestCase):
                     "value": "740.58",
                     "evidence_ids": ["december"],
                 },
+            ]
+        }
+        _validate_calculation_variable_period_binding(
+            question,
+            correct_plan,
+            evidence,
+        )
+
+    def test_report_metric_requires_target_year_current_period_column(
+        self,
+    ) -> None:
+        question = BQuestion(
+            qid="year-binding-regression",
+            domain="financial_reports",
+            split="B",
+            question=(
+                "查阅某公司 2025 年年度报告中的资产负债率，"
+                "据此计算权益乘数。"
+            ),
+            options={},
+            answer_format="calculation",
+            type="计算题",
+            answer_slots=1,
+            answer_slot_templates=("0.00",),
+        )
+        target_report_id = "annual_demo_2025_report::ratio"
+        prior_report_id = "annual_demo_2024_report::ratio"
+        evidence = {
+            target_report_id: (
+                "项目 | 本报告期末 | 上年末 | 本报告期末比上年末增减\n"
+                "资产负债率 | 61.17% | 62.33% | -1.16%"
+            ),
+            prior_report_id: (
+                "项目 | 本报告期末 | 上年末 | 本报告期末比上年末增减\n"
+                "资产负债率 | 62.33% | 64.14% | -1.81%"
+            ),
+        }
+
+        for evidence_id in (target_report_id, prior_report_id):
+            with self.subTest(evidence_id=evidence_id):
+                wrong_plan = {
+                    "variables": [
+                        {
+                            "name": "资产负债率",
+                            "value": "62.33",
+                            "value_type": "decimal",
+                            "unit": "%",
+                            "evidence_ids": [evidence_id],
+                        }
+                    ]
+                }
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "target report period",
+                ):
+                    _validate_calculation_variable_period_binding(
+                        question,
+                        wrong_plan,
+                        evidence,
+                    )
+
+        correct_plan = {
+            "variables": [
+                {
+                    "name": "资产负债率",
+                    "value": "61.17",
+                    "value_type": "decimal",
+                    "unit": "%",
+                    "evidence_ids": [target_report_id],
+                }
             ]
         }
         _validate_calculation_variable_period_binding(
