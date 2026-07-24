@@ -145,12 +145,18 @@
     "base_proxy_compliance_passed": false,
     "base_proxy_compliance_note": "C2 proxy_scorecard因历史reasoning prompt版本与official lock检查未通过，未输出point proxy；本轮93.246248到93.445156仅为pseudo99场景手工投影，不是内部合规scorecard或官方分数。"
   },
+  "git_promotion": {
+    "branch": "codex/b-board-calc-top12-adaptive-thinking",
+    "implementation_commit": "1896503",
+    "remote": "origin",
+    "pushed": true
+  },
   "effect": "通用首轮thinking分流在完整Top12因果组装中保持100/100答案与C2一致，Top12 reasoning由96.67升至97.03；全100题Token减少46477，Token效率提升0.92954。按pseudo99且准确率不变计算，代理总分提升0.198908。该结果是离线代理，不是官网准确率或官方总分。",
-  "promotion_result": "effective_top12_gate_passed_pending_commit_and_push",
+  "promotion_result": "effective_top12_gate_passed_branch_pushed",
   "score_type": "offline_pseudo99_manual_scenario_projection_with_gpt56_shadow_not_official",
-  "next_step": "把有效实现提交到独立分支并推送；后续新方向继续先重读日志并使用Top12，不再默认全跑26题。官网提交仍需用户明确授权。",
+  "next_step": "后续新方向继续先重读日志并使用Top12，不再默认全跑26题。guarded-adaptive组合仍保持research-only；若要进入真实生产submit流程，需另行通过提交资格门并获得用户明确授权。",
   "recorded_at": "2026-07-24T22:11:04+08:00",
-  "status": "effective_promoted",
+  "status": "effective_promoted_branch_pushed",
   "submission_effect": "none"
 }
 ```
