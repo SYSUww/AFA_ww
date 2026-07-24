@@ -37743,3 +37743,221 @@
   ]
 }
 ```
+
+## b-loop-qwen37-calculation-structural-retry-elimination-a1-clean-regeneration
+
+```json
+{
+  "approach": "重读日志后，从A11当前最佳候选中锁定4个历史CalculationPlan确定性结构重试题，固定qwen3.7-plus-2026-05-26、temperature=0、native_json_schema_strict和现有检索输入，完整重跑答案阶段与独立reasoning阶段；以答案签名不变、结构重试减少和原始usage完整为第一层门禁。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_calculation_retry_elimination_clean_a1_four",
+  "direction_id": "qwen37_calculation_structural_retry_elimination",
+  "effect": "reg_b_007答案保持30.00，答案调用2→1、答案Token 11910→5539；reg_b_018答案保持2026年4月1日，答案调用2→1、答案Token 14517→5006。fin_b_019调用3→2但答案从比亚迪>宁德时代>美的集团；0.84漂移为宁德时代>比亚迪>美的集团；0.22，拒绝。res_b_005答案保持22.27%，但调用2→3、答案Token 27470→45715，拒绝。",
+  "experiment_id": "b-loop-qwen37-calculation-structural-retry-elimination-a1-clean-regeneration",
+  "failure_analysis": "干净重生成证明reg_b_007、reg_b_018的历史结构重试在当前链路可单次收敛，但fin_b_019和res_b_005仍分别出现1次和2次deterministic_plan_structure_error。仅靠随机重生成不稳定，且fin_b_019发生答案语义漂移，不能按Token收益晋级。",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "related_exhausted_directions": [
+      "qwen37_structured_output_contract",
+      "qwen37_progressive_evidence_payload"
+    ],
+    "new_material_delta": "以当前A11残余4个纯结构重试为对象，使用干净重生成验证当前失败是否可复现；不重复旧全量structured-output方向。"
+  },
+  "hypothesis": "当前strict schema与确定性归一化已演进，历史结构重试题从干净输入重生成时可在不改变答案的前提下减少重复Qwen调用。",
+  "metrics": {
+    "answer_parts_changed_count": 1,
+    "answer_stage_api_call_count_after": 7,
+    "answer_stage_api_call_count_before": 9,
+    "answer_token_after": 80689,
+    "answer_token_before": 96566,
+    "direction_attempt_count": 1,
+    "reasoning_format_retry_count": 0,
+    "rejected_qids": [
+      "fin_b_019",
+      "res_b_005"
+    ],
+    "same_answer_structure_retry_eliminated_qids": [
+      "reg_b_007",
+      "reg_b_018"
+    ],
+    "submission_eligible": true,
+    "target_qids": [
+      "fin_b_019",
+      "reg_b_007",
+      "reg_b_018",
+      "res_b_005"
+    ]
+  },
+  "next_step": "第二轮增加题型条件化的合法operator JSON形状提示，并增加不改变操作数和值的日期字段/冗余空args确定性归一化；同时把成功前的结构错误诊断持久化，定向复跑fin_b_019与res_b_005，并复验reg_b_007、reg_b_018。仍以答案不变和最终公式净增为晋级条件。",
+  "pipeline_stage": "answer_and_evidence_generation",
+  "promotion_result": "partial_effect_pending_reasoning_score_gate",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-24T16:14:00+08:00",
+  "root_cause_cluster": "residual_calculation_plan_operator_shape_drift",
+  "status": "completed_mixed",
+  "submission_effect": "local_candidate_not_officially_uploaded"
+}
+```
+
+## b-loop-qwen37-calculation-structural-retry-elimination-a2-operator-shape-hints
+
+```json
+{
+  "approach": "在A1后重读日志，新增题型条件化的pct_change、sort_desc与日期运算合法JSON形状提示；本地归一化仅增加冗余空args删除和顶层日期具名字段封装，并把成功前的错误、计划和重试次数持久化到decision_trace。固定同一Qwen快照复跑同4题。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_calculation_operator_shape_hint_a2_four",
+  "direction_id": "qwen37_calculation_structural_retry_elimination",
+  "effect": "res_b_005答案保持22.27%，答案调用由A11的2次和A1的3次降为1次，答案Token降至15372；reg_b_018保持2026年4月1日且1次成功，答案Token5048。reg_b_007被过宽日期提示诱导，调用2→3、Token11910→21693；fin_b_019仍1次结构重试且只输出两家公司，reasoning阶段失败，二者拒绝。",
+  "experiment_id": "b-loop-qwen37-calculation-structural-retry-elimination-a2-operator-shape-hints",
+  "failure_analysis": "新增trace实锤fin_b_019首轮计划variables/steps为空、summary明确缺少资产负债率，却因outputs引用s1触发Unknown reference并被误判为结构错误，导致跳过应有检索；reg_b_007题目只问30日间隔，日期提示却让模型用days_between处理Decimal(30,0)，随后又虚构未落在证据中的日期。说明提示必须更窄，错误分流必须结合计划的缺数声明。",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_experiment_id": "b-loop-qwen37-calculation-structural-retry-elimination-a1-clean-regeneration",
+    "new_material_delta": "题型条件化operator形状提示、两项表示层硬兜底、成功前失败诊断持久化。"
+  },
+  "hypothesis": "对题面隐含的方向性、排序和日期operator提供答案盲的完整字段形状，并在重试前做无语义本地归一化，可提高首次计划可执行率。",
+  "metrics": {
+    "answer_parts_changed_count": 1,
+    "answer_stage_api_call_count": 7,
+    "answer_stage_token_usage": 66966,
+    "direction_attempt_count": 2,
+    "reasoning_completed_count": 3,
+    "reasoning_failed_qids": [
+      "fin_b_019"
+    ],
+    "same_answer_single_call_qids": [
+      "reg_b_018",
+      "res_b_005"
+    ],
+    "submission_eligible": false,
+    "target_qids": [
+      "fin_b_019",
+      "reg_b_007",
+      "reg_b_018",
+      "res_b_005"
+    ],
+    "tests_passed": 95
+  },
+  "next_step": "第三轮只修两项已实锤根因：缺数且无法计算的计划不能因Unknown reference跳过检索；日期提示仅对要求输出具体日期的题触发，并补充同比增速关键词。复跑4题后关闭本方向，按答案签名、reasoning影子分与最终公式选择覆盖项。",
+  "pipeline_stage": "answer_and_evidence_generation",
+  "promotion_result": "mixed_keep_code_for_a3_reject_artifact",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-24T16:29:00+08:00",
+  "root_cause_cluster": "residual_calculation_plan_operator_shape_drift",
+  "status": "completed_mixed_incomplete_artifact",
+  "submission_effect": "local_candidate_not_officially_uploaded"
+}
+```
+
+## b-loop-qwen37-calculation-structural-retry-elimination-a3-error-routing
+
+```json
+{
+  "approach": "在A2后重读日志，仅修两项已实锤根因：当decision_summary明确缺数且无法计算时，即使异常表面为Unknown reference也改走定向检索；日期operator提示仅对要求输出具体日历日期的问题触发，并补充“同比增速”关键词。保持A2的表示层归一化和诊断trace，第三次固定同4题复跑。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_calculation_retry_routing_a3_four",
+  "direction_id": "qwen37_calculation_structural_retry_elimination",
+  "effect": "reg_b_018继续一次成功且答案保持2026年4月1日；reg_b_007恢复到历史2次调用并保持30.00，避免A2的3次日期误导；res_b_005保持22.27%但本轮为2次调用，未复现A2的单次最佳；fin_b_019首次请求360秒读超时，客户端未自动重发，产物3/4不完整。",
+  "experiment_id": "b-loop-qwen37-calculation-structural-retry-elimination-a3-error-routing",
+  "failure_analysis": "A3未形成优于逐题历史最佳的整批产物：fin_b_019超时使缺数分流代码未在该题真实响应中命中；res_b_005首轮触发aggregate-intensity依赖门禁，说明它的剩余重试是公式语义而非JSON形状。该方向已达3轮上限，不能继续用随机重跑扫描。",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_experiment_id": "b-loop-qwen37-calculation-structural-retry-elimination-a2-operator-shape-hints",
+    "new_material_delta": "缺数声明优先的错误路由和窄化日历日期提示。"
+  },
+  "hypothesis": "把缺证据与结构错误按计划语义分流，并去除不相关的日期operator提示，可避免无效同证据重试和提示诱导。",
+  "metrics": {
+    "answer_completed_count": 3,
+    "answer_failed_qids": [
+      "fin_b_019"
+    ],
+    "answer_stage_token_usage_completed": 53377,
+    "direction_attempt_count": 3,
+    "reasoning_completed_count": 3,
+    "same_answer_single_call_qids": [
+      "reg_b_018"
+    ],
+    "submission_eligible": false,
+    "target_qids": [
+      "fin_b_019",
+      "reg_b_007",
+      "reg_b_018",
+      "res_b_005"
+    ],
+    "tests_passed": 96
+  },
+  "next_step": "本方向关闭。逐题候选只保留A1的reg_b_007、A1/A2/A3中公式净收益最高的reg_b_018，以及A2的res_b_005；fin_b_019继续使用A11。先用GPT-5.6离线影子门禁reasoning并组装完整100题候选，再处理reasoning正文无usage追加结论的合规风险。",
+  "pipeline_stage": "answer_and_evidence_generation",
+  "promotion_result": "direction_exhausted_select_per_qid_best",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-24T16:46:00+08:00",
+  "root_cause_cluster": "residual_calculation_plan_operator_shape_drift",
+  "status": "completed_mixed_direction_exhausted",
+  "submission_effect": "local_candidate_not_officially_uploaded"
+}
+```
+
+## b-loop-qwen37-calculation-structural-retry-elimination-selection-a12
+
+```json
+{
+  "approach": "方向达到3轮上限后不再随机重跑。按答案签名冻结门禁，从A1选择reg_b_007、从A2选择reg_b_018与res_b_005；fin_b_019因答案漂移继续继承A11。仅把这3条冻结reasoning交给GPT-5.6影子评测，未变97题因果继承A11封存分数，再按总分=acc×0.5+reasoning×0.3+Token效率×0.2逐题门禁并组装100题A12。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_integrated_full100_candidate_a12_calculation_retry3",
+  "direction_id": "qwen37_calculation_structural_retry_elimination",
+  "effect": "3个候选答案均与A11完全一致并通过影子分门禁：reg_b_007为97.3333分、Token 14486→7870；reg_b_018为97.6667分、Token 17084→7638；res_b_005为97.3333分、Token 30842→19133。完整100题Token 1309514→1281743，reasoning 95.7567→95.7733；任意相同accuracy场景下代理总分净增0.116084。A12提交契约、Qwen白名单与逐调用usage均验证通过，未官网上传。",
+  "experiment_id": "b-loop-qwen37-calculation-structural-retry-elimination-selection-a12",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_experiment_id": "b-loop-qwen37-calculation-structural-retry-elimination-a3-error-routing",
+    "direction_attempt_count": 3,
+    "selection_is_not_a_fourth_generation_attempt": true
+  },
+  "metrics": {
+    "accepted_qids": [
+      "reg_b_007",
+      "reg_b_018",
+      "res_b_005"
+    ],
+    "answer_parts_changed_count": 0,
+    "base_candidate": "qwen37_integrated_full100_candidate_a11_nonthinking7",
+    "candidate_reasoning_score": 95.77333333333333,
+    "candidate_submit_sha256": "5ed37419e08730b7be005f66d5bff76236ffa69a27d157a21c7505c1958ddc59",
+    "candidate_token_efficiency_score": 74.36514,
+    "candidate_token_total": 1281743,
+    "causally_inherited_unchanged_qid_count": 97,
+    "gpt56_shadow_question_count": 3,
+    "proxy_total_delta_same_accuracy": 0.11608400000000074,
+    "proxy_total_if_accuracy_99_not_official": 93.105028,
+    "rejected_qids": [
+      "fin_b_019"
+    ],
+    "submission_eligible": true
+  },
+  "online_research": {
+    "official_findings_applied": [
+      "Prompt显式列出字段名、类型、必填项和合法格式",
+      "保留native_json_schema_strict能力探针结果并在trace中记录实际模式",
+      "结构修复与证据不足检索必须分流，不能把语义缺数伪装成JSON重试"
+    ],
+    "sources": [
+      "https://help.aliyun.com/en/model-studio/qwen-structured-output",
+      "https://help.aliyun.com/en/model-studio/error-code",
+      "https://help.aliyun.com/en/model-studio/deep-thinking"
+    ]
+  },
+  "next_step": "格式重试方向关闭并推送有效代码。下一方向优先审计submission reasoning是否存在程序化追加正文但没有对应Qwen usage的问题；答案与证据链保持冻结，只允许reasoning阶段独立修复。",
+  "pipeline_stage": "answer_and_evidence_generation",
+  "promotion_result": "effective_full100_candidate",
+  "question_types": [
+    "calculation"
+  ],
+  "recorded_at": "2026-07-24T08:53:02+08:00",
+  "root_cause_cluster": "residual_calculation_plan_operator_shape_drift",
+  "score_type": "offline_causal_proxy_not_official",
+  "status": "completed_effective_direction_exhausted",
+  "submission_effect": "local_candidate_not_officially_uploaded"
+}
+```

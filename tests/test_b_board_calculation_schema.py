@@ -113,6 +113,93 @@ class CalculationPlanSchemaTests(unittest.TestCase):
         ):
             validate_calculation_plan_schema(normalized)
 
+    def test_redundant_empty_directional_args_are_dropped(self) -> None:
+        plan = {
+            "variables": [
+                {
+                    "name": "新值",
+                    "value": "110",
+                    "value_type": "decimal",
+                    "unit": "元",
+                    "evidence_ids": ["u1"],
+                },
+                {
+                    "name": "旧值",
+                    "value": "100",
+                    "value_type": "decimal",
+                    "unit": "元",
+                    "evidence_ids": ["u1"],
+                },
+            ],
+            "steps": [
+                {
+                    "id": "增幅",
+                    "op": "pct_change",
+                    "args": [],
+                    "new": {"ref": "新值"},
+                    "old": {"ref": "旧值"},
+                }
+            ],
+            "outputs": [{"source": {"ref": "增幅"}, "format": "percent2"}],
+            "supporting_evidence_ids": [],
+            "decision_summary": "增幅为10.00%。",
+        }
+
+        normalized, changes = _normalize_calculation_plan_structure(plan)
+
+        validate_calculation_plan_schema(normalized)
+        self.assertNotIn("args", normalized["steps"][0])
+        self.assertIn(
+            "drop_empty_directional_args",
+            {item["reason"] for item in changes},
+        )
+
+    def test_top_level_date_fields_are_wrapped_as_named_args(self) -> None:
+        plan = {
+            "variables": [
+                {
+                    "name": "起始日",
+                    "value": "2026-03-01",
+                    "value_type": "date",
+                    "unit": "",
+                    "evidence_ids": ["u1"],
+                },
+                {
+                    "name": "期限",
+                    "value": "30",
+                    "value_type": "decimal",
+                    "unit": "日",
+                    "evidence_ids": ["u1"],
+                },
+            ],
+            "steps": [
+                {
+                    "id": "届满日",
+                    "op": "date_add_days",
+                    "date": {"ref": "起始日"},
+                    "days": {"ref": "期限"},
+                }
+            ],
+            "outputs": [{"source": {"ref": "届满日"}, "format": "date_cn"}],
+            "supporting_evidence_ids": [],
+            "decision_summary": "从起始日顺延30日。",
+        }
+
+        normalized, changes = _normalize_calculation_plan_structure(plan)
+
+        validate_calculation_plan_schema(normalized)
+        self.assertEqual(
+            normalized["steps"][0]["args"],
+            {
+                "date": {"ref": "起始日"},
+                "days": {"ref": "期限"},
+            },
+        )
+        self.assertIn(
+            "top_level_date_fields_to_named_args",
+            {item["reason"] for item in changes},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

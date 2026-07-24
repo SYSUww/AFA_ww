@@ -12,6 +12,8 @@ from afa_agent.b_board.calculation import (
 from afa_agent.b_board.io import BQuestion
 from afa_agent.b_board.runner import (
     CALCULATION_SYSTEM_PROMPT,
+    _calculation_operator_shape_hint,
+    _calculation_plan_reports_missing_required_input,
     _calculation_retry_query,
     _diagnostic_phrase_evidence,
     _merge_calculation_evidence,
@@ -19,6 +21,46 @@ from afa_agent.b_board.runner import (
 
 
 class BBoardCalculationTests(unittest.TestCase):
+    def test_operator_shape_hint_is_question_conditioned_and_answer_blind(self):
+        hint = _calculation_operator_shape_hint(
+            "计算同比增速，并按指标从高到低排序；最晚应从何时开始公示。"
+        )
+
+        self.assertIn('"op":"pct_change"', hint)
+        self.assertIn('"op":"sort_desc"', hint)
+        self.assertIn("date_add_days", hint)
+        self.assertNotIn("22.27", hint)
+        self.assertEqual(
+            _calculation_operator_shape_hint(
+                "后续公告每30日一次，两次公告之间间隔多少日？"
+            ),
+            "",
+        )
+        self.assertEqual(
+            _calculation_operator_shape_hint("直接提取报告中的金额。"),
+            "",
+        )
+
+    def test_admitted_missing_input_is_distinct_from_shape_failure(self):
+        self.assertTrue(
+            _calculation_plan_reports_missing_required_input(
+                {
+                    "decision_summary": (
+                        "给定证据中没有任何一家公司的资产负债率，无法计算。"
+                    )
+                }
+            )
+        )
+        self.assertFalse(
+            _calculation_plan_reports_missing_required_input(
+                {
+                    "decision_summary": (
+                        "材料未直接提供合计，但分项完整，相加后可以计算。"
+                    )
+                }
+            )
+        )
+
     def test_string_source_matching_variable_name_is_treated_as_reference(self):
         result = CalculationExecutor().execute(
             {

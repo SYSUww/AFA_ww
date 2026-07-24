@@ -151,7 +151,7 @@ SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推�
 4. 显式写出与 answer_parts 完全一致的最终答案。
 不得提及“质检”、“反馈”、“草稿”或修订过程，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。只输出 JSON。prompt_version={SUBMISSION_REASONING_REFINE_PROMPT_VERSION}。"""
 
-RUNNER_VERSION = "b_actual_v26_reasoning_single_slot_join"
+RUNNER_VERSION = "b_actual_v27_calculation_operator_shapes"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 CALCULATION_PLAN_NORMALIZATION_VERSION = "qwen37_structure_contract_v3_schema"
 CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
@@ -167,6 +167,9 @@ CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
 )
 CALCULATION_PROMPT_EVIDENCE_POLICY_VERSION = "progressive_8_16_24_v1"
 CALCULATION_PROMPT_HITS_PER_ATTEMPT = 8
+CALCULATION_OPERATOR_SHAPE_HINT_VERSION = (
+    "question_conditioned_operator_shapes_v1"
+)
 RUN_MODE_SUBMISSION = "submission"
 RUN_MODE_RESEARCH = "research"
 RUN_MODES = (RUN_MODE_SUBMISSION, RUN_MODE_RESEARCH)
@@ -917,6 +920,15 @@ class BBoardActualRunner:
                 question.question,
                 evidence_payload,
             )
+            operator_shape_hint = _calculation_operator_shape_hint(
+                question.question
+            )
+            operator_shape_prompt = (
+                "与本题相关的合法 operator JSON 形状（仅约束字段形状，"
+                f"不得照抄示例值）：{operator_shape_hint}\n"
+                if operator_shape_hint
+                else ""
+            )
             messages = [
                 {"role": "system", "content": CALCULATION_SYSTEM_PROMPT},
                 {
@@ -926,6 +938,7 @@ class BBoardActualRunner:
                         f"提交模板占位：{json.dumps(question.answer_slot_templates, ensure_ascii=False)}\n"
                         f"题面与证据派生的计算口径约束："
                         f"{json.dumps(semantic_constraints, ensure_ascii=False)}\n"
+                        f"{operator_shape_prompt}"
                         f"证据：{json.dumps(evidence_payload, ensure_ascii=False)}\n{feedback}"
                     ),
                 },
@@ -1072,6 +1085,15 @@ class BBoardActualRunner:
                         "calculation_prompt_evidence_count": len(
                             evidence_payload
                         ),
+                        "calculation_operator_shape_hint_version": (
+                            CALCULATION_OPERATOR_SHAPE_HINT_VERSION
+                        ),
+                        "calculation_operator_shape_hint": (
+                            operator_shape_hint
+                        ),
+                        "calculation_attempt_count": attempt_number,
+                        "calculation_retry_count": attempt_number - 1,
+                        "calculation_prior_attempt_diagnostics": diagnostics,
                         "calculation_semantic_constraints": semantic_constraints,
                     },
                     calculation_trace={
@@ -1122,7 +1144,24 @@ class BBoardActualRunner:
                 added_ids: list[str] = []
                 retry_query = ""
                 if attempt_number < 3:
-                    structural_error = _is_calculation_plan_structure_error(exc)
+                    admitted_missing_input = (
+                        _calculation_plan_reports_missing_required_input(
+                            plan or {}
+                        )
+                    )
+                    structural_error = (
+                        _is_calculation_plan_structure_error(exc)
+                        and not admitted_missing_input
+                    )
+                    diagnostics[-1]["retry_route"] = (
+                        "targeted_retrieval_for_admitted_missing_input"
+                        if admitted_missing_input
+                        else (
+                            "same_evidence_structure_repair"
+                            if structural_error
+                            else "targeted_retrieval"
+                        )
+                    )
                     if structural_error:
                         retrieval_round = {
                             "after_attempt": attempt_number,
@@ -1883,6 +1922,9 @@ class BBoardActualRunner:
                 "prompt_evidence_policy_version": (
                     CALCULATION_PROMPT_EVIDENCE_POLICY_VERSION
                 ),
+                "operator_shape_hint_version": (
+                    CALCULATION_OPERATOR_SHAPE_HINT_VERSION
+                ),
                 "plan_schema_version": CALCULATION_PLAN_SCHEMA_VERSION,
                 "plan_schema_sha256": hashlib.sha256(
                     json.dumps(
@@ -2199,6 +2241,40 @@ def _normalize_calculation_plan_structure(
             )
         op = str(step.get("op", "")).strip()
         raw_args = step.get("args")
+        if (
+            op in {"pct_change", "pct_point_delta"}
+            and raw_args == []
+            and "new" in step
+            and "old" in step
+        ):
+            step.pop("args", None)
+            normalizations.append(
+                {
+                    "reason": "drop_empty_directional_args",
+                    "step_id": str(step.get("id", "")),
+                    "op": op,
+                }
+            )
+            continue
+        named_date_fields = {
+            "date_add_days": ("date", "days"),
+            "next_workday": ("date",),
+            "days_between": ("end", "start"),
+        }.get(op)
+        if named_date_fields is not None and raw_args in (None, []):
+            if all(field_name in step for field_name in named_date_fields):
+                step["args"] = {
+                    field_name: step.pop(field_name)
+                    for field_name in named_date_fields
+                }
+                normalizations.append(
+                    {
+                        "reason": "top_level_date_fields_to_named_args",
+                        "step_id": str(step.get("id", "")),
+                        "op": op,
+                    }
+                )
+                raw_args = step["args"]
         if (
             op in {"pct_change", "pct_point_delta"}
             and isinstance(raw_args, Mapping)
@@ -2920,6 +2996,43 @@ def _calculation_semantic_query_terms(question_text: str) -> str:
     return " ".join(terms)
 
 
+def _calculation_operator_shape_hint(question_text: str) -> str:
+    """Return compact, answer-blind JSON shapes for operators implied by a question."""
+
+    compact = _compact_text(question_text)
+    hints: list[str] = []
+    if any(
+        marker in compact
+        for marker in ("同比", "增幅", "增速", "增长率", "变化率")
+    ):
+        hints.append(
+            '同比/增幅必须写{"id":"增幅","op":"pct_change",'
+            '"new":{"ref":"目标期原始值"},"old":{"ref":"基期原始值"}}，'
+            "不得使用位置args"
+        )
+    if any(
+        marker in compact
+        for marker in ("排序", "从高到低", "从低到高", "最高值", "最低值")
+    ):
+        hints.append(
+            '排序必须先写{"id":"排序","op":"sort_desc","items":'
+            '[{"label":"对象甲","source":{"ref":"对象甲指标"}},'
+            '{"label":"对象乙","source":{"ref":"对象乙指标"}}]}，'
+            '文本输出引用{"source":{"ref":"排序"},"format":"text"}'
+        )
+    asks_for_calendar_date = any(
+        marker in compact
+        for marker in ("何时", "从何时", "哪一天", "具体日期", "年月日")
+    )
+    if asks_for_calendar_date and "间隔多少日" not in compact:
+        hints.append(
+            '日期运算只允许具名args：date_add_days写{"args":{"date":{"ref":"日期"},'
+            '"days":{"ref":"天数"}}}；next_workday写{"args":{"date":{"ref":"日期"}}}；'
+            'days_between写{"args":{"end":{"ref":"结束日"},"start":{"ref":"开始日"}}}'
+        )
+    return "；".join(hints)
+
+
 def _calculation_semantic_constraints(
     question_text: str,
     evidence_payload: Sequence[Mapping[str, Any]],
@@ -3184,12 +3297,27 @@ def _validate_calculation_plan_has_required_inputs(
 ) -> None:
     """Reject numeric placeholders when the plan admits required data is absent."""
 
+    if _calculation_plan_reports_missing_required_input(plan):
+        raise CalculationPlanError(
+            "Calculation plan cannot emit outputs when decision_summary "
+            "reports missing required data; retrieve the missing value instead"
+        )
+
+
+def _calculation_plan_reports_missing_required_input(
+    plan: Mapping[str, Any],
+) -> bool:
+    """Return whether a plan explicitly says required evidence is unavailable."""
+
     summary = _compact_text(str(plan.get("decision_summary", "")))
     missing_cues = (
         "未提供",
+        "没有",
         "缺少",
         "缺失",
         "证据不足",
+        "未找到",
+        "找不到",
     )
     inability_cues = (
         "无法计算",
@@ -3199,14 +3327,10 @@ def _validate_calculation_plan_has_required_inputs(
         "无法确定",
         "无法得出",
     )
-    if (
+    return (
         any(cue in summary for cue in missing_cues)
         and any(cue in summary for cue in inability_cues)
-    ):
-        raise CalculationPlanError(
-            "Calculation plan cannot emit outputs when decision_summary "
-            "reports missing required data; retrieve the missing value instead"
-        )
+    )
 
 
 def _validate_calculation_required_sort_objects(
