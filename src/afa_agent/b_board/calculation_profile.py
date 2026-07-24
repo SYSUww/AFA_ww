@@ -15,6 +15,9 @@ CALCULATION_THINKING_POLICY_VERSION = (
 CALCULATION_FIRST_ATTEMPT_EVIDENCE_POLICY_VERSION = (
     "calculation_self_contained_question_first_v1"
 )
+CALCULATION_RANKING_EVIDENCE_POLICY_VERSION = (
+    "calculation_multi_entity_ranking_frontload_v1"
+)
 
 CALCULATION_TASK_TYPES = (
     "direct_extraction",
@@ -299,6 +302,56 @@ class CalculationFirstAttemptEvidencePolicy:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
+class CalculationRankingEvidencePolicy:
+    """Answer-blind first-pass coverage policy for ranking calculations."""
+
+    mode: str
+    reasons: tuple[str, ...]
+    version: str = CALCULATION_RANKING_EVIDENCE_POLICY_VERSION
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+def infer_calculation_ranking_evidence_policy(
+    *,
+    domain: str,
+    question: str,
+    answer_slots: int,
+) -> CalculationRankingEvidencePolicy:
+    """Identify bounded single-period formula ranking tasks."""
+
+    compact = re.sub(r"\s+", "", str(question))
+    years = tuple(dict.fromkeys(re.findall(r"20\d{2}", compact)))
+    quoted_formulae = re.findall(
+        r"[“\"]([^”\"]*(?:=|＝)[^”\"]*)[”\"]",
+        str(question),
+    )
+    has_ranking = any(
+        marker in compact
+        for marker in ("排序", "从高到低", "从低到高")
+    )
+    if (
+        domain == "financial_reports"
+        and len(years) == 1
+        and answer_slots == 2
+        and bool(quoted_formulae)
+        and has_ranking
+    ):
+        return CalculationRankingEvidencePolicy(
+            mode="frontload_candidate_evidence",
+            reasons=(
+                "single_period_explicit_formula_ranking",
+                "multi_entity_coverage_required_before_ranking",
+            ),
+        )
+    return CalculationRankingEvidencePolicy(
+        mode="progressive_retrieval",
+        reasons=("not_bounded_formula_ranking",),
+    )
 
 
 def infer_calculation_first_attempt_evidence_policy(

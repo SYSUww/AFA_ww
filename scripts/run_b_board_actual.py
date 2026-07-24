@@ -146,6 +146,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--calculation-ranking-evidence-frontload",
+        action="store_true",
+        help=(
+            "Research-only add-on to guarded adaptive thinking: for bounded "
+            "single-period multi-entity formula ranking questions, include "
+            "the full retrieved candidate set on the first attempt."
+        ),
+    )
+    parser.add_argument(
         "--calculation-joint-reasoning",
         action="store_true",
         help=(
@@ -220,6 +229,9 @@ def main() -> None:
         calculation_repair_retry_enabled=args.calculation_repair_retry,
         calculation_guarded_adaptive_thinking_enabled=(
             args.calculation_guarded_adaptive_thinking
+        ),
+        calculation_ranking_evidence_frontload_enabled=(
+            args.calculation_ranking_evidence_frontload
         ),
         calculation_joint_reasoning_enabled=(
             args.calculation_joint_reasoning

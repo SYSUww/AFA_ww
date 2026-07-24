@@ -28,11 +28,13 @@ from afa_agent.b_board.calculation_profile import (
     CALCULATION_FIRST_ATTEMPT_EVIDENCE_POLICY_VERSION,
     CALCULATION_PROFILE_SCHEMA,
     CALCULATION_PROFILE_SCHEMA_VERSION,
+    CALCULATION_RANKING_EVIDENCE_POLICY_VERSION,
     CALCULATION_THINKING_POLICY_VERSION,
     CalculationProfile,
     build_calculation_profile_messages,
     calculation_profile_solver_guidance,
     infer_calculation_first_attempt_evidence_policy,
+    infer_calculation_ranking_evidence_policy,
     infer_calculation_thinking_policy,
     parse_calculation_profile,
 )
@@ -384,6 +386,7 @@ class BBoardActualRunner:
         ),
         calculation_repair_retry_enabled: bool = False,
         calculation_guarded_adaptive_thinking_enabled: bool = False,
+        calculation_ranking_evidence_frontload_enabled: bool = False,
         calculation_joint_reasoning_enabled: bool = False,
         run_mode: str = RUN_MODE_SUBMISSION,
     ) -> None:
@@ -479,6 +482,13 @@ class BBoardActualRunner:
             raise TypeError(
                 "calculation_guarded_adaptive_thinking_enabled must be bool"
             )
+        if not isinstance(
+            calculation_ranking_evidence_frontload_enabled,
+            bool,
+        ):
+            raise TypeError(
+                "calculation_ranking_evidence_frontload_enabled must be bool"
+            )
         if not isinstance(calculation_joint_reasoning_enabled, bool):
             raise TypeError(
                 "calculation_joint_reasoning_enabled must be bool"
@@ -511,6 +521,9 @@ class BBoardActualRunner:
         )
         self.calculation_guarded_adaptive_thinking_enabled = (
             calculation_guarded_adaptive_thinking_enabled
+        )
+        self.calculation_ranking_evidence_frontload_enabled = (
+            calculation_ranking_evidence_frontload_enabled
         )
         self.calculation_joint_reasoning_enabled = (
             calculation_joint_reasoning_enabled
@@ -545,6 +558,14 @@ class BBoardActualRunner:
                 "must be evaluated as separate research directions"
             )
         if (
+            calculation_ranking_evidence_frontload_enabled
+            and not calculation_guarded_adaptive_thinking_enabled
+        ):
+            raise ValueError(
+                "calculation ranking evidence frontload requires guarded "
+                "adaptive thinking for a cumulative causal evaluation"
+            )
+        if (
             calculation_guarded_adaptive_thinking_enabled
             and self.run_mode != RUN_MODE_RESEARCH
         ):
@@ -559,6 +580,14 @@ class BBoardActualRunner:
             raise ValueError(
                 "calculation joint reasoning is research-only until its "
                 "Top-12 and full-26 promotion gates pass"
+            )
+        if (
+            calculation_ranking_evidence_frontload_enabled
+            and self.run_mode != RUN_MODE_RESEARCH
+        ):
+            raise ValueError(
+                "calculation ranking evidence frontload is research-only "
+                "until its Top-12 promotion gate passes"
             )
         self.config = build_run_config(ROOT)
         if self.config.model is None:
@@ -1810,6 +1839,20 @@ class BBoardActualRunner:
             if guarded_adaptive_thinking_enabled
             else {}
         )
+        ranking_evidence_frontload_enabled = getattr(
+            self,
+            "calculation_ranking_evidence_frontload_enabled",
+            False,
+        )
+        ranking_evidence_policy = (
+            infer_calculation_ranking_evidence_policy(
+                domain=question.domain,
+                question=question.question,
+                answer_slots=question.answer_slots,
+            ).to_dict()
+            if ranking_evidence_frontload_enabled
+            else {}
+        )
         adaptive_thinking_policy: dict[str, Any] = {}
         calculation_enable_thinking = getattr(
             self,
@@ -1856,6 +1899,13 @@ class BBoardActualRunner:
                         "max_non_question_hits"
                     ]
                 )
+            if (
+                ranking_evidence_frontload_enabled
+                and attempt_number == 1
+                and ranking_evidence_policy.get("mode")
+                == "frontload_candidate_evidence"
+            ):
+                max_non_question_hits = self.calculation_top_k
             evidence_payload = _calculation_evidence_payload(
                 evidence_items,
                 max_non_question_hits=max_non_question_hits,
@@ -1985,6 +2035,11 @@ class BBoardActualRunner:
                     if guarded_adaptive_thinking_enabled
                     else {}
                 ),
+                "ranking_evidence_policy": (
+                    dict(ranking_evidence_policy)
+                    if ranking_evidence_frontload_enabled
+                    else {}
+                ),
                 "request_thinking": {
                     "mode": (
                         "provider_default"
@@ -2051,6 +2106,9 @@ class BBoardActualRunner:
                             ),
                             "calculation_guarded_adaptive_evidence_scope_policy": (
                                 dict(adaptive_evidence_scope_policy)
+                            ),
+                            "calculation_ranking_evidence_policy": (
+                                dict(ranking_evidence_policy)
                             ),
                             "calculation_attempt_modes": copy.deepcopy(
                                 calculation_attempt_modes
@@ -2313,6 +2371,12 @@ class BBoardActualRunner:
                         "calculation_guarded_adaptive_evidence_scope_policy": (
                             dict(adaptive_evidence_scope_policy)
                         ),
+                        "calculation_ranking_evidence_frontload_enabled": (
+                            ranking_evidence_frontload_enabled
+                        ),
+                        "calculation_ranking_evidence_policy": (
+                            dict(ranking_evidence_policy)
+                        ),
                         "calculation_attempt_count": attempt_number,
                         "calculation_retry_count": attempt_number - 1,
                         "calculation_repair_retry_count": sum(
@@ -2394,6 +2458,9 @@ class BBoardActualRunner:
                         ),
                         "calculation_guarded_adaptive_evidence_scope_policy": (
                             dict(adaptive_evidence_scope_policy)
+                        ),
+                        "calculation_ranking_evidence_policy": (
+                            dict(ranking_evidence_policy)
                         ),
                         "calculation_attempt_mode": copy.deepcopy(
                             attempt_record
@@ -3398,6 +3465,19 @@ class BBoardActualRunner:
                     "includes_runtime_semantic_constraint_guard": True,
                     "retry_mode": "provider_default_after_first_attempt",
                 },
+                "ranking_evidence_frontload": {
+                    "enabled": getattr(
+                        self,
+                        "calculation_ranking_evidence_frontload_enabled",
+                        False,
+                    ),
+                    "policy_version": (
+                        CALCULATION_RANKING_EVIDENCE_POLICY_VERSION
+                    ),
+                    "first_attempt_non_question_hit_limit": (
+                        self.calculation_top_k
+                    ),
+                },
                 "joint_reasoning": {
                     "enabled": getattr(
                         self,
@@ -3531,6 +3611,11 @@ class BBoardActualRunner:
                     "calculation_guarded_adaptive_thinking_enabled",
                     False,
                 ),
+                "calculation_ranking_evidence_frontload_enabled": getattr(
+                    self,
+                    "calculation_ranking_evidence_frontload_enabled",
+                    False,
+                ),
                 "calculation_joint_reasoning_enabled": getattr(
                     self,
                     "calculation_joint_reasoning_enabled",
@@ -3630,6 +3715,11 @@ class BBoardActualRunner:
                 "calculation_guarded_adaptive_thinking_enabled": getattr(
                     self,
                     "calculation_guarded_adaptive_thinking_enabled",
+                    False,
+                ),
+                "calculation_ranking_evidence_frontload_enabled": getattr(
+                    self,
+                    "calculation_ranking_evidence_frontload_enabled",
                     False,
                 ),
                 "calculation_joint_reasoning_enabled": getattr(

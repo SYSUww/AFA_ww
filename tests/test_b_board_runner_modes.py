@@ -791,6 +791,23 @@ class BBoardRunnerModeTests(unittest.TestCase):
                 calculation_guarded_adaptive_thinking_enabled=1,  # type: ignore[arg-type]
             )
         with self.assertRaisesRegex(
+            TypeError,
+            "calculation_ranking_evidence_frontload_enabled must be bool",
+        ):
+            BBoardActualRunner(
+                questions=[],
+                calculation_ranking_evidence_frontload_enabled=1,  # type: ignore[arg-type]
+            )
+        with self.assertRaisesRegex(
+            ValueError,
+            "ranking evidence frontload requires guarded adaptive thinking",
+        ):
+            BBoardActualRunner(
+                questions=[],
+                calculation_ranking_evidence_frontload_enabled=True,
+                run_mode=RUN_MODE_RESEARCH,
+            )
+        with self.assertRaisesRegex(
             ValueError,
             "cannot be combined with an explicit calculation thinking",
         ):
@@ -3673,6 +3690,9 @@ class BBoardRunnerModeTests(unittest.TestCase):
             self.assertFalse(
                 args.calculation_guarded_adaptive_thinking
             )
+            self.assertFalse(
+                args.calculation_ranking_evidence_frontload
+            )
         with mock.patch.object(
             sys,
             "argv",
@@ -3700,6 +3720,21 @@ class BBoardRunnerModeTests(unittest.TestCase):
             args = run_b_board_actual.parse_args()
             self.assertTrue(
                 args.calculation_guarded_adaptive_thinking
+            )
+        with mock.patch.object(
+            sys,
+            "argv",
+            [
+                "run_b_board_actual.py",
+                "--run-mode",
+                RUN_MODE_RESEARCH,
+                "--calculation-guarded-adaptive-thinking",
+                "--calculation-ranking-evidence-frontload",
+            ],
+        ):
+            args = run_b_board_actual.parse_args()
+            self.assertTrue(
+                args.calculation_ranking_evidence_frontload
             )
 
     def test_reasoning_checkpoint_cli_accepts_only_positive_thinking_budget(

@@ -6,10 +6,12 @@ import unittest
 from afa_agent.b_board.calculation_profile import (
     CALCULATION_FIRST_ATTEMPT_EVIDENCE_POLICY_VERSION,
     CALCULATION_PROFILE_SCHEMA,
+    CALCULATION_RANKING_EVIDENCE_POLICY_VERSION,
     CALCULATION_THINKING_POLICY_VERSION,
     CalculationProfile,
     build_calculation_profile_messages,
     infer_calculation_first_attempt_evidence_policy,
+    infer_calculation_ranking_evidence_policy,
     infer_calculation_thinking_policy,
     parse_calculation_profile,
 )
@@ -205,6 +207,39 @@ class CalculationProfileTest(unittest.TestCase):
 
         self.assertEqual(policy.mode, "progressive_retrieval")
         self.assertIsNone(policy.max_non_question_hits)
+
+    def test_single_period_formula_ranking_frontloads_candidates(
+        self,
+    ) -> None:
+        policy = infer_calculation_ranking_evidence_policy(
+            domain="financial_reports",
+            question=(
+                "根据甲、乙、丙三家公司2025年报告，分别按"
+                "“派生值=1÷(1-原始比率)”计算并排序，"
+                "同时给出最高与最低之差。"
+            ),
+            answer_slots=2,
+        )
+
+        self.assertEqual(policy.mode, "frontload_candidate_evidence")
+        self.assertEqual(
+            policy.version,
+            CALCULATION_RANKING_EVIDENCE_POLICY_VERSION,
+        )
+
+    def test_cross_period_formula_keeps_progressive_ranking_evidence(
+        self,
+    ) -> None:
+        policy = infer_calculation_ranking_evidence_policy(
+            domain="financial_reports",
+            question=(
+                "根据甲乙两家公司2024年和2025年报告，按"
+                "“派生值=1÷(1-原始比率)”计算并排序。"
+            ),
+            answer_slots=2,
+        )
+
+        self.assertEqual(policy.mode, "progressive_retrieval")
 
     def test_runtime_semantic_constraint_keeps_provider_default(
         self,
