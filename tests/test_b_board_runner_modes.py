@@ -60,7 +60,7 @@ from afa_agent.config import ModelConfig, RunConfig
 from afa_agent.domains.generic_retriever import GenericBM25Retriever
 from afa_agent.models import TokenUsage
 from afa_agent.run_metadata import RunFingerprintError, validate_resume_fingerprint
-from scripts import run_b_board_actual
+from scripts import run_b_board_actual, run_b_reasoning_from_checkpoints
 
 
 def _question() -> BQuestion:
@@ -2402,6 +2402,42 @@ class BBoardRunnerModeTests(unittest.TestCase):
             False,
         )
 
+    def test_reasoning_thinking_budget_enables_thinking_and_is_traced(self) -> None:
+        runner = object.__new__(BBoardActualRunner)
+        runner.config = SimpleNamespace(
+            model=SimpleNamespace(
+                model_name="qwen3.7-plus",
+                structured_output_mode="native_json_schema_strict",
+            )
+        )
+        runner.reasoning_enable_thinking = None
+        runner.reasoning_thinking_budget = 512
+        runner.client = _QueuedClient(
+            [
+                _response(
+                    '{"answer_parts":["A"],"grounding_status":"supported",'
+                    '"missing_support":[],"reasoning":"定位监管要求后，证据明确给出'
+                    '适用条件，该条件与题干陈述一致，因而判断成立，最终答案为A。"}',
+                    10,
+                    2,
+                    response_format_mode="native_json_schema_strict",
+                )
+            ]
+        )
+
+        result = runner._attach_submission_reasoning(
+            _question(),
+            _artifact(),
+        )
+
+        self.assertEqual(
+            runner.client.kwargs[0]["extra_body"],
+            {"enable_thinking": True, "thinking_budget": 512},
+        )
+        trace = result.decision_trace["submission_reasoning"]
+        self.assertIs(trace["enable_thinking"], True)
+        self.assertEqual(trace["thinking_budget"], 512)
+
     def test_reasoning_generation_rescues_once_after_insufficient_evidence(self) -> None:
         runner = object.__new__(BBoardActualRunner)
         runner.config = SimpleNamespace(model=SimpleNamespace(model_name="qwen3.7-plus"))
@@ -2722,6 +2758,116 @@ class BBoardRunnerModeTests(unittest.TestCase):
             args = run_b_board_actual.parse_args()
             self.assertEqual(args.run_mode, RUN_MODE_RESEARCH)
             self.assertEqual(args.stage, RUN_STAGE_ANSWER)
+
+    def test_reasoning_checkpoint_cli_accepts_only_positive_thinking_budget(
+        self,
+    ) -> None:
+        base_argv = [
+            "run_b_reasoning_from_checkpoints.py",
+            "--answer-run",
+            "answer-run",
+            "--output-dir",
+            "output",
+            "--qids",
+            "q1",
+        ]
+        with mock.patch.object(
+            sys,
+            "argv",
+            [*base_argv, "--thinking-budget", "512"],
+        ):
+            args = run_b_reasoning_from_checkpoints.parse_args()
+        self.assertEqual(args.thinking_budget, 512)
+
+        with mock.patch.object(
+            sys,
+            "argv",
+            [*base_argv, "--thinking-budget", "0"],
+        ), self.assertRaises(SystemExit):
+            run_b_reasoning_from_checkpoints.parse_args()
+
+    def test_reasoning_checkpoint_cli_passes_thinking_budget_and_manifests_it(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            answer_run = root / "answer-run"
+            output_dir = root / "output"
+            answer_run.mkdir()
+            (answer_run / "run_manifest.json").write_text(
+                json.dumps({"model": {"model_name": "qwen3.7-plus"}}),
+                encoding="utf-8",
+            )
+            (answer_run / "answer_artifacts.json").write_text(
+                json.dumps([_artifact().to_dict()], ensure_ascii=False),
+                encoding="utf-8",
+            )
+            runner = SimpleNamespace(
+                config=SimpleNamespace(
+                    model=SimpleNamespace(model_name="qwen3.7-plus")
+                ),
+                reasoning_one=lambda _question, artifact: artifact,
+            )
+            argv = [
+                "run_b_reasoning_from_checkpoints.py",
+                "--answer-run",
+                str(answer_run),
+                "--output-dir",
+                str(output_dir),
+                "--qids",
+                "q1",
+                "--thinking-budget",
+                "384",
+            ]
+            with mock.patch.object(sys, "argv", argv), mock.patch.object(
+                run_b_reasoning_from_checkpoints,
+                "load_b_questions",
+                return_value=[_question()],
+            ), mock.patch.object(
+                run_b_reasoning_from_checkpoints,
+                "BBoardActualRunner",
+                return_value=runner,
+            ) as runner_class, mock.patch.object(
+                run_b_reasoning_from_checkpoints,
+                "write_b_submission",
+            ):
+                run_b_reasoning_from_checkpoints.main()
+
+            self.assertEqual(
+                runner_class.call_args.kwargs["reasoning_thinking_budget"],
+                384,
+            )
+            manifest = json.loads(
+                (output_dir / "run_manifest.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(manifest["reasoning_thinking_budget"], 384)
+
+    def test_reasoning_thinking_budget_validation(self) -> None:
+        with self.assertRaisesRegex(
+            TypeError,
+            "reasoning_thinking_budget must be int or None",
+        ):
+            BBoardActualRunner(
+                questions=[],
+                reasoning_thinking_budget="512",  # type: ignore[arg-type]
+            )
+        with self.assertRaisesRegex(
+            ValueError,
+            "reasoning_thinking_budget must be positive",
+        ):
+            BBoardActualRunner(
+                questions=[],
+                reasoning_thinking_budget=0,
+            )
+        with self.assertRaisesRegex(
+            ValueError,
+            "reasoning_thinking_budget requires thinking",
+        ):
+            BBoardActualRunner(
+                questions=[],
+                reasoning_enable_thinking=False,
+                reasoning_thinking_budget=512,
+            )
 
     def test_answer_only_stage_persists_checkpoint_without_reasoning_or_csv(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

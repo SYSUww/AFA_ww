@@ -35,6 +35,13 @@ from afa_agent.io_utils import (
 )
 
 
+def _positive_int(value: str) -> int:
+    parsed = int(value)
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return parsed
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
@@ -58,6 +65,14 @@ def parse_args() -> argparse.Namespace:
         choices=("default", "on", "off"),
         default="default",
         help="Provider thinking mode for the reasoning-only stage",
+    )
+    parser.add_argument(
+        "--thinking-budget",
+        type=_positive_int,
+        help=(
+            "Optional positive provider thinking-token budget; when set, "
+            "thinking is enabled"
+        ),
     )
     return parser.parse_args()
 
@@ -127,6 +142,7 @@ def main() -> None:
         questions=[question_by_qid[qid] for qid in qids],
         reasoning_evidence_char_limit=args.evidence_char_limit,
         reasoning_enable_thinking=thinking_mode,
+        reasoning_thinking_budget=args.thinking_budget,
         run_mode=RUN_MODE_SUBMISSION,
     )
     if runner.config.model.model_name != model_name:
@@ -228,6 +244,7 @@ def main() -> None:
         "source_model_verified": True,
         "reasoning_evidence_char_limit": args.evidence_char_limit,
         "reasoning_enable_thinking": thinking_mode,
+        "reasoning_thinking_budget": args.thinking_budget,
         "submission_eligible": False,
         "submission_ineligibility_reasons": [
             "partial_reasoning_patch_requires_full_assembly"

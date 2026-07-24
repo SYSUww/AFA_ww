@@ -265,6 +265,7 @@ class BBoardActualRunner:
             DEFAULT_SUBMISSION_REASONING_EVIDENCE_CHAR_LIMIT
         ),
         reasoning_enable_thinking: bool | None = None,
+        reasoning_thinking_budget: int | None = None,
         run_mode: str = RUN_MODE_SUBMISSION,
     ) -> None:
         if reasoning_evidence_char_limit < 1:
@@ -274,6 +275,30 @@ class BBoardActualRunner:
             and not isinstance(reasoning_enable_thinking, bool)
         ):
             raise TypeError("reasoning_enable_thinking must be bool or None")
+        if (
+            reasoning_thinking_budget is not None
+            and (
+                isinstance(reasoning_thinking_budget, bool)
+                or not isinstance(reasoning_thinking_budget, int)
+            )
+        ):
+            raise TypeError(
+                "reasoning_thinking_budget must be int or None"
+            )
+        if (
+            reasoning_thinking_budget is not None
+            and reasoning_thinking_budget < 1
+        ):
+            raise ValueError(
+                "reasoning_thinking_budget must be positive"
+            )
+        if (
+            reasoning_thinking_budget is not None
+            and reasoning_enable_thinking is False
+        ):
+            raise ValueError(
+                "reasoning_thinking_budget requires thinking to be enabled"
+            )
         self.questions = list(questions)
         self.question_by_qid = {item.qid: item for item in questions}
         self.parsed_root = Path(parsed_root).resolve()
@@ -283,6 +308,7 @@ class BBoardActualRunner:
         self.calculation_top_k = calculation_top_k
         self.reasoning_evidence_char_limit = reasoning_evidence_char_limit
         self.reasoning_enable_thinking = reasoning_enable_thinking
+        self.reasoning_thinking_budget = reasoning_thinking_budget
         self.run_mode = _validate_run_mode(run_mode)
         self.config = build_run_config(ROOT)
         if self.config.model is None:
@@ -824,6 +850,11 @@ class BBoardActualRunner:
                 "reasoning_usage_ledger_path": str(reasoning_ledger_path),
                 "usage_ledger_path": str(usage_ledger_path),
                 "run_mode": self.run_mode,
+                "reasoning_thinking_budget": getattr(
+                    self,
+                    "reasoning_thinking_budget",
+                    None,
+                ),
                 "submission_eligible": not ineligibility_reasons,
                 "submission_ineligibility_reasons": ineligibility_reasons,
                 "submission_path": (
@@ -1336,6 +1367,16 @@ class BBoardActualRunner:
             "reasoning_enable_thinking",
             None,
         )
+        reasoning_thinking_budget = getattr(
+            self,
+            "reasoning_thinking_budget",
+            None,
+        )
+        effective_reasoning_enable_thinking = (
+            True
+            if reasoning_thinking_budget is not None
+            else reasoning_enable_thinking
+        )
         reasoning_evidence_items = [
             dict(item) for item in artifact.evidence_items
         ]
@@ -1393,7 +1434,12 @@ class BBoardActualRunner:
                         },
                     ]
                 request_kwargs: dict[str, Any] = {}
-                if reasoning_enable_thinking is not None:
+                if reasoning_thinking_budget is not None:
+                    request_kwargs["extra_body"] = {
+                        "enable_thinking": True,
+                        "thinking_budget": reasoning_thinking_budget,
+                    }
+                elif reasoning_enable_thinking is not None:
                     request_kwargs["extra_body"] = {
                         "enable_thinking": reasoning_enable_thinking
                     }
@@ -1527,7 +1573,10 @@ class BBoardActualRunner:
                         ),
                         "reasoning_style_hint": reasoning_style_hint,
                         "evidence_item_char_limit": evidence_char_limit,
-                        "enable_thinking": reasoning_enable_thinking,
+                        "enable_thinking": (
+                            effective_reasoning_enable_thinking
+                        ),
+                        "thinking_budget": reasoning_thinking_budget,
                         "model_name": self.config.model.model_name,
                         "attempt_count": attempt_number,
                         "api_call_count": len(diagnostics),
@@ -2053,6 +2102,16 @@ class BBoardActualRunner:
                 "style_hint_version": (
                     SUBMISSION_REASONING_STYLE_HINT_VERSION
                 ),
+                "enable_thinking": getattr(
+                    self,
+                    "reasoning_enable_thinking",
+                    None,
+                ),
+                "thinking_budget": getattr(
+                    self,
+                    "reasoning_thinking_budget",
+                    None,
+                ),
                 "retry_policy": (
                     "normalize_validate_then_reasoning_only_retry_no_retrieval"
                 ),
@@ -2066,6 +2125,11 @@ class BBoardActualRunner:
                 "locator_attempt_id": self.locator_attempt_id,
                 "workers": workers,
                 "calculation_top_k": self.calculation_top_k,
+                "reasoning_thinking_budget": getattr(
+                    self,
+                    "reasoning_thinking_budget",
+                    None,
+                ),
             },
             questions=[item.to_dict() for item in questions],
             parsed_path=self.parsed_root,
@@ -2117,6 +2181,11 @@ class BBoardActualRunner:
                     ),
                 },
                 "locator_attempt_id": self.locator_attempt_id,
+                "reasoning_thinking_budget": getattr(
+                    self,
+                    "reasoning_thinking_budget",
+                    None,
+                ),
             },
         )
         return
