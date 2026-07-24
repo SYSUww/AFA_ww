@@ -248,6 +248,93 @@
 }
 ```
 
+## b-loop-qwen37-calculation-guarded-adaptive-thinking-a3-question-only-first
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-guarded-adaptive-thinking-a3-question-only-first",
+  "direction_id": "qwen37_calculation_guarded_adaptive_thinking_and_semantic_guard",
+  "direction_attempt_count": 3,
+  "direction_round_limit": 3,
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_round_same_direction": "b-loop-qwen37-calculation-guarded-adaptive-thinking-a2-causal-top12",
+    "prior_rejected_direction": "b-loop-qwen37-calculation-evidence-compaction-a1",
+    "active_slice_protocol": "b-loop-qwen37-calculation-top12-protocol-v2"
+  },
+  "approach": "在已晋级的guarded-adaptive组合上增加通用首轮证据范围策略：仅当领域为research、单答案槽、题面直接含至少4个非年份数值且不含查阅/根据/报告/合同/材料/文档等外部来源提示时，首轮只发送question:input并关闭thinking；若首轮失败，后续轮恢复原progressive retrieval与provider default thinking。策略不使用QID、历史答案、文档ID、题面全文或先前运行结果。",
+  "dynamic_scope": {
+    "top12_question_count": 12,
+    "policy_affected_question_count": 1,
+    "policy_unaffected_frozen_question_count": 11,
+    "affected_qids": [
+      "res_b_012"
+    ]
+  },
+  "artifacts": {
+    "answer_run": "artifacts/b_board_actual/calc_top12_guarded_adaptive_question_only_a3_res012",
+    "reasoning_patch": "artifacts/b_board_actual/calc_top12_guarded_adaptive_question_only_a3_res012_reasoning",
+    "gpt56_shadow_evaluation": "artifacts/b_board_actual/calc_top12_guarded_adaptive_question_only_a3_res012_reasoning/reasoning_eval_gpt56",
+    "assembled_research_candidate": "artifacts/b_board_actual/qwen37_calc_guarded_adaptive_question_only_a3_research_candidate",
+    "manual_scenario_projection": "artifacts/b_board_actual/qwen37_calc_guarded_adaptive_question_only_a3_research_candidate/manual_scenario_projection.json"
+  },
+  "metrics": {
+    "answer_completed_count": 1,
+    "answer_match_to_c2_count": 1,
+    "answer_grounding_verified_count": 1,
+    "answer_replay_verified_count": 1,
+    "answer_call_count": 1,
+    "answer_prompt_evidence_count_before": 9,
+    "answer_prompt_evidence_count_after": 1,
+    "answer_tokens_before": 8843,
+    "answer_tokens_after": 2967,
+    "answer_token_delta": -5876,
+    "answer_token_reduction_ratio": 0.6644803799615515,
+    "reasoning_tokens_before": 4098,
+    "reasoning_tokens_after": 4759,
+    "reasoning_token_delta": 661,
+    "combined_tokens_before": 12941,
+    "combined_tokens_after": 7726,
+    "combined_token_delta": -5215,
+    "combined_token_reduction_ratio": 0.40298276794683563,
+    "res_b_012_reasoning_score_before": 97.66666666666667,
+    "res_b_012_reasoning_score_after": 98.66666666666667,
+    "top12_total_tokens_c2": 356953,
+    "top12_total_tokens_after": 305261,
+    "top12_token_delta": -51692,
+    "top12_token_reduction_ratio": 0.14481458343255274,
+    "top12_reasoning_score_after": 97.1111111111111,
+    "assembled_question_count": 100,
+    "assembled_answer_match_to_c2_count": 100,
+    "full100_tokens_before": 1211711,
+    "full100_tokens_after": 1206496,
+    "full100_token_delta": -5215,
+    "full100_reasoning_score_projected": 95.98333333333333,
+    "token_efficiency_score_after": 75.87008,
+    "pseudo_accuracy_score": 99.0,
+    "proxy_total_score_before": 93.445156,
+    "proxy_total_score_after": 93.46901600000001,
+    "proxy_total_score_delta": 0.023860000000013315,
+    "gpt56_judge_call_count": 1
+  },
+  "audit": {
+    "test_count": 429,
+    "tests_passed": true,
+    "no_hardcoding_audit_passed": true,
+    "generation_model": "qwen3.7-plus-2026-05-26",
+    "gpt56_used_only_for_frozen_reasoning_shadow_judging": true,
+    "assembled_candidate_submission_eligible": false
+  },
+  "effect": "题面自包含计算不再把无关检索文档送入首轮模型，res_b_012保持67.1、grounding/replay和单次调用不变，答案Token下降66.45%；reasoning虽增加661 Token，但合计仍减少5215，且影子质量提高1分。完整Top12和100题因果组装均保持C2答案一致，最终公式净提升。",
+  "promotion_result": "effective_top12_gate_passed_branch_push_pending",
+  "score_type": "offline_pseudo99_manual_scenario_projection_with_gpt56_shadow_not_official",
+  "next_step": "该方向达到3次上限并晋级，停止继续修改同一方向。后续新方向继续按Top12 protocol v2验证；真实提交仍需独立提交资格门和用户明确授权。",
+  "recorded_at": "2026-07-24T23:00:00+08:00",
+  "status": "effective_pending_push",
+  "submission_effect": "none"
+}
+```
+
 ## b-loop-qwen37-calculation-joint-reasoning-a1-shadow
 
 ```json
