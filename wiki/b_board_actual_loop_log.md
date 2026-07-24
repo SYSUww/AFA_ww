@@ -22,6 +22,160 @@
 }
 ```
 
+## b-loop-qwen37-reasoning-evidence-600-token-a2
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-reasoning-evidence-600-token-a2",
+  "direction_id": "qwen37_reasoning_evidence_char_limit",
+  "round": 2,
+  "round_limit": 3,
+  "recorded_at": "2026-07-24T12:25:00+08:00",
+  "status": "partially_promoted_then_direction_stopped",
+  "score_type": "offline_equal_accuracy_gpt56_shadow_not_official",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_round": "b-loop-qwen37-reasoning-evidence-900-token-a1",
+    "frozen_prior_winner": "ins_b_003_900"
+  },
+  "approach": "仅对900字符轮次未晋级的fc_b_014和fin_b_018，把reasoning单条证据上限继续降至600；答案checkpoint、默认thinking、strict Schema均保持不变，ins_b_003的900字符胜出版本冻结。两条新reasoning分别由固定GPT-5.6重评。",
+  "artifacts": {
+    "fc_b_014": "artifacts/b_board_actual/qwen37_three_badcase_reasoning_600_fc014_a2",
+    "fc_b_014_valid_judge": "artifacts/b_board_actual/qwen37_three_badcase_reasoning_600_fc014_a2/reasoning_eval_gpt56_llm_retry1",
+    "fin_b_018": "artifacts/b_board_actual/qwen37_three_badcase_reasoning_600_fin018_a2",
+    "promoted_full100_candidate": "artifacts/b_board_actual/qwen37_three_badcase_token_candidate_a2"
+  },
+  "per_qid": [
+    {
+      "qid": "fc_b_014",
+      "answer_preserved": true,
+      "reasoning_score_before": 96.0,
+      "reasoning_score_after": 97.0,
+      "row_token_before": 7259,
+      "row_token_after": 7341,
+      "row_token_delta": 82,
+      "equal_accuracy_proxy_delta": 0.002672,
+      "api_call_count": 1,
+      "retry_count": 0,
+      "promotion": "reasoning_gain_outweighs_token_increase",
+      "judge_note": "首次judge误用OPENAI路由返回404且usage为0，不作为评分；随后使用独立LLM GPT-5.6路由成功评测"
+    },
+    {
+      "qid": "fin_b_018",
+      "answer_preserved": true,
+      "reasoning_score_before": 99.0,
+      "reasoning_score_after": 98.66666666666667,
+      "row_token_before": 16252,
+      "row_token_after": 16132,
+      "row_token_delta": -120,
+      "equal_accuracy_proxy_delta": -0.00052,
+      "api_call_count": 1,
+      "retry_count": 0,
+      "promotion": "rejected_reasoning_loss_exceeds_token_gain"
+    }
+  ],
+  "metrics": {
+    "baseline_full100_token_total": 1261535,
+    "promoted_full100_token_total": 1261617,
+    "token_delta": 82,
+    "reasoning_score_before": 95.92,
+    "reasoning_score_after": 95.93,
+    "token_efficiency_score_before": 74.7693,
+    "token_efficiency_score_after": 74.76766,
+    "proxy_total_before_at_99_accuracy": 93.22986,
+    "proxy_total_after_at_99_accuracy": 93.232532,
+    "proxy_total_delta": 0.002672,
+    "official_accuracy": null
+  },
+  "failure_analysis": "统一降低单条证据字符上限不是稳定的Token手段。fc证据本来只有275字，900与600均未触发截断；fin从900降到600只少量减少prompt，但reasoning分下降。ins的七条证据各自均短于900，900胜出主要来自生成波动，不能外推为稳定因果。",
+  "promotion_result": "promote_fc_b_014_600_keep_fin_b_018_a1_keep_ins_b_003_900",
+  "next_step": "停止继续压缩字符上限，不消耗第3轮。转向新方向：按计算题型设置简洁reasoning目标，并在保持公式、原值、单位、max逻辑和冻结答案完整的前提下减少重复表达；先写测试后只重跑三题。",
+  "submission_effect": "no_official_upload"
+}
+```
+
+## b-loop-qwen37-reasoning-evidence-900-token-a1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-reasoning-evidence-900-token-a1",
+  "direction_id": "qwen37_reasoning_evidence_char_limit",
+  "round": 1,
+  "round_limit": 3,
+  "recorded_at": "2026-07-24T12:19:00+08:00",
+  "status": "partially_promoted",
+  "score_type": "offline_equal_accuracy_gpt56_shadow_not_official",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "baseline_experiment": "b-loop-qwen37-three-semantic-badcase-accuracy-a1"
+  },
+  "approach": "冻结A1三题答案及答案证据链，不重新运行答案阶段；三题并发把reasoning单条证据字符上限从1800降至900，保持Qwen3.7 Plus默认thinking和原生strict JSON Schema。每条新reasoning独立由固定GPT-5.6重评。按等准确率单题代理增量0.003*reasoning分差-token差/250000判断，允许Token下降单独晋级。",
+  "artifacts": {
+    "fc_b_014": "artifacts/b_board_actual/qwen37_three_badcase_reasoning_900_fc014_a1",
+    "fin_b_018": "artifacts/b_board_actual/qwen37_three_badcase_reasoning_900_fin018_a1",
+    "ins_b_003": "artifacts/b_board_actual/qwen37_three_badcase_reasoning_900_ins003_a1",
+    "promoted_full100_candidate": "artifacts/b_board_actual/qwen37_three_badcase_token_candidate_a1"
+  },
+  "per_qid": [
+    {
+      "qid": "fc_b_014",
+      "answer_preserved": true,
+      "reasoning_score_before": 96.0,
+      "reasoning_score_after": 96.0,
+      "row_token_before": 7259,
+      "row_token_after": 7394,
+      "row_token_delta": 135,
+      "equal_accuracy_proxy_delta": -0.00054,
+      "api_call_count": 1,
+      "retry_count": 0,
+      "promotion": "rejected"
+    },
+    {
+      "qid": "fin_b_018",
+      "answer_preserved": true,
+      "reasoning_score_before": 99.0,
+      "reasoning_score_after": 98.33333333333333,
+      "row_token_before": 16252,
+      "row_token_after": 16647,
+      "row_token_delta": 395,
+      "equal_accuracy_proxy_delta": -0.00358,
+      "api_call_count": 1,
+      "retry_count": 0,
+      "promotion": "rejected"
+    },
+    {
+      "qid": "ins_b_003",
+      "answer_preserved": true,
+      "reasoning_score_before": 97.66666666666667,
+      "reasoning_score_after": 97.66666666666667,
+      "row_token_before": 20016,
+      "row_token_after": 19869,
+      "row_token_delta": -147,
+      "equal_accuracy_proxy_delta": 0.000588,
+      "api_call_count": 1,
+      "retry_count": 0,
+      "promotion": "token_gain"
+    }
+  ],
+  "metrics": {
+    "baseline_full100_token_total": 1261682,
+    "promoted_full100_token_total": 1261535,
+    "token_delta": -147,
+    "reasoning_score_before": 95.92,
+    "reasoning_score_after": 95.92,
+    "token_efficiency_score_before": 74.76636,
+    "token_efficiency_score_after": 74.7693,
+    "proxy_total_before_at_99_accuracy": 93.229272,
+    "proxy_total_after_at_99_accuracy": 93.22986,
+    "proxy_total_delta": 0.000588,
+    "official_accuracy": null
+  },
+  "promotion_result": "promote_ins_b_003_only_freeze_fc_b_014_and_fin_b_018_incumbents",
+  "next_step": "进入同一方向第2轮前重读本条；冻结已晋级的ins_b_003=900版本，只对未晋级的fc_b_014和fin_b_018尝试600字符上限。仍按Token下降且总分不下降晋级，不改变答案。",
+  "submission_effect": "no_official_upload"
+}
+```
+
 ## b-loop-qwen37-three-semantic-badcase-accuracy-a1
 
 ```json
