@@ -23,6 +23,8 @@ class LLMResponse:
     token_usage: TokenUsage
     raw_payload: dict[str, Any]
     response_format_mode: str = "json_object_local_schema"
+    transport_attempt_count: int = 1
+    transport_rejections: tuple[dict[str, Any], ...] = ()
 
 
 @dataclass(slots=True)
@@ -118,6 +120,7 @@ class OpenAICompatibleClient:
                 )
             payload.update(dict(extra_body))
         last_error: Exception | None = None
+        transport_rejections: list[dict[str, Any]] = []
         max_attempts = max(1, self.config.max_retries + 1)
         timeout = (
             max(1, self.config.connect_timeout_seconds),
@@ -137,22 +140,51 @@ class OpenAICompatibleClient:
                 response.raise_for_status()
                 parsed = response.json()
                 break
-            except requests.ReadTimeout:
+            except requests.ReadTimeout as exc:
                 # A timed-out generation may still complete server-side. Sending
                 # the same request again would create an unobservable duplicate
                 # whose raw usage cannot be declared in the submission ledger.
+                setattr(exc, "transport_attempt_count", attempt + 1)
+                setattr(
+                    exc,
+                    "transport_rejections",
+                    tuple(transport_rejections),
+                )
                 raise
-            except ValueError:
+            except ValueError as exc:
                 # A response body already arrived. If it is malformed, the
                 # provider may still have generated billable tokens whose usage
                 # is now unavailable, so an automatic resend is not auditable.
+                setattr(exc, "transport_attempt_count", attempt + 1)
+                setattr(
+                    exc,
+                    "transport_rejections",
+                    tuple(transport_rejections),
+                )
                 raise
             except requests.RequestException as exc:
                 last_error = exc
-                if (
-                    not _is_explicit_rate_limit_rejection(exc)
-                    or attempt >= max_attempts - 1
-                ):
+                explicit_429 = _is_explicit_rate_limit_rejection(exc)
+                if explicit_429:
+                    transport_rejections.append(
+                        {
+                            "attempt_index": attempt + 1,
+                            "status_code": 429,
+                            "pre_generation_rejection": True,
+                            "token_usage_observed": False,
+                        }
+                    )
+                if not explicit_429 or attempt >= max_attempts - 1:
+                    setattr(
+                        exc,
+                        "transport_attempt_count",
+                        attempt + 1,
+                    )
+                    setattr(
+                        exc,
+                        "transport_rejections",
+                        tuple(transport_rejections),
+                    )
                     raise
                 time.sleep(max(0.0, self.config.retry_backoff_seconds) * (attempt + 1))
         else:
@@ -178,6 +210,8 @@ class OpenAICompatibleClient:
             token_usage=usage,
             raw_payload=parsed,
             response_format_mode=response_format_mode,
+            transport_attempt_count=attempt + 1,
+            transport_rejections=tuple(transport_rejections),
         )
 
 

@@ -256,10 +256,24 @@ class ClientUsageLedgerTests(unittest.TestCase):
             ],
         ) as post:
             with capture_llm_usage() as ledger:
-                client.chat_json([{"role": "user", "content": "rate limit"}])
+                response = client.chat_json(
+                    [{"role": "user", "content": "rate limit"}]
+                )
 
         self.assertEqual(post.call_count, 2)
         self.assertEqual(ledger.total()["total_tokens"], 12)
+        self.assertEqual(response.transport_attempt_count, 2)
+        self.assertEqual(
+            response.transport_rejections,
+            (
+                {
+                    "attempt_index": 1,
+                    "status_code": 429,
+                    "pre_generation_rejection": True,
+                    "token_usage_observed": False,
+                },
+            ),
+        )
 
 
 if __name__ == "__main__":

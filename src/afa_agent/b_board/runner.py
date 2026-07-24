@@ -65,7 +65,6 @@ from afa_agent.client import (
 )
 from afa_agent.config import STRUCTURED_OUTPUT_NATIVE, build_run_config
 from afa_agent.domains.generic_retriever import GenericBM25Retriever
-from afa_agent.domains.registry import get_plugin
 from afa_agent.io_utils import ensure_dir, read_json, write_json, write_jsonl
 from afa_agent.models import Question, TokenUsage
 from afa_agent.run_metadata import (
@@ -85,10 +84,10 @@ CALCULATION_SYSTEM_PROMPT = """你是金融长文计算题的结构化求解器�
 输出一个 JSON 对象，字段为 variables、steps、outputs、supporting_evidence_ids、decision_summary。
 variables: [{name,value,value_type,unit,evidence_ids}]，value_type 仅 decimal/date/text，所有变量必须给 evidence_ids。
 variables 只能放证据或题目中逐字出现的原始输入，禁止放任何经加减乘除、比例换算、排序、计数或日期运算得到的派生结果；evidence_ids 也禁止引用 step id。所有派生结果必须只在 steps 中计算，后续步骤和 outputs 直接引用对应 step id。
-证据以文字规定“减半/折半/加倍/若干倍”时，折算后的数值也是派生结果，禁止放入 variables。必须保留证据中的原始数值，并用 literal 2 等因数通过 div 或 mul 步骤计算；例如“每次扣0.5分，分支机构减半”应计算 0.5÷2，不得把0.25作为证据变量。
-题目明确给出的目标期假设值优先于材料中的历史值；例如题目给出2026年增速时，必须使用该增速计算2026年结果，不得误用材料中的2025年历史增速。已抽取且与目标公式相关的题目输入不得在依赖链中遗漏。
-凡是要进入 decimal0、decimal1、decimal2、percent2 输出或算术步骤的数值变量，value_type 必须是 decimal，禁止写成 text。百分数变量的正确示例为 {"name":"毛利率","value":"5.55","value_type":"decimal","unit":"%","evidence_ids":["原证据ID"]}；也可保留 value 中的 %，但 value_type 仍必须为 decimal 且 unit 必须为 %。
-每个变量的 value 必须以同一数值或日期直接出现在所引证据中，unit 也必须与证据一致；不得把 5.55% 擅自写成 0.0555。
+证据以文字规定“减半/折半/加倍/若干倍”时，折算后的数值也是派生结果，禁止放入 variables。必须保留证据中的原始数值，并用 literal 2 等因数通过 div 或 mul 步骤计算；不得把折算结果伪装成证据变量。
+题目明确给出的目标期假设值优先于材料中的历史值；必须使用目标期假设计算目标期结果，不得误用相邻历史期间的同名指标。已抽取且与目标公式相关的题目输入不得在依赖链中遗漏。
+凡是要进入 decimal0、decimal1、decimal2、percent2 输出或算术步骤的数值变量，value_type 必须是 decimal，禁止写成 text。百分数变量的 value 必须逐字复制证据中的数值表示，value_type 必须为 decimal，unit 必须为 %。
+每个变量的 value 必须以同一数值或日期直接出现在所引证据中，unit 也必须与证据一致；不得把证据中的百分数字面值擅自换算为比率值后写入 variables。
 题目明确要求“分地区/分销售模式”等表格行时，变量名称必须保留题目指定的行标签，且该行标签与变量数值必须在同一条证据表格行中；不得把“境外”冒名绑定到“经销”等其他行。
 题目明确要求“使用原始金额计算”占比或比重的百分点变化时，必须先分别用原始金额分子除以同期间原始金额分母得到新旧占比，再把两个 div 步骤作为 pct_point_delta 的 new 和 old；禁止直接使用报告展示百分比作差。
 只有证据同一片段明确写出单位时才填 unit；表格只有裸金额但未标单位时必须填空字符串，不得推断或补写“元”。比率或百分比计算可直接使用同口径原始金额。
@@ -1025,6 +1024,8 @@ class BBoardActualRunner:
             doc_ids=candidate_doc_ids,
             metadata={"doc_ids_are_locator_candidates": True, "locator_attempt": self.locator_attempt_id},
         )
+        from afa_agent.domains.registry import get_plugin
+
         plugin = get_plugin(question.domain)
         result = plugin.answer_one(
             plugin_question,
@@ -4506,17 +4507,17 @@ def _validate_insurance_surrender_rate_binding(
     compact_question = _compact_text(question.question)
     if (
         question.domain != "insurance"
-        or "国寿增益宝" not in compact_question
         or not any(marker in compact_question for marker in ("退保", "解除"))
     ):
         return
     match = re.search(
-        r"国寿增益宝(?:在)?第(\d+)个保单年度",
+        r"([\u4e00-\u9fffA-Za-z0-9]{2,30}?)(?:在)?第(\d+)个保单年度",
         compact_question,
     )
     if match is None:
         return
-    policy_year = int(match.group(1))
+    product_name = match.group(1)
+    policy_year = int(match.group(2))
     expected_rate = _insurance_surrender_rate_from_evidence(
         policy_year,
         evidence_text_by_id.values(),
@@ -4528,7 +4529,7 @@ def _validate_insurance_surrender_rate_binding(
         return
     raise CalculationPlanError(
         "insurance surrender rate mismatch: "
-        f"国寿增益宝第{policy_year}个保单年度的证据费率为{expected_rate}%，"
+        f"{product_name}第{policy_year}个保单年度的证据费率为{expected_rate}%，"
         f"但计划未使用该费率；不得套用相邻年度区间"
     )
 
@@ -5023,18 +5024,15 @@ def _diagnostic_phrase_evidence(
 
     years = set(re.findall(r"20\d{2}", normalized_query))
     dates = set(re.findall(r"20\d{2}年\d{1,2}月\d{1,2}日", normalized_query))
-    entities = [
-        item
-        for item in (
-            "冠鸿智能",
-            "比亚迪",
-            "宁德时代",
-            "美的集团",
-            "招商银行",
-            "中国建筑",
+    entities = list(
+        dict.fromkeys(
+            re.findall(
+                r"[\u4e00-\u9fffA-Za-z0-9]{2,24}?"
+                r"(?:集团|公司|银行|证券|智能|时代)",
+                normalized_query,
+            )
         )
-        if item in normalized_query
-    ]
+    )
     rows_by_doc: dict[str, list[tuple[int, int, Mapping[str, Any]]]] = {}
     allowed_docs = set(doc_ids)
     for position, unit in enumerate(retriever.units):

@@ -34,6 +34,11 @@ from .reasoning_evaluation import (
     aggregate_reasoning,
     run_reasoning_evaluation,
 )
+from .total_score_promotion import (
+    PromotionSnapshot,
+    TotalScorePromotionDecision,
+    decide_total_score_promotion,
+)
 
 __all__ = [
     "SUBMISSION_COLUMNS",
@@ -64,4 +69,7 @@ __all__ = [
     "ReasoningEvaluationRunResult",
     "aggregate_reasoning",
     "run_reasoning_evaluation",
+    "PromotionSnapshot",
+    "TotalScorePromotionDecision",
+    "decide_total_score_promotion",
 ]

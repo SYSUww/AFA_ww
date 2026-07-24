@@ -14,6 +14,7 @@ from afa_agent.b_board.candidate_scorecard import (
 from afa_agent.b_board.io import SUBMISSION_COLUMNS
 from afa_agent.b_board.reasoning_evaluation import (
     PROMPT_VERSION as REASONING_PROMPT_VERSION,
+    SCHEMA_VERSION as REASONING_SCHEMA_VERSION,
 )
 from afa_agent.b_board.runner import SUBMISSION_REASONING_PROMPT_VERSION
 
@@ -304,7 +305,7 @@ class CandidateScorecardTests(unittest.TestCase):
         )
         identity = {
             "prompt_version": REASONING_PROMPT_VERSION,
-            "schema_version": 1,
+            "schema_version": REASONING_SCHEMA_VERSION,
             "model_name": "gpt-5.6",
             "temperature": 0.0,
         }

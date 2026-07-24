@@ -1266,8 +1266,12 @@ class BBoardRunnerModeTests(unittest.TestCase):
         self,
     ) -> None:
         self.assertIn("减半/折半/加倍/若干倍", CALCULATION_SYSTEM_PROMPT)
-        self.assertIn("应计算 0.5÷2", CALCULATION_SYSTEM_PROMPT)
-        self.assertIn("不得把0.25作为证据变量", CALCULATION_SYSTEM_PROMPT)
+        self.assertIn("用 literal 2 等因数", CALCULATION_SYSTEM_PROMPT)
+        self.assertIn("不得把折算结果伪装成证据变量", CALCULATION_SYSTEM_PROMPT)
+        self.assertNotRegex(
+            CALCULATION_SYSTEM_PROMPT,
+            r"(?<![A-Za-z_])(?:20\d{2}|\d+\.\d+(?:[%％])?)",
+        )
 
     def test_calculation_prompt_preserves_direct_disclosed_aggregate_scope(
         self,
