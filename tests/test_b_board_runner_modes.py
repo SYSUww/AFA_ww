@@ -25,6 +25,8 @@ from afa_agent.b_board.runner import (
     BAnswerArtifact,
     BAnswerGenerationError,
     BBoardActualRunner,
+    _answer_checkpoint_from_completed_artifact,
+    _answer_artifact_signature,
     _artifact_from_dict,
     _calculation_evidence_payload,
     _calculation_semantic_constraints,
@@ -131,6 +133,112 @@ def _response(
 
 
 class BBoardRunnerModeTests(unittest.TestCase):
+    def test_completed_artifact_recovers_exact_answer_checkpoint(self) -> None:
+        artifact = _artifact()
+        answer_call = {
+            "call_index": 1,
+            "model_name": "qwen3.7-plus-2026-05-26",
+            "response_format_mode": "native_json_schema_strict",
+            "token_usage": {
+                "prompt_tokens": 10,
+                "completion_tokens": 5,
+                "total_tokens": 15,
+            },
+        }
+        artifact.decision_trace = {
+            "answer_stage": {
+                "status": "complete",
+                "answer_parts_frozen": True,
+                "decision_summary": artifact.decision_summary,
+            },
+            "answer_api_usage_ledger": {
+                "call_count": 1,
+                "calls": [answer_call],
+            },
+            "api_usage_ledger": {
+                "call_count": 2,
+                "calls": [
+                    answer_call,
+                    {
+                        **answer_call,
+                        "call_index": 2,
+                        "token_usage": {
+                            "prompt_tokens": 7,
+                            "completion_tokens": 3,
+                            "total_tokens": 10,
+                        },
+                    },
+                ],
+            },
+            "reasoning_api_usage_ledger": {
+                "call_count": 1,
+                "calls": [],
+            },
+            "reasoning_conclusion_normalization": {
+                "version": "legacy_content_mutation",
+            },
+            "submission_reasoning": {"answer_parts_preserved": True},
+        }
+        artifact.decision_summary = "模型生成的最终reasoning。最终答案为A。"
+        artifact.token_usage = {
+            "prompt_tokens": 17,
+            "completion_tokens": 8,
+            "total_tokens": 25,
+        }
+        completed_signature = _answer_artifact_signature(artifact)
+
+        checkpoint = _answer_checkpoint_from_completed_artifact(artifact)
+
+        self.assertEqual(
+            checkpoint.decision_summary,
+            "证据明确支持题干中的监管要求成立，因此选择正确选项A。",
+        )
+        self.assertEqual(
+            checkpoint.token_usage,
+            {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
+        )
+        self.assertNotIn(
+            "submission_reasoning",
+            checkpoint.decision_trace,
+        )
+        self.assertNotIn(
+            "reasoning_conclusion_normalization",
+            checkpoint.decision_trace,
+        )
+        self.assertEqual(
+            _answer_artifact_signature(checkpoint),
+            completed_signature,
+        )
+
+    def test_completed_artifact_rejects_inconsistent_answer_usage(self) -> None:
+        artifact = _artifact()
+        artifact.decision_trace = {
+            "answer_stage": {
+                "status": "complete",
+                "answer_parts_frozen": True,
+                "decision_summary": artifact.decision_summary,
+            },
+            "answer_api_usage_ledger": {
+                "call_count": 1,
+                "calls": [
+                    {
+                        "model_name": "qwen3.7-plus-2026-05-26",
+                        "token_usage": {
+                            "prompt_tokens": 10,
+                            "completion_tokens": 5,
+                            "total_tokens": 99,
+                        },
+                    }
+                ],
+            },
+        }
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "inconsistent raw usage",
+        ):
+            _answer_checkpoint_from_completed_artifact(artifact)
+
     def test_direct_numeric_output_normalizes_qwen_text_percentage_literal(self) -> None:
         plan = {
             "variables": [
@@ -1322,13 +1430,18 @@ class BBoardRunnerModeTests(unittest.TestCase):
     def test_reasoning_prompt_requires_explicit_auditable_structure(self) -> None:
         self.assertEqual(
             SUBMISSION_REASONING_PROMPT_VERSION,
-            "b_submission_reasoning_v5_grounded_evidence_policy",
+            "b_submission_reasoning_v7_full_coverage_model_generated_conclusion",
         )
         self.assertEqual(DEFAULT_SUBMISSION_REASONING_EVIDENCE_CHAR_LIMIT, 1800)
         self.assertIn("定位—关键事实—推导—结论", SUBMISSION_REASONING_SYSTEM_PROMPT)
         self.assertIn("frozen_answer_parts", SUBMISSION_REASONING_SYSTEM_PROMPT)
+        self.assertIn(
+            "required_conclusion_text",
+            SUBMISSION_REASONING_SYSTEM_PROMPT,
+        )
         self.assertIn('grounding_status="insufficient"', SUBMISSION_REASONING_SYSTEM_PROMPT)
         self.assertIn("reasoning_style_hint", SUBMISSION_REASONING_SYSTEM_PROMPT)
+        self.assertIn("选择题通常 160-260", SUBMISSION_REASONING_SYSTEM_PROMPT)
 
     def test_reasoning_evidence_payload_caps_each_text(self) -> None:
         payload = _reasoning_evidence_payload(
@@ -1506,7 +1619,7 @@ class BBoardRunnerModeTests(unittest.TestCase):
         self.assertEqual(normalized["answer_parts"], ["A", "C"])
         self.assertEqual(changes, [])
 
-    def test_reasoning_hard_fallback_appends_exact_frozen_conclusion(self) -> None:
+    def test_reasoning_normalizer_does_not_append_frozen_conclusion(self) -> None:
         normalized, changes = normalize_submission_reasoning_payload(
             {
                 "answer_parts": ["BCD"],
@@ -1517,18 +1630,54 @@ class BBoardRunnerModeTests(unittest.TestCase):
             frozen_answer_parts=["BCD"],
         )
 
-        self.assertEqual(
-            normalized["reasoning"],
-            "证据分别支持B、C、D，并排除A。最终答案为BCD。",
+        self.assertEqual(normalized["reasoning"], "证据分别支持B、C、D，并排除A。")
+        self.assertEqual(changes, [])
+
+    def test_missing_model_generated_conclusion_retries_reasoning_only(
+        self,
+    ) -> None:
+        runner = object.__new__(BBoardActualRunner)
+        runner.config = SimpleNamespace(
+            model=SimpleNamespace(model_name="qwen3.7-plus")
         )
-        self.assertEqual(
-            changes,
+        runner.client = _QueuedClient(
             [
-                {
-                    "reason": "append_exact_frozen_answer_conclusion",
-                    "missing_parts": ["BCD"],
-                }
-            ],
+                _response(
+                    '{"answer_parts":["A"],"grounding_status":"supported",'
+                    '"missing_support":[],"reasoning":"定位监管要求后，证据明确给出'
+                    '适用条件，该条件与题干陈述一致，因而判断成立。"}',
+                    10,
+                    2,
+                ),
+                _response(
+                    '{"answer_parts":["A"],"grounding_status":"supported",'
+                    '"missing_support":[],"reasoning":"定位监管要求后，证据明确给出'
+                    '适用条件，该条件与题干陈述一致，因而判断成立。最终答案为A。"}',
+                    11,
+                    3,
+                ),
+            ]
+        )
+        runner._rescue_submission_reasoning_evidence = (
+            lambda *_args: self.fail("conclusion retry must not rescue evidence")
+        )
+
+        result = runner._attach_submission_reasoning(
+            _question(),
+            _artifact(),
+        )
+
+        self.assertEqual(len(runner.client.messages), 2)
+        self.assertTrue(result.decision_summary.endswith("最终答案为A。"))
+        trace = result.decision_trace["submission_reasoning"]
+        self.assertEqual(trace["format_retry_count"], 1)
+        self.assertEqual(trace["api_call_count"], 2)
+        self.assertNotIn(
+            "append_exact_frozen_answer_conclusion",
+            {
+                item["reason"]
+                for item in trace["payload_normalizations"]
+            },
         )
 
     def test_reasoning_contract_failure_retries_only_reasoning_without_rescue(
@@ -1685,7 +1834,7 @@ class BBoardRunnerModeTests(unittest.TestCase):
             self.assertIn(dimension, SUBMISSION_REASONING_FEEDBACK_SYSTEM_PROMPT)
         self.assertEqual(
             SUBMISSION_REASONING_REFINE_PROMPT_VERSION,
-            "b_submission_reasoning_refine_v2_minimal_verified",
+            "b_submission_reasoning_refine_v3_model_generated_conclusion",
         )
         self.assertIn("冻结答案", SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT)
         self.assertIn("定位—关键事实—推导—结论", SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT)
@@ -1730,7 +1879,7 @@ class BBoardRunnerModeTests(unittest.TestCase):
         self.assertEqual(trace["refine_prompt_version"], SUBMISSION_REASONING_REFINE_PROMPT_VERSION)
         self.assertEqual(len(runner.client.messages), 2)
 
-    def test_reasoning_refinement_hard_fallback_avoids_retry(self) -> None:
+    def test_reasoning_refinement_representation_fallback_avoids_retry(self) -> None:
         runner = object.__new__(BBoardActualRunner)
         runner.config = SimpleNamespace(
             model=SimpleNamespace(
@@ -1751,7 +1900,8 @@ class BBoardRunnerModeTests(unittest.TestCase):
                 ),
                 _response(
                     '{"answer_parts":"A","reasoning":"定位题干监管条件，'
-                    '证据直接支持该条件成立，因此可推出题干判断成立。",'
+                    '证据直接支持该条件成立，因此可推出题干判断成立。'
+                    '最终答案为A。",'
                     '"comment":"删除这个非契约字段"}',
                     12,
                     3,

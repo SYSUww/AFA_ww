@@ -15,7 +15,11 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from afa_agent.b_board.io import load_b_questions, validate_b_answer
 from afa_agent.b_board.merge import hydrate_reasoning_patch
-from afa_agent.b_board.runner import _artifact_from_dict, _sum_tokens
+from afa_agent.b_board.runner import (
+    _answer_checkpoint_from_completed_artifact,
+    _artifact_from_dict,
+    _sum_tokens,
+)
 from afa_agent.b_board.submission_policy import is_allowed_submission_model
 from afa_agent.io_utils import ensure_dir, read_json, write_json
 
@@ -61,11 +65,24 @@ def main() -> None:
         ROOT / args.submission_template,
     )
     question_by_qid = {item.qid: item for item in questions}
-    answer_rows = read_json(answer_run / "answer_artifacts.json")
-    answers = {
-        str(row["qid"]): _artifact_from_dict(row)
-        for row in answer_rows
-    }
+    checkpoint_path = answer_run / "answer_artifacts.json"
+    checkpoints_recovered_from_completed_rows = False
+    if checkpoint_path.is_file():
+        answer_rows = read_json(checkpoint_path)
+        answers = {
+            str(row["qid"]): _artifact_from_dict(row)
+            for row in answer_rows
+        }
+    else:
+        checkpoint_path = answer_run / "answers.json"
+        answer_rows = read_json(checkpoint_path)
+        answers = {
+            str(row["qid"]): _answer_checkpoint_from_completed_artifact(
+                _artifact_from_dict(row)
+            )
+            for row in answer_rows
+        }
+        checkpoints_recovered_from_completed_rows = True
     patch_rows = read_json(reasoning_patch_path)
     patches = {
         str(row["qid"]): _artifact_from_dict(row)
@@ -97,8 +114,10 @@ def main() -> None:
         "status": "complete",
         "model": source_model,
         "source_answer_run": str(answer_run),
-        "source_answer_artifacts_sha256": _sha256(
-            answer_run / "answer_artifacts.json"
+        "source_answer_artifacts_path": str(checkpoint_path),
+        "source_answer_artifacts_sha256": _sha256(checkpoint_path),
+        "checkpoints_recovered_from_completed_rows": (
+            checkpoints_recovered_from_completed_rows
         ),
         "source_reasoning_patch": str(reasoning_patch_path),
         "source_reasoning_patch_sha256": _sha256(reasoning_patch_path),

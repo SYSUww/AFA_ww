@@ -37961,3 +37961,144 @@
   "submission_effect": "local_candidate_not_officially_uploaded"
 }
 ```
+
+## b-loop-qwen37-reasoning-provenance-compliance-a1-sample6
+
+```json
+{
+  "approach": "进入新方向前重读日志和upload_b/new.md一致性审计条款。实锤A12有30条reasoning被代码追加“最终答案”句，但该句不在Qwen原始响应usage内。A1删除submission/refine normalizer的内容追加能力，改为required_conclusion_text动态提示和模型原始输出结尾硬门禁；缺失时只重试reasoning，不重跑答案或证据检索。使用6个跨领域风险样本、thinking=off、native strict进行reasoning-only验证。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_reasoning_provenance_a1_sample6",
+  "direction_id": "qwen37_reasoning_provenance_compliance",
+  "effect": "6/6样本均由Qwen原始响应直接生成精确冻结结论，6次调用全部一次成功，格式重试0，内容归一化0，答案签名全部冻结。GPT-5.6影子均分93.6111；相对当前A12逐题分数有升有降，因此A1只证明合规门禁与低失败率成立，不直接晋级reasoning文本。",
+  "experiment_id": "b-loop-qwen37-reasoning-provenance-compliance-a1-sample6",
+  "failure_analysis": "旧deterministic_payload_normalization_v3虽减少表面格式重试，却对reasoning正文做实质补写，违反new.md关于新增依据、二次总结和未申报改写痕迹的审计边界。A1格式问题已解决，但非thinking短摘要在res_b_018等题完整性下降，不能只按合规性无条件替换所有文本。",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_direction": "qwen37_calculation_structural_retry_elimination",
+    "new_material_delta": "从格式成功率优化转向最终提交文本与原始Qwen usage一一对应的审计合规性。"
+  },
+  "metrics": {
+    "a12_programmatically_appended_reasoning_count": 30,
+    "answer_parts_changed_count": 0,
+    "direction_attempt_count": 1,
+    "format_retry_count": 0,
+    "gpt56_reasoning_score": 93.6111111111111,
+    "model_generated_exact_conclusion_count": 6,
+    "payload_content_mutation_count": 0,
+    "qwen_api_call_count": 6,
+    "sample_question_count": 6,
+    "submission_eligible": false
+  },
+  "next_step": "A2先从A12完整产物恢复100个精确纯答案checkpoint，验证签名和answer usage后，对全部30条风险reasoning进行一次非thinking合规重生并逐题GPT-5.6门禁。若少量题明显回退，A3只处理回退题；方向最多3轮。",
+  "pipeline_stage": "submission_reasoning_generation",
+  "promotion_result": "format_and_provenance_gate_effective_quality_mixed",
+  "question_types": [
+    "choice",
+    "calculation",
+    "extraction"
+  ],
+  "recorded_at": "2026-07-24T09:04:09+08:00",
+  "root_cause_cluster": "programmatic_reasoning_content_without_qwen_usage",
+  "score_type": "offline_shadow_probe_not_official",
+  "status": "completed_mixed",
+  "submission_effect": "local_reasoning_patch_not_officially_uploaded"
+}
+```
+
+## b-loop-qwen37-reasoning-provenance-compliance-a2-risk30
+
+```json
+{
+  "approach": "A2先补充从完整composite answers.json恢复纯答案checkpoint的通用能力：只保留answer_stage、answer_api_usage_ledger及冻结答案/证据，移除reasoning正文、reasoning usage和内容归一化trace，恢复后逐题校验冻结签名。随后以A12为精确源，对全部30条存在程序化结论追加的reasoning使用v6结论门禁、thinking=off、native strict单次重生，并对30条逐题GPT-5.6影子评分。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_reasoning_provenance_a2_risk30",
+  "direction_id": "qwen37_reasoning_provenance_compliance",
+  "effect": "100个A12答案checkpoint均可无损恢复；30/30风险reasoning均由Qwen原始响应直接生成精确冻结结论，30次调用全部一次成功，格式重试0、内容归一化0、答案变化0。30条GPT-5.6均分93.1000；若全部替换，完整100题reasoning 95.7733→95.0700、Token 1281743→1254411、同accuracy代理总分下降0.101672。逐题门禁为13条正收益、17条负收益。",
+  "experiment_id": "b-loop-qwen37-reasoning-provenance-compliance-a2-risk30",
+  "failure_analysis": "格式和来源合规已稳定解决，剩余问题转为非thinking摘要过度压缩导致完整性损失，尤其ins_b_015单题影子分97.0→74.6667。由于旧30条不满足来源审计，不能简单保留旧文本；必须在合规候选之间择优。",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_experiment_id": "b-loop-qwen37-reasoning-provenance-compliance-a1-sample6",
+    "new_material_delta": "精确composite答案checkpoint恢复、30条全覆盖、逐题因果分与Token门禁。"
+  },
+  "metrics": {
+    "a12_checkpoint_recovery_count": 100,
+    "all30_proxy_total_delta_same_accuracy": -0.101672,
+    "all30_reasoning_score": 95.07000000000001,
+    "all30_token_total": 1254411,
+    "answer_parts_changed_count": 0,
+    "direction_attempt_count": 2,
+    "format_retry_count": 0,
+    "gpt56_patch_reasoning_score": 93.1,
+    "negative_proxy_qid_count": 17,
+    "payload_content_mutation_count": 0,
+    "positive_proxy_qid_count": 13,
+    "qwen_api_call_count": 30,
+    "risk_qid_count": 30
+  },
+  "next_step": "A3为本方向最后一轮，只重生17条A2负收益题：把Prompt的选择题摘要目标提高到160-260字、强调不得压缩定位/逐项事实/因果推导，并开启Qwen thinking。逐题从A2/A3选择代理总分较高的合规reasoning；其余13条保留A2。本方向之后无第四轮。",
+  "pipeline_stage": "submission_reasoning_generation",
+  "promotion_result": "compliance_complete_quality_gate_mixed",
+  "question_types": [
+    "choice",
+    "calculation",
+    "extraction"
+  ],
+  "recorded_at": "2026-07-24T09:09:09+08:00",
+  "root_cause_cluster": "programmatic_reasoning_content_without_qwen_usage",
+  "score_type": "offline_causal_proxy_not_official",
+  "status": "completed_mixed",
+  "submission_effect": "local_reasoning_patch_not_officially_uploaded"
+}
+```
+
+## b-loop-qwen37-reasoning-provenance-compliance-a3-thinking-selection-a13
+
+```json
+{
+  "approach": "本方向第3轮也是最后一轮。重读A2日志后，仅对17条A2负收益题提高Prompt完整性要求（选择题目标160-260字，禁止压缩定位、逐项事实和因果推导）并开启Qwen thinking；继续使用A12精确答案checkpoint、native strict和模型原始结论硬门禁。A3评测后，在A2非thinking与A3 thinking两个合规整段输出之间按逐题最终公式择优，不拼接、不改写文本；再将选中的30条reasoning hydration到A12冻结答案并组装100题A13。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_integrated_full100_candidate_a13_reasoning_provenance",
+  "direction_id": "qwen37_reasoning_provenance_compliance",
+  "effect": "A3的17条thinking reasoning全部一次成功、格式重试0、正文内容归一化0，GPT-5.6均分96.4510。最终30条选择A2 15条、A3 15条，全部答案签名与A12一致，全部结论来自各自Qwen原始响应且usage完整。A13中旧程序化正文补写标记30→0；完整100题reasoning 95.7733→95.9133，Token 1281743→1273122，同accuracy代理总分净增0.076484。A13本地提交契约、白名单和逐调用usage验证通过，未官网上传。",
+  "experiment_id": "b-loop-qwen37-reasoning-provenance-compliance-a3-thinking-selection-a13",
+  "failure_analysis": "thinking显著提高完整性但Token更高，因此没有全量采用；逐题择优后仍有10条相对旧非合规文本为负收益，但30条整体合规候选净收益为正。旧文本因未申报程序化补写不能作为可提交对照继续保留。方向达到3轮上限，停止继续采样。",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_experiment_id": "b-loop-qwen37-reasoning-provenance-compliance-a2-risk30",
+    "direction_attempt_count": 3,
+    "new_material_delta": "只对A2负收益题提升完整性并开启thinking，最终在两个完整、合规的Qwen输出间按题择优。"
+  },
+  "metrics": {
+    "a13_reasoning_score": 95.91333333333334,
+    "a13_submit_sha256": "843dc179d463844aaf2af3b4a407c1dcc4ea78dfa6e50678370f778db2c6b062",
+    "a13_token_efficiency_score": 74.53756,
+    "a13_token_total": 1273122,
+    "a3_format_retry_count": 0,
+    "a3_gpt56_reasoning_score": 96.45098039215686,
+    "a3_qwen_api_call_count": 17,
+    "answer_parts_changed_count": 0,
+    "direction_attempt_count": 3,
+    "legacy_programmatic_reasoning_content_after": 0,
+    "legacy_programmatic_reasoning_content_before": 30,
+    "proxy_total_delta_same_accuracy": 0.07648399999999356,
+    "proxy_total_if_accuracy_99_not_official": 93.181512,
+    "selected_a2_nonthinking_count": 15,
+    "selected_a3_thinking_count": 15,
+    "selected_reasoning_api_call_count": 30,
+    "selected_reasoning_format_retry_count": 0,
+    "submission_eligible": true
+  },
+  "next_step": "本方向关闭并推送有效分支。后续新方向必须先重读本日志；优先审计答案阶段HTTP重试usage可观测性和选择题默认A硬回退，禁止再次使用任何会改写reasoning正文的本地normalizer。不做官网上传。",
+  "pipeline_stage": "submission_reasoning_generation",
+  "promotion_result": "effective_full100_compliant_candidate",
+  "question_types": [
+    "choice",
+    "calculation",
+    "extraction"
+  ],
+  "recorded_at": "2026-07-24T09:19:34+08:00",
+  "root_cause_cluster": "programmatic_reasoning_content_without_qwen_usage",
+  "score_type": "offline_causal_proxy_not_official",
+  "status": "completed_effective_direction_exhausted",
+  "submission_effect": "local_candidate_not_officially_uploaded"
+}
+```

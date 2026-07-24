@@ -21,6 +21,7 @@ from afa_agent.b_board.io import (
 from afa_agent.b_board.runner import (
     RUN_MODE_SUBMISSION,
     BBoardActualRunner,
+    _answer_checkpoint_from_completed_artifact,
     _answer_artifact_signature,
     _artifact_from_dict,
     _sum_tokens,
@@ -93,11 +94,24 @@ def main() -> None:
     missing_questions = sorted(set(qids) - set(question_by_qid))
     if missing_questions:
         raise ValueError(f"unknown qids: {missing_questions}")
-    source_rows = read_json(answer_run / "answer_artifacts.json")
-    source_artifacts = {
-        str(row["qid"]): _artifact_from_dict(row)
-        for row in source_rows
-    }
+    checkpoint_path = answer_run / "answer_artifacts.json"
+    checkpoints_recovered_from_completed_rows = False
+    if checkpoint_path.is_file():
+        source_rows = read_json(checkpoint_path)
+        source_artifacts = {
+            str(row["qid"]): _artifact_from_dict(row)
+            for row in source_rows
+        }
+    else:
+        checkpoint_path = answer_run / "answers.json"
+        source_rows = read_json(checkpoint_path)
+        source_artifacts = {
+            str(row["qid"]): _answer_checkpoint_from_completed_artifact(
+                _artifact_from_dict(row)
+            )
+            for row in source_rows
+        }
+        checkpoints_recovered_from_completed_rows = True
     missing_artifacts = sorted(set(qids) - set(source_artifacts))
     if missing_artifacts:
         raise ValueError(
@@ -195,8 +209,10 @@ def main() -> None:
         "run_mode": "research_patch",
         "model": source_model,
         "source_answer_run": str(answer_run),
-        "source_answer_artifacts_sha256": _sha256(
-            answer_run / "answer_artifacts.json"
+        "source_answer_artifacts_path": str(checkpoint_path),
+        "source_answer_artifacts_sha256": _sha256(checkpoint_path),
+        "checkpoints_recovered_from_completed_rows": (
+            checkpoints_recovered_from_completed_rows
         ),
         "expected_question_count": len(qids),
         "answered_question_count": len(results),

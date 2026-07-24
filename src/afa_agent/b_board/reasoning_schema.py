@@ -8,7 +8,7 @@ from jsonschema import Draft202012Validator
 
 SUBMISSION_REASONING_SCHEMA_VERSION = "submission_reasoning_v1"
 SUBMISSION_REASONING_NORMALIZATION_VERSION = (
-    "deterministic_payload_normalization_v3_explicit_frozen_conclusion"
+    "deterministic_payload_normalization_v4_representation_only"
 )
 REASONING_FEEDBACK_SCHEMA_VERSION = "reasoning_feedback_v1"
 REASONING_REFINE_SCHEMA_VERSION = "reasoning_refine_v1"
@@ -161,33 +161,6 @@ def normalize_submission_reasoning_payload(
             {"reason": "missing_support_string_to_array"}
         )
 
-    reasoning = normalized.get("reasoning")
-    if (
-        normalized.get("answer_parts") == expected
-        and grounding_status == "supported"
-        and isinstance(reasoning, str)
-        and reasoning.strip()
-    ):
-        compact_reasoning = "".join(reasoning.split()).replace(",", "")
-        missing_parts = [
-            part
-            for part in expected
-            if "".join(part.split()).replace(",", "") not in compact_reasoning
-        ]
-        if missing_parts:
-            separator = "" if reasoning.rstrip().endswith(("。", "！", "？", ";", "；")) else "。"
-            if len(expected) == 1:
-                conclusion = f"最终答案为{expected[0]}。"
-            else:
-                conclusion = f"最终答案依次为{'；'.join(expected)}。"
-            normalized["reasoning"] = f"{reasoning.rstrip()}{separator}{conclusion}"
-            normalizations.append(
-                {
-                    "reason": "append_exact_frozen_answer_conclusion",
-                    "missing_parts": missing_parts,
-                }
-            )
-
     return normalized, normalizations
 
 
@@ -251,7 +224,7 @@ def normalize_reasoning_refine_payload(
     *,
     frozen_answer_parts: Sequence[str],
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    """Repair only answer-shape and explicit-conclusion representation drift."""
+    """Repair only answer-shape representation drift."""
 
     normalized = copy.deepcopy(dict(payload))
     normalizations: list[dict[str, Any]] = []
@@ -293,38 +266,6 @@ def normalize_reasoning_refine_payload(
             }
         )
 
-    reasoning = normalized.get("reasoning")
-    if (
-        normalized.get("answer_parts") == expected
-        and isinstance(reasoning, str)
-        and reasoning.strip()
-    ):
-        compact_reasoning = "".join(reasoning.split()).replace(",", "")
-        missing_parts = [
-            part
-            for part in expected
-            if "".join(part.split()).replace(",", "") not in compact_reasoning
-        ]
-        if missing_parts:
-            separator = (
-                ""
-                if reasoning.rstrip().endswith(("。", "！", "？", ";", "；"))
-                else "。"
-            )
-            conclusion = (
-                f"最终答案为{expected[0]}。"
-                if len(expected) == 1
-                else f"最终答案依次为{'；'.join(expected)}。"
-            )
-            normalized["reasoning"] = (
-                f"{reasoning.rstrip()}{separator}{conclusion}"
-            )
-            normalizations.append(
-                {
-                    "reason": "append_exact_frozen_answer_conclusion",
-                    "missing_parts": missing_parts,
-                }
-            )
     return normalized, normalizations
 
 
@@ -334,6 +275,35 @@ def validate_reasoning_refine_schema(payload: Mapping[str, Any]) -> None:
         validator=_REFINE_VALIDATOR,
         contract_name="ReasoningRefine",
     )
+
+
+def required_frozen_answer_conclusion(
+    frozen_answer_parts: Sequence[str],
+) -> str:
+    """Return the exact conclusion that the model must include in reasoning."""
+
+    parts = [str(item) for item in frozen_answer_parts]
+    if not parts:
+        raise ValueError("frozen_answer_parts must not be empty")
+    if len(parts) == 1:
+        return f"最终答案为{parts[0]}。"
+    return f"最终答案依次为{'；'.join(parts)}。"
+
+
+def validate_model_generated_frozen_answer_conclusion(
+    reasoning: str,
+    *,
+    frozen_answer_parts: Sequence[str],
+    contract_name: str,
+) -> None:
+    """Reject reasoning whose model output omitted the exact frozen conclusion."""
+
+    required = required_frozen_answer_conclusion(frozen_answer_parts)
+    if not str(reasoning).rstrip().endswith(required):
+        raise ValueError(
+            f"{contract_name} reasoning must end with exact model-generated "
+            f"frozen conclusion: {required}"
+        )
 
 
 def _validate_schema(

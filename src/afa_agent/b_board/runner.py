@@ -32,7 +32,9 @@ from afa_agent.b_board.reasoning_schema import (
     normalize_reasoning_feedback_payload,
     normalize_reasoning_refine_payload,
     normalize_submission_reasoning_payload,
+    required_frozen_answer_conclusion,
     validate_reasoning_feedback_schema,
+    validate_model_generated_frozen_answer_conclusion,
     validate_reasoning_refine_schema,
     validate_submission_reasoning_schema,
 )
@@ -109,7 +111,7 @@ format 仅 raw,decimal0,decimal1,decimal2,percent2,date_cn,text。中间过程�
 证据 ID 必须原样使用给定 evidence_id。题目本身给出的数值可引用 question:<qid>。只输出 JSON。"""
 
 SUBMISSION_REASONING_PROMPT_VERSION = (
-    "b_submission_reasoning_v5_grounded_evidence_policy"
+    "b_submission_reasoning_v7_full_coverage_model_generated_conclusion"
 )
 SUBMISSION_REASONING_STYLE_HINT_VERSION = (
     "question_derived_date_natural_day_boundary_v1"
@@ -126,9 +128,9 @@ reasoning 按“定位—关键事实—推导—结论”形成闭环：
 - 定位主体、产品、条款、指标、期间或比较对象。
 - 从证据提取直接支持答案的具体事实、数值、条件或限制，保持单位、期间和口径一致。
 - 单选/判断题说明决定结论的关键条件；多选题逐一覆盖每个选中项，并说明至少一个关键未选项；计算题写必要公式、原始数值、单位/口径、代入关系和结果；多空题按答案槽顺序说明。
-- 最后显式写出与 frozen_answer_parts 完全一致的答案。
+- reasoning 的最后一句必须逐字复制用户载荷中的 required_conclusion_text；该句必须由本次模型响应生成，不得省略、改写或只在 answer_parts 字段中表达。
 用户载荷中的 reasoning_style_hint 若非空，只是由题面确定、且不包含答案的核验要求；在不违背证据和冻结答案的前提下执行它。
-避免“根据材料可知”“综合分析得出”等空泛模板，不堆叠无关事实，不输出内部 evidence_id、unit_id、JSON 路径、Markdown 或程序字段名。选择题通常 120-220 个中文字符，计算题通常 160-260 个中文字符，且去除空白后不少于 20 字。
+避免“根据材料可知”“综合分析得出”等空泛模板，不堆叠无关事实，不输出内部 evidence_id、unit_id、JSON 路径、Markdown 或程序字段名。不要把定位、关键事实、逐项判断和因果推导压缩成只有结论的短句；选择题通常 160-260 个中文字符，计算题通常 180-300 个中文字符，其他题通常 160-260 个中文字符，且去除空白后不少于 20 字。
 只输出合法 JSON，字段严格为 answer_parts、grounding_status、missing_support、
 reasoning，不得增删字段；answer_parts 和 missing_support 必须是 JSON 数组：
 支持时：{{"answer_parts":["逐字复制冻结答案"],"grounding_status":"supported","missing_support":[],"reasoning":"推理摘要"}}
@@ -141,17 +143,20 @@ SUBMISSION_REASONING_FEEDBACK_SYSTEM_PROMPT = f"""你是金融长文问答的推
 选择题还要检查每个选中项的支持事实、至少一个关键排除项及显式最终答案；计算题还要检查必要公式、代入、单位和结果格式。
 只输出 JSON，字段严格为 logical_issues、completeness_issues、clarity_issues、verification_questions、must_preserve_facts，每个字段的值都是字符串数组。只列出确实影响评分的具体缺口：每个 issues 数组最多 2 项，verification_questions 最多 2 项，must_preserve_facts 保留 3-6 条最关键事实。若草稿已经完整，三个 issues 和 verification_questions 都输出空数组，不为改写而制造问题。prompt_version={SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION}。"""
 
-SUBMISSION_REASONING_REFINE_PROMPT_VERSION = "b_submission_reasoning_refine_v2_minimal_verified"
+SUBMISSION_REASONING_REFINE_PROMPT_VERSION = (
+    "b_submission_reasoning_refine_v3_model_generated_conclusion"
+)
 SUBMISSION_REASONING_REFINE_POLICY_VERSION = "b_submission_reasoning_refine_policy_v3_conservative"
 SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推理摘要修订器。只使用给定题目、冻结答案、原摘要、质检结果和证据，不补充外部事实，不得改变答案。
 输出字段仅为 answer_parts 和 reasoning 的 JSON；answer_parts 必须逐字复制冻结答案。优先保留原摘要中已经清晰、有用且有证据的内容，只修正最影响评分的少量缺口，不要机械回答每个核查问题或堆叠所有事实。reasoning 用中文完成“定位—关键事实—推导—结论”闭环，通常为 160-260 字：
 1. 明确主体、产品、条款、指标或期间；
 2. 只写证据可支持的具体事实；选择题覆盖每个选中项并说明至少一个关键排除项；
 3. 补齐事实到判断的因果联系；计算题写必要公式、代入、单位换算和结果格式；
-4. 显式写出与 answer_parts 完全一致的最终答案。
+4. reasoning 的最后一句必须逐字复制用户载荷中的 required_conclusion_text；
+   该句必须由本次模型响应生成，不得省略或改写。
 不得提及“质检”、“反馈”、“草稿”或修订过程，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。只输出 JSON。prompt_version={SUBMISSION_REASONING_REFINE_PROMPT_VERSION}。"""
 
-RUNNER_VERSION = "b_actual_v27_calculation_operator_shapes"
+RUNNER_VERSION = "b_actual_v28_reasoning_model_generated_conclusion"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 CALCULATION_PLAN_NORMALIZATION_VERSION = "qwen37_structure_contract_v3_schema"
 CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
@@ -1263,6 +1268,9 @@ class BBoardActualRunner:
             dict(item) for item in artifact.evidence_items
         ]
         reasoning_style_hint = _submission_reasoning_style_hint(question)
+        required_conclusion = required_frozen_answer_conclusion(
+            artifact.answer_parts
+        )
         for attempt_number in range(1, 3):
             evidence_payload = _reasoning_evidence_payload(
                 reasoning_evidence_items,
@@ -1282,6 +1290,7 @@ class BBoardActualRunner:
                             "options": question.options,
                             "reasoning_style_hint": reasoning_style_hint,
                             "frozen_answer_parts": artifact.answer_parts,
+                            "required_conclusion_text": required_conclusion,
                             "verified_solution_summary": artifact.decision_summary,
                             "verified_calculation_trace": artifact.calculation_trace,
                             "evidence": evidence_payload,
@@ -1306,7 +1315,8 @@ class BBoardActualRunner:
                                 base_messages[1]["content"]
                                 + "\n\n上一次响应未通过结构或冻结答案契约。"
                                 "不要改变 frozen_answer_parts；只输出 Schema 要求的"
-                                "四个字段，answer_parts 和 missing_support 必须为数组。"
+                                "四个字段，answer_parts 和 missing_support 必须为数组；"
+                                f"reasoning最后一句必须逐字为：{required_conclusion}"
                             ),
                         },
                     ]
@@ -1390,6 +1400,11 @@ class BBoardActualRunner:
                             raise ValueError(
                                 "submission reasoning is shorter than 20 non-whitespace characters"
                             )
+                        validate_model_generated_frozen_answer_conclusion(
+                            reasoning,
+                            frozen_answer_parts=artifact.answer_parts,
+                            contract_name="SubmissionReasoning",
+                        )
                     else:
                         if reasoning:
                             raise ValueError(
@@ -1692,6 +1707,9 @@ class BBoardActualRunner:
             "question": question.question,
             "options": question.options,
             "frozen_answer_parts": artifact.answer_parts,
+            "required_conclusion_text": (
+                required_frozen_answer_conclusion(artifact.answer_parts)
+            ),
             "reasoning": artifact.decision_summary,
             "evidence": evidence_payload,
         }
@@ -1817,6 +1835,11 @@ class BBoardActualRunner:
                     "refined submission reasoning is shorter than 20 "
                     "non-whitespace characters"
                 )
+            validate_model_generated_frozen_answer_conclusion(
+                reasoning,
+                frozen_answer_parts=artifact.answer_parts,
+                contract_name="ReasoningRefine",
+            )
 
         try:
             payload, refine_usage, refine_contract, refine_normalizations = (
@@ -1848,7 +1871,8 @@ class BBoardActualRunner:
                     validate_payload=validate_refine_payload,
                     retry_instruction=(
                         "不要改变frozen_answer_parts；只输出answer_parts和"
-                        "reasoning两个字段，answer_parts必须是数组。"
+                        "reasoning两个字段，answer_parts必须是数组；"
+                        "reasoning最后一句必须逐字复制required_conclusion_text。"
                     ),
                 )
             )
@@ -4501,20 +4525,26 @@ def _combined_usage_ledger_rows(
     return rows
 
 
-def _answer_artifact_signature(artifact: BAnswerArtifact) -> str:
-    mutable_reasoning_keys = {
+_MUTABLE_REASONING_TRACE_KEYS = frozenset(
+    {
         "api_usage_ledger",
         "reasoning_api_usage_ledger",
+        "reasoning_conclusion_normalization",
+        "reasoning_patch_lineage",
         "reasoning_retry_failure_history",
         "reasoning_refinement_stage",
         "reasoning_stage",
         "submission_reasoning",
         "submission_reasoning_refinement",
     }
+)
+
+
+def _answer_artifact_signature(artifact: BAnswerArtifact) -> str:
     answer_trace = {
         key: value
         for key, value in artifact.decision_trace.items()
-        if key not in mutable_reasoning_keys
+        if key not in _MUTABLE_REASONING_TRACE_KEYS
     }
     frozen_payload = {
         "qid": artifact.qid,
@@ -4535,6 +4565,94 @@ def _answer_artifact_signature(artifact: BAnswerArtifact) -> str:
         separators=(",", ":"),
     ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _answer_checkpoint_from_completed_artifact(
+    artifact: BAnswerArtifact,
+) -> BAnswerArtifact:
+    """Recover the exact frozen answer checkpoint from a completed row."""
+
+    completed_signature = _answer_artifact_signature(artifact)
+    answer_stage = dict(artifact.decision_trace.get("answer_stage") or {})
+    answer_summary = str(answer_stage.get("decision_summary", "")).strip()
+    if (
+        answer_stage.get("status") != "complete"
+        or not answer_stage.get("answer_parts_frozen")
+        or not answer_summary
+    ):
+        raise ValueError(
+            f"{artifact.qid}: completed artifact has no recoverable answer stage"
+        )
+    answer_ledger = dict(
+        artifact.decision_trace.get("answer_api_usage_ledger") or {}
+    )
+    calls = [
+        dict(item)
+        for item in answer_ledger.get("calls", [])
+        if isinstance(item, Mapping)
+    ]
+    if (
+        not isinstance(answer_ledger.get("calls"), list)
+        or int(answer_ledger.get("call_count", -1)) != len(calls)
+    ):
+        raise ValueError(
+            f"{artifact.qid}: completed artifact answer usage ledger is invalid"
+        )
+    for index, call in enumerate(calls, start=1):
+        model_name = str(call.get("model_name", ""))
+        usage = dict(call.get("token_usage") or {})
+        if not is_allowed_submission_model(model_name):
+            raise ValueError(
+                f"{artifact.qid}: answer call {index} used disallowed model "
+                f"{model_name!r}"
+            )
+        values = {
+            field_name: usage.get(field_name)
+            for field_name in (
+                "prompt_tokens",
+                "completion_tokens",
+                "total_tokens",
+            )
+        }
+        if any(
+            isinstance(value, bool)
+            or not isinstance(value, int)
+            or value < 0
+            for value in values.values()
+        ):
+            raise ValueError(
+                f"{artifact.qid}: answer call {index} has invalid raw usage"
+            )
+        if (
+            values["total_tokens"]
+            != values["prompt_tokens"] + values["completion_tokens"]
+        ):
+            raise ValueError(
+                f"{artifact.qid}: answer call {index} has inconsistent raw usage"
+            )
+
+    checkpoint = _artifact_from_dict(artifact.to_dict())
+    checkpoint.decision_summary = answer_summary
+    checkpoint.reasoning_evidence_items = []
+    checkpoint.decision_trace = {
+        key: value
+        for key, value in checkpoint.decision_trace.items()
+        if key not in _MUTABLE_REASONING_TRACE_KEYS
+    }
+    checkpoint.decision_trace["answer_api_usage_ledger"] = {
+        "call_count": len(calls),
+        "calls": calls,
+    }
+    checkpoint.decision_trace["api_usage_ledger"] = {
+        "call_count": len(calls),
+        "calls": calls,
+    }
+    checkpoint.token_usage = _sum_call_tokens(calls)
+    if _answer_artifact_signature(checkpoint) != completed_signature:
+        raise ValueError(
+            f"{artifact.qid}: recovered answer checkpoint changed frozen state"
+        )
+    return checkpoint
 
 
 def _refresh_combined_api_usage_ledger(
