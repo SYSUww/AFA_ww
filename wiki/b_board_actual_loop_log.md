@@ -342,6 +342,92 @@
 }
 ```
 
+## b-loop-qwen37-calculation-ranking-evidence-frontload-a1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-calculation-ranking-evidence-frontload-a1",
+  "direction_id": "qwen37_calculation_multi_entity_ranking_evidence_frontload",
+  "direction_attempt_count": 1,
+  "direction_round_limit": 3,
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_effective_round": "b-loop-qwen37-calculation-guarded-adaptive-thinking-a3-question-only-first",
+    "active_slice_protocol": "b-loop-qwen37-calculation-top12-protocol-v2"
+  },
+  "approach": "在最新guarded-adaptive候选上增加独立research-only首轮覆盖策略：当题目属于财报域、只有一个显式年度、两个答案槽、含显式公式且要求排序时，首轮把同一通用BM25已检索到的candidate evidence由8条前置到calculation_top_k=18条；不改变检索命中、顺序、Prompt、thinking策略或本地校验，后续轮保持原逻辑。规则不使用QID、历史答案、文档ID或题面全文。",
+  "dynamic_scope": {
+    "top12_question_count": 12,
+    "policy_affected_question_count": 1,
+    "policy_unaffected_frozen_question_count": 11,
+    "affected_qids": [
+      "fin_b_019"
+    ]
+  },
+  "artifacts": {
+    "answer_run": "artifacts/b_board_actual/calc_top12_ranking_evidence_frontload_a1_fin019",
+    "reasoning_patch": "artifacts/b_board_actual/calc_top12_ranking_evidence_frontload_a1_fin019_reasoning",
+    "gpt56_shadow_evaluation": "artifacts/b_board_actual/calc_top12_ranking_evidence_frontload_a1_fin019_reasoning/reasoning_eval_gpt56",
+    "assembled_research_candidate": "artifacts/b_board_actual/qwen37_calc_ranking_evidence_frontload_a1_research_candidate",
+    "manual_scenario_projection": "artifacts/b_board_actual/qwen37_calc_ranking_evidence_frontload_a1_research_candidate/manual_scenario_projection.json"
+  },
+  "metrics": {
+    "answer_completed_count": 1,
+    "answer_match_to_c2_count": 1,
+    "answer_grounding_verified_count": 1,
+    "answer_replay_verified_count": 1,
+    "answer_call_count_before": 3,
+    "answer_call_count_after": 1,
+    "answer_prompt_evidence_count_before": 9,
+    "answer_prompt_evidence_count_after": 19,
+    "answer_tokens_before": 40657,
+    "answer_tokens_after": 15506,
+    "answer_token_delta": -25151,
+    "answer_token_reduction_ratio": 0.6186142607669036,
+    "reasoning_tokens_before": 9300,
+    "reasoning_tokens_after": 7798,
+    "reasoning_token_delta": -1502,
+    "combined_tokens_before": 49957,
+    "combined_tokens_after": 23304,
+    "combined_token_delta": -26653,
+    "combined_token_reduction_ratio": 0.5335188261905238,
+    "fin_b_019_reasoning_score_before": 98.66666666666667,
+    "fin_b_019_reasoning_score_after": 99.0,
+    "top12_total_tokens_c2": 356953,
+    "top12_total_tokens_after": 278608,
+    "top12_token_delta": -78345,
+    "top12_token_reduction_ratio": 0.21948267699108845,
+    "assembled_question_count": 100,
+    "assembled_answer_match_to_c2_count": 100,
+    "full100_tokens_before": 1206496,
+    "full100_tokens_after": 1179843,
+    "full100_token_delta": -26653,
+    "full100_reasoning_score_projected": 95.98666666666666,
+    "token_efficiency_score_after": 76.40314000000001,
+    "pseudo_accuracy_score": 99.0,
+    "proxy_total_score_before": 93.46901600000001,
+    "proxy_total_score_after": 93.576628,
+    "proxy_total_score_delta": 0.10761199999998894,
+    "gpt56_judge_call_count": 1
+  },
+  "audit": {
+    "test_count": 431,
+    "tests_passed": true,
+    "no_hardcoding_audit_passed": true,
+    "generation_model": "qwen3.7-plus-2026-05-26",
+    "gpt56_used_only_for_frozen_reasoning_shadow_judging": true,
+    "assembled_candidate_submission_eligible": false
+  },
+  "effect": "把多主体排序所需的同一候选证据前置后，fin_b_019从三次调用降为一次，保持冻结答案、grounding和replay，同时答案Token下降61.86%、reasoning Token也下降1502且影子分提高0.33。完整Top12与100题因果组装均保持C2答案一致，最终公式净提升。",
+  "promotion_result": "effective_top12_gate_passed_branch_push_pending",
+  "score_type": "offline_pseudo99_manual_scenario_projection_with_gpt56_shadow_not_official",
+  "next_step": "A1已形成强正收益，不消耗A2/A3；创建并推送独立分支。后续新方向继续按Top12 protocol v2验证，真实提交仍需独立资格门和用户明确授权。",
+  "recorded_at": "2026-07-24T23:11:00+08:00",
+  "status": "effective_pending_push",
+  "submission_effect": "none"
+}
+```
+
 ## b-loop-qwen37-calculation-joint-reasoning-a1-shadow
 
 ```json
