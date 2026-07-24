@@ -1198,6 +1198,9 @@ class BBoardActualRunner:
                             plan or {}
                         )
                     )
+                    semantic_binding_error = (
+                        _is_calculation_plan_semantic_binding_error(exc)
+                    )
                     structural_error = (
                         _is_calculation_plan_structure_error(exc)
                         and not admitted_missing_input
@@ -1206,7 +1209,11 @@ class BBoardActualRunner:
                         "targeted_retrieval_for_admitted_missing_input"
                         if admitted_missing_input
                         else (
-                            "same_evidence_structure_repair"
+                            (
+                                "same_evidence_semantic_binding_repair"
+                                if semantic_binding_error
+                                else "same_evidence_structure_repair"
+                            )
                             if structural_error
                             else "targeted_retrieval"
                         )
@@ -1263,7 +1270,14 @@ class BBoardActualRunner:
                         }
                     retrieval_rounds.append(retrieval_round)
                     diagnostics[-1]["retrieval"] = retrieval_round
-                if _is_calculation_plan_structure_error(exc):
+                if _is_calculation_plan_semantic_binding_error(exc):
+                    feedback = (
+                        f"上一次计划因语义绑定错误无法本地重放：{exc}。"
+                        "现有证据已经包含所需事实，本轮不扩检索；请严格修正变量的"
+                        "期间、聚合口径或目标年度列，并重新生成完整计算计划。"
+                        "只输出完整JSON。"
+                    )
+                elif _is_calculation_plan_structure_error(exc):
                     feedback = (
                         f"上一次计划因结构错误无法本地重放：{exc}。"
                         "本轮未扩检索；请只修正计划结构：variables仅保留证据逐字出现的"
@@ -3023,8 +3037,21 @@ def _is_calculation_plan_structure_error(exc: Exception) -> bool:
         "Aggregate-intensity plan must",
         "decision_summary does not contain replayed output",
         "Raw-amount ratio plan must",
+        "disclosed aggregate scope mismatch",
+        "calculation variable target report period mismatch",
     )
     return any(marker in message for marker in structural_markers)
+
+
+def _is_calculation_plan_semantic_binding_error(exc: Exception) -> bool:
+    message = str(exc)
+    return any(
+        marker in message
+        for marker in (
+            "disclosed aggregate scope mismatch",
+            "calculation variable target report period mismatch",
+        )
+    )
 
 
 def _calculation_semantic_query_terms(question_text: str) -> str:

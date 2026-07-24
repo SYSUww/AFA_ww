@@ -1279,6 +1279,16 @@ class BBoardRunnerModeTests(unittest.TestCase):
             CALCULATION_SYSTEM_PROMPT,
         )
 
+    def test_semantic_binding_failures_retry_with_same_evidence(self) -> None:
+        for message in (
+            "disclosed aggregate scope mismatch: aggregate value was mislabeled",
+            "calculation variable target report period mismatch: wrong column",
+        ):
+            with self.subTest(message=message):
+                self.assertTrue(
+                    _is_calculation_plan_structure_error(ValueError(message))
+                )
+
     def test_calculation_evidence_payload_expands_progressively(self) -> None:
         evidence = [
             {
