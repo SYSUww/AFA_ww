@@ -32,6 +32,7 @@ from afa_agent.b_board.runner import (
     _artifact_from_dict,
     _calculation_evidence_payload,
     calculation_first_pass_evidence_overlays,
+    _calculation_phrase_overlay_doc_ids,
     _calculation_semantic_constraints,
     _calculation_semantic_query_terms,
     _is_calculation_plan_structure_error,
@@ -47,6 +48,7 @@ from afa_agent.b_board.runner import (
     _validate_calculation_variable_period_binding,
     _validate_calculation_result_semantics,
     _validate_full_year_dividend_component_dependency,
+    _validate_insurance_benefit_operator_binding,
     _validate_insurance_surrender_rate_binding,
     _validate_raw_amount_ratio_dependency,
 )
@@ -1283,6 +1285,7 @@ class BBoardRunnerModeTests(unittest.TestCase):
         for message in (
             "disclosed aggregate scope mismatch: aggregate value was mislabeled",
             "calculation variable target report period mismatch: wrong column",
+            "insurance maximum branch must use an evidence-grounded benefit rate",
         ):
             with self.subTest(message=message):
                 self.assertTrue(
@@ -1322,6 +1325,41 @@ class BBoardRunnerModeTests(unittest.TestCase):
         self.assertEqual(first[-1]["evidence_id"], "u8")
         self.assertEqual(len(second), 12)
         self.assertEqual(second[-1]["evidence_id"], "u11")
+
+        ranked_without_explicit_contract_count = [
+            {
+                "unit_id": "question:q2",
+                "doc_id": "__question__",
+                "title_path": ["题目"],
+                "text": "计算目标公司的指标。",
+            },
+            {
+                "unit_id": "rank-1",
+                "doc_id": "target-doc",
+                "title_path": [],
+                "text": "第一名证据",
+            },
+            {
+                "unit_id": "rank-2",
+                "doc_id": "target-doc",
+                "title_path": [],
+                "text": "第二名证据",
+            },
+            {
+                "unit_id": "rank-3",
+                "doc_id": "other-doc",
+                "title_path": [],
+                "text": "第三名证据",
+            },
+        ]
+        unchanged = _calculation_evidence_payload(
+            ranked_without_explicit_contract_count,
+            max_non_question_hits=2,
+        )
+        self.assertEqual(
+            [item["evidence_id"] for item in unchanged[1:]],
+            ["rank-1", "rank-2"],
+        )
 
     def test_first_pass_overlays_prioritize_target_report_year_metric_row(
         self,
@@ -1387,6 +1425,104 @@ class BBoardRunnerModeTests(unittest.TestCase):
             "annual_demo_2025_report::ratio",
         )
 
+    def test_calculation_first_pass_keeps_one_formula_anchor_per_product(self) -> None:
+        evidence = [
+            {
+                "unit_id": "question:q1",
+                "doc_id": "__question__",
+                "title_path": ["题目"],
+                "text": "分别计算四份合同的身故保险金并合计。",
+            },
+            *[
+                {
+                    "unit_id": f"product-a::{index}",
+                    "doc_id": "product-a",
+                    "title_path": ["产品甲"],
+                    "text": f"产品甲普通证据{index}",
+                }
+                for index in range(1, 8)
+            ],
+            {
+                "unit_id": "product-b::formula",
+                "doc_id": "product-b",
+                "title_path": ["产品乙", "身故保险金"],
+                "text": "身故保险金按约定公式计算。",
+            },
+            {
+                "unit_id": "product-c::formula",
+                "doc_id": "product-c",
+                "title_path": ["产品丙", "身故保险金"],
+                "text": "身故保险金取两者较大值。",
+            },
+            {
+                "unit_id": "product-d::formula",
+                "doc_id": "product-d",
+                "title_path": ["产品丁", "身故保险金"],
+                "text": "身故保险金取两者较大值。",
+            },
+            {
+                "unit_id": "unrelated-e::formula",
+                "doc_id": "unrelated-e",
+                "title_path": ["无关产品戊"],
+                "text": "其他身故责任。",
+            },
+            {
+                "unit_id": "unrelated-f::formula",
+                "doc_id": "unrelated-f",
+                "title_path": ["无关产品己"],
+                "text": "其他身故责任。",
+            },
+        ]
+
+        first = _calculation_evidence_payload(
+            evidence,
+            max_non_question_hits=8,
+        )
+
+        self.assertEqual(len(first), 9)
+        self.assertEqual(
+            {item["doc_id"] for item in first[1:]},
+            {"product-a", "product-b", "product-c", "product-d"},
+        )
+        self.assertIn(
+            "product-b::formula",
+            {item["evidence_id"] for item in first},
+        )
+
+    def test_multi_contract_phrase_overlay_uses_locator_ranked_product_docs(
+        self,
+    ) -> None:
+        question = BQuestion(
+            qid="unseen-four-policy-total",
+            domain="insurance",
+            split="B",
+            question=(
+                "某人分别持有四份合同，计算四份合同合计身故保险金。"
+            ),
+            options={},
+            answer_format="calculation",
+            type="计算题",
+            answer_slots=1,
+            answer_slot_templates=("999999.99",),
+        )
+
+        selected = _calculation_phrase_overlay_doc_ids(
+            question,
+            [
+                "product-a",
+                "product-b",
+                "product-c",
+                "product-d",
+                "unrelated-e",
+                "unrelated-f",
+            ],
+        )
+
+        self.assertEqual(
+            selected,
+            ["product-a", "product-b", "product-c", "product-d"],
+        )
+
     def test_percentage_point_question_rejects_ratio_output(self) -> None:
         question = BQuestion(
             qid="q-pct-point",
@@ -1412,6 +1548,243 @@ class BBoardRunnerModeTests(unittest.TestCase):
             question,
             {"outputs": [{"value_kind": "percent_points", "value": "10.00"}]},
         )
+
+    def test_insurance_benefit_operator_rejects_adding_maximum_branches(
+        self,
+    ) -> None:
+        question = BQuestion(
+            qid="unseen-four-policy-total",
+            domain="insurance",
+            split="B",
+            question=(
+                "某人持有多份合同，分别计算各合同身故保险金后，"
+                "合计身故保险金为多少万元？"
+            ),
+            options={},
+            answer_format="calculation",
+            type="计算题",
+            answer_slots=1,
+            answer_slot_templates=("999999.99",),
+        )
+        plan = {
+            "variables": [
+                {
+                    "name": "产品甲基本保险金额",
+                    "value": "90",
+                    "value_type": "decimal",
+                    "unit": "万元",
+                    "evidence_ids": ["question:unseen-four-policy-total"],
+                },
+                {
+                    "name": "产品甲个人账户价值",
+                    "value": "100",
+                    "value_type": "decimal",
+                    "unit": "万元",
+                    "evidence_ids": ["question:unseen-four-policy-total"],
+                },
+            ],
+            "steps": [
+                {
+                    "id": "产品甲身故保险金",
+                    "op": "add",
+                    "args": [
+                        {"ref": "产品甲基本保险金额"},
+                        {"ref": "产品甲个人账户价值"},
+                    ],
+                }
+            ],
+            "outputs": [
+                {
+                    "source": {"ref": "产品甲身故保险金"},
+                    "format": "decimal2",
+                }
+            ],
+            "supporting_evidence_ids": ["product-a::death-formula"],
+        }
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "maximum branch",
+        ):
+            _validate_insurance_benefit_operator_binding(
+                question,
+                plan,
+                {
+                    "question:unseen-four-policy-total": (
+                        "产品甲基本保险金额90万元、个人账户价值100万元。"
+                    ),
+                    "product-a::death-formula": (
+                        "身故保险金额为下列两者的较大值："
+                        "年龄对应的身故给付比例与基本保险金额的乘积；"
+                        "个人账户价值。该年龄的身故给付比例为160%。"
+                    ),
+                },
+            )
+
+    def test_insurance_benefit_operator_accepts_replayable_multi_product_total(
+        self,
+    ) -> None:
+        question_id = "unseen-four-policy-total"
+        question_text = (
+            "产品甲基本保险金额90万元、个人账户价值100万元；"
+            "产品乙账户价值120万元、累计已领取45万元；"
+            "产品丙累计保费100万元、累计已领取35万元、现金价值72万元；"
+            "产品丁累计保费100万元、累计已领取25万元、现金价值68万元。"
+            "分别计算各合同身故保险金后，合计为多少万元？"
+        )
+        question = BQuestion(
+            qid=question_id,
+            domain="insurance",
+            split="B",
+            question=question_text,
+            options={},
+            answer_format="calculation",
+            type="计算题",
+            answer_slots=1,
+            answer_slot_templates=("999999.99",),
+        )
+        question_evidence_id = f"question:{question_id}"
+
+        def amount(name: str, value: str) -> dict[str, object]:
+            return {
+                "name": name,
+                "value": value,
+                "value_type": "decimal",
+                "unit": "万元",
+                "evidence_ids": [question_evidence_id],
+            }
+
+        plan = {
+            "variables": [
+                amount("产品甲基本保险金额", "90"),
+                amount("产品甲个人账户价值", "100"),
+                {
+                    "name": "产品甲身故给付比例",
+                    "value": "160",
+                    "value_type": "decimal",
+                    "unit": "%",
+                    "evidence_ids": ["product-a::rate-table"],
+                },
+                amount("产品乙账户价值", "120"),
+                amount("产品乙累计已领取", "45"),
+                amount("产品丙累计保费", "100"),
+                amount("产品丙累计已领取", "35"),
+                amount("产品丙现金价值", "72"),
+                amount("产品丁累计保费", "100"),
+                amount("产品丁累计已领取", "25"),
+                amount("产品丁现金价值", "68"),
+            ],
+            "steps": [
+                {
+                    "id": "产品甲比例给付",
+                    "op": "mul",
+                    "args": [
+                        {"ref": "产品甲基本保险金额"},
+                        {"ref": "产品甲身故给付比例"},
+                    ],
+                },
+                {
+                    "id": "产品甲身故保险金",
+                    "op": "max",
+                    "args": [
+                        {"ref": "产品甲比例给付"},
+                        {"ref": "产品甲个人账户价值"},
+                    ],
+                },
+                {
+                    "id": "产品乙身故保险金",
+                    "op": "sub",
+                    "args": [
+                        {"ref": "产品乙账户价值"},
+                        {"ref": "产品乙累计已领取"},
+                    ],
+                },
+                {
+                    "id": "产品丙保费差额",
+                    "op": "sub",
+                    "args": [
+                        {"ref": "产品丙累计保费"},
+                        {"ref": "产品丙累计已领取"},
+                    ],
+                },
+                {
+                    "id": "产品丙身故保险金",
+                    "op": "max",
+                    "args": [
+                        {"ref": "产品丙保费差额"},
+                        {"ref": "产品丙现金价值"},
+                    ],
+                },
+                {
+                    "id": "产品丁保费差额",
+                    "op": "sub",
+                    "args": [
+                        {"ref": "产品丁累计保费"},
+                        {"ref": "产品丁累计已领取"},
+                    ],
+                },
+                {
+                    "id": "产品丁身故保险金",
+                    "op": "max",
+                    "args": [
+                        {"ref": "产品丁保费差额"},
+                        {"ref": "产品丁现金价值"},
+                    ],
+                },
+                {
+                    "id": "四份合同合计",
+                    "op": "add",
+                    "args": [
+                        {"ref": "产品甲身故保险金"},
+                        {"ref": "产品乙身故保险金"},
+                        {"ref": "产品丙身故保险金"},
+                        {"ref": "产品丁身故保险金"},
+                    ],
+                },
+            ],
+            "outputs": [
+                {"source": {"ref": "四份合同合计"}, "format": "decimal2"}
+            ],
+            "supporting_evidence_ids": [
+                "product-a::death-formula",
+                "product-b::death-formula",
+                "product-c::death-formula",
+                "product-d::death-formula",
+            ],
+        }
+        evidence = {
+            question_evidence_id: question_text,
+            "product-a::death-formula": (
+                "身故保险金额为下列两者的较大值：年龄对应的身故给付比例"
+                "与基本保险金额的乘积；个人账户价值。"
+            ),
+            "product-a::rate-table": "该年龄对应的身故给付比例为160%。",
+            "product-b::death-formula": (
+                "身故保险金为账户价值减去累计已领取的差额。"
+            ),
+            "product-c::death-formula": (
+                "身故保险金为累计保费扣除累计已领取后的余额与现金价值的较大者。"
+            ),
+            "product-d::death-formula": (
+                "身故保险金为累计保费扣除累计已领取后的余额与现金价值的较大者。"
+            ),
+        }
+
+        _validate_insurance_benefit_operator_binding(
+            question,
+            plan,
+            evidence,
+        )
+        result = CalculationExecutor().execute(
+            plan,
+            expected_slots=1,
+            evidence_text_by_id=evidence,
+            expected_slot_templates=("999999.99",),
+        )
+
+        self.assertEqual(result.answer_parts, ("366.00",))
+        self.assertTrue(result.trace["grounding_verified"])
+        self.assertTrue(result.trace["replay_verified"])
 
     def test_insurance_surrender_rate_rejects_adjacent_year_literal(self) -> None:
         question = BQuestion(

@@ -162,8 +162,8 @@ SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推�
    该句必须由本次模型响应生成，不得省略或改写。
 不得提及“质检”、“反馈”、“草稿”或修订过程，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。只输出 JSON。prompt_version={SUBMISSION_REASONING_REFINE_PROMPT_VERSION}。"""
 
-RUNNER_VERSION = "b_actual_v30_answer_stage"
-CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
+RUNNER_VERSION = "b_actual_v31_three_semantic_badcases"
+CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v3_semantic_first_pass"
 CALCULATION_PLAN_NORMALIZATION_VERSION = "qwen37_structure_contract_v3_schema"
 CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
     "insurance_surrender_rate_v1+question_target_date_binding_v1"
@@ -175,11 +175,16 @@ CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
     "+required_sort_object_coverage_v1"
     "+full_year_dividend_component_binding_v1"
     "+duplicate_evidence_same_doc_value_v1"
+    "+direct_disclosed_average_scope_v1"
+    "+target_report_period_column_v1"
+    "+insurance_benefit_operator_binding_v1"
 )
-CALCULATION_PROMPT_EVIDENCE_POLICY_VERSION = "progressive_8_16_24_v1"
+CALCULATION_PROMPT_EVIDENCE_POLICY_VERSION = (
+    "progressive_8_16_24_v2_semantic_overlays"
+)
 CALCULATION_PROMPT_HITS_PER_ATTEMPT = 8
 CALCULATION_OPERATOR_SHAPE_HINT_VERSION = (
-    "question_conditioned_operator_shapes_v1"
+    "question_conditioned_operator_shapes_v2_multi_policy"
 )
 RUN_MODE_SUBMISSION = "submission"
 RUN_MODE_RESEARCH = "research"
@@ -937,7 +942,10 @@ class BBoardActualRunner:
         ]
         initial_phrase_evidence = calculation_first_pass_evidence_overlays(
             self.retrievers[question.domain],
-            candidate_doc_ids,
+            _calculation_phrase_overlay_doc_ids(
+                question,
+                candidate_doc_ids,
+            ),
             (
                 f"{question.question}\n"
                 f"{_calculation_semantic_query_terms(question.question)}"
@@ -1041,6 +1049,11 @@ class BBoardActualRunner:
                 )
                 _validate_raw_amount_ratio_dependency(question, plan)
                 _validate_insurance_surrender_rate_binding(
+                    question,
+                    plan,
+                    evidence_text_by_id,
+                )
+                _validate_insurance_benefit_operator_binding(
                     question,
                     plan,
                     evidence_text_by_id,
@@ -1274,7 +1287,8 @@ class BBoardActualRunner:
                     feedback = (
                         f"上一次计划因语义绑定错误无法本地重放：{exc}。"
                         "现有证据已经包含所需事实，本轮不扩检索；请严格修正变量的"
-                        "期间、聚合口径或目标年度列，并重新生成完整计算计划。"
+                        "期间、聚合口径、目标年度列或条款要求的运算符依赖，"
+                        "并重新生成完整计算计划。"
                         "只输出完整JSON。"
                     )
                 elif _is_calculation_plan_structure_error(exc):
@@ -3039,6 +3053,7 @@ def _is_calculation_plan_structure_error(exc: Exception) -> bool:
         "Raw-amount ratio plan must",
         "disclosed aggregate scope mismatch",
         "calculation variable target report period mismatch",
+        "insurance maximum branch must use",
     )
     return any(marker in message for marker in structural_markers)
 
@@ -3050,6 +3065,7 @@ def _is_calculation_plan_semantic_binding_error(exc: Exception) -> bool:
         for marker in (
             "disclosed aggregate scope mismatch",
             "calculation variable target report period mismatch",
+            "insurance maximum branch must use",
         )
     )
 
@@ -3110,6 +3126,52 @@ def _calculation_semantic_query_terms(question_text: str) -> str:
     return " ".join(terms)
 
 
+def _calculation_phrase_overlay_doc_ids(
+    question: BQuestion,
+    candidate_doc_ids: Sequence[str],
+) -> list[str]:
+    """Limit a multi-contract formula overlay to its locator-ranked products."""
+
+    selected = [str(item) for item in candidate_doc_ids if str(item)]
+    compact = _compact_text(question.question)
+    if (
+        question.domain != "insurance"
+        or "身故保险金" not in compact
+        or not any(marker in compact for marker in ("合计", "分别", "多份合同"))
+    ):
+        return selected
+    requested_count = _requested_multi_contract_count(compact)
+    if requested_count is None:
+        return selected
+
+    if requested_count < 2 or requested_count > len(selected):
+        return selected
+    return selected[:requested_count]
+
+
+def _requested_multi_contract_count(question_text: str) -> int | None:
+    match = re.search(
+        r"([一二三四五六七八九十]|\d{1,2})份合同",
+        _compact_text(question_text),
+    )
+    if match is None:
+        return None
+    chinese_counts = {
+        "一": 1,
+        "二": 2,
+        "三": 3,
+        "四": 4,
+        "五": 5,
+        "六": 6,
+        "七": 7,
+        "八": 8,
+        "九": 9,
+        "十": 10,
+    }
+    raw_count = match.group(1)
+    return chinese_counts.get(raw_count, int(raw_count) if raw_count.isdigit() else 0)
+
+
 def _calculation_operator_shape_hint(question_text: str) -> str:
     """Return compact, answer-blind JSON shapes for operators implied by a question."""
 
@@ -3143,6 +3205,14 @@ def _calculation_operator_shape_hint(question_text: str) -> str:
             '日期运算只允许具名args：date_add_days写{"args":{"date":{"ref":"日期"},'
             '"days":{"ref":"天数"}}}；next_workday写{"args":{"date":{"ref":"日期"}}}；'
             'days_between写{"args":{"end":{"ref":"结束日"},"start":{"ref":"开始日"}}}'
+        )
+    if "身故保险金" in compact and any(
+        marker in compact for marker in ("合计", "分别", "多份合同", "各合同")
+    ):
+        hints.append(
+            '各产品条款若规定两者取较大值，先写{"id":"单项保险金",'
+            '"op":"max","args":[{"ref":"条款分支一"},{"ref":"条款分支二"}]}；'
+            "不得把较大值的两个分支add，完成各产品条款运算后最后再add合计"
         )
     return "；".join(hints)
 
@@ -4044,6 +4114,125 @@ def _validate_insurance_surrender_rate_binding(
     )
 
 
+def _validate_insurance_benefit_operator_binding(
+    question: BQuestion,
+    plan: Mapping[str, Any],
+    evidence_text_by_id: Mapping[str, str],
+) -> None:
+    """Bind an evidenced percentage-times-amount maximum to mul then max."""
+
+    compact_question = _compact_text(question.question)
+    if (
+        question.domain != "insurance"
+        or "身故保险金" not in compact_question
+        or not any(
+            marker in compact_question
+            for marker in ("合计", "分别", "多份合同", "各合同")
+        )
+    ):
+        return
+    formula_evidence_ids = {
+        str(evidence_id)
+        for evidence_id, raw_text in evidence_text_by_id.items()
+        if (
+            "身故保险金" in (text := _compact_text(str(raw_text)))
+            or "身故保险金额" in text
+        )
+        and any(marker in text for marker in ("较大值", "较大者"))
+        and "给付比例" in text
+        and "基本保险金额" in text
+        and "个人账户价值" in text
+    }
+    if not formula_evidence_ids:
+        return
+
+    variables = {
+        str(item.get("name", "")).strip(): item
+        for item in plan.get("variables", [])
+        if isinstance(item, Mapping) and str(item.get("name", "")).strip()
+    }
+    steps = {
+        str(item.get("id", "")).strip(): item
+        for item in plan.get("steps", [])
+        if isinstance(item, Mapping) and str(item.get("id", "")).strip()
+    }
+    symbols = {*variables, *steps}
+    supporting_ids = {
+        str(item)
+        for item in plan.get("supporting_evidence_ids", [])
+        if str(item)
+    }
+
+    reachable_steps: set[str] = set()
+
+    def collect_steps(value: Any, target: set[str]) -> None:
+        for ref in _calculation_reference_names(value, symbols):
+            if ref in steps and ref not in target:
+                target.add(ref)
+                collect_steps(steps[ref], target)
+
+    collect_steps(plan.get("outputs", []), reachable_steps)
+    formula_evidence_by_doc: dict[str, set[str]] = {}
+    for evidence_id in formula_evidence_ids:
+        formula_evidence_by_doc.setdefault(
+            evidence_id.split("::", 1)[0],
+            set(),
+        ).add(evidence_id)
+    for formula_doc_id, doc_formula_evidence_ids in formula_evidence_by_doc.items():
+        rate_names = {
+            name
+            for name, variable in variables.items()
+            if any(
+                str(item).split("::", 1)[0] == formula_doc_id
+                for item in variable.get("evidence_ids", [])
+                if str(item)
+            )
+            and (
+                _compact_text(str(variable.get("unit", ""))).casefold()
+                in _PERCENT_UNITS
+                or str(variable.get("value", "")).strip().endswith("%")
+            )
+        }
+        valid_binding = False
+        for step_id in reachable_steps:
+            max_step = steps[step_id]
+            if str(max_step.get("op", "")).strip() != "max":
+                continue
+            args = max_step.get("args", [])
+            if not isinstance(args, list) or len(args) < 2:
+                continue
+            for arg in args:
+                branch_steps: set[str] = set()
+                collect_steps(arg, branch_steps)
+                if any(
+                    str(steps[branch_id].get("op", "")).strip() == "mul"
+                    and bool(
+                        _calculation_reference_names(
+                            steps[branch_id],
+                            symbols,
+                        )
+                        & rate_names
+                    )
+                    for branch_id in branch_steps
+                ):
+                    valid_binding = True
+                    break
+            if valid_binding:
+                break
+        if (
+            supporting_ids & doc_formula_evidence_ids
+            and rate_names
+            and valid_binding
+        ):
+            continue
+        raise CalculationPlanError(
+            "insurance maximum branch must use an evidence-grounded benefit "
+            "rate in an output-reachable mul step, then compare that product "
+            "with the other evidenced branch using max; do not add the two "
+            f"branches ({formula_doc_id})"
+        )
+
+
 _EXPLICIT_CN_DATE_RE = re.compile(r"20\d{2}年\d{1,2}月\d{1,2}日")
 _TARGET_REPORT_YEAR_RE = re.compile(
     r"(20\d{2})年?(?=年度报告|年报|报告)"
@@ -4295,7 +4484,38 @@ def _calculation_evidence_payload(
             item
             for item in selected_items
             if str(item.get("doc_id", "")) != "__question__"
-        ][: max(0, max_non_question_hits)]
+        ]
+        requested_doc_count = _requested_multi_contract_count(
+            str(question_items[0].get("text", ""))
+            if question_items
+            else ""
+        )
+        if requested_doc_count is None:
+            document_items = document_items[: max(0, max_non_question_hits)]
+        else:
+            per_doc_anchors: list[Mapping[str, Any]] = []
+            seen_docs: set[str] = set()
+            for item in document_items:
+                doc_id = str(item.get("doc_id", "")).strip()
+                if (
+                    not doc_id
+                    or doc_id in seen_docs
+                    or len(seen_docs) >= requested_doc_count
+                ):
+                    continue
+                seen_docs.add(doc_id)
+                per_doc_anchors.append(item)
+            ordered_document_items: list[Mapping[str, Any]] = []
+            seen_unit_ids: set[str] = set()
+            for item in [*per_doc_anchors, *document_items]:
+                unit_id = str(item.get("unit_id", "")).strip()
+                if not unit_id or unit_id in seen_unit_ids:
+                    continue
+                seen_unit_ids.add(unit_id)
+                ordered_document_items.append(item)
+            document_items = ordered_document_items[
+                : max(0, max_non_question_hits)
+            ]
         selected_items = [*question_items, *document_items]
     return [
         {
@@ -4335,6 +4555,27 @@ def _diagnostic_phrase_evidence(
     concept_groups: list[tuple[tuple[str, ...], int]] = []
     if "境外" in normalized_query or "分地区" in normalized_query:
         concept_groups.extend([(("境外",), 12), (("分地区",), 10), (("营业收入",), 4)])
+    elif "身故保险金" in normalized_query and any(
+        marker in normalized_query
+        for marker in ("合计", "分别", "多份合同", "各合同")
+    ):
+        concept_groups.extend(
+            [
+                (("身故保险金", "身故保险金额"), 12),
+                (("较大值", "较大者", "差额", "为零"), 10),
+                (
+                    (
+                        "给付比例",
+                        "基本保险金额",
+                        "个人账户价值",
+                        "累计已给付",
+                        "累计已产生",
+                        "现金价值",
+                    ),
+                    8,
+                ),
+            ]
+        )
     elif "资产负债率" in normalized_query:
         concept_groups.extend(
             [
@@ -4409,10 +4650,29 @@ def _diagnostic_phrase_evidence(
         selected.extend(ranked[:per_doc])
     selected.sort(reverse=True)
     evidence: list[dict[str, Any]] = []
-    for score, _, unit in selected[:top_k]:
+    seen_source_units: set[str] = set()
+    dedupe_insurance_sources = (
+        "身故保险金" in normalized_query
+        and any(
+            marker in normalized_query
+            for marker in ("合计", "分别", "多份合同", "各合同")
+        )
+    )
+    for score, _, unit in selected:
+        if len(evidence) >= top_k:
+            break
+        unit_id = str(unit["unit_id"])
+        source_unit_id = (
+            unit_id.replace("__dup2", "").replace("__dup", "")
+            if dedupe_insurance_sources
+            else unit_id
+        )
+        if source_unit_id in seen_source_units:
+            continue
+        seen_source_units.add(source_unit_id)
         evidence.append(
             {
-                "unit_id": str(unit["unit_id"]),
+                "unit_id": unit_id,
                 "doc_id": str(unit["doc_id"]),
                 "title_path": list(unit.get("title_path", [])),
                 "text": str(unit.get("text", "")),
@@ -4441,6 +4701,13 @@ def calculation_first_pass_evidence_overlays(
         _TARGET_REPORT_YEAR_RE.search(compact_query)
         or _requested_calculation_table_row_labels(query)
         or _requested_calculation_sort_objects(query)
+        or (
+            "身故保险金" in compact_query
+            and any(
+                marker in compact_query
+                for marker in ("合计", "分别", "多份合同", "各合同")
+            )
+        )
     ):
         return []
     return _diagnostic_phrase_evidence(

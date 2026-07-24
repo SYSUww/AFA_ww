@@ -41,6 +41,18 @@ class BBoardCalculationTests(unittest.TestCase):
             "",
         )
 
+    def test_operator_shape_hint_keeps_insurance_maximum_distinct_from_total(
+        self,
+    ) -> None:
+        hint = _calculation_operator_shape_hint(
+            "分别计算四份合同的身故保险金，并求合计身故保险金。"
+        )
+
+        self.assertIn('"op":"max"', hint)
+        self.assertIn("较大值", hint)
+        self.assertIn("最后再add合计", hint)
+        self.assertNotIn("366", hint)
+
     def test_admitted_missing_input_is_distinct_from_shape_failure(self):
         self.assertTrue(
             _calculation_plan_reports_missing_required_input(
@@ -543,7 +555,79 @@ class BBoardCalculationTests(unittest.TestCase):
         )
         self.assertEqual(hits[0]["unit_id"], "overseas")
         self.assertEqual(
-            hits[0]["metadata"]["retrieval_source"], "phrase_constrained_v2"
+            hits[0]["metadata"]["retrieval_source"],
+            "phrase_constrained_v3_semantic_first_pass",
+        )
+
+        class InsuranceRetriever:
+            units = [
+                *[
+                    {
+                        "unit_id": f"{doc_id}::noise",
+                        "doc_id": doc_id,
+                        "title_path": ["保险责任"],
+                        "text": "合同成立、生效、退保及其他一般约定。",
+                        "unit_type": "paragraph",
+                    }
+                    for doc_id in ("product-a", "product-b", "product-c", "product-d")
+                ],
+                {
+                    "unit_id": "product-a::formula",
+                    "doc_id": "product-a",
+                    "title_path": ["身故保险金"],
+                    "text": (
+                        "身故保险金额为给付比例与基本保险金额乘积、"
+                        "个人账户价值两者的较大值。"
+                    ),
+                    "unit_type": "formula_block",
+                },
+                {
+                    "unit_id": "product-a::formula__dup2",
+                    "doc_id": "product-a",
+                    "title_path": ["身故保险金"],
+                    "text": (
+                        "身故保险金额为给付比例与基本保险金额乘积、"
+                        "个人账户价值两者的较大值。"
+                    ),
+                    "unit_type": "formula_block",
+                },
+                {
+                    "unit_id": "product-b::formula",
+                    "doc_id": "product-b",
+                    "title_path": ["身故保险金"],
+                    "text": "账户价值减去累计已领取的差额给付身故保险金。",
+                    "unit_type": "formula_block",
+                },
+                {
+                    "unit_id": "product-c::formula",
+                    "doc_id": "product-c",
+                    "title_path": ["身故保险金"],
+                    "text": "累计保费扣除已领取后的余额与现金价值取较大者。",
+                    "unit_type": "formula_block",
+                },
+                {
+                    "unit_id": "product-d::formula",
+                    "doc_id": "product-d",
+                    "title_path": ["身故保险金"],
+                    "text": "所交保费扣除养老年金后的余额与现金价值取较大者。",
+                    "unit_type": "formula_block",
+                },
+            ]
+
+        insurance_hits = _diagnostic_phrase_evidence(
+            InsuranceRetriever(),  # type: ignore[arg-type]
+            ["product-a", "product-b", "product-c", "product-d"],
+            "分别计算四份合同身故保险金并求合计",
+            top_k=8,
+        )
+        self.assertEqual(
+            {item["unit_id"] for item in insurance_hits},
+            {
+                "product-a::formula",
+                "product-b::formula",
+                "product-c::formula",
+                "product-d::formula",
+            },
         )
 
         class DateRetriever:
