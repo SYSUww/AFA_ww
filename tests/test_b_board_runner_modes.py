@@ -645,6 +645,46 @@ class BBoardRunnerModeTests(unittest.TestCase):
             [],
         )
 
+    def test_direct_disclosed_average_constraint_binds_period_metric_and_value(
+        self,
+    ) -> None:
+        constraints = _calculation_semantic_constraints(
+            (
+                "根据募集说明书，计算2023年至2025年发行人归属于母公司"
+                "所有者的净利润的平均值（单位：亿元）为多少？"
+            ),
+            [
+                {
+                    "doc_id": "__question__",
+                    "evidence_id": "question:q1",
+                    "title": "题目",
+                    "text": "2023年至2025年净利润平均值",
+                },
+                {
+                    "doc_id": "prospectus",
+                    "evidence_id": "prospectus::summary",
+                    "title": "发行前财务指标",
+                    "text": (
+                        "发行人最近三个会计年度实现的年均可分配利润为14.41亿元"
+                        "（2023-2025年度经审计的合并报表中归属于母公司"
+                        "所有者的净利润平均值）。"
+                    ),
+                },
+            ],
+        )
+
+        self.assertEqual(len(constraints), 1)
+        self.assertEqual(constraints[0]["type"], "direct_disclosed_aggregate")
+        self.assertEqual(constraints[0]["aggregation_scope"], "multi_period_mean")
+        self.assertEqual(constraints[0]["period"], "2023-2025")
+        self.assertEqual(
+            constraints[0]["metric"],
+            "归属于母公司所有者的净利润",
+        )
+        self.assertEqual(constraints[0]["disclosed_value"], "14.41")
+        self.assertEqual(constraints[0]["unit"], "亿元")
+        self.assertEqual(constraints[0]["evidence_id"], "prospectus::summary")
+
     def test_aggregate_intensity_gate_rejects_different_scope_denominator(
         self,
     ) -> None:
@@ -1224,6 +1264,18 @@ class BBoardRunnerModeTests(unittest.TestCase):
         self.assertIn("减半/折半/加倍/若干倍", CALCULATION_SYSTEM_PROMPT)
         self.assertIn("应计算 0.5÷2", CALCULATION_SYSTEM_PROMPT)
         self.assertIn("不得把0.25作为证据变量", CALCULATION_SYSTEM_PROMPT)
+
+    def test_calculation_prompt_preserves_direct_disclosed_aggregate_scope(
+        self,
+    ) -> None:
+        self.assertIn(
+            "已直接披露与题目同期间、同指标、同单位的平均值",
+            CALCULATION_SYSTEM_PROMPT,
+        )
+        self.assertIn(
+            "不得把该平均值标成其中某一单期值后再次求和或平均",
+            CALCULATION_SYSTEM_PROMPT,
+        )
 
     def test_calculation_evidence_payload_expands_progressively(self) -> None:
         evidence = [

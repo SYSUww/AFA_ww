@@ -166,6 +166,113 @@ class BBoardCalculationTests(unittest.TestCase):
         self.assertEqual(result.answer_parts, ("7.65",))
         self.assertEqual(result.trace["outputs"][0]["format"], "percent2_bare")
 
+    def test_disclosed_multi_period_average_cannot_be_reused_as_single_period_input(self):
+        constraint = {
+            "type": "direct_disclosed_aggregate",
+            "aggregation_scope": "multi_period_mean",
+            "period": "2023-2025",
+            "metric": "归属于母公司所有者的净利润",
+            "evidence_id": "prospectus",
+            "disclosed_value": "14.41",
+            "unit": "亿元",
+        }
+        evidence = {
+            "annual_table": (
+                "归属于母公司所有者的净利润 | 122,042.08 | 138,755.73"
+            ),
+            "prospectus": (
+                "最近三个会计年度实现的年均可分配利润为14.41亿元"
+                "（2023-2025年度经审计的合并报表中归属于母公司"
+                "所有者的净利润平均值）"
+            ),
+        }
+        wrong_plan = {
+            "variables": [
+                {
+                    "name": "2023年度归属于母公司所有者的净利润",
+                    "value": "138755.73",
+                    "value_type": "decimal",
+                    "unit": "",
+                    "evidence_ids": ["annual_table"],
+                },
+                {
+                    "name": "2024年度归属于母公司所有者的净利润",
+                    "value": "122042.08",
+                    "value_type": "decimal",
+                    "unit": "",
+                    "evidence_ids": ["annual_table"],
+                },
+                {
+                    "name": "2025年度归属于母公司所有者的净利润",
+                    "value": "14.41",
+                    "value_type": "decimal",
+                    "unit": "亿元",
+                    "evidence_ids": ["prospectus"],
+                },
+            ],
+            "steps": [
+                {
+                    "id": "sum",
+                    "op": "add",
+                    "args": [
+                        {"ref": "2023年度归属于母公司所有者的净利润"},
+                        {"ref": "2024年度归属于母公司所有者的净利润"},
+                        {"ref": "2025年度归属于母公司所有者的净利润"},
+                    ],
+                },
+                {
+                    "id": "average",
+                    "op": "div",
+                    "args": [
+                        {"ref": "sum"},
+                        {"literal": "3", "value_type": "decimal", "unit": ""},
+                    ],
+                },
+            ],
+            "outputs": [{"source": {"ref": "average"}, "format": "decimal2"}],
+        }
+
+        with self.assertRaisesRegex(
+            CalculationPlanError,
+            "disclosed aggregate scope mismatch",
+        ):
+            CalculationExecutor().execute(
+                wrong_plan,
+                expected_slots=1,
+                evidence_text_by_id=evidence,
+                semantic_constraints=[constraint],
+            )
+
+        correct_plan = {
+            "variables": [
+                {
+                    "name": "2023至2025年度归属于母公司所有者的净利润平均值",
+                    "value": "14.41",
+                    "value_type": "decimal",
+                    "unit": "亿元",
+                    "evidence_ids": ["prospectus"],
+                }
+            ],
+            "steps": [],
+            "outputs": [
+                {
+                    "source": {
+                        "ref": "2023至2025年度归属于母公司所有者的净利润平均值"
+                    },
+                    "format": "decimal2",
+                }
+            ],
+        }
+        result = CalculationExecutor().execute(
+            correct_plan,
+            expected_slots=1,
+            evidence_text_by_id=evidence,
+            semantic_constraints=[constraint],
+        )
+
+        self.assertEqual(result.answer_parts, ("14.41",))
+        self.assertTrue(result.trace["aggregation_scope_verified"])
+
     def test_legacy_trace_revalidation_prunes_helpers_and_converts_percent_ratio(self):
         result = CalculationExecutor().replay_legacy_trace(
             {

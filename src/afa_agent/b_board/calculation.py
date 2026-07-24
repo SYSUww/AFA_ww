@@ -49,6 +49,7 @@ class CalculationExecutor:
         *,
         expected_slots: int,
         evidence_text_by_id: Mapping[str, str] | None = None,
+        semantic_constraints: Sequence[Mapping[str, Any]] | None = None,
         expected_slot_templates: Sequence[str] | None = None,
         expected_numeric_decimal_places: int | None = None,
         expected_percent_suffixes: Sequence[bool | None] | None = None,
@@ -106,6 +107,10 @@ class CalculationExecutor:
                 "Variables are not grounded in cited evidence: " + ",".join(failed)
             )
 
+        aggregation_scope_checks = _validate_disclosed_aggregate_scope(
+            plan,
+            semantic_constraints or (),
+        )
         _validate_amount_unit_scales(plan)
 
         values = dict(variables)
@@ -220,6 +225,10 @@ class CalculationExecutor:
             "outputs": normalized_outputs,
             "replay_verified": True,
             "grounding_verified": grounding_verified,
+            "aggregation_scope_checks": aggregation_scope_checks,
+            "aggregation_scope_verified": all(
+                item["verified"] for item in aggregation_scope_checks
+            ),
         }
         return CalculationResult(tuple(answer_parts), deduped_evidence, trace)
 
@@ -1135,6 +1144,111 @@ def _format_for_slot_contract(
 
 
 _NUMBER_RE = re.compile(r"(?<![\d.])-?\d[\d,]*(?:\.\d+)?(?![\d.])")
+
+
+def _validate_disclosed_aggregate_scope(
+    plan: Mapping[str, Any],
+    semantic_constraints: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Keep an explicitly disclosed aggregate from masquerading as a period input."""
+
+    checks: list[dict[str, Any]] = []
+    variables = [
+        item
+        for item in plan.get("variables", [])
+        if isinstance(item, Mapping)
+    ]
+    direct_output_refs = {
+        str(source.get("ref", "")).strip()
+        if isinstance(source, Mapping)
+        else str(source).strip()
+        for output in plan.get("outputs", [])
+        if isinstance(output, Mapping)
+        for source in [output.get("source")]
+    }
+    for constraint in semantic_constraints:
+        if constraint.get("type") != "direct_disclosed_aggregate":
+            continue
+        evidence_id = str(constraint.get("evidence_id", "")).strip()
+        disclosed_value = str(constraint.get("disclosed_value", "")).strip()
+        unit = str(constraint.get("unit", "")).strip()
+        period = str(constraint.get("period", "")).strip()
+        metric = str(constraint.get("metric", "")).strip()
+        aggregation_scope = str(
+            constraint.get("aggregation_scope", "")
+        ).strip()
+        if (
+            not evidence_id
+            or not disclosed_value
+            or not period
+            or not metric
+            or aggregation_scope != "multi_period_mean"
+        ):
+            raise CalculationPlanError(
+                "disclosed aggregate scope mismatch: incomplete semantic constraint"
+            )
+        try:
+            normalized_value = _decimal(disclosed_value.rstrip("%"))
+        except CalculationPlanError as exc:
+            raise CalculationPlanError(
+                "disclosed aggregate scope mismatch: invalid disclosed value"
+            ) from exc
+
+        period_years = set(re.findall(r"20\d{2}", period))
+        matched_variables: list[str] = []
+        mislabeled_variables: list[str] = []
+        for variable in variables:
+            raw_value = str(variable.get("value", "")).strip().rstrip("%")
+            try:
+                value_matches = _decimal(raw_value) == normalized_value
+            except CalculationPlanError:
+                continue
+            evidence_ids = variable.get("evidence_ids", [])
+            if (
+                not value_matches
+                or str(variable.get("unit", "")).strip().casefold()
+                != unit.casefold()
+                or not isinstance(evidence_ids, list)
+                or evidence_id not in {str(item) for item in evidence_ids}
+            ):
+                continue
+            name = str(variable.get("name", "")).strip()
+            if metric not in name:
+                continue
+            variable_years = set(re.findall(r"20\d{2}", name))
+            if (
+                len(variable_years) == 1
+                and len(period_years) > 1
+                and variable_years < period_years
+                and not any(marker in name for marker in ("平均", "年均", "均值"))
+            ):
+                mislabeled_variables.append(name)
+                continue
+            matched_variables.append(name)
+
+        direct_matches = sorted(set(matched_variables) & direct_output_refs)
+        verified = bool(direct_matches)
+        check = {
+            "type": "direct_disclosed_aggregate",
+            "aggregation_scope": aggregation_scope,
+            "period": period,
+            "metric": metric,
+            "evidence_id": evidence_id,
+            "verified": verified,
+            "direct_output_variable_names": direct_matches,
+            "mislabeled_variable_names": mislabeled_variables,
+        }
+        checks.append(check)
+        if not verified:
+            detail = (
+                f" aggregate value was mislabeled as {','.join(mislabeled_variables)}"
+                if mislabeled_variables
+                else " disclosed aggregate must be used as a direct output"
+            )
+            raise CalculationPlanError(
+                "disclosed aggregate scope mismatch:" + detail
+            )
+    return checks
 
 
 def _grounding_check(

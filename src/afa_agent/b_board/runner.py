@@ -91,6 +91,7 @@ variables 只能放证据或题目中逐字出现的原始输入，禁止放任�
 同一道题只能选择一套统一尺度：若统一为元，则1亿元乘100000000、1万人乘10000后再乘元；若统一为万元，则1亿元乘10000，而“万人×元”已经直接得到万元，禁止再把万人额外乘10000。不得只转换加减式的一侧。
 分段或保底规则必须逐情形执行证据条件；当条款规定差额小于等于0时给付为0，应使用 max(差额,0) 后再汇总，禁止把负给付额直接相加。
 按保单年度、年份、区间或档位给出的分段表必须逐行匹配边界，先确认题目目标落在哪一行，再使用该行数值；边界行不得套用相邻区间，例如“第五年”不得使用“第六年及以后”的费率。
+若证据已直接披露与题目同期间、同指标、同单位的平均值，该数值本身就是目标聚合结果，应作为平均值变量直接输出；不得把该平均值标成其中某一单期值后再次求和或平均。
 “全年”数值必须覆盖同一年度内所有应计组成部分。若年末方案明确是在扣除已实施中期金额后的剩余分配，则全年金额=中期已实施金额+年末剩余金额，并且排序或差额必须引用这个 add 步骤；若材料已明确给出全年合计，则不得重复相加。
 supporting_evidence_ids 用于记录决定公式或分段条件、但不直接提供数值变量的规则证据；必须原样填写已给 evidence_id。凡是使用保底、分段、门槛、“小于/大于等于”或“中期+年末”等规则时，必须把对应条款或说明加入 supporting_evidence_ids。
 证据缺变量时不要用“无法计算”等文本冒充数值输出；该题应让计划校验失败并等待重新检索。
@@ -1057,6 +1058,7 @@ class BBoardActualRunner:
                     plan,
                     expected_slots=question.answer_slots,
                     evidence_text_by_id=evidence_text_by_id,
+                    semantic_constraints=semantic_constraints,
                     expected_slot_templates=question.answer_slot_templates,
                     expected_numeric_decimal_places=infer_requested_decimal_places(
                         question.question
@@ -3126,25 +3128,31 @@ def _calculation_semantic_constraints(
     question_text: str,
     evidence_payload: Sequence[Mapping[str, Any]],
 ) -> list[dict[str, str]]:
-    """Derive aggregate-intensity constraints from the question and cited table.
+    """Derive answer-blind scope constraints from the question and evidence.
 
-    This is deliberately answer-blind: it only binds an explicitly unchanged
-    aggregate volume to the aggregate per-unit metric named by the question.
+    The extracted values are source literals, never benchmark answers.
     """
 
+    constraints: list[dict[str, str]] = []
     compact_question = _compact_text(question_text)
+    disclosed_aggregate = _direct_disclosed_average_constraint(
+        compact_question,
+        evidence_payload,
+    )
+    if disclosed_aggregate is not None:
+        constraints.append(disclosed_aggregate)
     if not (
         "持平" in compact_question
         and "乘用车" in compact_question
         and "单车带电量" in compact_question
         and "需求" in compact_question
     ):
-        return []
+        return constraints
     base_year_match = re.search(r"与(20\d{2})年持平", compact_question)
     if base_year_match is None:
         base_year_match = re.search(r"从(20\d{2})年", compact_question)
     if base_year_match is None:
-        return []
+        return constraints
     base_year = base_year_match.group(1)
     target_match = re.search(
         r"(?:提升|提高|变更|调整)至"
@@ -3154,7 +3162,7 @@ def _calculation_semantic_constraints(
         flags=re.IGNORECASE,
     )
     if target_match is None:
-        return []
+        return constraints
     target_value = target_match.group(1).replace(",", "")
     question_evidence_id = next(
         (
@@ -3166,7 +3174,7 @@ def _calculation_semantic_constraints(
         "",
     )
     if not question_evidence_id:
-        return []
+        return constraints
 
     for item in evidence_payload:
         title = str(item.get("title", ""))
@@ -3187,7 +3195,7 @@ def _calculation_semantic_constraints(
             evidence_id = str(item.get("evidence_id", "")).strip()
             if not evidence_id:
                 continue
-            return [
+            constraints.append(
                 {
                     "type": "unchanged_aggregate_volume",
                     "evidence_id": evidence_id,
@@ -3205,8 +3213,95 @@ def _calculation_semantic_constraints(
                         "单车带电量改写成纯电动或插混子类容量。"
                     ),
                 }
-            ]
-    return []
+            )
+            return constraints
+    return constraints
+
+
+_AVERAGE_PERIOD_RE = re.compile(
+    r"(20\d{2})年?(?:至|到|-|—|–|~|～)(20\d{2})年?"
+)
+_AVERAGE_VALUE_UNIT_RE = re.compile(
+    r"(?:年均|平均值|平均数)"
+    r"[^0-9，。；()（）]{0,40}?"
+    r"([+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)"
+    r"\s*(万亿元|亿元|万元|万户|户|万吨|吨|个百分点|%|元)"
+)
+_VALUE_BEFORE_AVERAGE_RE = re.compile(
+    r"([+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)"
+    r"\s*(万亿元|亿元|万元|万户|户|万吨|吨|个百分点|%|元)"
+    r"[^，。；]{0,80}(?:平均值|平均数)"
+)
+
+
+def _direct_disclosed_average_constraint(
+    compact_question: str,
+    evidence_payload: Sequence[Mapping[str, Any]],
+) -> dict[str, str] | None:
+    period_match = _AVERAGE_PERIOD_RE.search(compact_question)
+    aggregate_markers = ("平均值", "平均数", "年均")
+    if period_match is None or not any(
+        marker in compact_question for marker in aggregate_markers
+    ):
+        return None
+    marker_positions = [
+        compact_question.index(marker)
+        for marker in aggregate_markers
+        if marker in compact_question
+        and compact_question.index(marker) > period_match.end()
+    ]
+    if not marker_positions:
+        return None
+    metric = compact_question[period_match.end() : min(marker_positions)]
+    metric = re.sub(r"^(?:期间|内|发行人|公司|集团)+", "", metric).strip("的")
+    if len(metric) < 2:
+        return None
+    start_year, end_year = period_match.groups()
+    requested_unit_match = re.search(
+        r"单位[：:]?(万亿元|亿元|万元|万户|户|万吨|吨|个百分点|%|元)",
+        compact_question,
+    )
+    requested_unit = (
+        requested_unit_match.group(1) if requested_unit_match is not None else ""
+    )
+
+    for item in evidence_payload:
+        evidence_id = str(item.get("evidence_id", "")).strip()
+        if not evidence_id:
+            continue
+        compact_evidence = _compact_text(str(item.get("text", "")))
+        for clause in re.split(r"[。；\n]", compact_evidence):
+            if (
+                start_year not in clause
+                or end_year not in clause
+                or metric not in clause
+                or not any(marker in clause for marker in aggregate_markers)
+            ):
+                continue
+            value_match = _AVERAGE_VALUE_UNIT_RE.search(clause)
+            if value_match is None:
+                value_match = _VALUE_BEFORE_AVERAGE_RE.search(clause)
+            if value_match is None:
+                continue
+            value, unit = value_match.groups()
+            if requested_unit and requested_unit != unit:
+                continue
+            return {
+                "type": "direct_disclosed_aggregate",
+                "aggregation_scope": "multi_period_mean",
+                "period": f"{start_year}-{end_year}",
+                "metric": metric,
+                "evidence_id": evidence_id,
+                "disclosed_value": value.replace(",", ""),
+                "unit": unit,
+                "constraint": (
+                    f"证据已直接披露{start_year}-{end_year}期间“{metric}”的"
+                    f"平均值为{value}{unit}。该数值的aggregation_scope是"
+                    "multi_period_mean，不是任一单年值；若题目要求同期间同口径"
+                    "平均值，应直接输出，不得把它标成某年变量后再次求和或平均。"
+                ),
+            }
+    return None
 
 
 def _validate_aggregate_intensity_plan_binding(
