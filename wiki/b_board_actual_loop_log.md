@@ -22,6 +22,296 @@
 }
 ```
 
+## b-loop-qwen37-reasoning-thinking-budget-768-c3
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-reasoning-thinking-budget-768-c3",
+  "direction_id": "qwen37_reasoning_thinking_control",
+  "round": 3,
+  "round_limit": 3,
+  "recorded_at": "2026-07-24T12:51:30+08:00",
+  "status": "rejected_direction_stopped",
+  "score_type": "offline_equal_accuracy_gpt56_shadow_not_official",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_round": "b-loop-qwen37-reasoning-thinking-budget-512-c2",
+    "frozen_prior_winner": "fin_b_018_budget512"
+  },
+  "approach": "仅对fin_b_018把reasoning thinking_budget从512提高至768，希望用少量Token换回reasoning质量；答案checkpoint、v8提示词、1800字符证据上限、模型快照和结构化输出均保持不变。只运行一次Qwen并由固定GPT-5.6重评。",
+  "artifacts": {
+    "fin_b_018": "artifacts/b_board_actual/qwen37_three_badcase_reasoning_budget768_fin018_c3",
+    "retained_full100_candidate": "artifacts/b_board_actual/qwen37_three_badcase_token_candidate_c2"
+  },
+  "per_qid": [
+    {
+      "qid": "fin_b_018",
+      "answer_preserved": true,
+      "reasoning_score_reference_incumbent": 99.0,
+      "reasoning_score_after": 98.0,
+      "row_token_reference_incumbent": 16252,
+      "row_token_after": 15924,
+      "row_token_delta": -328,
+      "equal_accuracy_proxy_delta": -0.001688,
+      "api_call_count": 1,
+      "retry_count": 0,
+      "promotion": "rejected_reasoning_loss_exceeds_token_gain"
+    }
+  ],
+  "metrics": {
+    "hypothetical_full100_token_total": 1258452,
+    "hypothetical_reasoning_score": 95.92666666666666,
+    "hypothetical_token_efficiency_score": 74.83096,
+    "hypothetical_proxy_total_at_99_accuracy": 93.244192,
+    "retained_proxy_total_at_99_accuracy": 93.246248,
+    "official_accuracy": null
+  },
+  "promotion_result": "reject_budget768_keep_budget512",
+  "next_step": "已到该方向第3轮，停止继续搜索thinking_budget。保留fc_b_014关闭思考、fin_b_018预算512、ins_b_003关闭思考的组合。",
+  "submission_effect": "no_official_upload"
+}
+```
+
+## b-loop-qwen37-reasoning-thinking-budget-512-c2
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-reasoning-thinking-budget-512-c2",
+  "direction_id": "qwen37_reasoning_thinking_control",
+  "round": 2,
+  "round_limit": 3,
+  "recorded_at": "2026-07-24T12:50:05+08:00",
+  "status": "promoted",
+  "score_type": "offline_equal_accuracy_gpt56_shadow_not_official",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_round": "b-loop-qwen37-reasoning-thinking-off-c1",
+    "frozen_prior_winners": [
+      "fc_b_014_thinking_off",
+      "ins_b_003_thinking_off"
+    ]
+  },
+  "approach": "C1关闭fin_b_018思考虽然省Token但reasoning下降2分，因此第2轮在当前v8题型化提示词上启用思考并设置thinking_budget=512；答案checkpoint、1800字符证据上限、固定模型快照和结构化输出保持不变。只运行一次Qwen并由固定GPT-5.6重评。",
+  "artifacts": {
+    "fin_b_018": "artifacts/b_board_actual/qwen37_three_badcase_reasoning_budget512_fin018_c2",
+    "promoted_full100_candidate": "artifacts/b_board_actual/qwen37_three_badcase_token_candidate_c2"
+  },
+  "per_qid": [
+    {
+      "qid": "fin_b_018",
+      "answer_preserved": true,
+      "reasoning_score_reference_incumbent": 99.0,
+      "reasoning_score_after": 98.33333333333333,
+      "row_token_reference_incumbent": 16252,
+      "row_token_after": 15660,
+      "row_token_delta": -592,
+      "equal_accuracy_proxy_delta": 0.000368,
+      "api_call_count": 1,
+      "retry_count": 0,
+      "promotion": "token_gain_outweighs_reasoning_loss"
+    }
+  ],
+  "metrics": {
+    "baseline_full100_token_total": 1258780,
+    "promoted_full100_token_total": 1258188,
+    "token_delta": -592,
+    "reasoning_score_before": 95.93666666666667,
+    "reasoning_score_after": 95.93,
+    "token_efficiency_score_before": 74.8244,
+    "token_efficiency_score_after": 74.83624,
+    "proxy_total_before_at_99_accuracy": 93.24588,
+    "proxy_total_after_at_99_accuracy": 93.246248,
+    "proxy_total_delta": 0.000368,
+    "official_accuracy": null
+  },
+  "promotion_result": "promote_fin_b_018_budget512",
+  "next_step": "第3轮测试budget768能否换回reasoning质量并超过本轮；若不能则保留512并停止方向。",
+  "submission_effect": "no_official_upload"
+}
+```
+
+## b-loop-qwen37-reasoning-thinking-off-c1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-reasoning-thinking-off-c1",
+  "direction_id": "qwen37_reasoning_thinking_control",
+  "round": 1,
+  "round_limit": 3,
+  "recorded_at": "2026-07-24T12:44:17+08:00",
+  "status": "partially_promoted",
+  "score_type": "offline_equal_accuracy_gpt56_shadow_not_official",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_winner": "b-loop-qwen37-reasoning-evidence-600-token-a2",
+    "rejected_direction": "b-loop-qwen37-type-conditioned-concise-reasoning-b1"
+  },
+  "external_research": {
+    "performed_after_local_directions": true,
+    "sources": [
+      "https://help.aliyun.com/zh/model-studio/deep-thinking",
+      "https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions",
+      "https://help.aliyun.com/zh/model-studio/context-cache",
+      "https://help.aliyun.com/zh/model-studio/qwen-structured-output"
+    ],
+    "finding": "Qwen3.7 Plus官方支持enable_thinking和thinking_budget；关闭reasoning阶段的隐藏思考可直接减少completion Token。缓存命中Token仍包含在API顶层prompt_tokens中，只降低成本与延迟，对比赛Token分无收益。官方结构化输出只承诺JSON Object，缩小输出上限存在截断JSON并触发重试风险，因此本轮不使用输出截断。"
+  },
+  "approach": "保持v7 reasoning提示词、冻结答案、固定证据上限和原生结构化输出不变，仅将reasoning阶段enable_thinking设为false。fc_b_014沿用600字符证据上限，fin_b_018沿用1800，ins_b_003沿用900。三题并发独立运行，每题仅一次Qwen调用，再由固定GPT-5.6影子评测；按等准确率单题代理增量0.003*reasoning分差-token差/250000晋级。",
+  "artifacts": {
+    "fc_b_014": "artifacts/b_board_actual/qwen37_three_badcase_reasoning_nothink_fc014_c1",
+    "fin_b_018": "artifacts/b_board_actual/qwen37_three_badcase_reasoning_nothink_fin018_c1",
+    "ins_b_003": "artifacts/b_board_actual/qwen37_three_badcase_reasoning_nothink_ins003_c1",
+    "promoted_full100_candidate": "artifacts/b_board_actual/qwen37_three_badcase_token_candidate_c1"
+  },
+  "per_qid": [
+    {
+      "qid": "fc_b_014",
+      "answer_preserved": true,
+      "reasoning_score_before": 97.0,
+      "reasoning_score_after": 97.66666666666667,
+      "row_token_before": 7341,
+      "row_token_after": 6416,
+      "row_token_delta": -925,
+      "equal_accuracy_proxy_delta": 0.0057,
+      "api_call_count": 1,
+      "retry_count": 0,
+      "promotion": "reasoning_and_token_gain"
+    },
+    {
+      "qid": "fin_b_018",
+      "answer_preserved": true,
+      "reasoning_score_before": 99.0,
+      "reasoning_score_after": 97.0,
+      "row_token_before": 16252,
+      "row_token_after": 15059,
+      "row_token_delta": -1193,
+      "equal_accuracy_proxy_delta": -0.001228,
+      "api_call_count": 1,
+      "retry_count": 0,
+      "promotion": "rejected_reasoning_loss_exceeds_token_gain"
+    },
+    {
+      "qid": "ins_b_003",
+      "answer_preserved": true,
+      "reasoning_score_before": 97.66666666666667,
+      "reasoning_score_after": 97.66666666666667,
+      "row_token_before": 19869,
+      "row_token_after": 17957,
+      "row_token_delta": -1912,
+      "equal_accuracy_proxy_delta": 0.007648,
+      "api_call_count": 1,
+      "retry_count": 0,
+      "promotion": "token_gain_without_reasoning_loss"
+    }
+  ],
+  "metrics": {
+    "baseline_full100_token_total": 1261617,
+    "promoted_full100_token_total": 1258780,
+    "token_delta": -2837,
+    "reasoning_score_before": 95.93,
+    "reasoning_score_after": 95.93666666666667,
+    "token_efficiency_score_before": 74.76766,
+    "token_efficiency_score_after": 74.8244,
+    "proxy_total_before_at_99_accuracy": 93.232532,
+    "proxy_total_after_at_99_accuracy": 93.24588,
+    "proxy_total_delta": 0.013348,
+    "official_accuracy": null
+  },
+  "promotion_result": "promote_fc_b_014_and_ins_b_003_keep_fin_b_018_incumbent",
+  "next_step": "进入同方向第2轮，只对fin_b_018测试有限thinking_budget；其余两题冻结。若预算不能在保持reasoning质量时产生净收益，则停止该方向，不强行消耗第3轮。",
+  "execution_note": "若干临时worktree路径或模型alias检查在模型初始化前失败，API usage为0且未生成提交内容，不计为模型调用；三条有效实验各仅一次Qwen调用。",
+  "submission_effect": "no_official_upload"
+}
+```
+
+## b-loop-qwen37-type-conditioned-concise-reasoning-b1
+
+```json
+{
+  "experiment_id": "b-loop-qwen37-type-conditioned-concise-reasoning-b1",
+  "direction_id": "qwen37_type_conditioned_concise_reasoning",
+  "round": 1,
+  "round_limit": 3,
+  "recorded_at": "2026-07-24T12:32:23+08:00",
+  "status": "rejected_direction_stopped",
+  "score_type": "offline_equal_accuracy_gpt56_shadow_not_official",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_winner": "b-loop-qwen37-reasoning-evidence-600-token-a2",
+    "frozen_incumbents": {
+      "fc_b_014": "reasoning_600_a2",
+      "fin_b_018": "accuracy_a1",
+      "ins_b_003": "reasoning_900_a1"
+    }
+  },
+  "approach": "冻结三题答案和答案证据链，并发使用v8题型化简洁reasoning提示词：直接披露平均值目标100至160字、两步计算150至220字、多合同计算220至280字；要求公式、原值、单位、max逻辑和冻结结论完整。保持Qwen3.7 Plus默认thinking、1800字符单条证据和原生strict JSON Schema，每条reasoning均由固定GPT-5.6影子评测。",
+  "artifacts": {
+    "fc_b_014": "artifacts/b_board_actual/qwen37_three_badcase_reasoning_concise_fc014_b1",
+    "fin_b_018": "artifacts/b_board_actual/qwen37_three_badcase_reasoning_concise_fin018_b1",
+    "ins_b_003": "artifacts/b_board_actual/qwen37_three_badcase_reasoning_concise_ins003_b1",
+    "retained_full100_candidate": "artifacts/b_board_actual/qwen37_three_badcase_token_candidate_a2"
+  },
+  "per_qid": [
+    {
+      "qid": "fc_b_014",
+      "answer_preserved": true,
+      "visible_reasoning_char_before": 193,
+      "visible_reasoning_char_after": 136,
+      "reasoning_score_before": 97.0,
+      "reasoning_score_after": 97.33333333333333,
+      "row_token_before": 7341,
+      "row_token_after": 7758,
+      "row_token_delta": 417,
+      "equal_accuracy_proxy_delta": -0.000668,
+      "api_call_count": 1,
+      "retry_count": 0,
+      "promotion": "rejected_token_increase_exceeds_reasoning_gain"
+    },
+    {
+      "qid": "fin_b_018",
+      "answer_preserved": true,
+      "visible_reasoning_char_before": 211,
+      "visible_reasoning_char_after": 184,
+      "reasoning_score_before": 99.0,
+      "reasoning_score_after": 98.66666666666667,
+      "row_token_before": 16252,
+      "row_token_after": 17540,
+      "row_token_delta": 1288,
+      "equal_accuracy_proxy_delta": -0.006152,
+      "api_call_count": 1,
+      "retry_count": 0,
+      "promotion": "rejected_reasoning_and_token_both_regressed"
+    },
+    {
+      "qid": "ins_b_003",
+      "answer_preserved": true,
+      "visible_reasoning_char_before": 331,
+      "visible_reasoning_char_after": 262,
+      "reasoning_score_before": 97.66666666666667,
+      "reasoning_score_after": 96.0,
+      "row_token_before": 19869,
+      "row_token_after": 21182,
+      "row_token_delta": 1313,
+      "equal_accuracy_proxy_delta": -0.010252,
+      "api_call_count": 1,
+      "retry_count": 0,
+      "promotion": "rejected_reasoning_and_token_both_regressed"
+    }
+  ],
+  "metrics": {
+    "retained_full100_token_total": 1261617,
+    "retained_reasoning_score": 95.93,
+    "retained_token_efficiency_score": 74.76766,
+    "retained_proxy_total_at_99_accuracy": 93.232532,
+    "official_accuracy": null
+  },
+  "failure_analysis": "三条可见reasoning均缩短，但整行Token全部上升；其中ins_b_003默认thinking的completion Token增加1233。说明最终文本字数不是隐藏思考Token的可靠代理，提示词压缩还损害fin_b_018与ins_b_003的reasoning质量。继续重复同类提示词压缩没有因果依据，因此不消耗第2和第3轮。",
+  "promotion_result": "reject_all_keep_token_candidate_a2",
+  "next_step": "停止按可见字数压缩。外部调研Qwen官方是否提供可控thinking预算、非思考模式或可影响竞赛Token统计的缓存能力；只有官方支持且能保持答案与reasoning质量时才建立新方向。",
+  "submission_effect": "no_official_upload"
+}
+```
+
 ## b-loop-qwen37-reasoning-evidence-600-token-a2
 
 ```json
