@@ -39152,3 +39152,67 @@
   "submission_effect": "no_candidate_change_no_model_call"
 }
 ```
+
+## b-loop-qwen37-joint-choice-answer-reasoning-a1
+
+```json
+{
+  "approach": "新方向开始前重读本日志与qwen37_structured_output_handoff。针对C2中26道实际触发模型判断的选择题，保留attempt_43文档定位并逐选项执行本地BM25检索，把去重后的共享证据、全部选项一次性交给固定Qwen3.7快照；同一次native strict调用输出逐项support/refute判断、答案和提交reasoning。代码硬校验选项全覆盖、证据ID存在、多选至少两项、全部support集合=answer、reasoning末句=answer。任何insufficient、格式或一致性失败立即拒绝，不重试、不覆盖C2。",
+  "artifact_path": "artifacts/b_board_actual/qwen37_joint_choice_a1",
+  "comparison_path": "artifacts/b_board_actual/qwen37_joint_choice_a1_scored/comparison.json",
+  "direction_id": "qwen37_joint_choice_answer_reasoning",
+  "effect": "26题中20题一次调用通过，6题被证据/多选门禁拒绝；20个成功答案中19题与C2冻结答案一致，ins_b_005由BD变为ABCD。19条后验答案匹配题的Token由337376降到85888，下降74.5424%；GPT-5.6影子reasoning均分由95.3860升到96.1053。若事后只替换这19题且假定Accuracy仍为99，oracle上界投影为Token 1006700、reasoning 96.0667、Token效率79.8660、总分94.293200，相对93.246248增加1.046952。该数排除了6个失败调用和1个答案漂移，不能视为可复现生产分或实际晋级。未官网上传。",
+  "experiment_id": "b-loop-qwen37-joint-choice-answer-reasoning-a1",
+  "failure_analysis": "6个硬失败为fin_b_007多选仅支持一项，以及ins_b_002、ins_b_007、ins_b_010、res_b_013、res_b_015至少一个选项证据不足；当前通用BM25未执行既有领域evidence gate、年份/主体/保险产品绑定与定向rescue，所以模型引用存在的证据ID不等于本地证据链已验证。ins_b_005答案漂移证明不能全量启用，也不能用C2答案后验筛选固定QID路由。首次基础设施探针曾因旧checkpoint恢复器不接受联合账本附加字段而在模型返回后停止，未产出可恢复usage；该本地问题已修复。复审后进一步封死research joint artifact进入submission overlay的路径，联合产物不再声明pre-reasoning冻结或grounding已验证，并为后续运行增加source SHA lineage；这些修复未追溯修改A1历史产物。",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_experiment_id": "b-loop-qwen37-calculation-retrieval-retry-audit-a1",
+    "direction_attempt_count": 1,
+    "new_material_delta": "从计算题补证归因切换到选择题一次联合生成；完整联合只作为research模式，不修改默认答案冻结与独立reasoning生产链。"
+  },
+  "metrics": {
+    "selected_question_count": 26,
+    "joint_success_count": 20,
+    "hard_failure_count": 6,
+    "answer_match_count": 19,
+    "answer_changed_qids": [
+      "ins_b_005"
+    ],
+    "joint_failure_qids": [
+      "fin_b_007",
+      "ins_b_002",
+      "ins_b_007",
+      "ins_b_010",
+      "res_b_013",
+      "res_b_015"
+    ],
+    "matched_source_token": 337376,
+    "matched_joint_token": 85888,
+    "matched_token_delta": -251488,
+    "matched_token_reduction_ratio": 0.7454235037465617,
+    "matched_source_reasoning_score": 95.3859649122807,
+    "matched_joint_reasoning_score": 96.10526315789474,
+    "all_matched_qids_positive_proxy_delta": true,
+    "posthoc_oracle_full100_token_total": 1006700,
+    "posthoc_oracle_full100_reasoning_score": 96.06666666666668,
+    "posthoc_oracle_full100_token_efficiency_score": 79.866,
+    "posthoc_oracle_proxy_total_at_assumed99": 94.2932,
+    "retained_c2_proxy_total_at_assumed99": 93.246248,
+    "posthoc_oracle_proxy_total_delta": 1.0469520000000045,
+    "format_retry_count": 0,
+    "submission_eligible": false,
+    "production_route_eligible": false
+  },
+  "next_step": "本轮只确认一次联合调用具备显著Token潜力，不形成19题生产白名单。若继续本方向A2，必须先定义不依赖C2答案的前置路由与领域证据门禁，再对独立题集或全量26题重跑；失败调用也要计入一次可复现全链总分。本方向最多再尝试2轮。",
+  "pipeline_stage": "choice_answer_and_reasoning_generation",
+  "promotion_result": "research_signal_effective_production_promotion_blocked",
+  "question_types": [
+    "choice"
+  ],
+  "recorded_at": "2026-07-24T13:49:34+08:00",
+  "root_cause_cluster": "per_option_calls_and_separate_reasoning_duplicate_context",
+  "score_type": "offline_posthoc_oracle_projection_not_official",
+  "status": "completed_effective_research_signal",
+  "submission_effect": "no_official_upload_default_submission_chain_unchanged"
+}
+```

@@ -46,6 +46,13 @@ from afa_agent.b_board.io import (
     validate_b_answer,
     write_b_submission,
 )
+from afa_agent.b_board.joint_choice import (
+    JOINT_CHOICE_PROMPT_VERSION,
+    JOINT_CHOICE_SCHEMA,
+    JOINT_CHOICE_SCHEMA_VERSION,
+    JOINT_CHOICE_SYSTEM_PROMPT,
+    validate_joint_choice_payload,
+)
 from afa_agent.b_board.submission_policy import (
     is_allowed_submission_model,
     require_allowed_submission_model,
@@ -434,6 +441,127 @@ class BBoardActualRunner:
             },
         }
         return _refresh_combined_api_usage_ledger(artifact)
+
+    def joint_choice_one(
+        self,
+        question: BQuestion,
+        locator: Mapping[str, Any],
+        *,
+        thinking_budget: int | None = 2048,
+        per_option_top_k: int = 4,
+        max_evidence_items: int = 16,
+        evidence_char_limit: int = 1200,
+    ) -> BAnswerArtifact:
+        """Generate one model-cited joint response for research comparison."""
+
+        if self.run_mode != RUN_MODE_RESEARCH:
+            raise ValueError(
+                "joint answer/reasoning generation is research-only"
+            )
+        if question.answer_format not in {"multi", "mcq", "tf"}:
+            raise ValueError(
+                f"{question.qid}: joint choice does not support "
+                f"{question.answer_format!r}"
+            )
+        for name, value in (
+            ("per_option_top_k", per_option_top_k),
+            ("max_evidence_items", max_evidence_items),
+            ("evidence_char_limit", evidence_char_limit),
+        ):
+            if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                raise ValueError(f"{name} must be a positive integer")
+        if (
+            thinking_budget is not None
+            and (
+                isinstance(thinking_budget, bool)
+                or not isinstance(thinking_budget, int)
+                or thinking_budget < 1
+            )
+        ):
+            raise ValueError("thinking_budget must be a positive integer or None")
+
+        with capture_llm_usage() as usage_ledger:
+            try:
+                artifact = self._answer_choice_joint(
+                    question,
+                    locator,
+                    thinking_budget=thinking_budget,
+                    per_option_top_k=per_option_top_k,
+                    max_evidence_items=max_evidence_items,
+                    evidence_char_limit=evidence_char_limit,
+                )
+            except Exception as exc:
+                raise BAnswerGenerationError(
+                    str(exc),
+                    token_usage=usage_ledger.total(),
+                    diagnostics=[
+                        {
+                            "stage": "api_usage_ledger",
+                            "pipeline_stage": "joint_choice",
+                            "calls": usage_ledger.calls,
+                        }
+                    ],
+                ) from exc
+
+        if len(usage_ledger.calls) != 1:
+            raise BAnswerGenerationError(
+                "joint choice must use exactly one model call",
+                token_usage=usage_ledger.total(),
+                diagnostics=[
+                    {
+                        "stage": "api_usage_ledger",
+                        "pipeline_stage": "joint_choice",
+                        "calls": usage_ledger.calls,
+                    }
+                ],
+            )
+        source_call_id = f"{question.qid}:joint_choice:1"
+        usage_ledger.calls[0] = {
+            **usage_ledger.calls[0],
+            "call_id": source_call_id,
+            "pipeline_stage": "answer",
+            "generation_mode": "joint_choice_answer_reasoning",
+            "accounting_owner": "answer",
+            "produced_fields": [
+                "option_assessments",
+                "answer_parts",
+                "reasoning",
+            ],
+        }
+        total_usage = usage_ledger.total()
+        artifact.token_usage = total_usage
+        artifact.decision_trace["answer_stage"]["source_call_ids"] = [
+            source_call_id
+        ]
+        artifact.decision_trace["reasoning_stage"].update(
+            {
+                "incremental_api_call_count": 0,
+                "source_call_ids": [source_call_id],
+            }
+        )
+        artifact.decision_trace["submission_reasoning"]["source_call_ids"] = [
+            source_call_id
+        ]
+        artifact.decision_trace = {
+            **artifact.decision_trace,
+            "answer_api_usage_ledger": {
+                "call_count": 1,
+                "calls": usage_ledger.calls,
+            },
+            "reasoning_api_usage_ledger": {
+                "accounting_semantics": "incremental_only",
+                "call_count": 0,
+                "calls": [],
+                "source_call_ids": [source_call_id],
+                "joint_usage_attributed_to": "answer_api_usage_ledger",
+            },
+            "api_usage_ledger": {
+                "accounting_semantics": "canonical_physical_calls",
+                "call_count": 1,
+                "calls": usage_ledger.calls,
+            },
+        }
+        return artifact
 
     def refine_reasoning_one(
         self,
@@ -934,6 +1062,228 @@ class BBoardActualRunner:
             calculation_trace={},
             token_usage=result.token_usage.to_dict(),
             locator={**dict(locator), "selected_doc_ids": candidate_doc_ids},
+        )
+        validate_b_answer(question, artifact.to_submission_answer())
+        return artifact
+
+    def _answer_choice_joint(
+        self,
+        question: BQuestion,
+        locator: Mapping[str, Any],
+        *,
+        thinking_budget: int | None,
+        per_option_top_k: int,
+        max_evidence_items: int,
+        evidence_char_limit: int,
+    ) -> BAnswerArtifact:
+        effective_attempt = self._migration._effective_attempt_for_domain(
+            self.attempt,
+            question.domain,
+        )
+        candidate_doc_ids = self._migration.select_answer_doc_ids(
+            dict(locator),
+            _question_row(question),
+            effective_attempt,
+        )
+        if not candidate_doc_ids:
+            raise ValueError(f"{question.qid}: locator selected no documents")
+
+        hits_by_option: dict[str, list[dict[str, Any]]] = {}
+        evidence_by_id: dict[str, dict[str, Any]] = {}
+        matched_options: dict[str, list[str]] = {}
+        for option, option_text in question.options.items():
+            label = str(option).strip().upper()
+            query = "\n".join(
+                [
+                    question.question,
+                    f"待判断选项{label}：{option_text}",
+                    "核验该选项成立条件、例外、时间范围、主体和明确反例",
+                ]
+            )
+            hits = self.retrievers[question.domain].search(
+                candidate_doc_ids,
+                query,
+                top_k=per_option_top_k,
+                unit_type_boosts={
+                    "metric_row": 1.6,
+                    "formula_block": 1.6,
+                    "clause_block": 1.8,
+                    "article": 1.5,
+                },
+                ensure_per_doc=True,
+                expand_neighbors=True,
+            )
+            normalized_hits = [
+                _normalize_evidence(hit.to_dict()) for hit in hits
+            ]
+            hits_by_option[label] = normalized_hits
+            for item in normalized_hits:
+                evidence_id = str(item.get("unit_id", "")).strip()
+                if not evidence_id:
+                    continue
+                evidence_by_id.setdefault(evidence_id, item)
+                matched_options.setdefault(evidence_id, [])
+                if label not in matched_options[evidence_id]:
+                    matched_options[evidence_id].append(label)
+
+        selected_ids: list[str] = []
+        max_rank = max(
+            (len(items) for items in hits_by_option.values()),
+            default=0,
+        )
+        for rank in range(max_rank):
+            for option in question.options:
+                label = str(option).strip().upper()
+                option_hits = hits_by_option.get(label, [])
+                if rank >= len(option_hits):
+                    continue
+                evidence_id = str(
+                    option_hits[rank].get("unit_id", "")
+                ).strip()
+                if evidence_id and evidence_id not in selected_ids:
+                    selected_ids.append(evidence_id)
+                if len(selected_ids) >= max_evidence_items:
+                    break
+            if len(selected_ids) >= max_evidence_items:
+                break
+        evidence_items = [
+            evidence_by_id[evidence_id] for evidence_id in selected_ids
+        ]
+        if not evidence_items:
+            raise ValueError(f"{question.qid}: joint retrieval found no evidence")
+
+        evidence_payload = [
+            {
+                "evidence_id": str(item["unit_id"]),
+                "matched_options": matched_options.get(
+                    str(item["unit_id"]),
+                    [],
+                ),
+                "doc_id": str(item.get("doc_id", "")),
+                "title_path": list(item.get("title_path") or []),
+                "text": str(item.get("text", ""))[:evidence_char_limit],
+            }
+            for item in evidence_items
+        ]
+        messages = [
+            {"role": "system", "content": JOINT_CHOICE_SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": (
+                    f"qid：{question.qid}\n"
+                    f"题型：{question.answer_format}\n"
+                    f"题目：{question.question}\n"
+                    f"选项：{json.dumps(question.options, ensure_ascii=False)}\n"
+                    "证据："
+                    f"{json.dumps(evidence_payload, ensure_ascii=False)}"
+                ),
+            },
+        ]
+        request_kwargs: dict[str, Any] = {}
+        if thinking_budget is None:
+            request_kwargs["extra_body"] = {"enable_thinking": False}
+        else:
+            request_kwargs["extra_body"] = {
+                "enable_thinking": True,
+                "thinking_budget": thinking_budget,
+            }
+        response = self.client.chat_json(
+            messages,
+            response_schema=JOINT_CHOICE_SCHEMA,
+            schema_name=JOINT_CHOICE_SCHEMA_VERSION,
+            **request_kwargs,
+        )
+        payload = extract_json_object(response.content)
+        answer, assessments, reasoning = validate_joint_choice_payload(
+            payload,
+            question=question,
+            available_evidence_ids=selected_ids,
+        )
+        used_evidence_ids = list(
+            dict.fromkeys(
+                evidence_id
+                for assessment in assessments
+                for evidence_id in assessment["evidence_ids"]
+            )
+        )
+        used_evidence = [
+            item
+            for item in evidence_items
+            if str(item["unit_id"]) in used_evidence_ids
+        ]
+        artifact = BAnswerArtifact(
+            qid=question.qid,
+            domain=question.domain,
+            answer_format=question.answer_format,
+            answer_slot_count=question.answer_slots,
+            answer_parts=[answer],
+            used_evidence_ids=used_evidence_ids,
+            evidence_items=used_evidence,
+            reasoning_evidence_items=used_evidence,
+            decision_summary=reasoning,
+            decision_trace={
+                "joint_choice_generation": {
+                    "prompt_version": JOINT_CHOICE_PROMPT_VERSION,
+                    "schema_version": JOINT_CHOICE_SCHEMA_VERSION,
+                    "model_name": self.config.model.model_name,
+                    "thinking_budget": thinking_budget,
+                    "per_option_top_k": per_option_top_k,
+                    "max_evidence_items": max_evidence_items,
+                    "evidence_char_limit": evidence_char_limit,
+                    "selected_doc_ids": candidate_doc_ids,
+                    "retrieved_evidence_count": len(evidence_items),
+                    "option_assessments": assessments,
+                    "answer_consistent_with_assessments": True,
+                    "local_evidence_gate_passed": False,
+                    "evidence_status": "model_cited_unverified",
+                },
+                "answer_stage": {
+                    "status": "co_generated",
+                    "answer_parts_frozen": False,
+                    "post_response_answer_locked": True,
+                    "decision_summary": reasoning,
+                    "generation_mode": "joint_answer_reasoning",
+                },
+                "reasoning_stage": {
+                    "status": "complete",
+                    "answer_artifact_frozen": False,
+                    "co_generated_with_answer": True,
+                    "generation_mode": "joint_answer_reasoning",
+                },
+                "submission_reasoning": {
+                    "prompt_version": JOINT_CHOICE_PROMPT_VERSION,
+                    "schema_version": JOINT_CHOICE_SCHEMA_VERSION,
+                    "model_name": self.config.model.model_name,
+                    "grounding_status": "model_cited_unverified",
+                    "local_evidence_gate_passed": False,
+                    "answer_parts_preserved": False,
+                    "answer_parts_consistent": True,
+                    "co_generated_with_answer": True,
+                    "generation_mode": "joint_answer_reasoning",
+                    "attempt_count": 1,
+                    "api_call_count": 1,
+                    "format_retry_count": 0,
+                    "response_format_modes": [
+                        response.response_format_mode
+                    ],
+                    "rescued_evidence_ids": [],
+                    "token_usage": response.token_usage.to_dict(),
+                    "enable_thinking": thinking_budget is not None,
+                    "thinking_budget": thinking_budget,
+                },
+            },
+            calculation_trace={},
+            token_usage=response.token_usage.to_dict(),
+            locator={
+                **dict(locator),
+                "selected_doc_ids": candidate_doc_ids,
+                "joint_choice_retrieval": {
+                    "per_option_top_k": per_option_top_k,
+                    "max_evidence_items": max_evidence_items,
+                    "selected_evidence_ids": selected_ids,
+                    "matched_options": matched_options,
+                },
+            },
         )
         validate_b_answer(question, artifact.to_submission_answer())
         return artifact

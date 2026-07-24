@@ -106,6 +106,31 @@ def _validate_artifact_call_models(
             )
 
 
+def _reject_research_only_joint_artifacts(
+    artifacts: list[BAnswerArtifact],
+    *,
+    run_dir: Path,
+) -> None:
+    joint_qids = [
+        artifact.qid
+        for artifact in artifacts
+        if (
+            "joint_choice_generation" in artifact.decision_trace
+            or str(
+                dict(
+                    artifact.decision_trace.get("submission_reasoning")
+                    or {}
+                ).get("generation_mode", "")
+            ).startswith("joint_")
+        )
+    ]
+    if joint_qids:
+        raise ValueError(
+            f"{run_dir}: research-only joint answer/reasoning artifacts "
+            f"cannot be overlaid into a submission candidate: {joint_qids}"
+        )
+
+
 def main() -> None:
     args = parse_args()
     base_run = _resolve(args.base_run)
@@ -126,6 +151,10 @@ def main() -> None:
         raise ValueError(f"{base_run}: base model is not allowlisted Qwen")
 
     base_artifacts = _load_artifacts(base_run)
+    _reject_research_only_joint_artifacts(
+        base_artifacts,
+        run_dir=base_run,
+    )
     overlay_artifact_groups: list[list[BAnswerArtifact]] = []
     overlay_lineage: list[dict[str, Any]] = []
     for run_dir in overlay_runs:
@@ -140,6 +169,10 @@ def main() -> None:
                 f"match base model {base_model_name!r}"
             )
         artifacts = _load_artifacts(run_dir)
+        _reject_research_only_joint_artifacts(
+            artifacts,
+            run_dir=run_dir,
+        )
         overlay_artifact_groups.append(artifacts)
         overlay_lineage.append(
             {
