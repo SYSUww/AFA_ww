@@ -19,6 +19,8 @@ from afa_agent.b_board.runner import (
     DEFAULT_STRATEGY_PATH,
     RUN_MODES,
     RUN_MODE_SUBMISSION,
+    RUN_STAGES,
+    RUN_STAGE_FULL,
     BBoardActualRunner,
 )
 
@@ -40,6 +42,12 @@ def parse_args() -> argparse.Namespace:
         choices=RUN_MODES,
         default=RUN_MODE_SUBMISSION,
         help="submission enforces the official model allowlist; research writes only research_submit.csv",
+    )
+    parser.add_argument(
+        "--stage",
+        choices=RUN_STAGES,
+        default=RUN_STAGE_FULL,
+        help="answer stops after frozen answer checkpoints; full also generates reasoning and CSV",
     )
     return parser.parse_args()
 
@@ -76,7 +84,12 @@ def main() -> None:
         locator_attempt_id=args.locator_attempt,
         run_mode=args.run_mode,
     )
-    manifest = runner.run(run_dir=run_dir, qids=qids, workers=max(1, args.workers))
+    manifest = runner.run(
+        run_dir=run_dir,
+        qids=qids,
+        workers=max(1, args.workers),
+        stage=args.stage,
+    )
     print(json.dumps(manifest, ensure_ascii=False, indent=2))
 
 

@@ -14,6 +14,8 @@ from afa_agent.b_board.runner import (
     CALCULATION_SYSTEM_PROMPT,
     RUN_MODE_RESEARCH,
     RUN_MODE_SUBMISSION,
+    RUN_STAGE_ANSWER,
+    RUN_STAGE_FULL,
     SUBMISSION_REASONING_FEEDBACK_PROMPT_VERSION,
     SUBMISSION_REASONING_FEEDBACK_SYSTEM_PROMPT,
     DEFAULT_SUBMISSION_REASONING_EVIDENCE_CHAR_LIMIT,
@@ -2079,11 +2081,67 @@ class BBoardRunnerModeTests(unittest.TestCase):
 
     def test_cli_defaults_to_submission_and_accepts_research(self) -> None:
         with mock.patch.object(sys, "argv", ["run_b_board_actual.py"]):
-            self.assertEqual(run_b_board_actual.parse_args().run_mode, RUN_MODE_SUBMISSION)
+            args = run_b_board_actual.parse_args()
+            self.assertEqual(args.run_mode, RUN_MODE_SUBMISSION)
+            self.assertEqual(args.stage, RUN_STAGE_FULL)
         with mock.patch.object(
-            sys, "argv", ["run_b_board_actual.py", "--run-mode", RUN_MODE_RESEARCH]
+            sys,
+            "argv",
+            [
+                "run_b_board_actual.py",
+                "--run-mode",
+                RUN_MODE_RESEARCH,
+                "--stage",
+                RUN_STAGE_ANSWER,
+            ],
         ):
-            self.assertEqual(run_b_board_actual.parse_args().run_mode, RUN_MODE_RESEARCH)
+            args = run_b_board_actual.parse_args()
+            self.assertEqual(args.run_mode, RUN_MODE_RESEARCH)
+            self.assertEqual(args.stage, RUN_STAGE_ANSWER)
+
+    def test_answer_only_stage_persists_checkpoint_without_reasoning_or_csv(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory) / "answer-only"
+            runner = self._lightweight_runner(
+                RUN_MODE_SUBMISSION, "qwen3.7-plus-2026-05-26"
+            )
+
+            def must_not_generate_reasoning(*_args):
+                raise AssertionError("answer-only stage called reasoning")
+
+            runner.reasoning_one = must_not_generate_reasoning
+            manifest = runner.run(
+                run_dir=run_dir,
+                workers=1,
+                stage=RUN_STAGE_ANSWER,
+            )
+
+            self.assertEqual(manifest["status"], "answer_complete")
+            self.assertEqual(manifest["stage"], RUN_STAGE_ANSWER)
+            self.assertEqual(manifest["answer_completed_count"], 1)
+            self.assertEqual(manifest["reasoning_completed_count"], 0)
+            self.assertEqual(manifest["reasoning_failed_qids"], [])
+            self.assertEqual(
+                json.loads((run_dir / "answers.json").read_text(encoding="utf-8")),
+                [],
+            )
+            self.assertEqual(
+                len(
+                    json.loads(
+                        (run_dir / "answer_artifacts.json").read_text(
+                            encoding="utf-8"
+                        )
+                    )
+                ),
+                1,
+            )
+            self.assertFalse((run_dir / "submit.csv").exists())
+            self.assertFalse((run_dir / "research_submit.csv").exists())
+            self.assertFalse(manifest["submission_eligible"])
+            self.assertIn(
+                "answer_only_stage_is_not_submission_eligible",
+                manifest["submission_ineligibility_reasons"],
+            )
 
     def test_default_submission_mode_rejects_non_allowlisted_model(self) -> None:
         config = RunConfig(model=_model("gpt-5.5"))

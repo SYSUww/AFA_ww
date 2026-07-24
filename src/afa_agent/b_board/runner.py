@@ -161,7 +161,7 @@ SUBMISSION_REASONING_REFINE_SYSTEM_PROMPT = f"""你是金融长文问答的推�
    该句必须由本次模型响应生成，不得省略或改写。
 不得提及“质检”、“反馈”、“草稿”或修订过程，不得写空泛模板，不得声称证据中没有的页码、条款号或事实。只输出 JSON。prompt_version={SUBMISSION_REASONING_REFINE_PROMPT_VERSION}。"""
 
-RUNNER_VERSION = "b_actual_v29_usage_safe_transport_retry"
+RUNNER_VERSION = "b_actual_v30_answer_stage"
 CALCULATION_RETRIEVAL_VERSION = "phrase_constrained_v2"
 CALCULATION_PLAN_NORMALIZATION_VERSION = "qwen37_structure_contract_v3_schema"
 CALCULATION_EVIDENCE_SEMANTIC_VERSION = (
@@ -183,6 +183,9 @@ CALCULATION_OPERATOR_SHAPE_HINT_VERSION = (
 RUN_MODE_SUBMISSION = "submission"
 RUN_MODE_RESEARCH = "research"
 RUN_MODES = (RUN_MODE_SUBMISSION, RUN_MODE_RESEARCH)
+RUN_STAGE_FULL = "full"
+RUN_STAGE_ANSWER = "answer"
+RUN_STAGES = (RUN_STAGE_FULL, RUN_STAGE_ANSWER)
 
 
 @dataclass(slots=True)
@@ -484,7 +487,9 @@ class BBoardActualRunner:
         qids: Sequence[str] | None = None,
         workers: int = 4,
         force: bool = False,
+        stage: str = RUN_STAGE_FULL,
     ) -> dict[str, Any]:
+        stage = _validate_run_stage(stage)
         selected = self.questions if qids is None else [self.question_by_qid[qid] for qid in qids]
         run_dir = Path(run_dir).resolve()
         fingerprint = self._build_fingerprint(selected, workers)
@@ -646,12 +651,16 @@ class BBoardActualRunner:
                     )
                     persist_stage_state()
 
-        remaining_reasoning = [
-            item
-            for item in selected
-            if item.qid in answer_artifacts_by_qid
-            and item.qid not in final_artifacts_by_qid
-        ]
+        remaining_reasoning = (
+            [
+                item
+                for item in selected
+                if item.qid in answer_artifacts_by_qid
+                and item.qid not in final_artifacts_by_qid
+            ]
+            if stage == RUN_STAGE_FULL
+            else []
+        )
 
         def store_reasoning(
             item: BQuestion,
@@ -708,19 +717,29 @@ class BBoardActualRunner:
         missing_answers = [
             item.qid for item in selected if item.qid not in answer_artifacts_by_qid
         ]
-        missing_reasoning = [
-            item.qid
-            for item in selected
-            if item.qid in answer_artifacts_by_qid
-            and item.qid not in final_artifacts_by_qid
-        ]
-        missing = [
-            item.qid for item in selected if item.qid not in final_artifacts_by_qid
-        ]
+        missing_reasoning = (
+            [
+                item.qid
+                for item in selected
+                if item.qid in answer_artifacts_by_qid
+                and item.qid not in final_artifacts_by_qid
+            ]
+            if stage == RUN_STAGE_FULL
+            else []
+        )
+        missing = (
+            [
+                item.qid
+                for item in selected
+                if item.qid not in final_artifacts_by_qid
+            ]
+            if stage == RUN_STAGE_FULL
+            else missing_answers
+        )
         output_path = run_dir / (
             "submit.csv" if self.run_mode == RUN_MODE_SUBMISSION else "research_submit.csv"
         )
-        if not missing:
+        if stage == RUN_STAGE_FULL and not missing:
             write_b_submission(
                 output_path,
                 selected,
@@ -729,9 +748,13 @@ class BBoardActualRunner:
             )
         persist_stage_state()
 
-        totals = _sum_tokens(final_artifacts)
         answer_totals = _sum_tokens(answer_artifacts)
         reasoning_totals = _sum_reasoning_tokens(final_artifacts)
+        totals = (
+            _sum_tokens(final_artifacts)
+            if stage == RUN_STAGE_FULL
+            else answer_totals
+        )
         unresolved_answer_failures = [
             item
             for item in answer_failures
@@ -750,11 +773,21 @@ class BBoardActualRunner:
             _add_token_usage(answer_totals, reasoning_totals),
             failed_totals,
         )
-        ineligibility_reasons = self._submission_ineligibility_reasons(missing)
+        ineligibility_reasons = self._submission_ineligibility_reasons(
+            missing,
+            stage=stage,
+        )
         manifest = read_json(run_dir / "run_manifest.json")
         manifest.update(
             {
-                "status": "complete" if not missing else "incomplete",
+                "status": (
+                    "answer_complete"
+                    if stage == RUN_STAGE_ANSWER and not missing
+                    else "complete"
+                    if not missing
+                    else "incomplete"
+                ),
+                "stage": stage,
                 "completed_at": datetime.now().isoformat(timespec="seconds"),
                 "expected_question_count": len(selected),
                 "answered_question_count": len(answer_artifacts),
@@ -789,12 +822,20 @@ class BBoardActualRunner:
                 "submission_ineligibility_reasons": ineligibility_reasons,
                 "submission_path": (
                     str(output_path)
-                    if not missing and self.run_mode == RUN_MODE_SUBMISSION
+                    if (
+                        stage == RUN_STAGE_FULL
+                        and not missing
+                        and self.run_mode == RUN_MODE_SUBMISSION
+                    )
                     else None
                 ),
                 "research_submission_path": (
                     str(output_path)
-                    if not missing and self.run_mode == RUN_MODE_RESEARCH
+                    if (
+                        stage == RUN_STAGE_FULL
+                        and not missing
+                        and self.run_mode == RUN_MODE_RESEARCH
+                    )
                     else None
                 ),
             }
@@ -2054,8 +2095,15 @@ class BBoardActualRunner:
         )
         return
 
-    def _submission_ineligibility_reasons(self, missing: Sequence[str]) -> list[str]:
+    def _submission_ineligibility_reasons(
+        self,
+        missing: Sequence[str],
+        *,
+        stage: str = RUN_STAGE_FULL,
+    ) -> list[str]:
         reasons: list[str] = []
+        if stage == RUN_STAGE_ANSWER:
+            reasons.append("answer_only_stage_is_not_submission_eligible")
         if self.run_mode == RUN_MODE_RESEARCH:
             reasons.append("research_mode_is_not_submission_eligible")
         if not is_allowed_submission_model(self.config.model.model_name):
@@ -2075,6 +2123,15 @@ def _validate_run_mode(run_mode: str) -> str:
     value = str(run_mode).strip().lower()
     if value not in RUN_MODES:
         raise ValueError(f"Unsupported B-board run mode {run_mode!r}; expected one of {RUN_MODES}")
+    return value
+
+
+def _validate_run_stage(stage: str) -> str:
+    value = str(stage).strip().lower()
+    if value not in RUN_STAGES:
+        raise ValueError(
+            f"Unsupported B-board run stage {stage!r}; expected one of {RUN_STAGES}"
+        )
     return value
 
 
