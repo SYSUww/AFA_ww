@@ -2003,7 +2003,7 @@ class BBoardRunnerModeTests(unittest.TestCase):
     def test_reasoning_prompt_requires_explicit_auditable_structure(self) -> None:
         self.assertEqual(
             SUBMISSION_REASONING_PROMPT_VERSION,
-            "b_submission_reasoning_v7_full_coverage_model_generated_conclusion",
+            "b_submission_reasoning_v8_type_conditioned_concise",
         )
         self.assertEqual(DEFAULT_SUBMISSION_REASONING_EVIDENCE_CHAR_LIMIT, 1800)
         self.assertIn("定位—关键事实—推导—结论", SUBMISSION_REASONING_SYSTEM_PROMPT)
@@ -2014,6 +2014,7 @@ class BBoardRunnerModeTests(unittest.TestCase):
         )
         self.assertIn('grounding_status="insufficient"', SUBMISSION_REASONING_SYSTEM_PROMPT)
         self.assertIn("reasoning_style_hint", SUBMISSION_REASONING_SYSTEM_PROMPT)
+        self.assertIn("明确给出更窄字数范围时，以该范围为准", SUBMISSION_REASONING_SYSTEM_PROMPT)
         self.assertIn("选择题通常 160-260", SUBMISSION_REASONING_SYSTEM_PROMPT)
 
     def test_reasoning_evidence_payload_caps_each_text(self) -> None:
@@ -2058,6 +2059,58 @@ class BBoardRunnerModeTests(unittest.TestCase):
             _submission_reasoning_style_hint(_question()),
             "",
         )
+
+    def test_reasoning_style_hint_sets_type_specific_concise_ranges(self) -> None:
+        cases = (
+            (
+                BQuestion(
+                    qid="direct-average",
+                    domain="financial_contracts",
+                    split="B",
+                    question="计算2023年至2025年归母净利润平均值（亿元）。",
+                    options={},
+                    answer_format="calculation",
+                    type="计算题",
+                    answer_slots=1,
+                    answer_slot_templates=("999999.99",),
+                ),
+                "100-160",
+            ),
+            (
+                BQuestion(
+                    qid="two-step",
+                    domain="financial_reports",
+                    split="B",
+                    question="先计算权益乘数，再按杜邦关系计算资产收益率。",
+                    options={},
+                    answer_format="calculation",
+                    type="计算题",
+                    answer_slots=2,
+                    answer_slot_templates=("999999.99", "999999.99"),
+                ),
+                "150-220",
+            ),
+            (
+                BQuestion(
+                    qid="multi-policy",
+                    domain="insurance",
+                    split="B",
+                    question="分别计算四份合同的身故保险金并合计。",
+                    options={},
+                    answer_format="calculation",
+                    type="计算题",
+                    answer_slots=1,
+                    answer_slot_templates=("999999.99",),
+                ),
+                "220-280",
+            ),
+        )
+
+        for question, expected_range in cases:
+            with self.subTest(qid=question.qid):
+                hint = _submission_reasoning_style_hint(question)
+                self.assertIn(expected_range, hint)
+                self.assertIn("同一事实只出现一次", hint)
 
     def test_reasoning_generation_preserves_answer_and_receives_verified_trace(self) -> None:
         runner = object.__new__(BBoardActualRunner)

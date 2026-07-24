@@ -117,10 +117,10 @@ format 仅 raw,decimal0,decimal1,decimal2,percent2,date_cn,text。中间过程�
 证据 ID 必须原样使用给定 evidence_id。题目本身给出的数值可引用 question:<qid>。只输出 JSON。"""
 
 SUBMISSION_REASONING_PROMPT_VERSION = (
-    "b_submission_reasoning_v7_full_coverage_model_generated_conclusion"
+    "b_submission_reasoning_v8_type_conditioned_concise"
 )
 SUBMISSION_REASONING_STYLE_HINT_VERSION = (
-    "question_derived_date_natural_day_boundary_v1"
+    "question_derived_type_conditioned_concise_v2"
 )
 DEFAULT_SUBMISSION_REASONING_EVIDENCE_CHAR_LIMIT = 1800
 SUBMISSION_REASONING_SYSTEM_PROMPT = f"""你是金融长文问答的提交推理摘要生成器。你的任务不是重新解题，而是基于用户提供的题目、冻结答案、检索证据和已验证求解结果，生成能够支持冻结答案的中文 reasoning 摘要。
@@ -135,8 +135,8 @@ reasoning 按“定位—关键事实—推导—结论”形成闭环：
 - 从证据提取直接支持答案的具体事实、数值、条件或限制，保持单位、期间和口径一致。
 - 单选/判断题说明决定结论的关键条件；多选题逐一覆盖每个选中项，并说明至少一个关键未选项；计算题写必要公式、原始数值、单位/口径、代入关系和结果；多空题按答案槽顺序说明。
 - reasoning 的最后一句必须逐字复制用户载荷中的 required_conclusion_text；该句必须由本次模型响应生成，不得省略、改写或只在 answer_parts 字段中表达。
-用户载荷中的 reasoning_style_hint 若非空，只是由题面确定、且不包含答案的核验要求；在不违背证据和冻结答案的前提下执行它。
-避免“根据材料可知”“综合分析得出”等空泛模板，不堆叠无关事实，不输出内部 evidence_id、unit_id、JSON 路径、Markdown 或程序字段名。不要把定位、关键事实、逐项判断和因果推导压缩成只有结论的短句；选择题通常 160-260 个中文字符，计算题通常 180-300 个中文字符，其他题通常 160-260 个中文字符，且去除空白后不少于 20 字。
+用户载荷中的 reasoning_style_hint 若非空，只是由题面确定、且不包含答案的核验要求；在不违背证据和冻结答案的前提下执行它。reasoning_style_hint 明确给出更窄字数范围时，以该范围为准。
+避免“根据材料可知”“综合分析得出”等空泛模板，不堆叠无关事实，不输出内部 evidence_id、unit_id、JSON 路径、Markdown 或程序字段名。不要把定位、关键事实、逐项判断和因果推导压缩成只有结论的短句；若无更具体的 reasoning_style_hint，选择题通常 160-260 个中文字符，计算题通常 180-300 个中文字符，其他题通常 160-260 个中文字符，且去除空白后不少于 20 字。
 只输出合法 JSON，字段严格为 answer_parts、grounding_status、missing_support、
 reasoning，不得增删字段；answer_parts 和 missing_support 必须是 JSON 数组：
 支持时：{{"answer_parts":["逐字复制冻结答案"],"grounding_status":"supported","missing_support":[],"reasoning":"推理摘要"}}
@@ -4735,6 +4735,37 @@ def _submission_reasoning_style_hint(question: BQuestion) -> str:
         return (
             "日期计算需写清起止边界和自然日口径，并用一句区间计数"
             "复核结果；不要只写“往前推若干日”。"
+        )
+    if question.answer_format != "calculation":
+        return ""
+    if (
+        "身故保险金" in compact
+        and "合计" in compact
+        and _requested_multi_contract_count(compact) is not None
+    ):
+        return (
+            "本题为多合同条款计算，reasoning控制在220-280个中文字符；"
+            "逐合同保留决定性公式、原值和结果，明确比例乘法、max或差额规则，"
+            "最后写合计与冻结结论；同一事实只出现一次。"
+        )
+    if (
+        _AVERAGE_PERIOD_RE.search(compact)
+        and any(marker in compact for marker in ("平均值", "平均数", "年均"))
+    ):
+        return (
+            "本题为直接披露汇总值，reasoning控制在100-160个中文字符；"
+            "只保留期间、指标、披露值、无需重复聚合的理由和冻结结论；"
+            "同一事实只出现一次。"
+        )
+    if question.answer_slots >= 2 and (
+        ("先" in compact and "再" in compact)
+        or "权益乘数" in compact
+        or "杜邦" in compact
+    ):
+        return (
+            "本题为两步计算，reasoning控制在150-220个中文字符；"
+            "按答案槽顺序各写一次公式、原值、单位和结果，最后写冻结结论；"
+            "同一事实只出现一次。"
         )
     return ""
 
