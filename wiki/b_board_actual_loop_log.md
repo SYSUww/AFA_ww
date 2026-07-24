@@ -22,6 +22,252 @@
 }
 ```
 
+## 2026-07-24 最终答案与reasoning联合生成 A1：协议正确，但结论格式重试率过高
+
+```json
+{
+  "experiment_id": "modular_prompt_stratified16_v1",
+  "recorded_at": "2026-07-24T21:39:21+08:00",
+  "status": "completed_rejected",
+  "score_type": "offline_pseudo99_reference_match_not_official_accuracy",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "direction": "final_answer_reasoning_joint_generation",
+    "direction_attempt_count": 1,
+    "round_limit": 3
+  },
+  "method": {
+    "model": "qwen3.7-plus-2026-05-26",
+    "temperature": 0.0,
+    "thinking_budget": 2048,
+    "sample_policy": "b20_answer_blind_stratified_v1",
+    "sample": "5多选+5单选+唯一1判断+5计算，共16道不重复真题",
+    "prompt": "按选择/判断/计算模块化；一次生成最终answer_parts与最终reasoning",
+    "schema": "严格JSON Schema仅保留reasoning和answer_parts；多选合法组合枚举",
+    "postprocessing": "代码只做格式与结论一致性校验，不补写或改写reasoning",
+    "evidence_alias": "Prompt使用E01/S01；artifact保留原unit、doc、title、文本哈希与可逆映射"
+  },
+  "metrics": {
+    "question_count": 16,
+    "answered_question_count": 9,
+    "failed_question_count": 7,
+    "raw_call_count": 24,
+    "format_retry_count": 8,
+    "retry_question_rate": 0.5,
+    "prompt_tokens": 89711,
+    "completion_tokens": 29967,
+    "total_tokens": 119678,
+    "pseudo99_equivalent_match_count": 8,
+    "pseudo99_equivalent_match_rate": 0.5
+  },
+  "failure_analysis": {
+    "reasoning_missing_explicit_conclusion": [
+      "fin_b_005",
+      "reg_b_021",
+      "res_b_012"
+    ],
+    "answer_reasoning_conclusion_mismatch": [
+      "reg_b_009",
+      "fc_b_013"
+    ],
+    "answer_format_decimal_mismatch": [
+      "ins_b_019",
+      "reg_b_007"
+    ],
+    "root_cause": "首轮Prompt虽要求结论一致，但retry只返回粗粒度错误码，模型无法区分缺结论、判断题语义词与字母不一致、数值小数位不符。"
+  },
+  "compliance": {
+    "passed": true,
+    "qid_absent_from_model_messages": true,
+    "reference_loaded_by_generation": false,
+    "solver_or_rule_layer_used": false,
+    "fixed_locator_used": false,
+    "raw_usage_reconciled": true
+  },
+  "provenance": {
+    "run_dir": "artifacts/b_board_actual/retrieval_llm_baseline/modular_prompt_stratified16_v1",
+    "evaluation": "artifacts/b_board_actual/retrieval_llm_baseline/modular_prompt_stratified16_v1/accuracy_evaluation.json"
+  },
+  "promotion_result": "rejected",
+  "next_step": "A2保持检索、模型、样本与thinking_budget不变，仅强化最终结论机械一致性说明，并把retry错误细分为缺结论、结论不一致、槽位格式错误；仍不泄漏QID或参考答案。"
+}
+```
+
+## 2026-07-24 最终答案与reasoning联合生成 A2：16题全通过，重试仍占28.45% Token
+
+```json
+{
+  "experiment_id": "modular_prompt_stratified16_v2",
+  "recorded_at": "2026-07-24T21:45:05+08:00",
+  "status": "completed_effective",
+  "score_type": "offline_pseudo99_reference_match_not_official_accuracy",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_experiment_id": "modular_prompt_stratified16_v1",
+    "direction": "final_answer_reasoning_joint_generation",
+    "direction_attempt_count": 2,
+    "round_limit": 3
+  },
+  "delta": {
+    "retrieval_model_sample_thinking_budget_frozen": true,
+    "prompt_change": "明确reasoning末尾机械复制answer_parts；判断题必须复制A/B；计算槽位严格保留小数位。",
+    "retry_change": "无QID、无答案提示的细粒度错误码：缺结论、结论不一致、槽位格式错误。"
+  },
+  "metrics": {
+    "question_count": 16,
+    "answered_question_count": 16,
+    "failed_question_count": 0,
+    "raw_call_count": 21,
+    "format_retry_count": 5,
+    "retry_question_rate": 0.3125,
+    "prompt_tokens": 85507,
+    "completion_tokens": 24282,
+    "total_tokens": 109789,
+    "delta_total_tokens_vs_a1": -9889,
+    "delta_total_tokens_percent_vs_a1": -8.263006,
+    "retry_call_tokens": 31239,
+    "retry_token_share": 0.284537,
+    "first_call_only_tokens": 78550,
+    "pseudo99_equivalent_match_count": 16,
+    "pseudo99_equivalent_match_rate": 1.0
+  },
+  "remaining_retry_analysis": {
+    "missing_mechanical_conclusion": [
+      "fc_b_017",
+      "ins_b_016",
+      "ins_b_019",
+      "res_b_012"
+    ],
+    "slot_decimal_format": [
+      "reg_b_007"
+    ],
+    "semantic_answer_changed_by_retry": false
+  },
+  "judgment_stability": {
+    "qid": "fc_b_013",
+    "independent_repeat_count": 4,
+    "answers": [
+      "A",
+      "A",
+      "A",
+      "A"
+    ],
+    "single_call_success_rate": 1.0,
+    "note": "四次复测仅衡量唯一判断题的稳定性，不计入16题准确率分母。"
+  },
+  "compliance": {
+    "passed": true,
+    "qid_absent_from_model_messages": true,
+    "reference_loaded_by_generation": false,
+    "solver_or_rule_layer_used": false,
+    "fixed_locator_used": false,
+    "raw_usage_reconciled": true
+  },
+  "validation": {
+    "retrieval_related_tests_passed": 81,
+    "full_suite_total": 411,
+    "full_suite_passed": 408,
+    "full_suite_skipped": 1,
+    "full_suite_environment_errors": 2,
+    "environment_error": "隔离worktree缺少artifacts/manifest/dataset_manifest.json；两个失败均为既有环境依赖，与本次改动无关。",
+    "artifact_hash_and_postprocessing_audit_passed": true
+  },
+  "provenance": {
+    "run_dir": "artifacts/b_board_actual/retrieval_llm_baseline/modular_prompt_stratified16_v2",
+    "evaluation": "artifacts/b_board_actual/retrieval_llm_baseline/modular_prompt_stratified16_v2/accuracy_evaluation.json",
+    "tf_repeat_dirs": [
+      "artifacts/b_board_actual/retrieval_llm_baseline/tf_stability_v2_r1",
+      "artifacts/b_board_actual/retrieval_llm_baseline/tf_stability_v2_r2",
+      "artifacts/b_board_actual/retrieval_llm_baseline/tf_stability_v2_r3",
+      "artifacts/b_board_actual/retrieval_llm_baseline/tf_stability_v2_r4"
+    ]
+  },
+  "promotion_result": "effective_continue_one_final_round",
+  "next_step": "A3仅调整Schema属性顺序为answer_parts先、reasoning后，使模型在生成最终reasoning时已经持有最终答案；目标是消除缺结论重试并降低约28%的重试Token，不改变参考盲与代码只校验原则。"
+}
+```
+
+## 2026-07-24 最终答案与reasoning联合生成 A3：先答后解释降低Token但显著损害准确率
+
+```json
+{
+  "experiment_id": "modular_prompt_stratified16_v3",
+  "recorded_at": "2026-07-24T21:48:33+08:00",
+  "status": "completed_rejected_direction_stopped",
+  "score_type": "offline_pseudo99_reference_match_not_official_accuracy",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_experiment_id": "modular_prompt_stratified16_v2",
+    "direction": "final_answer_reasoning_joint_generation",
+    "direction_attempt_count": 3,
+    "round_limit": 3,
+    "round_limit_reached": true
+  },
+  "delta": {
+    "only_change": "严格JSON Schema属性顺序由reasoning→answer_parts改为answer_parts→reasoning",
+    "retrieval_model_prompt_content_sample_thinking_budget_frozen": true
+  },
+  "metrics": {
+    "question_count": 16,
+    "answered_question_count": 15,
+    "failed_question_count": 1,
+    "raw_call_count": 19,
+    "format_retry_count": 3,
+    "prompt_tokens": 79219,
+    "completion_tokens": 24553,
+    "total_tokens": 103772,
+    "delta_total_tokens_vs_a2": -6017,
+    "delta_total_tokens_percent_vs_a2": -5.480513,
+    "retry_call_tokens": 24977,
+    "retry_token_share": 0.240691,
+    "pseudo99_equivalent_match_count": 12,
+    "pseudo99_equivalent_match_rate": 0.75,
+    "delta_proxy_match_rate_points_vs_a2": -25.0
+  },
+  "badcases": [
+    {
+      "qid": "fin_b_005",
+      "candidate": "BC",
+      "pseudo99": "AC"
+    },
+    {
+      "qid": "ins_b_016",
+      "candidate": "BCD",
+      "pseudo99": "BD"
+    },
+    {
+      "qid": "res_b_017",
+      "candidate": "ACD",
+      "pseudo99": "AC"
+    },
+    {
+      "qid": "fin_b_019",
+      "candidate": null,
+      "pseudo99": "比亚迪>宁德时代>美的集团；0.84",
+      "failure": "answer_slot_format_error"
+    }
+  ],
+  "failure_analysis": {
+    "finding": "模型先生成answer_parts时可能提交未经后续推理校正的占位或早期答案；fin_b_019首答差额0.54但reasoning算出0.84，res_b_012首答999999.99但reasoning算出67.1。",
+    "interpretation": "Schema属性顺序不仅影响格式，也改变任务求解质量；省下5.48% Token不足以补偿25个百分点代理匹配率下降。"
+  },
+  "compliance": {
+    "passed": true,
+    "qid_absent_from_model_messages": true,
+    "reference_loaded_by_generation": false,
+    "solver_or_rule_layer_used": false,
+    "fixed_locator_used": false,
+    "raw_usage_reconciled": true
+  },
+  "provenance": {
+    "run_dir": "artifacts/b_board_actual/retrieval_llm_baseline/modular_prompt_stratified16_v3",
+    "evaluation": "artifacts/b_board_actual/retrieval_llm_baseline/modular_prompt_stratified16_v3/accuracy_evaluation.json"
+  },
+  "promotion_result": "rejected_restore_a2",
+  "next_step": "本方向已满3轮，停止继续调Schema顺序。代码恢复A2的reasoning先、answer_parts后；保留A2为当前晋级候选。后续若继续降Token，应开新方向研究无二次模型调用的结构化reasoning收尾约束，不能牺牲先推理后作答。"
+}
+```
+
 ## b-loop-qwen37-reasoning-thinking-budget-768-c3
 
 ```json
@@ -39214,5 +39460,207 @@
   "score_type": "offline_posthoc_oracle_projection_not_official",
   "status": "completed_effective_research_signal",
   "submission_effect": "no_official_upload_default_submission_chain_unchanged"
+}
+```
+
+## 2026-07-24 通用检索词生成器离线召回 A1：全通道等权融合不晋级
+
+```json
+{
+  "experiment_id": "semantic_slots_v1_first_pass_retrieval_proxy_a1",
+  "recorded_at": "2026-07-24T19:16:01+08:00",
+  "status": "completed_not_promoted",
+  "score_type": "offline_a13_evidence_overlap_proxy_not_official",
+  "direction": "从题目和选项抽取实体、时间、指标、条件、比较关系与计算依赖，生成primary/support/broad/contrast/scope_check/coverage查询；不读取qid、历史答案或预设True/False。",
+  "comparison": "现有首轮检索词 vs semantic_slots_v1全部通道等权RRF，固定locator文档与最终Top10。",
+  "question_count": {
+    "total": 100,
+    "evaluable": 95,
+    "skipped": 5
+  },
+  "metrics": {
+    "legacy_any_recall_at_10": 0.863158,
+    "semantic_any_recall_at_10": 0.810526,
+    "delta_any_recall_at_10": -0.052632,
+    "legacy_coverage_at_10": 0.518091,
+    "semantic_coverage_at_10": 0.465710,
+    "delta_coverage_at_10": -0.052381,
+    "legacy_mrr_at_10": 0.578901,
+    "semantic_mrr_at_10": 0.528446,
+    "delta_mrr_at_10": -0.050455,
+    "legacy_mean_query_count": 4.673684,
+    "semantic_mean_query_count": 11.557895,
+    "mean_query_count_delta": 6.884211,
+    "legacy_mean_query_tokens": 216.273684,
+    "semantic_mean_query_tokens": 425.694737,
+    "mean_query_tokens_delta": 209.421053,
+    "coverage_at_10_outcomes": {
+      "win": 9,
+      "tie": 54,
+      "loss": 32
+    }
+  },
+  "badcase_summary": {
+    "calculation_coverage_at_10_delta": -0.110606,
+    "calculation_mrr_at_10_delta": -0.193957,
+    "financial_reports_coverage_at_10_delta": -0.118195,
+    "insurance_coverage_at_10_delta": -0.111250,
+    "mcq_coverage_at_10_delta": 0.032539,
+    "root_cause": "support/broad/contrast/coverage等宽查询与精准主查询等权竞争，通用词命中被重复累积，导致精准证据被挤出Top10；计算题最明显。"
+  },
+  "provenance": {
+    "question_source": "/Users/abandon/Documents/AFA_ww/upload_b/question_b",
+    "answer_artifact": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/qwen37_integrated_full100_candidate_a13_reasoning_provenance/answers.json",
+    "index_root": "/Users/abandon/Documents/AFA_ww/artifacts/preprocessed_loop_candidates/index",
+    "result_artifact": "artifacts/retrieval_query_generator/semantic_slots_v1_first_pass_a1.json",
+    "model_calls": 0
+  },
+  "limitations": [
+    "A13 used_evidence_ids是支持证据并集与噪声代理，不是官网gold。",
+    "只评估locator已选文档内首轮召回，不包含证据门禁、二次检索或Qwen答案生成。",
+    "query token只表示检索工作量，不是提交模型Token。"
+  ],
+  "promotion_result": "rejected",
+  "next_step": "A2保留legacy精准主排序，只让通用槽位查询补齐少量尾部证据；计算题仅开放coverage通道，避免所有语义通道等权融合。"
+}
+```
+
+## 2026-07-24 通用检索词生成器离线召回 A2：Top8 保留、语义补尾仍不晋级
+
+```json
+{
+  "experiment_id": "semantic_slots_v1_gated_tail_retrieval_proxy_a2",
+  "recorded_at": "2026-07-24T19:20:56+08:00",
+  "status": "completed_not_promoted",
+  "score_type": "offline_a13_evidence_overlap_proxy_not_official",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_experiment_id": "semantic_slots_v1_first_pass_retrieval_proxy_a1",
+    "direction_attempt_count": 2,
+    "new_material_delta": "不再让全部语义通道等权替代主检索；固定保留legacy Top8，只用答案盲补充查询竞争Top9至Top10。计算题仅用coverage，选择题仅用support/contrast/scope_check。"
+  },
+  "metrics": {
+    "legacy_any_recall_at_10": 0.863158,
+    "candidate_any_recall_at_10": 0.852632,
+    "delta_any_recall_at_10": -0.010526,
+    "legacy_coverage_at_10": 0.518091,
+    "candidate_coverage_at_10": 0.503308,
+    "delta_coverage_at_10": -0.014783,
+    "legacy_mrr_at_10": 0.578901,
+    "candidate_mrr_at_10": 0.577849,
+    "delta_mrr_at_10": -0.001052,
+    "legacy_mean_query_count": 4.673684,
+    "candidate_mean_query_count": 9.252632,
+    "mean_query_count_delta": 4.578948,
+    "legacy_mean_query_tokens": 216.273684,
+    "candidate_mean_query_tokens": 343.157895,
+    "mean_query_tokens_delta": 126.884211,
+    "coverage_at_10_outcomes": {
+      "win": 7,
+      "tie": 72,
+      "loss": 16
+    }
+  },
+  "segment_findings": {
+    "financial_contracts_coverage_delta": 0.0,
+    "financial_reports_coverage_delta": -0.101667,
+    "insurance_coverage_delta": 0.007222,
+    "research_coverage_delta": 0.037719,
+    "regulatory_coverage_delta": -0.013655,
+    "calculation_coverage_delta": -0.024242,
+    "interpretation": "固定替换两个尾部位置比A1安全，但仍会无条件丢弃legacy第9至10名；7道收益不足以抵消16道损失，且查询工作量继续上升。"
+  },
+  "provenance": {
+    "result_artifact": "artifacts/retrieval_query_generator/semantic_slots_v1_gated_tail_a2.json",
+    "model_calls": 0
+  },
+  "promotion_result": "rejected",
+  "next_step": "本方向最后一轮A3改为低权重秩融合：语义补证必须凭自身排名超过legacy尾部才可进入Top10，不再固定占用两个位置；仍禁止QID和答案字段。"
+}
+```
+
+## 2026-07-24 通用检索词生成器离线召回 A3：低权重秩融合产生正向研究信号
+
+```json
+{
+  "experiment_id": "semantic_slots_v1_rank_blend_retrieval_proxy_a3",
+  "recorded_at": "2026-07-24T19:23:39+08:00",
+  "status": "completed_effective_research_signal",
+  "score_type": "offline_a13_evidence_overlap_proxy_not_official",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "prior_experiment_id": "semantic_slots_v1_gated_tail_retrieval_proxy_a2",
+    "direction_attempt_count": 3,
+    "round_limit_reached": true,
+    "new_material_delta": "不再预留或固定替换尾部位置；legacy按1/rank计分，答案盲语义补证按0.11/rank低权重加入，只有最强补证候选能越过legacy第10名。"
+  },
+  "metrics": {
+    "legacy_any_recall_at_10": 0.863158,
+    "candidate_any_recall_at_10": 0.873684,
+    "delta_any_recall_at_10": 0.010526,
+    "legacy_coverage_at_10": 0.518091,
+    "candidate_coverage_at_10": 0.529933,
+    "delta_coverage_at_10": 0.011842,
+    "legacy_mrr_at_10": 0.578901,
+    "candidate_mrr_at_10": 0.579077,
+    "delta_mrr_at_10": 0.000176,
+    "legacy_any_recall_at_5": 0.800000,
+    "candidate_any_recall_at_5": 0.789474,
+    "delta_any_recall_at_5": -0.010526,
+    "coverage_at_10_outcomes": {
+      "win": 2,
+      "tie": 93,
+      "loss": 0
+    },
+    "legacy_mean_query_count": 4.673684,
+    "candidate_mean_query_count": 9.252632,
+    "mean_query_count_increase_ratio": 0.979730,
+    "legacy_mean_query_tokens": 216.273684,
+    "candidate_mean_query_tokens": 343.157895,
+    "mean_query_tokens_increase_ratio": 0.586684,
+    "legacy_mean_evidence_chars": 5162.242105,
+    "candidate_mean_evidence_chars": 5226.042105,
+    "mean_evidence_chars_increase_ratio": 0.012359
+  },
+  "wins": [
+    {
+      "qid": "ins_b_016",
+      "reason": "按题面动态抽取四个产品名的support查询，新增一个A13证据unit进入Top10；不读取平台BD标签。"
+    },
+    {
+      "qid": "res_b_005",
+      "reason": "coverage查询组合题面年份、销量、单车带电量与同比需求，召回legacy Top10缺失的决定性原始数据段。"
+    }
+  ],
+  "risk": {
+    "top5_any_recall_loss_qids": [
+      "res_b_016"
+    ],
+    "interpretation": "Top10证据集合无损且有2题增益，但低权重补证仍会重排既有Top5；不能仅凭同一A13代理集直接开启生产。"
+  },
+  "sensitivity": {
+    "weight_0_10_coverage_at_10_delta": 0.011842,
+    "weight_0_12_coverage_at_10_delta": 0.011842,
+    "top10_outcome_stable": true
+  },
+  "provenance": {
+    "result_artifact": "artifacts/retrieval_query_generator/semantic_slots_v1_rank_blend_a3.json",
+    "sensitivity_artifacts": [
+      "artifacts/retrieval_query_generator/semantic_slots_v1_rank_blend_w010_sensitivity.json",
+      "artifacts/retrieval_query_generator/semantic_slots_v1_rank_blend_w012_sensitivity.json"
+    ],
+    "model_calls": 0
+  },
+  "validation": {
+    "generator_and_related_tests_passed": 189,
+    "a1_summary_reproduced_exactly": true,
+    "full_suite_total": 398,
+    "full_suite_passed": 395,
+    "full_suite_skipped": 1,
+    "full_suite_environment_errors": 2,
+    "environment_error": "隔离worktree缺少artifacts/manifest/dataset_manifest.json，与本次代码无关。"
+  },
+  "promotion_result": "research_candidate_only_default_production_unchanged",
+  "next_step": "本方向已满3轮，停止在A13代理集继续调参。保留semantic_slots_v1与A3融合方案作为独立题集或真实evidence-gate rescue回放候选；生产默认仍为legacy，不建立QID白名单。"
 }
 ```

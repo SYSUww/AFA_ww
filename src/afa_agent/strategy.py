@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from afa_agent.io_utils import read_json
+from afa_agent.retrieval_query import RetrievalPlan, RetrievalRequest, generate_retrieval_plan
 
 
 DEFAULT_STAGE_SETTINGS: dict[str, dict[str, Any]] = {
@@ -24,9 +25,11 @@ DEFAULT_STAGE_SETTINGS: dict[str, dict[str, Any]] = {
         "duplicate_highlight_units": True,
     },
     "retrieval": {
+        "query_generator": "legacy",
         "query_mode": "question_option",
         "include_question_type": True,
         "include_doc_id_hint": False,
+        "semantic_query_max_variants": 12,
         "top_k": 6,
         "max_hits_for_prompt": 6,
         "ensure_per_doc": True,
@@ -129,6 +132,12 @@ def get_stage_settings(domain: str, stage: str, path: str | Path | None = None) 
 
 
 def build_query_variants(question, option_key: str, option_text: str, retrieval_settings: dict[str, Any]) -> list[str]:
+    query_generator = retrieval_settings.get("query_generator", "legacy")
+    if query_generator == "semantic_slots_v1":
+        return build_semantic_query_plan(question, option_text, retrieval_settings).query_strings()
+    if query_generator != "legacy":
+        raise ValueError(f"unsupported query_generator: {query_generator}")
+
     mode = retrieval_settings.get("query_mode", "question_option")
     question_type = getattr(question, "type", "")
     question_text = getattr(question, "question", "")
@@ -162,6 +171,30 @@ def build_query_variants(question, option_key: str, option_text: str, retrieval_
         seen.add(cleaned)
         deduped.append(cleaned)
     return deduped or [question_text.strip()]
+
+
+def build_semantic_query_plan(
+    question,
+    option_text: str,
+    retrieval_settings: dict[str, Any],
+) -> RetrievalPlan:
+    document_hints = (
+        tuple(getattr(question, "doc_ids", [])[:2])
+        if retrieval_settings.get("include_doc_id_hint")
+        else ()
+    )
+    request = RetrievalRequest(
+        domain=str(getattr(question, "domain", "")),
+        question=str(getattr(question, "question", "")),
+        option_text=option_text,
+        question_type=str(getattr(question, "type", "")),
+        answer_format=str(getattr(question, "answer_format", "")),
+        document_hints=document_hints,
+    )
+    return generate_retrieval_plan(
+        request,
+        max_queries=int(retrieval_settings.get("semantic_query_max_variants", 12)),
+    )
 
 
 def serialize_hits(hits: list[Any], limit: int | None = None) -> list[dict[str, Any]]:
