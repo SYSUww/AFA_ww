@@ -25,12 +25,14 @@ from afa_agent.b_board.calculation_schema import (
     validate_calculation_plan_schema,
 )
 from afa_agent.b_board.calculation_profile import (
+    CALCULATION_FIRST_ATTEMPT_EVIDENCE_POLICY_VERSION,
     CALCULATION_PROFILE_SCHEMA,
     CALCULATION_PROFILE_SCHEMA_VERSION,
     CALCULATION_THINKING_POLICY_VERSION,
     CalculationProfile,
     build_calculation_profile_messages,
     calculation_profile_solver_guidance,
+    infer_calculation_first_attempt_evidence_policy,
     infer_calculation_thinking_policy,
     parse_calculation_profile,
 )
@@ -548,7 +550,7 @@ class BBoardActualRunner:
         ):
             raise ValueError(
                 "guarded adaptive calculation thinking is research-only "
-                "until its Top-12 and full-26 promotion gates pass"
+                "until its Top-12 promotion gate passes"
             )
         if (
             calculation_joint_reasoning_enabled
@@ -1799,6 +1801,15 @@ class BBoardActualRunner:
             "calculation_guarded_adaptive_thinking_enabled",
             False,
         )
+        adaptive_evidence_scope_policy = (
+            infer_calculation_first_attempt_evidence_policy(
+                domain=question.domain,
+                question=question.question,
+                answer_slots=question.answer_slots,
+            ).to_dict()
+            if guarded_adaptive_thinking_enabled
+            else {}
+        )
         adaptive_thinking_policy: dict[str, Any] = {}
         calculation_enable_thinking = getattr(
             self,
@@ -1830,12 +1841,24 @@ class BBoardActualRunner:
                 )
                 and repair_seed_plan is not None
             )
+            max_non_question_hits = (
+                calculation_prompt_hits_per_attempt
+                * (1 if use_repair_retry else attempt_number)
+            )
+            if (
+                guarded_adaptive_thinking_enabled
+                and attempt_number == 1
+                and adaptive_evidence_scope_policy.get("mode")
+                == "question_only_first_attempt"
+            ):
+                max_non_question_hits = int(
+                    adaptive_evidence_scope_policy[
+                        "max_non_question_hits"
+                    ]
+                )
             evidence_payload = _calculation_evidence_payload(
                 evidence_items,
-                max_non_question_hits=(
-                    calculation_prompt_hits_per_attempt
-                    * (1 if use_repair_retry else attempt_number)
-                ),
+                max_non_question_hits=max_non_question_hits,
             )
             semantic_constraints = (
                 _extract_calculation_semantic_constraints(
@@ -1957,6 +1980,11 @@ class BBoardActualRunner:
                 "attempt": attempt_number,
                 "mode": attempt_mode,
                 "prompt_evidence_count": len(evidence_payload),
+                "evidence_scope_policy": (
+                    dict(adaptive_evidence_scope_policy)
+                    if guarded_adaptive_thinking_enabled
+                    else {}
+                ),
                 "request_thinking": {
                     "mode": (
                         "provider_default"
@@ -2020,6 +2048,9 @@ class BBoardActualRunner:
                             "stage": "calculation_model_request",
                             "calculation_guarded_adaptive_thinking_policy": (
                                 dict(adaptive_thinking_policy)
+                            ),
+                            "calculation_guarded_adaptive_evidence_scope_policy": (
+                                dict(adaptive_evidence_scope_policy)
                             ),
                             "calculation_attempt_modes": copy.deepcopy(
                                 calculation_attempt_modes
@@ -2279,6 +2310,9 @@ class BBoardActualRunner:
                         "calculation_guarded_adaptive_thinking_policy": (
                             dict(adaptive_thinking_policy)
                         ),
+                        "calculation_guarded_adaptive_evidence_scope_policy": (
+                            dict(adaptive_evidence_scope_policy)
+                        ),
                         "calculation_attempt_count": attempt_number,
                         "calculation_retry_count": attempt_number - 1,
                         "calculation_repair_retry_count": sum(
@@ -2357,6 +2391,9 @@ class BBoardActualRunner:
                         "semantic_constraints": semantic_constraints,
                         "calculation_guarded_adaptive_thinking_policy": (
                             dict(adaptive_thinking_policy)
+                        ),
+                        "calculation_guarded_adaptive_evidence_scope_policy": (
+                            dict(adaptive_evidence_scope_policy)
                         ),
                         "calculation_attempt_mode": copy.deepcopy(
                             attempt_record
@@ -3354,6 +3391,10 @@ class BBoardActualRunner:
                     "policy_version": (
                         CALCULATION_THINKING_POLICY_VERSION
                     ),
+                    "first_attempt_evidence_policy_version": (
+                        CALCULATION_FIRST_ATTEMPT_EVIDENCE_POLICY_VERSION
+                    ),
+                    "question_only_first_attempt_enabled": True,
                     "includes_runtime_semantic_constraint_guard": True,
                     "retry_mode": "provider_default_after_first_attempt",
                 },

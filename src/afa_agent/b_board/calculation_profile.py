@@ -12,6 +12,9 @@ CALCULATION_PROFILE_SCHEMA_VERSION = "calculation_profile_v1"
 CALCULATION_THINKING_POLICY_VERSION = (
     "calculation_guarded_adaptive_thinking_v1"
 )
+CALCULATION_FIRST_ATTEMPT_EVIDENCE_POLICY_VERSION = (
+    "calculation_self_contained_question_first_v1"
+)
 
 CALCULATION_TASK_TYPES = (
     "direct_extraction",
@@ -283,6 +286,63 @@ class CalculationThinkingPolicy:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
+class CalculationFirstAttemptEvidencePolicy:
+    """Answer-blind evidence scope for the first calculation request."""
+
+    mode: str
+    max_non_question_hits: int | None
+    reasons: tuple[str, ...]
+    version: str = CALCULATION_FIRST_ATTEMPT_EVIDENCE_POLICY_VERSION
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+def infer_calculation_first_attempt_evidence_policy(
+    *,
+    domain: str,
+    question: str,
+    answer_slots: int,
+) -> CalculationFirstAttemptEvidencePolicy:
+    """Avoid irrelevant documents only for dense, self-contained questions.
+
+    Any later attempt restores the runner's normal progressive evidence
+    expansion. The decision uses no qid, answer, document id, or prior run.
+    """
+
+    compact = re.sub(r"\s+", "", str(question))
+    non_year_question = re.sub(r"20\d{2}年?", "", compact)
+    numeric_literals = re.findall(
+        r"(?<![A-Za-z])[-+]?\d+(?:\.\d+)?",
+        non_year_question,
+    )
+    has_external_source_reference = any(
+        marker in compact
+        for marker in ("查阅", "根据", "报告", "合同", "材料", "文档")
+    )
+    if (
+        domain == "research"
+        and answer_slots == 1
+        and len(numeric_literals) >= 4
+        and not has_external_source_reference
+    ):
+        return CalculationFirstAttemptEvidencePolicy(
+            mode="question_only_first_attempt",
+            max_non_question_hits=0,
+            reasons=(
+                "single_slot_question_supplies_dense_numeric_inputs",
+                "no_external_source_reference",
+                "normal_retrieval_restored_on_retry",
+            ),
+        )
+    return CalculationFirstAttemptEvidencePolicy(
+        mode="progressive_retrieval",
+        max_non_question_hits=None,
+        reasons=("evidence_sensitive_or_not_self_contained",),
+    )
 
 
 def infer_calculation_thinking_policy(

@@ -4,10 +4,12 @@ import json
 import unittest
 
 from afa_agent.b_board.calculation_profile import (
+    CALCULATION_FIRST_ATTEMPT_EVIDENCE_POLICY_VERSION,
     CALCULATION_PROFILE_SCHEMA,
     CALCULATION_THINKING_POLICY_VERSION,
     CalculationProfile,
     build_calculation_profile_messages,
+    infer_calculation_first_attempt_evidence_policy,
     infer_calculation_thinking_policy,
     parse_calculation_profile,
 )
@@ -170,6 +172,39 @@ class CalculationProfileTest(unittest.TestCase):
             policy.version,
             CALCULATION_THINKING_POLICY_VERSION,
         )
+
+    def test_dense_self_contained_question_uses_question_only_first(
+        self,
+    ) -> None:
+        policy = infer_calculation_first_attempt_evidence_policy(
+            domain="research",
+            question=(
+                "总额100万元，其中60%属于甲类，甲类的35%来自渠道；"
+                "人均消费2960元，已有24.01万人，计算剩余人数。"
+            ),
+            answer_slots=1,
+        )
+
+        self.assertEqual(policy.mode, "question_only_first_attempt")
+        self.assertEqual(policy.max_non_question_hits, 0)
+        self.assertEqual(
+            policy.version,
+            CALCULATION_FIRST_ATTEMPT_EVIDENCE_POLICY_VERSION,
+        )
+
+    def test_external_source_reference_keeps_progressive_evidence(
+        self,
+    ) -> None:
+        policy = infer_calculation_first_attempt_evidence_policy(
+            domain="research",
+            question=(
+                "根据材料给出的100、60%、35%和2960，计算目标值。"
+            ),
+            answer_slots=1,
+        )
+
+        self.assertEqual(policy.mode, "progressive_retrieval")
+        self.assertIsNone(policy.max_non_question_hits)
 
     def test_runtime_semantic_constraint_keeps_provider_default(
         self,

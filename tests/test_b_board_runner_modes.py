@@ -877,8 +877,15 @@ class BBoardRunnerModeTests(unittest.TestCase):
             ]["mode"],
             "off",
         )
+        self.assertEqual(
+            diagnostic[
+                "calculation_guarded_adaptive_evidence_scope_policy"
+            ]["mode"],
+            "question_only_first_attempt",
+        )
         attempt = diagnostic["calculation_attempt_modes"][0]
         self.assertEqual(attempt["status"], "request_failed")
+        self.assertEqual(attempt["prompt_evidence_count"], 1)
         self.assertEqual(
             attempt["request_thinking"],
             {
