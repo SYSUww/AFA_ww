@@ -137,6 +137,11 @@ def main() -> None:
         lambda qid: question_by_qid[qid].answer_format,
     )
     token_total = int((run_manifest.get("token_usage") or {}).get("total_tokens", 0))
+    token_score_field = (
+        "token_efficiency_score"
+        if len(expected_qids) == len(questions)
+        else "sample_token_efficiency_score_not_full_run_comparable"
+    )
     result = {
         "score_type": "offline_pseudo99_reference_match_not_official_accuracy",
         "official_accuracy": None,
@@ -158,9 +163,7 @@ def main() -> None:
             "raw_call_count": run_manifest.get("raw_call_count"),
             "format_retry_count": run_manifest.get("format_retry_count"),
             "token_usage": run_manifest.get("token_usage"),
-            "sample_token_efficiency_score_not_full_run_comparable": (
-                token_efficiency_score(token_total)
-            ),
+            token_score_field: token_efficiency_score(token_total),
         },
         "reference_exact_match_count": len(exact),
         "reference_equivalent_match_count": len(equivalent),
@@ -177,7 +180,11 @@ def main() -> None:
             "该准确率只表示与当前pseudo99候选的等价匹配率，不是官网准确率。",
             "生成进程不加载pseudo99、官网答案锁或历史提交；比较在冻结生成结果后单独执行。",
             f"缺失或失败题按不匹配计入本次{len(expected_qids)}题样本分母。",
-            "样本Token效率分仅按样本总Token代入，不能与100题正式提交直接比较。",
+            (
+                "Token效率分按完整100题总Token计算。"
+                if len(expected_qids) == len(questions)
+                else "样本Token效率分仅按样本总Token代入，不能与100题正式提交直接比较。"
+            ),
         ],
     }
     output = args.output or args.run_dir / "accuracy_evaluation.json"

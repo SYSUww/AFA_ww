@@ -139,8 +139,41 @@ A3证明不能为了省Token让模型“先答后解释”：
 1. A2的16/16只是与未提交pseudo99候选一致，不等于官网100%准确。
 2. A2仍有5次格式重试，主要是首答reasoning漏写机械结论。
 3. `ins_b_016=BD`与材料语义可能冲突；本链路答案盲，A2恰好输出BD不能证明材料能推出平台隐藏标签。
-4. 16题样本不足以证明100题全量表现；全量运行前应先评估Token预算。
-5. 下一轮Token优化必须开新方向，不能继续调整本方向的Schema顺序；该方向已达到3轮上限。
+4. 下一轮Token优化必须开新方向，不能继续调整本方向的Schema顺序；该方向已达到3轮上限。
+
+## 全量100题验证
+
+复用A2的16题后，剩余84题独立运行；失败题按“证据覆盖”和“格式闭环”两类做通用恢复。所有源调用均保留并累计，最终结果：
+
+| 指标 | 结果 |
+|---|---:|
+| 成功题数 | 100/100 |
+| 原始模型调用 | 172 |
+| 额外调用 | 72 |
+| Prompt Token | 774,199 |
+| Completion Token | 293,023 |
+| 总Token | 1,067,222 |
+| Token效率分 | 78.65556 |
+| pseudo99等价匹配 | 74/100 |
+| 官网准确率 | 未提交，未知 |
+
+全量验证暴露并修复了三个通用问题：
+
+1. 有锚点文档时，旧代码完全丢弃文档发现阶段的其他候选，跨年份和跨产品问题召回不全；现改为锚点优先、发现结果补齐。
+2. 文档配额可以占满最终Top K，甚至挤出primary第一名；现强制先保留primary Top4。
+3. `999999.99`格式占位符曾被直接放入Prompt，模型会复制占位值；现只从模板推导小数位，不展示模板值。
+
+全量pseudo99代理分领域：
+
+| 领域 | 匹配 |
+|---|---:|
+| financial_contracts | 16/20 |
+| financial_reports | 10/20 |
+| insurance | 13/20 |
+| regulatory | 18/20 |
+| research | 17/20 |
+
+因此全量文件虽然格式、模型、usage与生成合规审计全部通过，但代理准确率明显低于历史99%候选。是否消耗官网提交次数应单独决策。
 
 ## 产物
 
@@ -148,4 +181,5 @@ A3证明不能为了省Token让模型“先答后解释”：
 - A2：`artifacts/b_board_actual/retrieval_llm_baseline/modular_prompt_stratified16_v2`
 - A3：`artifacts/b_board_actual/retrieval_llm_baseline/modular_prompt_stratified16_v3`
 - 判断稳定性：`artifacts/b_board_actual/retrieval_llm_baseline/tf_stability_v2_r1` 至 `r4`
+- 全量提交：`artifacts/b_board_actual/retrieval_llm_baseline/full100_submit_v1/submit.csv`
 - 完整实验记录：`wiki/b_board_actual_loop_log.md`

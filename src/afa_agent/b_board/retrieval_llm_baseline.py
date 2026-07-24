@@ -9,7 +9,13 @@ from pathlib import Path
 import re
 from typing import Any, Iterable, Mapping, Sequence
 
-from afa_agent.b_board.io import BAnswer, BQuestion, validate_b_answer
+from afa_agent.b_board.io import (
+    BAnswer,
+    BQuestion,
+    infer_percent_suffix_requirement,
+    infer_requested_decimal_places,
+    validate_b_answer,
+)
 from afa_agent.domains.generic_retriever import GenericBM25Retriever
 from afa_agent.domains.regulatory.retriever import RegulatoryRetriever
 from afa_agent.models import RetrievalHit
@@ -20,9 +26,11 @@ from afa_agent.retrieval_query import (
 )
 
 
-PIPELINE_VERSION = "b_retrieval_llm_answer_blind_v2"
-PROMPT_VERSION = "b_retrieval_llm_modular_final_submission_v5"
-RETRIEVAL_POLICY_VERSION = "semantic_slots_entity_coverage_option_quota_v3"
+PIPELINE_VERSION = "b_retrieval_llm_answer_blind_v3"
+PROMPT_VERSION = "b_retrieval_llm_modular_final_submission_v7"
+RETRIEVAL_POLICY_VERSION = (
+    "semantic_slots_entity_coverage_option_quota_doc_union_primary_guard_v5"
+)
 
 UNIT_TYPE_BOOSTS: dict[str, dict[str, float]] = {
     "financial_contracts": {"element_block": 1.8, "paragraph": 1.0},
@@ -150,11 +158,9 @@ def retrieve_question_evidence(
         per_query_top_k=max(per_query_top_k, 10),
         unit_type_boosts=boosts,
     )
-    selected_doc_ids = (
-        anchored_doc_ids[:max_doc_candidates]
-        if anchored_doc_ids
-        else _ranked_doc_ids(discovery)[:max_doc_candidates]
-    )
+    selected_doc_ids = _dedupe(
+        [*anchored_doc_ids, *_ranked_doc_ids(discovery)]
+    )[:max_doc_candidates]
     if not selected_doc_ids:
         raise ValueError("document discovery produced no candidates")
     primary = _rank_queries(
@@ -433,13 +439,13 @@ def _blend_rankings(
         ]
     }
     reserved_ids = _dedupe(
-        unit_id
-        for ranking in document_rankings
-        for unit_id in ranking["ranked_ids"][:2]
-    )
-    reserved_ids = _dedupe(
         [
-            *reserved_ids,
+            *primary["ranked_ids"][: min(4, final_top_k)],
+            *(
+                unit_id
+                for ranking in document_rankings
+                for unit_id in ranking["ranked_ids"][:1]
+            ),
             *(
                 unit_id
                 for ranking in option_rankings
@@ -613,7 +619,6 @@ def build_answer_messages(
     format_instruction = _format_instruction(question)
     slot_text = (
         f"提交槽数量：{question.answer_slots}\n"
-        f"槽位格式模板：{list(question.answer_slot_templates)}\n"
         if question.answer_format not in {"tf", "mcq", "multi"}
         else ""
     )
@@ -777,9 +782,39 @@ def _format_instruction(question: BQuestion) -> str:
         return "单选题只填一个选项字母。"
     if question.answer_format == "multi":
         return "多选题在一个槽内填写至少两个不同字母，按字母升序连接。"
+    decimal_places = infer_requested_decimal_places(question.question)
+    slot_rules: list[str] = []
+    for slot_index in range(1, question.answer_slots + 1):
+        requirements: list[str] = []
+        template = str(question.answer_slot_templates[slot_index - 1])
+        template_match = re.fullmatch(r"-?\d+\.(\d+)(%)?", template)
+        slot_decimal_places = (
+            decimal_places
+            if decimal_places is not None
+            else len(template_match.group(1))
+            if template_match
+            else None
+        )
+        if slot_decimal_places is not None:
+            requirements.append(f"数值必须恰好保留{slot_decimal_places}位小数")
+        percent_requirement = infer_percent_suffix_requirement(
+            question.question,
+            slot_index=slot_index,
+            slot_count=question.answer_slots,
+        )
+        if percent_requirement is None and template_match:
+            percent_requirement = bool(template_match.group(2))
+        if percent_requirement is True:
+            requirements.append("末尾必须带ASCII百分号%")
+        elif percent_requirement is False:
+            requirements.append("不得带百分号")
+        if not requirements:
+            requirements.append("严格遵循题面的单位、日期、排序和分隔符要求")
+        slot_rules.append(f"槽{slot_index}：" + "，".join(requirements))
     return (
-        f"严格返回{question.answer_slots}个槽；数值精度、百分号、日期和排序分隔符"
-        "完全遵循题面及槽位模板。"
+        f"严格返回{question.answer_slots}个槽；"
+        + "；".join(slot_rules)
+        + "。不要复制任何占位符或示例数值。"
     )
 
 

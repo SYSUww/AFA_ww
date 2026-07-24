@@ -24,12 +24,13 @@ class RetrievalLLMBaselineTests(unittest.TestCase):
         slots: int = 1,
         templates: tuple[str, ...] = ("AB",),
         options: dict[str, str] | None = None,
+        question_text: str = "核验两个产品是否包含责任免除条款。",
     ) -> BQuestion:
         return BQuestion(
             qid=qid,
             domain="insurance",
             split="B",
-            question="核验两个产品是否包含责任免除条款。",
+            question=question_text,
             options=options
             if options is not None
             else {"A": "甲包含", "B": "乙不包含", "C": "两者均包含"},
@@ -133,6 +134,24 @@ class RetrievalLLMBaselineTests(unittest.TestCase):
         self.assertNotIn("必要公式、关键代入值", choice)
         self.assertIn("必要公式、关键代入值", calculation)
         self.assertNotIn("多选题必须选择至少两个", calculation)
+
+    def test_calculation_prompt_derives_format_without_leaking_placeholder(self) -> None:
+        question = self.question(
+            answer_format="calculation",
+            question_type="计算题",
+            slots=1,
+            templates=("999999.99",),
+            options={},
+            question_text="计算最终金额约为多少亿元？",
+        )
+        serialized = json.dumps(
+            build_answer_messages(question, self.evidence()),
+            ensure_ascii=False,
+        )
+
+        self.assertIn("恰好保留2位小数", serialized)
+        self.assertIn("不得带百分号", serialized)
+        self.assertNotIn("999999.99", serialized)
 
     def test_valid_payload_is_preserved(self) -> None:
         reasoning = (

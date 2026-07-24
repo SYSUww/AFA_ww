@@ -268,6 +268,111 @@
 }
 ```
 
+## 2026-07-24 答案盲全量100题 B1-B3：生成闭环完成，代理准确率暴露检索短板
+
+```json
+{
+  "experiment_id": "full100_submit_v1",
+  "recorded_at": "2026-07-24T22:24:38+08:00",
+  "status": "completed_submission_candidate",
+  "score_type": "offline_pseudo99_reference_match_not_official_accuracy",
+  "history_review": {
+    "log_reviewed_before_attempt": true,
+    "direction": "answer_blind_full100_generation_and_recovery",
+    "round_limit": 3
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "run_id": "modular_prompt_remaining84_v2",
+      "scope": "复用A2的16题，只运行剩余84题",
+      "answered": 73,
+      "failed": 11,
+      "raw_call_count": 123,
+      "total_tokens": 737123,
+      "pseudo99_match": "50/84"
+    },
+    {
+      "round": 2,
+      "run_ids": [
+        "modular_prompt_recovery_coverage7_v2",
+        "modular_prompt_recovery_format4_v2"
+      ],
+      "scope": "按失败类型并行做通用覆盖补证与格式恢复",
+      "resolved": 6,
+      "remaining_failed": 5,
+      "raw_call_count": 18,
+      "total_tokens": 139927
+    },
+    {
+      "round": 3,
+      "run_ids": [
+        "modular_prompt_recovery_final6_v3",
+        "modular_prompt_recovery_res007_v3"
+      ],
+      "scope": "修复文档候选截断、主证据被配额挤出、占位符泄漏和逐槽格式提示",
+      "resolved": 6,
+      "remaining_failed": 0,
+      "raw_call_count": 10,
+      "total_tokens": 80383
+    }
+  ],
+  "generic_fixes": [
+    "文档候选由有锚点时只用锚点改为锚点优先加文档发现补齐，支持跨年份和跨产品题。",
+    "最终证据先保留primary Top4，再加入文档和选项配额，避免相关性最高证据被跨文档配额挤出。",
+    "Prompt不再展示999999.99等提交模板占位符，仅从模板推导小数位。",
+    "计算题逐槽明确小数位、百分号、日期和分隔符要求。"
+  ],
+  "full100_metrics": {
+    "answered_question_count": 100,
+    "failed_question_count": 0,
+    "raw_call_count": 172,
+    "additional_call_count": 72,
+    "prompt_tokens": 774199,
+    "completion_tokens": 293023,
+    "total_tokens": 1067222,
+    "token_efficiency_score": 78.65556,
+    "pseudo99_equivalent_match_count": 74,
+    "pseudo99_equivalent_match_rate": 0.74,
+    "official_accuracy": null
+  },
+  "proxy_segments": {
+    "by_domain": {
+      "financial_contracts": "16/20",
+      "financial_reports": "10/20",
+      "insurance": "13/20",
+      "regulatory": "18/20",
+      "research": "17/20"
+    },
+    "by_format": {
+      "calculation": "19/26",
+      "mcq": "7/7",
+      "multi": "47/66",
+      "tf": "1/1"
+    }
+  },
+  "compliance": {
+    "passed": true,
+    "model": "qwen3.7-plus-2026-05-26",
+    "qid_absent_from_model_messages": true,
+    "reference_loaded_by_generation": false,
+    "solver_or_rule_layer_used": false,
+    "fixed_locator_used": false,
+    "all_source_call_usage_aggregated": true,
+    "answers_modified": false,
+    "reasoning_modified": false
+  },
+  "provenance": {
+    "run_dir": "artifacts/b_board_actual/retrieval_llm_baseline/full100_submit_v1",
+    "submission": "artifacts/b_board_actual/retrieval_llm_baseline/full100_submit_v1/submit.csv",
+    "submission_sha256": "822ef2597eeee540ac33569b8823c5277fca7d7d37b9d6e407cfd28dce954671",
+    "evaluation": "artifacts/b_board_actual/retrieval_llm_baseline/full100_submit_v1/accuracy_evaluation.json"
+  },
+  "promotion_result": "submission_candidate_with_low_proxy_accuracy_warning",
+  "next_step": "该文件可用于一次官网探针，但pseudo99代理仅74%，明显低于历史99%候选。若官网次数稀缺，应先讨论是否值得提交；下一优化重点是跨文档多选与财报计算检索，而不是继续格式重试。"
+}
+```
+
 ## b-loop-qwen37-reasoning-thinking-budget-768-c3
 
 ```json
