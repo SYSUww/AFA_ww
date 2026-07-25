@@ -355,6 +355,14 @@ class RetrievalLLMBaselineTests(unittest.TestCase):
         legal = schema["properties"]["answer_parts"]["items"]["enum"]
         self.assertIn("AC", legal)
         self.assertNotIn("A", legal)
+        self.assertIn(
+            "机械复制answer_parts",
+            schema["properties"]["reasoning"]["description"],
+        )
+        self.assertIn(
+            "逐槽完全一致",
+            schema["properties"]["answer_parts"]["description"],
+        )
 
     def test_reasoning_canonical_schema_has_one_model_owned_field(self) -> None:
         schema = build_reasoning_canonical_schema()
@@ -1001,6 +1009,14 @@ class RetrievalLLMBaselineTests(unittest.TestCase):
 
         self.assertEqual(set(schema["properties"]), {"reasoning"})
         self.assertEqual(schema["required"], ["reasoning"])
+        self.assertIn(
+            "结论：AC",
+            schema["properties"]["reasoning"]["description"],
+        )
+        self.assertIn(
+            "不得追加任何字符",
+            schema["properties"]["reasoning"]["description"],
+        )
 
     def test_frozen_reasoning_rejects_separate_conclusion_field(
         self,

@@ -166,6 +166,108 @@ GPT-5.6 严格影子 Judge 的三个校准尝试均为 HTTP 502，因此该维�
 }
 ```
 
+### A2 结果与 A3 最后一轮
+
+A2 全量仅有 87 题完成，另有 1 次 `ReadTimeout` 已开始但无 provider usage，
+因此合规审计明确失败。相对 A1，Token 和 pseudo99 代理均改善，但完整度下降且
+存在不可观测风险；相对当前保留的 anchor-first A2，完整度、准确率代理和 Token
+均明显更差。本轮不晋级，不能生成提交候选。
+
+```json
+{
+  "experiment_id": "b-compliance-repair-choice-conclusion-equivalence-a2-full100-result",
+  "direction": "generic_choice_conclusion_contract_normalization",
+  "direction_attempt_count": 2,
+  "status": "completed_not_promoted",
+  "metrics": {
+    "question_count": 100,
+    "answered_question_count": 87,
+    "failed_question_count": 13,
+    "raw_call_count": 132,
+    "initial_answer_call_count": 99,
+    "reasoning_only_retry_count": 32,
+    "format_consistency_retry_count": 1,
+    "token_usage": {
+      "prompt_tokens": 529877,
+      "completion_tokens": 180679,
+      "total_tokens": 710556
+    },
+    "token_efficiency_score": 85.78888,
+    "pseudo99_equivalent_match_count": 64,
+    "official_accuracy": null,
+    "strict_reasoning_score": null,
+    "unobservable_usage_risk": true,
+    "compliance_audit_passed": false
+  },
+  "failure_breakdown": {
+    "reasoning_missing_explicit_conclusion": 8,
+    "answer_reasoning_conclusion_mismatch": 3,
+    "answer_slot_format_error": 1,
+    "read_timeout_after_started_intent": 1
+  },
+  "relative_to_a1": {
+    "answered_question_delta": -1,
+    "pseudo99_match_delta": 3,
+    "raw_call_delta": -8,
+    "total_token_delta": -31853,
+    "total_token_delta_percent": -4.2905,
+    "token_efficiency_delta": 0.63706
+  },
+  "relative_to_retained_anchor_first_a2": {
+    "answered_question_delta": -13,
+    "pseudo99_match_delta": -6,
+    "total_token_delta": 109708,
+    "token_efficiency_delta": -2.19416
+  },
+  "promotion_result": "rejected",
+  "reasons": [
+    "candidate_incomplete",
+    "unobservable_usage_risk",
+    "below_retained_accuracy_and_token_proxies",
+    "strict_reasoning_score_unavailable_after_three_http502_calibrations"
+  ],
+  "official_submission_count": 0
+}
+```
+
+A3 是本方向第 3 次也是最后一次。开始前再次阅读日志；不再继续扩展中文 cue
+识别，而是在原生 JSON Schema 的 `reasoning` 字段中加入通用、无 QID 的末尾
+结论约束说明，并在 frozen-answer schema 中写明当前已冻结结论，目标是让 Qwen
+在第一次或 reasoning-only 调用内完成格式契约。先对 A2 的 12 个可观测契约失败
+题做 8 worker 切片；同一冻结代码配置只有在切片完整、usage 可观测且准确率或
+Token/完整度代理不退化时才扩 100 题，不把扩量另算第 4 次尝试。
+
+```json
+{
+  "experiment_id": "b-compliance-repair-choice-conclusion-schema-description-a3-slice12",
+  "direction": "generic_choice_conclusion_contract_normalization",
+  "direction_attempt_count": 3,
+  "status": "implementation",
+  "history_reviewed_before_attempt": true,
+  "scope": {
+    "question_count": 12,
+    "source": "A2 observable response-contract failures",
+    "exclude_transport_timeout": "fin_b_019"
+  },
+  "change": "generic JSON Schema descriptions only; no QID/company/year/answer hardcoding and no field rewrite",
+  "run_config": {
+    "workers": 8,
+    "calculation_mode": "direct",
+    "document_candidate_strategy": "anchor_first",
+    "evidence_quota_strategy": "primary_guard",
+    "max_format_retries": 1
+  },
+  "promotion_gate": "12/12 complete, usage observable, compliance pass; expand only if completeness/retry or weighted proxy improves without material regression.",
+  "official_accuracy": null,
+  "official_submission_count": 0
+}
+```
+
+独立审查期间另做 2 次脱敏 Qwen3.7 strict Schema 能力探针：均接受
+`description` 且字段顺序保持 `reasoning -> answer_parts`，合计 188 Token；
+不含竞赛题目，不计入提交 usage。探针同时表明 description 不会稳定强制精确
+结论后缀，因此 A3 仍必须以 12 题真实切片门禁判断，不能预先记为有效。
+
 ### A1 全量运行
 
 离线回放确认 Schema v2 的 29 道首次响应可避免 29 次 reasoning-only 调用，

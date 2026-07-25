@@ -930,12 +930,22 @@ def build_answer_schema(
         "properties": {
             # Let the model complete its evidence-backed audit summary before
             # committing the final structured answer.
-            "reasoning": {"type": "string", "minLength": 20},
+            "reasoning": {
+                "type": "string",
+                "minLength": 20,
+                "description": (
+                    "最终提交说明。先完成证据核验或计算，再以“结论：...”"
+                    "结束；末尾结论必须按槽位顺序机械复制answer_parts。"
+                ),
+            },
             "answer_parts": {
                 "type": "array",
                 "items": answer_item_schema,
                 "minItems": question.answer_slots,
                 "maxItems": question.answer_slots,
+                "description": (
+                    "最终答案槽；必须与reasoning末尾“结论：...”逐槽完全一致。"
+                ),
             },
         },
         "required": ["reasoning", "answer_parts"],
@@ -967,7 +977,14 @@ def build_frozen_answer_reasoning_schema(
         "type": "object",
         "additionalProperties": False,
         "properties": {
-            "reasoning": {"type": "string", "minLength": 20},
+            "reasoning": {
+                "type": "string",
+                "minLength": 20,
+                "description": (
+                    "最终提交说明；末尾必须原样写“结论："
+                    f"{conclusion}”，且其后不得追加任何字符。"
+                ),
+            },
         },
         "required": ["reasoning"],
     }
