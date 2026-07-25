@@ -268,6 +268,34 @@ Token/完整度代理不退化时才扩 100 题，不把扩量另算第 4 次尝
 不含竞赛题目，不计入提交 usage。探针同时表明 description 不会稳定强制精确
 结论后缀，因此 A3 仍必须以 12 题真实切片门禁判断，不能预先记为有效。
 
+```json
+{
+  "experiment_id": "b-compliance-repair-choice-conclusion-schema-description-a3-slice12-run",
+  "direction": "generic_choice_conclusion_contract_normalization",
+  "direction_attempt_count": 3,
+  "status": "running",
+  "frozen_source_commit": "0d2e2ec104d52698c75294f0ccdde919784dfe6a",
+  "run_dir": "artifacts/b_board_actual/compliance_repair/choice_conclusion_schema_description_a3_slice12",
+  "qids": [
+    "fc_b_008",
+    "fin_b_001",
+    "fin_b_002",
+    "fin_b_003",
+    "fin_b_004",
+    "fin_b_008",
+    "fin_b_012",
+    "ins_b_007",
+    "ins_b_015",
+    "ins_b_019",
+    "reg_b_007",
+    "reg_b_009"
+  ],
+  "workers": 8,
+  "official_accuracy": null,
+  "official_submission_count": 0
+}
+```
+
 ### A1 全量运行
 
 离线回放确认 Schema v2 的 29 道首次响应可避免 29 次 reasoning-only 调用，
