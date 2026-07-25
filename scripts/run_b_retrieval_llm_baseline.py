@@ -1310,7 +1310,10 @@ def _persist_result(
 def _postprocessing_record(result: dict[str, Any]) -> dict[str, Any]:
     trace = result.get("decision_trace") or {}
     mode = str(trace.get("postprocessing_mode", "none"))
-    if mode == "none":
+    if mode in {
+        "none",
+        "multi_choice_conclusion_separator_equivalence",
+    }:
         return {
             "answer_modified": False,
             "reasoning_modified": False,

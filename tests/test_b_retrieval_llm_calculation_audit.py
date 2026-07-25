@@ -83,6 +83,7 @@ class CalculationModeContractTests(TestCase):
                     "reasoning_assembled_from_model_fields": False,
                     "answer_modified": False,
                     "reasoning_modified": False,
+                    "semantic_correction": False,
                 },
             },
         )
@@ -122,6 +123,88 @@ class CalculationModeContractTests(TestCase):
 
         self.assertEqual(payload["answer_parts"], ["AC"])
         self.assertTrue(payload["reasoning"].endswith("结论：AC"))
+
+    def test_choice_separator_equivalence_persists_as_unmodified_and_replays(
+        self,
+    ) -> None:
+        reasoning = (
+            "逐项核验材料后，甲和丙有明确依据，乙不满足条件。"
+            "结论：A、C"
+        )
+        call = {
+            "call_index": 1,
+            "purpose": "initial_answer",
+            "content": json.dumps(
+                {"answer_parts": ["AC"], "reasoning": reasoning},
+                ensure_ascii=False,
+            ),
+            "token_usage": {
+                "prompt_tokens": 10,
+                "completion_tokens": 5,
+                "total_tokens": 15,
+            },
+        }
+        reconstructed = submission_assembler._reconstruct_final_payload(
+            question=self.choice_question(),
+            run_dir=Path("/unused"),
+            calls=[call],
+        )
+
+        with TemporaryDirectory() as temporary:
+            run_dir = Path(temporary)
+            for name in ("retrieval", "raw_calls"):
+                (run_dir / name).mkdir()
+            (run_dir / "answers.json").write_text("[]", encoding="utf-8")
+            (run_dir / "failures.json").write_text("[]", encoding="utf-8")
+            (run_dir / "run_config.json").write_text(
+                json.dumps(
+                    {
+                        "fingerprint": "fingerprint",
+                        "run_instance_id": "run-instance",
+                        "config": {},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result = {
+                "qid": "choice",
+                "status": "answered",
+                "retrieval": {},
+                "evidence_alias_map": [],
+                "calls": [call],
+                "answer_parts": reconstructed["answer_parts"],
+                "reasoning": reconstructed["reasoning"],
+                "decision_trace": reconstructed["decision_trace"],
+                "token_usage": call["token_usage"],
+            }
+            with patch.object(baseline_runner, "_write_manifest"):
+                baseline_runner._persist_result(
+                    run_dir,
+                    result,
+                    question_order=["choice"],
+                    fingerprint="fingerprint",
+                    public_config={},
+                )
+            raw = json.loads(
+                (run_dir / "raw_calls" / "choice.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+
+        self.assertEqual(reconstructed["answer_parts"], ["AC"])
+        self.assertEqual(reconstructed["reasoning"], reasoning)
+        self.assertEqual(
+            reconstructed["decision_trace"]["postprocessing_mode"],
+            "multi_choice_conclusion_separator_equivalence",
+        )
+        self.assertEqual(
+            raw["postprocessing"],
+            {
+                "answer_modified": False,
+                "reasoning_modified": False,
+                "csv_escaping_only": True,
+            },
+        )
 
     def test_evaluator_keeps_regular_joint_payload_unchanged(self) -> None:
         question = BQuestion(

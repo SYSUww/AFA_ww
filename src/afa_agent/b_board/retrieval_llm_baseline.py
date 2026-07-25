@@ -1181,10 +1181,20 @@ def validate_answer_payload(
     payload: Mapping[str, Any],
 ) -> dict[str, Any]:
     normalized = validate_answer_shape_payload(question, payload)
-    _validate_reasoning_conclusion(
+    separator_equivalence = _validate_reasoning_conclusion(
         normalized["answer_parts"],
         normalized["reasoning"],
     )
+    if separator_equivalence:
+        normalized["decision_trace"] = {
+            "postprocessing_mode": (
+                "multi_choice_conclusion_separator_equivalence"
+            ),
+            "answer_source": "qwen_answer_parts",
+            "answer_modified": False,
+            "reasoning_modified": False,
+            "semantic_correction": False,
+        }
     return normalized
 
 
@@ -1239,7 +1249,19 @@ def validate_joint_payload_with_format_recovery(
             "semantic_correction": False,
         }
         return shaped
-    _validate_reasoning_conclusion(shaped["answer_parts"], shaped["reasoning"])
+    separator_equivalence = _validate_reasoning_conclusion(
+        shaped["answer_parts"], shaped["reasoning"]
+    )
+    if separator_equivalence:
+        shaped["decision_trace"] = {
+            "postprocessing_mode": (
+                "multi_choice_conclusion_separator_equivalence"
+            ),
+            "answer_source": "qwen_answer_parts",
+            "answer_modified": False,
+            "reasoning_modified": False,
+            "semantic_correction": False,
+        }
     if normalized:
         shaped["decision_trace"] = {
             "postprocessing_mode": "deterministic_format_normalization",
@@ -1317,19 +1339,27 @@ def validate_frozen_answer_reasoning_payload(
     reasoning = payload["reasoning"]
     if not isinstance(reasoning, str) or len(reasoning.strip()) < 20:
         raise ValueError("reasoning must contain at least 20 characters")
-    _validate_reasoning_conclusion(frozen_answer_parts, reasoning)
-    return {
+    separator_equivalence = _validate_reasoning_conclusion(
+        frozen_answer_parts, reasoning
+    )
+    result = {
         "answer_parts": [str(item) for item in frozen_answer_parts],
         "reasoning": reasoning,
         "decision_trace": {
             "answer_stage": "frozen_from_initial_qwen_response",
             "reasoning_stage": "reasoning_only_retry",
-            "postprocessing_mode": "none",
+            "postprocessing_mode": (
+                "multi_choice_conclusion_separator_equivalence"
+                if separator_equivalence
+                else "none"
+            ),
             "reasoning_assembled_from_model_fields": False,
             "answer_modified": False,
             "reasoning_modified": False,
+            "semantic_correction": False,
         },
     }
+    return result
 
 
 def _recover_answer_field_from_reasoning(
@@ -1633,7 +1663,7 @@ def _prompt_title(title_path: Sequence[Any]) -> str:
 def _validate_reasoning_conclusion(
     answer_parts: Sequence[str],
     reasoning: str,
-) -> None:
+) -> bool:
     marker_index = max(reasoning.rfind("结论："), reasoning.rfind("结论:"))
     if marker_index < 0:
         raise ValueError("reasoning must end with an explicit 结论")
@@ -1641,8 +1671,20 @@ def _validate_reasoning_conclusion(
     if not conclusion:
         raise ValueError("reasoning conclusion must not be empty")
     expected = "；".join(str(part) for part in answer_parts)
-    if conclusion != expected:
-        raise ValueError("reasoning conclusion does not exactly match answer_parts")
+    if conclusion == expected:
+        return False
+    if (
+        len(answer_parts) == 1
+        and re.fullmatch(r"[A-D]{2,4}", expected)
+        and expected == "".join(sorted(set(expected)))
+    ):
+        compact_conclusion = re.sub(r"[；、， ]+", "", conclusion)
+        if (
+            compact_conclusion == expected
+            and re.fullmatch(r"[A-D](?:[；、， ]+[A-D])+", conclusion)
+        ):
+            return True
+    raise ValueError("reasoning conclusion does not exactly match answer_parts")
 
 
 def _format_instruction(question: BQuestion) -> str:

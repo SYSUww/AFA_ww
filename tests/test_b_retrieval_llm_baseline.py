@@ -647,6 +647,83 @@ class RetrievalLLMBaselineTests(unittest.TestCase):
                 },
             )
 
+    def test_multi_choice_conclusion_separators_are_equivalent_without_rewrite(
+        self,
+    ) -> None:
+        for conclusion in ("A；C", "A、C", "A C", "A，C"):
+            with self.subTest(conclusion=conclusion):
+                reasoning = (
+                    "材料显示第一项和第三项成立，第二项与原文不符。"
+                    f"结论：{conclusion}"
+                )
+                parsed = validate_answer_payload(
+                    self.question(),
+                    {
+                        "answer_parts": ["AC"],
+                        "reasoning": reasoning,
+                    },
+                )
+
+                self.assertEqual(parsed["answer_parts"], ["AC"])
+                self.assertEqual(parsed["reasoning"], reasoning)
+                self.assertEqual(
+                    parsed["decision_trace"]["postprocessing_mode"],
+                    "multi_choice_conclusion_separator_equivalence",
+                )
+                self.assertFalse(parsed["decision_trace"]["answer_modified"])
+                self.assertFalse(parsed["decision_trace"]["reasoning_modified"])
+                self.assertFalse(
+                    parsed["decision_trace"]["semantic_correction"]
+                )
+
+    def test_multi_choice_conclusion_equivalence_rejects_unapproved_separators(
+        self,
+    ) -> None:
+        for conclusion in ("A;C", "A,C", "A\nC", "A\tC"):
+            with self.subTest(conclusion=conclusion):
+                with self.assertRaisesRegex(ValueError, "exactly match"):
+                    validate_answer_payload(
+                        self.question(),
+                        {
+                            "answer_parts": ["AC"],
+                            "reasoning": (
+                                "材料显示第一项和第三项成立，第二项不成立。"
+                                f"结论：{conclusion}"
+                            ),
+                        },
+                    )
+
+    def test_frozen_choice_conclusion_equivalence_requires_sorted_unique_labels(
+        self,
+    ) -> None:
+        for answer, conclusion in (("CA", "C、A"), ("AA", "A、A")):
+            with self.subTest(answer=answer):
+                with self.assertRaisesRegex(ValueError, "exactly match"):
+                    validate_frozen_answer_reasoning_payload(
+                        [answer],
+                        {
+                            "reasoning": (
+                                "材料逐项完成核验，并给出冻结标签。"
+                                f"结论：{conclusion}"
+                            )
+                        },
+                    )
+
+    def test_multi_choice_conclusion_equivalence_rejects_changed_labels(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(ValueError, "exactly match"):
+            validate_answer_payload(
+                self.question(),
+                {
+                    "answer_parts": ["AC"],
+                    "reasoning": (
+                        "材料显示第一项和第三项成立，第二项与原文不符。"
+                        "结论：A；B"
+                    ),
+                },
+            )
+
     def test_reasoning_conclusion_must_preserve_slot_boundaries_exactly(
         self,
     ) -> None:

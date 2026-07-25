@@ -54,6 +54,64 @@
 }
 ```
 
+## 2026-07-25 Schema v2 全量复现结果与重试方向 A1
+
+Schema 兼容修复通过真实 Qwen 验证：全部 26 道计算题均进入模型，不再出现
+`regex_converter` HTTP 400。该生产候选复现仍未晋级，因为 14 题最终契约失败，
+且 67 次 reasoning-only 调用显著抬高 Token。
+
+```json
+{
+  "experiment_id": "b-compliance-repair-final-direct-anchor-first-full100-schema-v2-result",
+  "status": "completed_not_promoted",
+  "metrics": {
+    "question_count": 100,
+    "answered_question_count": 86,
+    "failed_question_count": 14,
+    "raw_call_count": 171,
+    "format_consistency_retry_count": 4,
+    "reasoning_only_retry_count": 67,
+    "token_usage": {
+      "prompt_tokens": 683116,
+      "completion_tokens": 199794,
+      "total_tokens": 882910
+    },
+    "token_efficiency_score": 82.3418,
+    "pseudo99_equivalent_match_count": 62,
+    "official_accuracy": null,
+    "compliance_audit_passed": true,
+    "unobservable_usage_risk": false
+  },
+  "same_scope_selected_a2": {
+    "pseudo99_equivalent_match_count": 70,
+    "total_tokens": 600848,
+    "token_efficiency_score": 87.98304
+  },
+  "promotion_result": "rejected_incomplete_proxy_and_token_regression",
+  "official_submission_count": 0
+}
+```
+
+在开始下一个方向前已复核本日志，并离线审计两次全量运行的原始响应。上一轮
+60 次 reasoning-only 中有 36 次仅因 `answer_parts=["AD"]` 与
+`reasoning` 末尾 `结论：A；D` 的分隔符差异触发，消耗 149075 Token；
+Schema v2 首次响应中同类情况有 29 题。A1 只在校验时把合法多选字母之间的
+中文分号、顿号、逗号或空格视为等价，不修改答案或 reasoning，不接受不同字母
+集合，也不注入 QID、公司、年份或参考答案。
+
+```json
+{
+  "experiment_id": "b-compliance-repair-choice-conclusion-equivalence-a1",
+  "direction": "generic_choice_conclusion_contract_normalization",
+  "direction_attempt_count": 1,
+  "status": "implementation",
+  "history_reviewed_before_attempt": true,
+  "promotion_gate": "complete and observable; material Token reduction may promote only when proxy accuracy and strict reasoning quality do not materially regress.",
+  "official_accuracy": null,
+  "official_submission_count": 0
+}
+```
+
 ## 2026-07-25 Qwen Schema 兼容修复后的 100 题复现
 
 开始前已复核本日志。该运行仍是对已选中 `generic_anchor_first_document_candidates`
