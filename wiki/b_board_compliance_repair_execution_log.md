@@ -54,6 +54,48 @@
 }
 ```
 
+## 2026-07-25 生产候选复现失败：Qwen 原生 Schema 不支持前瞻正则
+
+本轮只复现已选中的 `generic_anchor_first_document_candidates` A2，不计为新的
+方向尝试。运行目录和冻结源码均未在运行中修改。
+
+```json
+{
+  "experiment_id": "b-compliance-repair-final-direct-anchor-first-full100-result",
+  "status": "completed_not_promoted",
+  "experiment_role": "promotion_reproduction_not_new_direction_attempt",
+  "frozen_source_commit": "3c37915fc88168c7ed74079c40615fb506718b2c",
+  "metrics": {
+    "question_count": 100,
+    "answered_question_count": 58,
+    "failed_question_count": 42,
+    "raw_call_count": 134,
+    "transport_attempt_count": 160,
+    "format_retry_count": 0,
+    "call_purpose_counts": {
+      "initial_answer": 74,
+      "reasoning_only_retry_from_frozen_answer": 60
+    },
+    "token_usage": {
+      "prompt_tokens": 525360,
+      "completion_tokens": 143033,
+      "total_tokens": 668393
+    },
+    "unobservable_usage_risk": true
+  },
+  "failure_analysis": {
+    "native_schema_http_400": 26,
+    "reasoning_missing_explicit_conclusion": 9,
+    "answer_reasoning_conclusion_mismatch": 7,
+    "root_cause": "DashScope JSON Schema regex converter rejects negative lookahead in calculation/extraction answer item pattern before generation."
+  },
+  "official_accuracy": null,
+  "official_submission_count": 0,
+  "promotion_result": "rejected_incomplete_and_unobservable",
+  "next_step": "Remove the provider-incompatible regex from native Schema, preserve minLength, enforce punctuation-only rejection in deterministic local validation, then rerun in a fresh immutable directory."
+}
+```
+
 ## 2026-07-25 冻结答案、仅修 reasoning：F2 历史重试 9 题
 
 F2 在每次新方向前复核了本日志，并沿用通用的选项主体文档约束检索；不按 QID、

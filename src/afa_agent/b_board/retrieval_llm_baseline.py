@@ -923,9 +923,6 @@ def build_answer_schema(
         answer_item_schema = {
             "type": "string",
             "minLength": 2,
-            # Reject punctuation-only placeholders such as ">" while keeping
-            # dates, numeric outputs, percentages, and company rankings legal.
-            "pattern": r"^(?![\s><；;|]+$).+$",
         }
     return {
         "type": "object",
@@ -1293,6 +1290,12 @@ def validate_answer_parts_shape(
     parts = tuple(str(item).strip() for item in raw_parts)
     if any(not part for part in parts):
         raise ValueError("answer_parts must contain non-empty strings")
+    if question.answer_format not in {"tf", "mcq", "multi"} and any(
+        re.search(r"[0-9A-Za-z\u4e00-\u9fff]", part) is None for part in parts
+    ):
+        raise ValueError(
+            "calculation/extraction answer_parts cannot be punctuation-only"
+        )
     validate_b_answer(
         question,
         BAnswer(

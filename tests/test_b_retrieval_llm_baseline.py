@@ -19,6 +19,7 @@ from afa_agent.b_board.retrieval_llm_baseline import (
     build_retrieval_bundle,
     prepare_evidence_payload,
     validate_answer_payload,
+    validate_answer_parts_shape,
     validate_answer_shape_payload,
     validate_frozen_answer_reasoning_payload,
     validate_joint_payload_with_format_recovery,
@@ -470,7 +471,60 @@ class RetrievalLLMBaselineTests(unittest.TestCase):
         self.assertEqual(answer_parts["maxItems"], 2)
         self.assertEqual(answer_parts["items"]["type"], "string")
         self.assertEqual(answer_parts["items"]["minLength"], 2)
-        self.assertIn("pattern", answer_parts["items"])
+        self.assertNotIn("pattern", answer_parts["items"])
+
+    def test_calculation_punctuation_only_parts_are_rejected_locally(self) -> None:
+        numeric_question = self.question(
+            answer_format="calculation",
+            question_type="计算题",
+            slots=1,
+            templates=("999999.99",),
+            options={},
+        )
+
+        for invalid in (">", "；", "||"):
+            with self.subTest(invalid=invalid):
+                with self.assertRaisesRegex(ValueError, "punctuation-only"):
+                    validate_answer_parts_shape(numeric_question, [invalid])
+
+        valid_cases = (
+            (
+                self.question(
+                    answer_format="calculation",
+                    question_type="计算题",
+                    slots=1,
+                    templates=("999999.99",),
+                    options={},
+                    question_text="期满后次一工作日是哪一天？",
+                ),
+                "2026年3月27日",
+            ),
+            (
+                self.question(
+                    answer_format="calculation",
+                    question_type="计算题",
+                    slots=1,
+                    templates=("999999.99%",),
+                    options={},
+                ),
+                "12.34%",
+            ),
+            (
+                self.question(
+                    answer_format="calculation",
+                    question_type="计算题",
+                    slots=1,
+                    templates=("公司名称>公司名称",),
+                    options={},
+                ),
+                "甲公司>乙公司",
+            ),
+        )
+        for question, valid in valid_cases:
+            with self.subTest(valid=valid):
+                self.assertEqual(
+                    validate_answer_parts_shape(question, [valid]), [valid]
+                )
 
     def test_prompt_is_modular_by_question_type(self) -> None:
         choice = json.dumps(
