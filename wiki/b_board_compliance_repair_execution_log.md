@@ -54,6 +54,34 @@
 }
 ```
 
+### A1 全量运行
+
+离线回放确认 Schema v2 的 29 道首次响应可避免 29 次 reasoning-only 调用，
+对应已观测 107062 Token；149 项生产链专项测试、持久化及 assembler 回放通过，
+独立审查为 GO。以下运行使用冻结提交与新目录。
+
+```json
+{
+  "experiment_id": "b-compliance-repair-choice-conclusion-equivalence-a1-full100",
+  "direction": "generic_choice_conclusion_contract_normalization",
+  "direction_attempt_count": 1,
+  "status": "running",
+  "frozen_source_commit": "f8ec89b4e979ca642f7d2b82519ad5480dbed7e1",
+  "run_config": {
+    "calculation_mode": "direct",
+    "document_candidate_strategy": "anchor_first",
+    "evidence_quota_strategy": "primary_guard",
+    "evidence_compaction": "off",
+    "output_contract": "joint",
+    "workers": 8,
+    "max_format_retries": 1
+  },
+  "run_dir": "artifacts/b_board_actual/compliance_repair/choice_conclusion_equivalence_a1_full100",
+  "official_accuracy": null,
+  "official_submission_count": 0
+}
+```
+
 ## 2026-07-25 Schema v2 全量复现结果与重试方向 A1
 
 Schema 兼容修复通过真实 Qwen 验证：全部 26 道计算题均进入模型，不再出现
