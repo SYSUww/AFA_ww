@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "scope_id": "b_board_proxy30_retrieval_research_20260725",
+  "purpose": "offline_retrieval_and_answer_quality_research_only",
+  "official_ground_truth": false,
+  "source": {
+    "run_id": "anchor_first_a2_full100",
+    "evaluation_path": "artifacts/b_board_actual/compliance_repair/anchor_first_a2_full100/accuracy_evaluation.json",
+    "score_type": "offline_pseudo99_reference_match_not_official_accuracy",
+    "reference_label": "pseudo99_unsubmitted",
+    "reference_sha256": "ba553dc1c89169c49dd1b4641ba6cace50e07728ec882fabfe4fe5cb85c671c2"
+  },
+  "generation_safety": {
+    "contains_reference_answers": false,
+    "may_select_question_scope": true,
+    "must_not_be_loaded_as_answer_or_retrieval_override": true,
+    "qid_specific_queries_allowed": false,
+    "qid_specific_answers_allowed": false
+  },
+  "question_count": 30,
+  "domain_counts": {
+    "financial_contracts": 4,
+    "financial_reports": 14,
+    "insurance": 7,
+    "regulatory": 1,
+    "research": 4
+  },
+  "qids": [
+    "fc_b_002",
+    "fc_b_007",
+    "fc_b_018",
+    "fc_b_019",
+    "fin_b_001",
+    "fin_b_002",
+    "fin_b_003",
+    "fin_b_004",
+    "fin_b_005",
+    "fin_b_008",
+    "fin_b_009",
+    "fin_b_010",
+    "fin_b_011",
+    "fin_b_013",
+    "fin_b_014",
+    "fin_b_015",
+    "fin_b_016",
+    "fin_b_019",
+    "ins_b_004",
+    "ins_b_005",
+    "ins_b_007",
+    "ins_b_008",
+    "ins_b_010",
+    "ins_b_013",
+    "ins_b_015",
+    "reg_b_001",
+    "res_b_005",
+    "res_b_010",
+    "res_b_014",
+    "res_b_018"
+  ]
+}

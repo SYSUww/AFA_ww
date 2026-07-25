@@ -8,6 +8,11 @@ from afa_agent.text_utils import normalize_whitespace, tokenize_zh
 
 
 QUERY_PLAN_VERSION = "semantic_slots_v1"
+EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION = "evidence_obligations_v2"
+QUERY_PLAN_STRATEGIES = (
+    QUERY_PLAN_VERSION,
+    EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION,
+)
 
 _DOCUMENT_TITLE_RE = re.compile(r"《([^》]{2,100})》")
 _COORDINATED_REPORT_SUBJECT_RE = re.compile(
@@ -36,10 +41,22 @@ _ORG_SUFFIX_RE = re.compile(
     r"保险|交易所|委员会|管理局|研究院))"
 )
 _INSURANCE_SUBJECT_RE = re.compile(
-    r"(?:^|[：；;。])\s*"
+    r"(?:^|[\n：；;。])\s*"
     r"([A-Za-z0-9\u4e00-\u9fff·]{2,20}?)"
-    r"(?=(?:中|在第|被保险人|已开始|累计|所交|退还|现金价值|"
+    r"(?=(?:中|在|无|未|没有|明确|约定|包含|非按|按|可|应|"
+    r"被保险人|已开始|累计|所交|退还|现金价值|"
     r"第[一二三四五六七八九十百零〇两\d]+))"
+)
+_OPTION_ENTITY_RE = re.compile(
+    r"^([A-Za-z0-9\u4e00-\u9fff·（）()]{2,24}?)"
+    r"(?=(?:中|在|无|未|没有|明确|详细|提到|涉及|约定|包含|"
+    r"非按|按|可|应|将))"
+)
+_FINANCIAL_OPTION_ENTITY_RE = re.compile(
+    r"^(?:根据)?\s*([A-Za-z0-9\u4e00-\u9fff·]{2,16}?)"
+    r"(?=(?:\s|20\d{2}|EBITDA|营业|净利润|现金|资产|研发|"
+    r"每股|每\s*10\s*股|全年|年末|中期))",
+    flags=re.IGNORECASE,
 )
 
 _LEADING_NOISE = (
@@ -85,6 +102,16 @@ _GENERAL_TOPIC_TERMS = (
     "退保费用",
     "保单年度",
     "责任免除",
+    "保单贷款",
+    "保险单借款",
+    "年龄错误",
+    "年龄不真实",
+    "申报错误",
+    "交通肇事逃逸",
+    "事故后逃逸",
+    "精神损害赔偿",
+    "精神损害抚慰金",
+    "诉讼时效",
     "等待期",
     "免赔额",
     "减额交清",
@@ -106,6 +133,59 @@ _GENERAL_TOPIC_TERMS = (
     "资产荒",
     "杠杆",
 )
+
+CONCEPT_FAMILIES = {
+    "financial_reports": (
+        ("归母净利润", "归属于上市公司股东的净利润"),
+        ("研发费用", "研发投入"),
+        ("经营现金流", "经营活动产生的现金流量净额"),
+        ("现金分红", "现金红利", "派发现金股利"),
+    ),
+    "insurance": (
+        ("保单贷款", "保险单借款", "借款"),
+        ("年龄错误", "年龄不真实", "申报错误"),
+        ("交通肇事逃逸", "事故后逃逸", "逃逸"),
+        ("精神损害赔偿", "精神损害抚慰金"),
+        ("诉讼时效", "请求给付保险金", "请求赔付保险金"),
+    ),
+    "financial_contracts": (
+        ("超额业绩奖励", "业绩奖励"),
+        ("新增产能消化", "产能消化风险", "新增年产能"),
+        ("向下修正", "转股价格修正"),
+        ("回售", "回售权"),
+    ),
+    "regulatory": (
+        ("客户尽职调查", "客户身份识别", "尽调"),
+        ("受益所有人", "受益所有人识别"),
+        ("保存期限", "至少保存", "保存客户身份资料"),
+    ),
+    "research": (
+        ("单车带电量", "平均带电量"),
+        ("品牌化", "品牌认知", "品牌溢价"),
+        ("自研ASIC", "自研芯片"),
+    ),
+}
+
+# Backward-compatible private alias for the local query expander.  The public
+# constant is also consumed by the answer-blind evidence obligation builder so
+# aliases are treated as one concept instead of separate target facts.
+_CONCEPT_FAMILIES = CONCEPT_FAMILIES
+
+_COVERAGE_TOPIC_EXCLUSIONS = {
+    "年度报告",
+    "报告期",
+    "合并报表",
+    "母公司",
+    "原始金额",
+    "数据",
+    "统一",
+    "换算",
+    "公司",
+    "四家",
+    "两家",
+    "判断",
+    "以下",
+}
 
 _DOMAIN_TOPIC_TERMS = {
     "financial_reports": (
@@ -388,22 +468,41 @@ def generate_retrieval_plan(
     request: RetrievalRequest,
     *,
     max_queries: int = 12,
+    plan_strategy: str = QUERY_PLAN_VERSION,
 ) -> RetrievalPlan:
     """Build support, broad, contrast, and coverage queries from text alone."""
 
     if max_queries < 1:
         raise ValueError("max_queries must be positive")
+    if plan_strategy not in QUERY_PLAN_STRATEGIES:
+        raise ValueError(
+            f"plan_strategy must be one of {QUERY_PLAN_STRATEGIES}"
+        )
     question = normalize_whitespace(request.question)
     option_text = normalize_whitespace(request.option_text)
     combined = "\n".join(part for part in (question, option_text) if part)
     atoms = _statement_atoms(option_text or question)
-    anchors = _extract_anchors(combined, request.document_hints, request.domain)
+    anchors = (
+        _extract_obligation_anchors(
+            combined,
+            request.document_hints,
+            request.domain,
+        )
+        if plan_strategy == EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION
+        else _extract_anchors(
+            combined,
+            request.document_hints,
+            request.domain,
+        )
+    )
     periods = _extract_periods(combined)
     quantities = tuple(
         item for item in _unique(_compact(item) for item in _QUANTITY_RE.findall(combined))
         if item and item not in periods and not re.fullmatch(r"20\d{2}", item)
     )
     topics = _extract_topics(combined, request.domain, anchors, periods)
+    if plan_strategy == EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION:
+        topics = _expand_concept_topics(combined, request.domain, topics)
     relations = tuple(term for term in _RELATION_TERMS if term.lower() in combined.lower())
     scopes = tuple(term for term in _SCOPE_TERMS if _contains_scope_term(combined, term))
     exceptions = tuple(term for term in _EXCEPTION_TERMS if term in combined)
@@ -420,6 +519,15 @@ def generate_retrieval_plan(
         atoms=atoms,
     )
     requires_scope_check = any(term in combined for term in _ABSENCE_TERMS)
+    if plan_strategy == EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION:
+        requires_scope_check = requires_scope_check or any(
+            _contains_scope_term(combined, term)
+            for term in ("均", "所有", "全部", "明确")
+        )
+    is_calculation = (
+        request.answer_format == "calculation"
+        or "计算题" in request.question_type
+    )
     variants: list[QueryVariant] = []
 
     primary_parts = [request.question_type, question, option_text]
@@ -431,10 +539,20 @@ def generate_retrieval_plan(
     )
 
     for atom_index, atom in enumerate(atoms):
+        if (
+            plan_strategy == EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION
+            and is_calculation
+        ):
+            break
+        support_anchors = (
+            _matching_atom_anchors(anchors, atom)
+            if plan_strategy == EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION
+            else anchors
+        )
         _append_variant(
             variants,
             channel="support",
-            query=_compose([*anchors, *articles, atom]),
+            query=_compose([*support_anchors, *articles, atom]),
             rationale="保留命题结论值，召回直接支持或直接否定该命题的原文",
             atom_index=atom_index,
         )
@@ -465,8 +583,23 @@ def generate_retrieval_plan(
             rationale="否定存在性命题必须在限定文档或章节内完成覆盖检查",
         )
 
-    if request.answer_format == "calculation" or "计算题" in request.question_type:
-        for anchor in _coverage_anchors(anchors)[:4] or ("",):
+    if is_calculation:
+        coverage_anchors = _coverage_anchors(anchors)[:4] or ("",)
+        coverage_topics = (
+            _coverage_topics(topics, request.domain)
+            if plan_strategy == EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION
+            else ()
+        )
+        obligations = (
+            (
+                (anchor, topic)
+                for topic in coverage_topics
+                for anchor in coverage_anchors
+            )
+            if coverage_topics
+            else ((anchor, "") for anchor in coverage_anchors)
+        )
+        for anchor, topic in obligations:
             _append_variant(
                 variants,
                 channel="coverage",
@@ -474,7 +607,7 @@ def generate_retrieval_plan(
                     [
                         anchor,
                         *periods,
-                        *topics,
+                        *([topic] if topic else topics),
                         *relations,
                         *articles,
                         "原始数值 公式 单位 表格行 条款",
@@ -495,7 +628,7 @@ def generate_retrieval_plan(
             )
 
     return RetrievalPlan(
-        version=QUERY_PLAN_VERSION,
+        version=plan_strategy,
         domain=request.domain,
         slots=slots,
         variants=tuple(variants[:max_queries]),
@@ -529,6 +662,67 @@ def _extract_anchors(
                 anchors.append(cleaned)
     anchors.extend(hint.strip() for hint in document_hints if hint and hint.strip())
     return tuple(_unique(anchors))
+
+
+def _extract_obligation_anchors(
+    text: str,
+    document_hints: Iterable[str],
+    domain: str,
+) -> tuple[str, ...]:
+    """Extract clean question-derived entities without QID or corpus hints."""
+
+    raw = list(_extract_anchors(text, (), domain))
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if domain in {"insurance", "financial_contracts"}:
+        for line in lines[1:]:
+            match = _OPTION_ENTITY_RE.match(line)
+            if match:
+                raw.append(match.group(1))
+            elif (
+                domain == "insurance"
+                and 2 <= len(line) <= 32
+                and not re.search(r"[，。；;：:?？%％\d]", line)
+            ):
+                raw.append(line)
+    if domain == "financial_reports":
+        for line in lines[1:]:
+            match = _FINANCIAL_OPTION_ENTITY_RE.match(line)
+            if match:
+                raw.append(match.group(1))
+
+    cleaned: list[str] = []
+    for anchor in raw:
+        if any(
+            marker in anchor
+            for marker in (
+                "报告书",
+                "年度报告",
+                "募集说明书",
+                "保险条款",
+                "管理办法",
+                "管理规定",
+            )
+        ):
+            cleaned.append(anchor)
+            continue
+        without_year = re.sub(
+            r"20\d{2}\s*年?\s*(?:[、,，]|至|—|–|-)?\s*",
+            "",
+            anchor,
+        )
+        for part in re.split(r"[、,，和及与]+", without_year):
+            entity = _strip_leading_noise(part)
+            entity = re.sub(r"^(?:而|年|：|:)+", "", entity).strip()
+            if _valid_obligation_anchor(entity):
+                cleaned.append(entity)
+
+    hints = [hint.strip() for hint in document_hints if hint and hint.strip()]
+    if hints:
+        raise ValueError(
+            "evidence_obligations_v2 rejects document_hints; "
+            "entities must come from the question text"
+        )
+    return tuple(_unique(cleaned))
 
 
 def _coverage_anchors(anchors: tuple[str, ...]) -> tuple[str, ...]:
@@ -581,6 +775,64 @@ def _extract_topics(
     return tuple(_unique([*matched, *fallback]))
 
 
+def _expand_concept_topics(
+    text: str,
+    domain: str,
+    topics: tuple[str, ...],
+) -> tuple[str, ...]:
+    expanded = list(topics)
+    for family in _CONCEPT_FAMILIES.get(domain, ()):
+        if any(term.lower() in text.lower() for term in family):
+            expanded.extend(family)
+    return tuple(_unique(expanded))
+
+
+def _coverage_topics(
+    topics: tuple[str, ...],
+    domain: str,
+) -> tuple[str, ...]:
+    candidates = [
+        topic
+        for topic in topics
+        if topic not in _COVERAGE_TOPIC_EXCLUSIONS
+        and not any(
+            fragment in topic
+            for fragment in ("答案格式", "保留两位", "不带单位")
+        )
+    ]
+    if domain == "financial_reports":
+        candidates = [
+            topic
+            for topic in candidates
+            if re.search(
+                r"(?:收入|利润|现金流量净额|现金流|分红|红利|"
+                r"资产负债率|收益率|每股收益|费用|投入|金额|余额)$",
+                topic,
+            )
+        ]
+    return tuple(_unique(candidates)[:6])
+
+
+def _matching_atom_anchors(
+    anchors: tuple[str, ...],
+    atom: str,
+) -> tuple[str, ...]:
+    document_anchors = tuple(
+        anchor
+        for anchor in anchors
+        if any(
+            marker in anchor
+            for marker in ("报告书", "募集说明书", "保险条款", "管理办法")
+        )
+    )
+    matching = tuple(
+        anchor
+        for anchor in anchors
+        if anchor in atom and anchor not in document_anchors
+    )
+    return tuple(_unique([*document_anchors, *(matching or anchors)]))
+
+
 def _statement_atoms(text: str) -> tuple[str, ...]:
     normalized = normalize_whitespace(text)
     pieces = re.split(r"(?:[；;。]|，(?:且|并且|同时|但|而)|(?:并且|同时))", normalized)
@@ -621,13 +873,15 @@ def _append_variant(
 
 
 def _strip_leading_noise(text: str) -> str:
-    cleaned = text.strip("《》“”\"'（）() ")
+    cleaned = text.strip("《》“”\"'（）() ：:,，。；;\n\t")
     changed = True
     while changed:
         changed = False
         for prefix in _LEADING_NOISE:
             if cleaned.startswith(prefix):
-                cleaned = cleaned[len(prefix) :].strip()
+                cleaned = cleaned[len(prefix) :].strip(
+                    "《》“”\"'（）() ：:,，。；;\n\t"
+                )
                 changed = True
     return cleaned
 
@@ -638,6 +892,36 @@ def _valid_anchor(text: str) -> bool:
         and text not in _FALLBACK_STOPWORDS
         and text not in {"保险", "养老保险", "身故保险", "证券"}
         and not any(fragment in text for fragment in _ANCHOR_NOISE_FRAGMENTS)
+    )
+
+
+def _valid_obligation_anchor(text: str) -> bool:
+    return (
+        _valid_anchor(text)
+        and not re.search(r"20\d{2}|[：:]", text)
+        and not any(
+            fragment in text
+            for fragment in (
+                "经营现金流",
+                "资产负债率",
+                "同比",
+                "高约",
+                "低约",
+                "详细披露",
+                "风险因素",
+            )
+        )
+        and not re.search(r"(?:高于|低于|上升|下降|增加|减少|比较|判断)", text)
+        and text
+        not in {
+            "相关公司",
+            "两家公司",
+            "三家公司",
+            "四家公司",
+            "各公司",
+            "该公司",
+            "下列产品",
+        }
     )
 
 

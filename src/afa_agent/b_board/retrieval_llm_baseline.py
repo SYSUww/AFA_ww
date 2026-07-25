@@ -21,7 +21,12 @@ from afa_agent.b_board.io import (
 from afa_agent.domains.generic_retriever import GenericBM25Retriever
 from afa_agent.domains.regulatory.retriever import RegulatoryRetriever
 from afa_agent.models import RetrievalHit
+from afa_agent.text_utils import tokenize_zh
 from afa_agent.retrieval_query import (
+    CONCEPT_FAMILIES,
+    EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION,
+    QUERY_PLAN_STRATEGIES,
+    QUERY_PLAN_VERSION,
     RetrievalPlan,
     RetrievalRequest,
     generate_retrieval_plan,
@@ -36,12 +41,17 @@ RETRIEVAL_POLICY_VERSION = (
 ANCHOR_FIRST_RETRIEVAL_POLICY_VERSION = (
     "semantic_slots_entity_coverage_option_quota_anchor_first_v3"
 )
-DOCUMENT_CANDIDATE_STRATEGIES = ("anchor_union", "anchor_first")
+DOCUMENT_CANDIDATE_STRATEGIES = (
+    "anchor_union",
+    "anchor_first",
+    "entity_coverage",
+)
 EVIDENCE_QUOTA_STRATEGIES = (
     "primary_guard",
     "document_balanced",
     "adaptive_multi_report_calculation",
     "metric_slot_coverage",
+    "obligation_coverage",
 )
 ANCHOR_FIRST_DOCUMENT_BALANCED_POLICY_VERSION = (
     "semantic_slots_entity_coverage_option_quota_v3"
@@ -51,6 +61,9 @@ ADAPTIVE_MULTI_REPORT_POLICY_VERSION = (
 )
 METRIC_SLOT_COVERAGE_POLICY_VERSION = (
     "semantic_slots_anchor_first_entity_metric_coverage_v7"
+)
+EVIDENCE_OBLIGATION_POLICY_VERSION = (
+    "evidence_obligations_v2_entity_doc_fact_coverage_a3_type_adaptive"
 )
 
 UNIT_TYPE_BOOSTS: dict[str, dict[str, float]] = {
@@ -104,10 +117,15 @@ def build_retrieval_bundle(
     question: BQuestion,
     *,
     max_queries_per_option: int = 12,
+    query_plan_strategy: str = QUERY_PLAN_VERSION,
 ) -> RetrievalBundle:
     requests = _retrieval_requests(question)
     plans = tuple(
-        generate_retrieval_plan(request, max_queries=max_queries_per_option)
+        generate_retrieval_plan(
+            request,
+            max_queries=max_queries_per_option,
+            plan_strategy=query_plan_strategy,
+        )
         for request in requests
     )
     primary = _dedupe(
@@ -157,12 +175,39 @@ def retrieve_question_evidence(
     max_doc_candidates: int = 6,
     document_candidate_strategy: str = "anchor_union",
     evidence_quota_strategy: str = "primary_guard",
+    query_plan_strategy: str = QUERY_PLAN_VERSION,
 ) -> dict[str, Any]:
     if not all_doc_ids:
         raise ValueError(f"{question.domain}: corpus has no document ids")
+    requested_policy_version = retrieval_policy_version(
+        document_candidate_strategy,
+        evidence_quota_strategy,
+        query_plan_strategy,
+    )
+    requested_strategies = {
+        "query_plan_strategy": query_plan_strategy,
+        "document_candidate_strategy": document_candidate_strategy,
+        "evidence_quota_strategy": evidence_quota_strategy,
+    }
+    (
+        query_plan_strategy,
+        document_candidate_strategy,
+        evidence_quota_strategy,
+    ) = _resolve_question_retrieval_strategies(
+        question,
+        query_plan_strategy=query_plan_strategy,
+        document_candidate_strategy=document_candidate_strategy,
+        evidence_quota_strategy=evidence_quota_strategy,
+    )
+    active_policy_version = retrieval_policy_version(
+        document_candidate_strategy,
+        evidence_quota_strategy,
+        query_plan_strategy,
+    )
     bundle = build_retrieval_bundle(
         question,
         max_queries_per_option=max_queries_per_option,
+        query_plan_strategy=query_plan_strategy,
     )
     boosts = UNIT_TYPE_BOOSTS.get(question.domain, {})
     discovery = _rank_queries(
@@ -180,6 +225,7 @@ def retrieve_question_evidence(
         list(bundle.anchor_queries),
         per_query_top_k=max(per_query_top_k, 10),
         unit_type_boosts=boosts,
+        max_docs_per_query=1,
     )
     selected_doc_ids = _select_document_candidates(
         anchored_doc_ids,
@@ -224,7 +270,8 @@ def retrieve_question_evidence(
     required_metric_slots = (
         _required_metric_slots(question, bundle.plans)
         if (
-            evidence_quota_strategy == "metric_slot_coverage"
+            evidence_quota_strategy
+            in {"metric_slot_coverage", "obligation_coverage"}
             and len(_dedupe(selected_doc_ids)) > 1
         )
         else []
@@ -233,7 +280,10 @@ def retrieve_question_evidence(
         retriever,
         selected_doc_ids=selected_doc_ids,
         metrics=required_metric_slots,
-        period=_first_period(bundle.plans),
+        period=_evidence_period_query(
+            bundle.plans,
+            query_plan_strategy=query_plan_strategy,
+        ),
         per_query_top_k=per_query_top_k,
         final_top_k=final_top_k,
         unit_type_boosts=boosts,
@@ -256,6 +306,7 @@ def retrieve_question_evidence(
         selected_doc_ids=selected_doc_ids,
         strategy=evidence_quota_strategy,
     )
+    relevance_profile = _build_evidence_relevance_profile(bundle.plans)
     blended = _blend_rankings(
         primary,
         supplemental,
@@ -265,13 +316,14 @@ def retrieve_question_evidence(
         supplemental_weight=supplemental_weight,
         final_top_k=final_top_k,
         evidence_quota_strategy=active_evidence_quota_strategy,
+        relevance_profile=relevance_profile,
     )
     return {
         "pipeline_version": PIPELINE_VERSION,
-        "policy_version": retrieval_policy_version(
-            document_candidate_strategy,
-            evidence_quota_strategy,
-        ),
+        "policy_version": active_policy_version,
+        "requested_policy_version": requested_policy_version,
+        "requested_strategies": requested_strategies,
+        "query_plan_strategy": query_plan_strategy,
         "document_candidate_strategy": document_candidate_strategy,
         "evidence_quota_strategy": evidence_quota_strategy,
         "active_evidence_quota_strategy": active_evidence_quota_strategy,
@@ -292,14 +344,49 @@ def retrieve_question_evidence(
         "option_rankings": [
             _ranking_to_dict(ranking) for ranking in option_rankings
         ],
+        "relevance_profile": relevance_profile,
         "final": _ranking_to_dict(blended),
     }
+
+
+def _resolve_question_retrieval_strategies(
+    question: BQuestion,
+    *,
+    query_plan_strategy: str,
+    document_candidate_strategy: str,
+    evidence_quota_strategy: str,
+) -> tuple[str, str, str]:
+    """Keep the research obligation ranker on task types it improved.
+
+    The gate is answer-format only.  It cannot inspect QID, answers, document
+    identifiers, or evaluator manifests.  Calculation questions retain the
+    established first-pass evidence path because the proxy replay showed that
+    broad obligation coverage displaced exact numeric rows.
+    """
+
+    if (
+        query_plan_strategy == EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION
+        and document_candidate_strategy == "entity_coverage"
+        and evidence_quota_strategy == "obligation_coverage"
+        and question.answer_format == "calculation"
+    ):
+        return QUERY_PLAN_VERSION, "anchor_first", "primary_guard"
+    return (
+        query_plan_strategy,
+        document_candidate_strategy,
+        evidence_quota_strategy,
+    )
 
 
 def retrieval_policy_version(
     document_candidate_strategy: str,
     evidence_quota_strategy: str = "primary_guard",
+    query_plan_strategy: str = QUERY_PLAN_VERSION,
 ) -> str:
+    if query_plan_strategy not in QUERY_PLAN_STRATEGIES:
+        raise ValueError(
+            f"query_plan_strategy must be one of {QUERY_PLAN_STRATEGIES}"
+        )
     if evidence_quota_strategy not in EVIDENCE_QUOTA_STRATEGIES:
         raise ValueError(
             "evidence_quota_strategy must be one of "
@@ -316,6 +403,22 @@ def retrieval_policy_version(
         raise ValueError(
             f"{evidence_quota_strategy} requires anchor_first documents"
         )
+    if (
+        query_plan_strategy == EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION
+        or document_candidate_strategy == "entity_coverage"
+        or evidence_quota_strategy == "obligation_coverage"
+    ):
+        if (
+            query_plan_strategy
+            != EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION
+            or document_candidate_strategy != "entity_coverage"
+            or evidence_quota_strategy != "obligation_coverage"
+        ):
+            raise ValueError(
+                "evidence_obligations_v2 requires entity_coverage documents "
+                "and obligation_coverage evidence"
+            )
+        return EVIDENCE_OBLIGATION_POLICY_VERSION
     if (
         document_candidate_strategy == "anchor_union"
         and evidence_quota_strategy == "primary_guard"
@@ -357,6 +460,8 @@ def _resolve_evidence_quota_strategy(
     selected_doc_ids: Sequence[str],
     strategy: str,
 ) -> str:
+    if strategy == "obligation_coverage":
+        return strategy
     if strategy not in {
         "adaptive_multi_report_calculation",
         "metric_slot_coverage",
@@ -389,7 +494,11 @@ def _select_document_candidates(
 ) -> list[str]:
     if max_doc_candidates < 1:
         raise ValueError("max_doc_candidates must be positive")
-    retrieval_policy_version(strategy)
+    if strategy not in DOCUMENT_CANDIDATE_STRATEGIES:
+        raise ValueError(
+            f"document candidate strategy must be one of "
+            f"{DOCUMENT_CANDIDATE_STRATEGIES}"
+        )
     anchors = _dedupe(anchored_doc_ids)
     discovered = _dedupe(discovered_doc_ids)
     if strategy == "anchor_first" and anchors:
@@ -403,8 +512,35 @@ def _document_anchor_queries(
 ) -> list[str]:
     if not plans:
         return []
-    anchors = list(plans[0].slots.anchors)
-    periods = list(plans[0].slots.periods)
+    obligation_mode = any(
+        plan.version == EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION
+        for plan in plans
+    )
+    source_plans = plans if obligation_mode else plans[:1]
+    anchors = _dedupe(
+        anchor
+        for plan in source_plans
+        for anchor in plan.slots.anchors
+    )
+    periods = _dedupe(
+        period
+        for plan in source_plans
+        for period in plan.slots.periods
+    )
+    if obligation_mode and not anchors and question.domain == "regulatory":
+        anchors = _dedupe(
+            topic
+            for plan in source_plans
+            for topic in plan.slots.topics
+            if len(topic) >= 4
+            and topic
+            not in {
+                "适用主体",
+                "法律责任",
+                "行政监管措施",
+                "金融机构",
+            }
+        )[:8]
     document_marker = next(
         (
             marker
@@ -421,6 +557,12 @@ def _document_anchor_queries(
         ),
         "",
     )
+    if obligation_mode and periods and question.domain == "financial_reports":
+        return _dedupe(
+            " ".join(part for part in (anchor, period, document_marker) if part)
+            for period in periods
+            for anchor in anchors
+        )
     period = periods[0] if periods else ""
     return _dedupe(
         " ".join(part for part in (anchor, period, document_marker) if part)
@@ -429,6 +571,14 @@ def _document_anchor_queries(
 
 
 def _focused_plan_queries(plan: RetrievalPlan) -> tuple[str, ...]:
+    if plan.version == EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION:
+        focused = _dedupe(
+            variant.query
+            for variant in plan.variants
+            if variant.channel in {"coverage", "support", "scope_check"}
+        )
+        if focused:
+            return tuple(focused)
     slots = plan.slots
     if slots.atoms:
         return tuple(_dedupe(slots.atoms))
@@ -449,17 +599,49 @@ def _focused_plan_queries(plan: RetrievalPlan) -> tuple[str, ...]:
 def _document_evidence_query(plans: Sequence[RetrievalPlan]) -> str:
     if not plans:
         return ""
-    slots = plans[0].slots
+    obligation_mode = any(
+        plan.version == EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION
+        for plan in plans
+    )
+    source_plans = plans if obligation_mode else plans[:1]
     return " ".join(
         _dedupe(
             [
-                *slots.articles,
-                *slots.periods,
-                *slots.topics,
-                *slots.quantities,
-                *slots.relations,
-                *slots.scopes,
-                *slots.exceptions,
+                *(
+                    item
+                    for plan in source_plans
+                    for item in plan.slots.articles
+                ),
+                *(
+                    item
+                    for plan in source_plans
+                    for item in plan.slots.periods
+                ),
+                *(
+                    item
+                    for plan in source_plans
+                    for item in plan.slots.topics
+                ),
+                *(
+                    item
+                    for plan in source_plans
+                    for item in plan.slots.quantities
+                ),
+                *(
+                    item
+                    for plan in source_plans
+                    for item in plan.slots.relations
+                ),
+                *(
+                    item
+                    for plan in source_plans
+                    for item in plan.slots.scopes
+                ),
+                *(
+                    item
+                    for plan in source_plans
+                    for item in plan.slots.exceptions
+                ),
             ]
         )
     )
@@ -469,6 +651,189 @@ def _first_period(plans: Sequence[RetrievalPlan]) -> str:
     if not plans or not plans[0].slots.periods:
         return ""
     return str(plans[0].slots.periods[0])
+
+
+def _evidence_period_query(
+    plans: Sequence[RetrievalPlan],
+    *,
+    query_plan_strategy: str,
+) -> str:
+    if query_plan_strategy != EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION:
+        return _first_period(plans)
+    return " ".join(
+        _dedupe(
+            period
+            for plan in plans
+            for period in plan.slots.periods
+        )
+    )
+
+
+def _build_evidence_relevance_profile(
+    plans: Sequence[RetrievalPlan],
+) -> dict[str, Any]:
+    document_markers = {
+        "报告书",
+        "年度报告",
+        "募集说明书",
+        "保险条款",
+        "管理办法",
+        "管理规定",
+    }
+    generic_topics = {
+        "年度报告",
+        "报告期",
+        "数据",
+        "统一",
+        "公司",
+        "两家",
+        "三家",
+        "四家",
+        "判断",
+        "以下",
+    }
+    obligations: list[dict[str, Any]] = []
+    for plan in plans:
+        atoms = _dedupe(
+            atom
+            for atom in plan.slots.atoms
+            if "答案格式" not in atom and len(atom) >= 4
+        )
+        atom_text = " ".join(atoms)
+        entities = _dedupe(
+            anchor
+            for anchor in plan.slots.anchors
+            if len(anchor) <= 40
+            and not any(marker in anchor for marker in document_markers)
+        )
+        matched_entities = [
+            entity for entity in entities if entity in atom_text
+        ]
+        obligation_entities = matched_entities or entities
+        periods = _expand_year_periods(plan.slots.periods)
+        topics = _dedupe(
+            topic
+            for topic in plan.slots.topics
+            if topic not in generic_topics
+        )
+        concept_groups = _group_concept_aliases(topics, plan.domain)
+        shared = {
+            "domain": plan.domain,
+            "relations": list(plan.slots.relations),
+            "scopes": list(plan.slots.scopes),
+            "exceptions": list(plan.slots.exceptions),
+            "articles": list(plan.slots.articles),
+            "atoms": atoms,
+        }
+        is_calculation = any(
+            variant.channel == "coverage" for variant in plan.variants
+        )
+        if len(plans) == 1 and is_calculation:
+            entity_groups = (
+                [[entity] for entity in obligation_entities] or [[]]
+            )
+            year_groups = [[year] for year in periods] or [[]]
+            active_concept_groups = concept_groups or [[]]
+            obligations.extend(
+                {
+                    **shared,
+                    "entities": entity_group,
+                    "years": year_group,
+                    "concepts": concept_group,
+                }
+                for entity_group in entity_groups
+                for concept_group in active_concept_groups
+                for year_group in year_groups
+            )
+        else:
+            obligations.append(
+                {
+                    **shared,
+                    "entities": obligation_entities,
+                    "years": periods,
+                    "concepts": topics,
+                }
+            )
+    return {
+        "obligations": obligations,
+        "entities": _dedupe(
+            entity
+            for obligation in obligations
+            for entity in obligation["entities"]
+        ),
+        "periods": _dedupe(
+            year
+            for obligation in obligations
+            for year in obligation["years"]
+        ),
+        "topics": _dedupe(
+            concept
+            for obligation in obligations
+            for concept in obligation["concepts"]
+        ),
+        "relations": _flatten_obligation_field(obligations, "relations"),
+        "scopes": _flatten_obligation_field(obligations, "scopes"),
+        "exceptions": _flatten_obligation_field(obligations, "exceptions"),
+        "articles": _flatten_obligation_field(obligations, "articles"),
+        "atoms": _dedupe(
+            atom
+            for obligation in obligations
+            for atom in obligation["atoms"]
+        ),
+    }
+
+
+def _flatten_obligation_field(
+    obligations: Sequence[Mapping[str, Any]],
+    field: str,
+) -> list[str]:
+    return _dedupe(
+        str(value)
+        for obligation in obligations
+        for value in obligation.get(field) or []
+    )
+
+
+def _expand_year_periods(periods: Sequence[str]) -> list[str]:
+    years: list[str] = []
+    for period in periods:
+        match = re.search(
+            r"(20\d{2})\s*(?:—|–|-|至)\s*(20\d{2})",
+            str(period),
+        )
+        if match:
+            start, end = (int(match.group(1)), int(match.group(2)))
+            if start <= end and end - start <= 20:
+                years.extend(str(year) for year in range(start, end + 1))
+                continue
+        years.extend(re.findall(r"20\d{2}", str(period)))
+    return _dedupe(years)
+
+
+def _group_concept_aliases(
+    topics: Sequence[str],
+    domain: str,
+) -> list[list[str]]:
+    remaining = _dedupe(topics)
+    groups: list[list[str]] = []
+    for family in CONCEPT_FAMILIES.get(domain, ()):
+        matched = [
+            topic
+            for topic in remaining
+            if any(
+                topic == alias
+                or topic in alias
+                or alias in topic
+                for alias in family
+            )
+        ]
+        if matched:
+            groups.append(matched)
+            remaining = [
+                topic for topic in remaining if topic not in matched
+            ]
+    groups.extend([[topic] for topic in remaining])
+    return groups
 
 
 def _required_metric_slots(
@@ -601,7 +966,13 @@ def _rank_queries(
             current = hit_by_id.get(unit_id)
             if current is None or hit.score > current.score:
                 hit_by_id[unit_id] = hit
-    ranked_ids = sorted(scores, key=lambda unit_id: (-scores[unit_id], unit_id))
+    first_seen = {
+        unit_id: index for index, unit_id in enumerate(scores)
+    }
+    ranked_ids = sorted(
+        scores,
+        key=lambda unit_id: (-scores[unit_id], first_seen[unit_id]),
+    )
     ranked_ids = ranked_ids[:final_top_k]
     return {
         "queries": list(queries),
@@ -621,8 +992,9 @@ def _anchor_doc_candidates(
     *,
     per_query_top_k: int,
     unit_type_boosts: Mapping[str, float],
+    max_docs_per_query: int = 1,
 ) -> list[str]:
-    selected: list[str] = []
+    per_query_doc_ids: list[list[str]] = []
     for query in anchor_queries:
         kwargs = {
             "top_k": per_query_top_k,
@@ -638,9 +1010,12 @@ def _anchor_doc_candidates(
             )
         except TypeError:
             hits = retriever.search(doc_ids, query, **kwargs)
-        if hits:
-            selected.append(str(hits[0].doc_id))
-    return _dedupe(selected)
+        query_doc_ids = _dedupe(str(hit.doc_id) for hit in hits)
+        per_query_doc_ids.append(query_doc_ids[:max_docs_per_query])
+    return _round_robin_evidence_ids(
+        per_query_doc_ids,
+        limit=sum(len(items) for items in per_query_doc_ids),
+    )
 
 
 def _blend_rankings(
@@ -653,6 +1028,7 @@ def _blend_rankings(
     supplemental_weight: float,
     final_top_k: int,
     evidence_quota_strategy: str = "primary_guard",
+    relevance_profile: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     if supplemental_weight < 0:
         raise ValueError("supplemental_weight must not be negative")
@@ -701,17 +1077,60 @@ def _blend_rankings(
     for ranking in option_rankings:
         for rank, unit_id in enumerate(ranking["ranked_ids"], start=1):
             scores[str(unit_id)] += 0.5 / rank
-    ranked_ids = [
-        *reserved_ids[:final_top_k],
-        *(
-            unit_id
-            for unit_id in sorted(
-                scores,
-                key=lambda unit_id: (-scores[unit_id], unit_id),
+    if evidence_quota_strategy == "obligation_coverage":
+        for unit_id, hit in hit_by_id.items():
+            scores[unit_id] += _evidence_relevance_score(
+                hit,
+                relevance_profile or {},
             )
-            if unit_id not in reserved_ids
-        ),
-    ][:final_top_k]
+    candidate_ids = _dedupe(
+        [
+            *primary["ranked_ids"],
+            *supplemental["ranked_ids"],
+            *(
+                unit_id
+                for ranking in document_rankings
+                for unit_id in ranking["ranked_ids"]
+            ),
+            *(
+                unit_id
+                for ranking in metric_slot_rankings
+                for unit_id in ranking["ranked_ids"]
+            ),
+            *(
+                unit_id
+                for ranking in option_rankings
+                for unit_id in ranking["ranked_ids"]
+            ),
+        ]
+    )
+    ordinal = {
+        unit_id: index for index, unit_id in enumerate(candidate_ids)
+    }
+    if evidence_quota_strategy == "obligation_coverage":
+        ranked_ids = _rank_obligation_coverage_tail(
+            candidate_ids,
+            scores=scores,
+            hits=hit_by_id,
+            reserved_ids=reserved_ids,
+            relevance_profile=relevance_profile or {},
+            final_top_k=final_top_k,
+        )
+    else:
+        ranked_ids = [
+            *reserved_ids[:final_top_k],
+            *(
+                unit_id
+                for unit_id in sorted(
+                    scores,
+                    key=lambda unit_id: (
+                        -scores[unit_id],
+                        ordinal.get(unit_id, len(ordinal)),
+                    ),
+                )
+                if unit_id not in reserved_ids
+            ),
+        ][:final_top_k]
     return {
         "queries": [
             *primary["queries"],
@@ -737,6 +1156,188 @@ def _blend_rankings(
     }
 
 
+def _evidence_relevance_score(
+    hit: RetrievalHit,
+    profile: Mapping[str, Any],
+) -> float:
+    """Return a bounded, answer-blind max-obligation relevance bonus."""
+
+    obligations = list(profile.get("obligations") or [])
+    if not obligations:
+        return 0.0
+    return 0.40 * max(
+        _obligation_match_score(hit, obligation)
+        for obligation in obligations
+    )
+
+
+def _obligation_match_score(
+    hit: RetrievalHit,
+    obligation: Mapping[str, Sequence[str]],
+) -> float:
+    raw_text = " ".join([*hit.title_path, hit.text])
+    compact_text = re.sub(r"\s+", "", raw_text).lower()
+
+    def any_term(items: Sequence[str]) -> float:
+        normalized = [
+            re.sub(r"\s+", "", str(item)).lower()
+            for item in items
+            if str(item).strip()
+        ]
+        return float(bool(normalized) and any(
+            item in compact_text for item in normalized
+        ))
+
+    entities = list(obligation.get("entities") or [])
+    years = [
+        year
+        for item in obligation.get("years") or []
+        for year in re.findall(r"20\d{2}", str(item))
+    ]
+    concepts = list(obligation.get("concepts") or [])
+    relations = list(obligation.get("relations") or [])
+    scopes = list(obligation.get("scopes") or [])
+    exceptions = list(obligation.get("exceptions") or [])
+    articles = list(obligation.get("articles") or [])
+    atoms = list(obligation.get("atoms") or [])
+
+    entity_match = any_term(entities)
+    concept_match = any_term(concepts)
+    relation_match = any_term(relations)
+    scope_match = any_term(scopes)
+    exception_match = any_term(exceptions)
+    article_match = any_term(articles)
+    body_years = set(re.findall(r"20\d{2}", hit.text))
+    evidence_years = body_years or set(re.findall(r"20\d{2}", compact_text))
+    year_match = float(bool(years) and bool(set(years) & evidence_years))
+
+    evidence_tokens = {
+        token
+        for token in tokenize_zh(raw_text)
+        if len(token.strip()) >= 2
+    }
+    atom_recall = 0.0
+    for atom in atoms:
+        atom_tokens = {
+            token
+            for token in tokenize_zh(str(atom))
+            if len(token.strip()) >= 2
+        }
+        if atom_tokens:
+            atom_recall = max(
+                atom_recall,
+                len(atom_tokens & evidence_tokens) / len(atom_tokens),
+            )
+
+    unit_type = str(hit.metadata.get("unit_type", ""))
+    structural_types = {
+        "financial_reports": {"metric_row"},
+        "financial_contracts": {"element_block"},
+        "insurance": {"formula_block", "clause_block"},
+        "regulatory": {"article", "article_chunk"},
+        "research": {"conclusion_block"},
+    }
+    structural_match = float(
+        unit_type in structural_types.get(str(obligation.get("domain")), set())
+    )
+    weighted_features = (
+        (0.26, entity_match, bool(entities)),
+        (0.26, concept_match, bool(concepts)),
+        (0.18, year_match, bool(years)),
+        (0.12, atom_recall, bool(atoms)),
+        (0.06, relation_match, bool(relations)),
+        (0.04, scope_match, bool(scopes)),
+        (0.04, exception_match, bool(exceptions)),
+        (0.02, article_match, bool(articles)),
+        (0.04, structural_match, True),
+    )
+    active_weight = sum(
+        weight for weight, _, active in weighted_features if active
+    )
+    normalized = (
+        sum(
+            weight * value
+            for weight, value, active in weighted_features
+            if active
+        )
+        / active_weight
+        if active_weight
+        else 0.0
+    )
+    completeness = 0.10 * min(
+        entity_match if entities else 1.0,
+        concept_match if concepts else 1.0,
+        year_match if years and evidence_years else 1.0,
+    )
+    wrong_year_penalty = (
+        0.30
+        if (
+            years
+            and evidence_years
+            and not (set(years) & evidence_years)
+            and entity_match
+            and concept_match
+        )
+        else 0.0
+    )
+    return max(0.0, min(1.0, normalized + completeness - wrong_year_penalty))
+
+
+def _matched_obligation_indexes(
+    hit: RetrievalHit,
+    profile: Mapping[str, Any],
+) -> set[int]:
+    return {
+        index
+        for index, obligation in enumerate(profile.get("obligations") or [])
+        if _obligation_match_score(hit, obligation) >= 0.70
+    }
+
+
+def _rank_obligation_coverage_tail(
+    candidate_ids: Sequence[str],
+    *,
+    scores: Mapping[str, float],
+    hits: Mapping[str, RetrievalHit],
+    reserved_ids: Sequence[str],
+    relevance_profile: Mapping[str, Any],
+    final_top_k: int,
+) -> list[str]:
+    ordinal = {
+        unit_id: index for index, unit_id in enumerate(candidate_ids)
+    }
+    selected = _dedupe(reserved_ids)[:final_top_k]
+    covered: set[int] = set()
+    for unit_id in selected:
+        hit = hits.get(unit_id)
+        if hit is not None:
+            covered.update(
+                _matched_obligation_indexes(hit, relevance_profile)
+            )
+    remaining = [
+        unit_id for unit_id in candidate_ids if unit_id not in selected
+    ]
+    while remaining and len(selected) < final_top_k:
+        def candidate_key(unit_id: str) -> tuple[float, int]:
+            hit = hits[unit_id]
+            new_coverage = (
+                _matched_obligation_indexes(hit, relevance_profile) - covered
+            )
+            coverage_bonus = min(len(new_coverage), 2) * 0.15
+            return (
+                -(float(scores.get(unit_id, 0.0)) + coverage_bonus),
+                ordinal[unit_id],
+            )
+
+        chosen = min(remaining, key=candidate_key)
+        remaining.remove(chosen)
+        selected.append(chosen)
+        covered.update(
+            _matched_obligation_indexes(hits[chosen], relevance_profile)
+        )
+    return selected
+
+
 def _reserved_evidence_ids(
     primary: Mapping[str, Any],
     *,
@@ -750,6 +1351,8 @@ def _reserved_evidence_ids(
         raise ValueError(
             f"evidence quota strategy must be one of {EVIDENCE_QUOTA_STRATEGIES}"
         )
+    if strategy == "obligation_coverage":
+        return list(primary["ranked_ids"][: min(2, final_top_k)])
     document_quota = 2 if strategy == "document_balanced" else 1
     primary_guard = (
         []
@@ -790,6 +1393,30 @@ def _reserved_evidence_ids(
             ),
         ]
     )
+
+
+def _round_robin_evidence_ids(
+    rankings: Sequence[Sequence[str]],
+    *,
+    limit: int,
+) -> list[str]:
+    selected: list[str] = []
+    depth = 0
+    while len(selected) < limit:
+        added = False
+        for ranking in rankings:
+            if depth >= len(ranking):
+                continue
+            added = True
+            unit_id = str(ranking[depth])
+            if unit_id not in selected:
+                selected.append(unit_id)
+                if len(selected) >= limit:
+                    break
+        if not added:
+            break
+        depth += 1
+    return selected
 
 
 def _best_metric_evidence_id(ranking: Mapping[str, Any]) -> str:

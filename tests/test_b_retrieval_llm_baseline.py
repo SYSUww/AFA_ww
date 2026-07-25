@@ -6,7 +6,14 @@ import unittest
 
 from afa_agent.b_board.io import BQuestion
 from afa_agent.b_board.retrieval_llm_baseline import (
+    _anchor_doc_candidates,
+    _build_evidence_relevance_profile,
     _best_metric_evidence_id,
+    _evidence_relevance_score,
+    _expand_year_periods,
+    _rank_queries,
+    _rank_obligation_coverage_tail,
+    _resolve_question_retrieval_strategies,
     _select_document_candidates,
     _reserved_evidence_ids,
     _required_metric_slots,
@@ -128,6 +135,50 @@ class RetrievalLLMBaselineTests(unittest.TestCase):
             selected,
             ["anchored_a", "discovered_x", "discovered_y"],
         )
+
+    def test_entity_coverage_backfills_discovery(self) -> None:
+        selected = _select_document_candidates(
+            ["entity_a", "entity_b"],
+            ["discovered_x", "entity_a", "discovered_y"],
+            max_doc_candidates=4,
+            strategy="entity_coverage",
+        )
+
+        self.assertEqual(
+            selected,
+            ["entity_a", "entity_b", "discovered_x", "discovered_y"],
+        )
+
+    def test_anchor_candidates_round_robin_across_entities(self) -> None:
+        class FakeRetriever:
+            @staticmethod
+            def search(
+                doc_ids: list[str],
+                query: str,
+                **kwargs: object,
+            ) -> list[RetrievalHit]:
+                prefix = "a" if query == "entity-a" else "b"
+                return [
+                    RetrievalHit(
+                        unit_id=f"{prefix}{index}",
+                        doc_id=f"{prefix}{index}",
+                        score=10.0 - index,
+                        title_path=[],
+                        text="evidence",
+                    )
+                    for index in range(1, 3)
+                ]
+
+        selected = _anchor_doc_candidates(
+            FakeRetriever(),
+            ["a1", "a2", "b1", "b2"],
+            ["entity-a", "entity-b"],
+            per_query_top_k=10,
+            unit_type_boosts={},
+            max_docs_per_query=2,
+        )
+
+        self.assertEqual(selected, ["a1", "b1", "a2", "b2"])
 
     def test_document_balanced_quota_reserves_two_items_per_document(
         self,
@@ -268,6 +319,193 @@ class RetrievalLLMBaselineTests(unittest.TestCase):
             ],
         )
         self.assertNotIn("generic_a", reserved)
+
+    def test_obligation_quota_guards_primary_top_two(self) -> None:
+        reserved = _reserved_evidence_ids(
+            {
+                "ranked_ids": ["primary_1", "primary_2", "primary_3"],
+            },
+            document_rankings=[
+                {"ranked_ids": ["doc_a"]},
+                {"ranked_ids": ["doc_b"]},
+            ],
+            option_rankings=[
+                {"ranked_ids": ["option_a"]},
+                {"ranked_ids": ["option_b"]},
+            ],
+            final_top_k=6,
+            strategy="obligation_coverage",
+        )
+
+        self.assertEqual(reserved, ["primary_1", "primary_2"])
+
+    def test_relevance_score_rewards_grounded_entity_period_metric(self) -> None:
+        profile = {
+            "obligations": [
+                {
+                    "domain": "financial_reports",
+                    "entities": ["甲公司"],
+                    "years": ["2025"],
+                    "concepts": ["营业收入"],
+                    "relations": ["同比"],
+                    "scopes": [],
+                    "exceptions": [],
+                    "articles": [],
+                    "atoms": ["甲公司2025年营业收入同比增长"],
+                }
+            ],
+        }
+        relevant = RetrievalHit(
+            "relevant",
+            "report",
+            1.0,
+            ["甲公司2025年年度报告", "主要会计数据"],
+            "2025年营业收入为500亿元，同比增长10%。",
+        )
+        noise = RetrievalHit(
+            "noise",
+            "report",
+            9.0,
+            ["公司治理"],
+            "董事会审议通过日常关联交易议案。",
+        )
+
+        self.assertGreater(
+            _evidence_relevance_score(relevant, profile),
+            _evidence_relevance_score(noise, profile),
+        )
+
+    def test_year_range_is_expanded_inclusive(self) -> None:
+        self.assertEqual(
+            _expand_year_periods(["2023—2025年"]),
+            ["2023", "2024", "2025"],
+        )
+
+    def test_rank_queries_tie_break_is_first_seen_not_unit_id(self) -> None:
+        class Retriever:
+            def search(self, doc_ids, query, **kwargs):
+                return [
+                    RetrievalHit("z_id", "doc", 1.0, [], "甲"),
+                    RetrievalHit("a_id", "doc", 1.0, [], "乙"),
+                ]
+
+        ranking = _rank_queries(
+            Retriever(),
+            ["doc"],
+            ["query"],
+            per_query_top_k=2,
+            final_top_k=2,
+            unit_type_boosts={},
+            expand_neighbors=False,
+        )
+        self.assertEqual(ranking["ranked_ids"], ["z_id", "a_id"])
+
+    def test_obligation_tail_adds_uncovered_entity(self) -> None:
+        profile = {
+            "obligations": [
+                {
+                    "domain": "financial_reports",
+                    "entities": ["甲公司"],
+                    "years": ["2025"],
+                    "concepts": ["营业收入"],
+                    "relations": [],
+                    "scopes": [],
+                    "exceptions": [],
+                    "articles": [],
+                    "atoms": [],
+                },
+                {
+                    "domain": "financial_reports",
+                    "entities": ["乙公司"],
+                    "years": ["2025"],
+                    "concepts": ["营业收入"],
+                    "relations": [],
+                    "scopes": [],
+                    "exceptions": [],
+                    "articles": [],
+                    "atoms": [],
+                },
+            ]
+        }
+        hits = {
+            "primary_a": RetrievalHit(
+                "primary_a", "doc", 1.0, [], "甲公司2025年营业收入"
+            ),
+            "repeat_a": RetrievalHit(
+                "repeat_a", "doc", 1.0, [], "甲公司2025年营业收入"
+            ),
+            "new_b": RetrievalHit(
+                "new_b", "doc", 1.0, [], "乙公司2025年营业收入"
+            ),
+        }
+        ranked = _rank_obligation_coverage_tail(
+            ["primary_a", "repeat_a", "new_b"],
+            scores={"primary_a": 2.0, "repeat_a": 1.0, "new_b": 0.9},
+            hits=hits,
+            reserved_ids=["primary_a"],
+            relevance_profile=profile,
+            final_top_k=2,
+        )
+        self.assertEqual(ranked, ["primary_a", "new_b"])
+
+    def test_relevance_is_invariant_to_ids(self) -> None:
+        profile = {
+            "obligations": [
+                {
+                    "domain": "financial_reports",
+                    "entities": ["甲公司"],
+                    "years": ["2025"],
+                    "concepts": ["营业收入"],
+                    "relations": [],
+                    "scopes": [],
+                    "exceptions": [],
+                    "articles": [],
+                    "atoms": [],
+                }
+            ]
+        }
+        first = RetrievalHit(
+            "looks_like_gold", "fixed_doc", 1.0, [], "甲公司2025年营业收入"
+        )
+        second = RetrievalHit(
+            "counterfactual", "different_doc", 99.0, [], "甲公司2025年营业收入"
+        )
+        self.assertEqual(
+            _evidence_relevance_score(first, profile),
+            _evidence_relevance_score(second, profile),
+        )
+
+    def test_obligation_strategy_falls_back_by_answer_format_only(self) -> None:
+        calculation = self.question(
+            qid="counterfactual_qid",
+            answer_format="calculation",
+            question_type="计算题",
+            options={},
+        )
+        multiple_choice = self.question(qid="different_counterfactual_qid")
+
+        self.assertEqual(
+            _resolve_question_retrieval_strategies(
+                calculation,
+                query_plan_strategy="evidence_obligations_v2",
+                document_candidate_strategy="entity_coverage",
+                evidence_quota_strategy="obligation_coverage",
+            ),
+            ("semantic_slots_v1", "anchor_first", "primary_guard"),
+        )
+        self.assertEqual(
+            _resolve_question_retrieval_strategies(
+                multiple_choice,
+                query_plan_strategy="evidence_obligations_v2",
+                document_candidate_strategy="entity_coverage",
+                evidence_quota_strategy="obligation_coverage",
+            ),
+            (
+                "evidence_obligations_v2",
+                "entity_coverage",
+                "obligation_coverage",
+            ),
+        )
 
     def test_metric_value_binding_rejects_threshold_and_header_rows(self) -> None:
         ranking = {

@@ -8,6 +8,7 @@ import unittest
 from afa_agent.models import Question
 import afa_agent.retrieval_query as retrieval_query_module
 from afa_agent.retrieval_query import (
+    EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION,
     QUERY_PLAN_VERSION,
     RetrievalRequest,
     generate_retrieval_plan,
@@ -77,6 +78,81 @@ class RetrievalQueryInterfaceTests(unittest.TestCase):
 
 
 class RetrievalQueryPlanTests(unittest.TestCase):
+    def test_obligation_plan_extracts_clean_multi_report_entities(self) -> None:
+        request = RetrievalRequest(
+            domain="financial_reports",
+            question=(
+                "根据宁德时代与美的集团 2024 年、2025 年年度报告中的"
+                "营业收入和经营活动产生的现金流量净额计算差额。"
+            ),
+            question_type="计算题",
+            answer_format="calculation",
+        )
+
+        plan = generate_retrieval_plan(
+            request,
+            plan_strategy=EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION,
+        )
+
+        self.assertEqual(plan.slots.anchors, ("宁德时代", "美的集团"))
+        serialized = "\n".join(plan.query_strings())
+        self.assertNotIn("美的集团 2024 年", plan.slots.anchors)
+        self.assertNotIn("宁德时代与美的集团", plan.slots.anchors)
+        self.assertNotIn("：查阅", serialized)
+
+    def test_obligation_plan_binds_insurance_product_and_synonyms(self) -> None:
+        plan = generate_retrieval_plan(
+            RetrievalRequest(
+                domain="insurance",
+                question="关于保单贷款或借款，下列说法正确的是？",
+                option_text=(
+                    "平安富鸿金生非按个人养老金制度投保时可申请保单贷款"
+                ),
+                answer_format="multi",
+            ),
+            plan_strategy=EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION,
+        )
+
+        self.assertEqual(plan.slots.anchors, ("平安富鸿金生",))
+        self.assertIn("保险单借款", plan.slots.topics)
+        support = [
+            item.query for item in plan.variants if item.channel == "support"
+        ]
+        self.assertTrue(all("平安富鸿金生" in query for query in support))
+
+    def test_obligation_calculation_budget_covers_each_entity_first(self) -> None:
+        plan = generate_retrieval_plan(
+            RetrievalRequest(
+                domain="financial_reports",
+                question=(
+                    "计算题：查阅甲公司、乙公司、丙公司和丁公司2025年"
+                    "年度报告中的现金分红，统一换算并排序。"
+                ),
+                question_type="计算题",
+                answer_format="calculation",
+            ),
+            max_queries=6,
+            plan_strategy=EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION,
+        )
+
+        coverage = [
+            item.query for item in plan.variants if item.channel == "coverage"
+        ]
+        self.assertEqual(len(coverage), 4)
+        for entity in ("甲公司", "乙公司", "丙公司", "丁公司"):
+            self.assertTrue(any(entity in query for query in coverage))
+
+    def test_obligation_plan_rejects_document_hints(self) -> None:
+        with self.assertRaisesRegex(ValueError, "rejects document_hints"):
+            generate_retrieval_plan(
+                RetrievalRequest(
+                    domain="financial_reports",
+                    question="根据甲公司2025年年度报告核验营业收入。",
+                    document_hints=("annual_company_2025_report",),
+                ),
+                plan_strategy=EVIDENCE_OBLIGATIONS_QUERY_PLAN_VERSION,
+            )
+
     def test_financial_claim_has_support_broad_and_contrast_queries(self) -> None:
         request = RetrievalRequest(
             domain="financial_reports",

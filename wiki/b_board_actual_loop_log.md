@@ -39769,3 +39769,245 @@
   "next_step": "本方向已满3轮，停止在A13代理集继续调参。保留semantic_slots_v1与A3融合方案作为独立题集或真实evidence-gate rescue回放候选；生产默认仍为legacy，不建立QID白名单。"
 }
 ```
+
+## 2026-07-25 proxy30 错题证据链回溯与检索蓝图
+
+```json
+{
+  "experiment_id": "b-board-proxy30-evidence-retrieval-audit-20260725",
+  "recorded_at": "2026-07-25T09:51:37+08:00",
+  "status": "completed_research_audit",
+  "score_type": "offline_pseudo99_reference_match_not_official_accuracy",
+  "history_review": {
+    "loop_log_reviewed_before_attempt": true,
+    "keyword_audits_reviewed": [
+      "wiki/b_board_rule_choice_retrieval_keyword_audit_20260724.md",
+      "wiki/b_board_remaining52_retrieval_keyword_audit_20260724.md",
+      "wiki/generic_retrieval_query_generator_design_20260724.md"
+    ]
+  },
+  "scope": {
+    "source_run": "anchor_first_a2_full100",
+    "question_count": 30,
+    "official_ground_truth": false,
+    "scope_file": "experiments/b_board_actual/proxy30_retrieval_research_scope_20260725.json",
+    "scope_contains_reference_answers": false,
+    "domain_counts": {
+      "financial_contracts": 4,
+      "financial_reports": 14,
+      "insurance": 7,
+      "regulatory": 1,
+      "research": 4
+    }
+  },
+  "historical_evidence_audit": {
+    "source_artifact": "/Users/abandon/Documents/AFA_ww/artifacts/b_board_actual/qwen37_integrated_full100_candidate_a3_reasoning_fixed/answers.json",
+    "historical_answer_proxy_match_count": 30,
+    "clean_decisive_evidence_qid_count": 9,
+    "targeted_or_rule_metadata_qid_count": 21,
+    "interpretation": "30题都存在历史Qwen3.7匹配proxy的证据链，但21题的历史evidence metadata带targeted或rule标记，只能用作离线语义发现，不能复制query、doc/unit id或答案到生产链。"
+  },
+  "offline_replay": {
+    "model_calls": 0,
+    "evaluable_question_count": 29,
+    "skipped_qids": [
+      "reg_b_001"
+    ],
+    "skip_reason": "historical supplemental evidence IDs do not align with the current regulatory index version",
+    "legacy_any_recall_at_10": 0.862069,
+    "semantic_any_recall_at_10": 0.862069,
+    "legacy_coverage_at_10": 0.449603,
+    "semantic_coverage_at_10": 0.472592,
+    "legacy_mean_query_count": 3.37931,
+    "semantic_mean_query_count": 8.551724,
+    "legacy_query_token_count": 6207,
+    "semantic_query_token_count": 10872,
+    "semantic_top10_no_hit_qids": [
+      "fc_b_002",
+      "fc_b_007",
+      "fin_b_008",
+      "fin_b_019"
+    ],
+    "limitations": [
+      "Historical used_evidence_ids contain decisive evidence and noise; they are not official gold.",
+      "Exact unit-id mismatch can undercount semantic-equivalent evidence.",
+      "This replay measures retrieval only and does not call Qwen."
+    ]
+  },
+  "main_root_causes": [
+    "multi-entity document candidates are incomplete",
+    "correct chunks enter the candidate pool but are displaced from final Top10",
+    "year, report-column, metric-scope and dividend-component binding errors",
+    "insurance negative options are inferred from TopK absence instead of section or full-document coverage",
+    "calculation uses guessed or rounded intermediate values instead of a complete grounded variable matrix"
+  ],
+  "deliverables": [
+    "experiments/b_board_actual/proxy30_retrieval_research_scope_20260725.json",
+    "wiki/b_board_proxy30_evidence_retrieval_audit_20260725.md"
+  ],
+  "production_changes": false,
+  "official_submission_count": 0,
+  "next_step": "Use the answer-free 30-QID scope for isolated retrieval experiments. Implement only cross-question templates: entity-period-metric matrices, per-subject quotas, adjacent chunk merging, contract/insurance identity binding, full-scope negative evidence checks, and deterministic calculation. Before promotion, run answer-blind leakage checks and a full100 regression."
+}
+```
+
+## 2026-07-25 决定性证据检索 A1：实体覆盖召回提高、前排排序回退
+
+```json
+{
+  "experiment_id": "evidence_obligations_v2_proxy30_a1",
+  "recorded_at": "2026-07-25T10:18:00+08:00",
+  "status": "completed_not_promoted",
+  "score_type": "offline_proxy30_decisive_evidence_retrieval_not_official",
+  "history_review": {
+    "loop_log_reviewed_before_attempt": true,
+    "prior_direction": "semantic_slots_v1_rank_blend_retrieval_proxy_a3",
+    "direction_attempt_count": 1,
+    "new_material_delta": "从题面动态抽取多主体、多年份和概念同义词，按实体轮转补齐文档候选；不读取QID、答案、固定doc/unit id或历史targeted字段。"
+  },
+  "metrics": {
+    "doc_complete_before": 0.4,
+    "doc_complete_after": 0.733333,
+    "doc_coverage_before": 0.6583,
+    "doc_coverage_after": 0.9167,
+    "any_recall_at_5_before": 0.7333,
+    "any_recall_at_5_after": 0.6333,
+    "any_recall_at_10_before": 0.8,
+    "any_recall_at_10_after": 0.7667,
+    "mrr_before": 0.4931,
+    "mrr_after": 0.3575,
+    "query_execution_count_before": 379,
+    "query_execution_count_after": 341
+  },
+  "interpretation": "文档覆盖显著提高，但平铺历史证据union的前排排序下降过大；仅证明实体覆盖方向有效，不能晋级。",
+  "model_calls": 0,
+  "official_submission_count": 0,
+  "promotion_result": "rejected"
+}
+```
+
+## 2026-07-25 决定性证据检索 A2：事实覆盖增强、Top5与MRR仍不足
+
+```json
+{
+  "experiment_id": "evidence_obligations_v2_proxy30_a2",
+  "recorded_at": "2026-07-25T10:34:00+08:00",
+  "status": "completed_not_promoted",
+  "score_type": "offline_proxy30_decisive_evidence_retrieval_not_official",
+  "history_review": {
+    "loop_log_reviewed_before_attempt": true,
+    "prior_experiment_id": "evidence_obligations_v2_proxy30_a1",
+    "direction_attempt_count": 2,
+    "new_material_delta": "为候选chunk增加答案盲的主体、年份、指标、条件覆盖分；保留统一TopK，不设置单题或固定文档配额。"
+  },
+  "metrics": {
+    "doc_any_recall": 1.0,
+    "doc_coverage": 0.902778,
+    "doc_complete": 0.766667,
+    "any_recall_at_5": 0.5,
+    "any_recall_at_10": 0.7,
+    "fact_coverage_at_5": 0.228889,
+    "fact_coverage_at_10": 0.409444,
+    "fact_complete_at_10": 0.166667,
+    "mrr_at_10": 0.376706,
+    "query_execution_count": 976,
+    "retrieval_term_count_legacy_field_name_query_token_count": 33091
+  },
+  "interpretation": "相对A0，Any@10和事实覆盖提高，但Any@5与MRR下降；说明候选池已改善，尾部仍被重复义务和错误年份干扰。",
+  "provenance": {
+    "result_artifact": "artifacts/b_board_actual/compliance_repair/proxy30_decisive_retrieval_a2.json",
+    "metric_note": "旧artifact中的query_token_count是本地BM25分词工作量，不是Qwen/API Token。后续字段已更名为retrieval_term_count。"
+  },
+  "model_calls": 0,
+  "official_submission_count": 0,
+  "promotion_result": "rejected"
+}
+```
+
+## 2026-07-25 决定性证据检索 A3：未覆盖义务增益与题型自适应晋级
+
+```json
+{
+  "experiment_id": "evidence_obligations_v2_proxy30_a3_type_adaptive",
+  "recorded_at": "2026-07-25T11:01:16+08:00",
+  "status": "completed_effective_research_candidate",
+  "score_type": "offline_proxy30_decisive_evidence_retrieval_not_official",
+  "history_review": {
+    "loop_log_reviewed_before_attempt": true,
+    "prior_experiment_id": "evidence_obligations_v2_proxy30_a2",
+    "direction_attempt_count": 3,
+    "round_limit_reached": true,
+    "new_material_delta": "主证据Top2保持不动；其余位置按尚未覆盖的主体×概念同义组×展开年份义务补齐；条件、范围、例外、条号分别计分；所有平分按首次出现顺序，不使用unit id。离线分组显示计算题回退，因此以answer_format通用门禁让计算题继续走semantic_slots_v1，非计算题使用v2。"
+  },
+  "baseline_metrics": {
+    "doc_any_recall": 0.833333,
+    "doc_coverage": 0.561111,
+    "doc_complete": 0.366667,
+    "any_recall_at_5": 0.533333,
+    "any_recall_at_10": 0.6,
+    "fact_coverage_at_5": 0.222778,
+    "fact_coverage_at_10": 0.283889,
+    "fact_complete_at_10": 0.033333,
+    "mrr_at_10": 0.432593,
+    "pool_fact_coverage": 0.493333,
+    "query_execution_count": 717,
+    "retrieval_term_count": 25525
+  },
+  "candidate_metrics": {
+    "doc_any_recall": 0.933333,
+    "doc_coverage": 0.875,
+    "doc_complete": 0.8,
+    "any_recall_at_5": 0.666667,
+    "any_recall_at_10": 0.733333,
+    "fact_coverage_at_5": 0.347778,
+    "fact_coverage_at_10": 0.495,
+    "fact_complete_at_10": 0.2,
+    "mrr_at_10": 0.46254,
+    "pool_fact_coverage": 0.782222,
+    "query_execution_count": 911,
+    "retrieval_term_count": 31694
+  },
+  "delta": {
+    "doc_complete": 0.433333,
+    "any_recall_at_5": 0.133334,
+    "any_recall_at_10": 0.133333,
+    "fact_coverage_at_5": 0.125,
+    "fact_coverage_at_10": 0.211111,
+    "mrr_at_10": 0.029947
+  },
+  "full100_retrieval_regression": {
+    "question_count": 100,
+    "candidate_error_count": 0,
+    "candidate_empty_final_evidence_count": 0,
+    "calculation_fallback_count": 26,
+    "non_calculation_v2_count": 74,
+    "baseline_mean_final_evidence_chars": 5027.38,
+    "candidate_mean_final_evidence_chars": 4889.31,
+    "mean_final_evidence_chars_delta_ratio": -0.027464,
+    "baseline_mean_final_units": 9.91,
+    "candidate_mean_final_units": 9.91
+  },
+  "leakage_and_provenance": {
+    "production_qid_literals": 0,
+    "production_fixed_doc_or_unit_ids": 0,
+    "production_targeted_or_rule_label_reads": 0,
+    "id_counterfactual_test_passed": true,
+    "regulatory_doc_id_score_dependency_removed": true,
+    "evaluator_manifest_production_load_policy": "deny",
+    "contains_expected_answers": false
+  },
+  "validation": {
+    "focused_unittest_passed": 146,
+    "git_diff_check_passed": true,
+    "model_calls": 0,
+    "official_submission_count": 0
+  },
+  "provenance": {
+    "baseline_artifact": "artifacts/b_board_actual/compliance_repair/proxy30_decisive_retrieval_a0_corrected.json",
+    "candidate_artifact": "artifacts/b_board_actual/compliance_repair/proxy30_decisive_retrieval_a3.json",
+    "evaluator_manifest": "experiments/b_board_actual/proxy30_decisive_evidence_v1.json"
+  },
+  "promotion_result": "research_candidate_only_default_production_unchanged",
+  "next_step": "本方向已满3轮，停止继续调参。候选仅在显式allow-research-only-strategy下启用；后续若继续优化，应切换到新的通用方向（例如相邻chunk合并），并先复核本日志。"
+}
+```

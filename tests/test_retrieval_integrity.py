@@ -89,6 +89,27 @@ class UnitIdGuardTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "duplicate unit_id"):
                         plugin.build_index(parsed_path, root / f"{plugin.name}.json")
 
+    def test_regulatory_score_is_invariant_to_document_identifier(self) -> None:
+        def score_for(doc_id: str) -> float:
+            unit = make_unit(
+                f"{doc_id}::article",
+                doc_id,
+                "本办法规定客户尽职调查的具体要求。",
+                unit_type="article",
+            )
+            unit["title_path"] = ["客户尽职调查管理办法", "第一条"]
+            return RegulatoryRetriever([unit]).search(
+                [doc_id],
+                "客户尽职调查",
+                top_k=1,
+                expand_neighbors=False,
+            )[0].score
+
+        self.assertEqual(
+            score_for("looks_like_customer_due_diligence"),
+            score_for("opaque_counterfactual_id"),
+        )
+
 
 class InsuranceTargetedClauseTests(unittest.TestCase):
     def test_escape_wording_maps_to_traffic_hit_and_run_clause(self) -> None:

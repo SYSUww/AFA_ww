@@ -105,7 +105,16 @@ class RegulatoryRetriever:
                 score *= 0.55
         if unit_type == "article_chunk":
             score *= 1.03
-        doc_hint = f"{unit.get('doc_id', '')} {' '.join(unit.get('title_path', [])[:1])}"
+        metadata = unit.get("metadata", {})
+        doc_hint = " ".join(
+            str(value)
+            for value in [
+                *unit.get("title_path", [])[:2],
+                metadata.get("document_title", ""),
+                metadata.get("source_title", ""),
+            ]
+            if str(value).strip()
+        )
         if any(term in query and term in doc_hint for term in DOC_HINT_TERMS):
             score *= 1.35
         return score

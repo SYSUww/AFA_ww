@@ -1,0 +1,489 @@
+{
+  "schema_version": "decisive_evidence_manifest_v1",
+  "dataset_id": "b_board_proxy30_decisive_evidence_20260725",
+  "artifact_class": "evaluator_only",
+  "purpose": "Offline retrieval evaluation after generation has been frozen. This file must never be loaded by production answer generation.",
+  "official_ground_truth": false,
+  "contains_expected_answers": false,
+  "production_load_policy": "deny",
+  "source": {
+    "scope": "anchor_first_a2_full100 proxy mismatch set",
+    "evidence_discovery_artifact": "qwen37_integrated_full100_candidate_a3_reasoning_fixed",
+    "evidence_ids_are_for_evaluation_only": true
+  },
+  "normalization": {
+    "unicode": "NFKC",
+    "trim": true,
+    "duplicate_suffix_regex": "__dup(?:[0-9]+)?(?=::|$)",
+    "normalize_unit_and_document_ids": true,
+    "supplemental_is_not_equivalent_to_primary": true
+  },
+  "questions": [
+    {
+      "qid": "fc_b_002",
+      "domain": "financial_contracts",
+      "required_doc_groups": [
+        {"group_id": "transaction_report", "requirement": "any_of", "acceptable_doc_ids": ["text08"]}
+      ],
+      "fact_groups": [
+        {"group_id": "reward_cap", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["text08::sec_11::chunk_7", "text08::sec_11::chunk_8"], "required_fields": [{"field_id": "cap", "kind": "condition", "aliases": ["奖励总额", "交易作价"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "reward_subjects", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["text08::sec_11::chunk_8", "text08::sec_11::chunk_9"], "required_fields": [{"field_id": "subjects", "kind": "entity", "aliases": ["管理团队", "核心人员", "奖励对象"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "payment_mix", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["text08::sec_11::chunk_9"], "required_fields": [{"field_id": "payment", "kind": "result", "aliases": ["现金", "专项资产管理计划", "专项资管"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "cumulative_formula", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["text08::sec_61::chunk_17"], "required_fields": [{"field_id": "formula", "kind": "condition", "aliases": ["累计实现", "承诺净利润", "50%"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "fc_b_007",
+      "domain": "financial_contracts",
+      "required_doc_groups": [
+        {"group_id": "benchuan", "requirement": "any_of", "acceptable_doc_ids": ["text05"]},
+        {"group_id": "pulian", "requirement": "any_of", "acceptable_doc_ids": ["text11"]},
+        {"group_id": "anker", "requirement": "any_of", "acceptable_doc_ids": ["text04"]}
+      ],
+      "fact_groups": [
+        {"group_id": "benchuan_capacity_risk", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["text05::sec_1::chunk_3"], "required_fields": [{"field_id": "capacity", "kind": "metric", "aliases": ["新增产能消化风险", "40,500万元", "预计年销售额"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "pulian_research_projects", "role": "counterevidence", "requirement": "any_of", "acceptable_unit_ids": ["text11::sec_96::chunk_3", "text11::element_32"], "required_fields": [{"field_id": "research", "kind": "metric", "aliases": ["ERP", "XBRL", "研发升级"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "anker_warehouse_scope", "role": "counterevidence", "requirement": "any_of", "acceptable_unit_ids": ["text04::sec_13::chunk_2", "text04::sec_13::chunk_3"], "required_fields": [{"field_id": "warehouse", "kind": "metric", "aliases": ["仓储智能化", "运营效率"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": [],
+      "known_unreachable": [
+        {"unit_id": "text05::sec_1::chunk_3", "stage": "chunk_span", "reason": "The unit exists, but the current indexed body omits the decisive 40,500万元 sentence."}
+      ]
+    },
+    {
+      "qid": "fc_b_018",
+      "domain": "financial_contracts",
+      "required_doc_groups": [
+        {"group_id": "issuer", "requirement": "any_of", "acceptable_doc_ids": ["text06"]}
+      ],
+      "fact_groups": [
+        {"group_id": "initial_conversion_price", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["text06::element_344", "text06::sec_5::chunk_6"], "required_fields": [{"field_id": "price", "kind": "condition", "aliases": ["初始转股价格", "二十个交易日", "前一交易日"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "downward_revision_vote", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["text06::element_369", "text06::sec_5::chunk_7"], "required_fields": [{"field_id": "vote", "kind": "condition", "aliases": ["向下修正", "三分之二"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "redemption_authority", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["text06::element_383", "text06::sec_5::chunk_8"], "required_fields": [{"field_id": "redemption", "kind": "result", "aliases": ["到期赎回", "股东大会授权"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "put_period", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["text06::element_385", "text06::sec_5::chunk_8"], "required_fields": [{"field_id": "put", "kind": "period", "aliases": ["最后两个计息年度", "每年一次", "回售"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "fc_b_019",
+      "domain": "financial_contracts",
+      "required_doc_groups": [
+        {"group_id": "bank_report", "requirement": "any_of", "acceptable_doc_ids": ["text12"]}
+      ],
+      "fact_groups": [
+        {"group_id": "credit_risk", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["text12::sec_2::chunk_1"], "required_fields": [{"field_id": "credit", "kind": "metric", "aliases": ["信用风险", "贷款", "债券"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "liquidity_risk", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["text12::sec_2::chunk_2"], "required_fields": [{"field_id": "liquidity", "kind": "metric", "aliases": ["流动性风险", "集中提款", "期限错配"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "highest_decision_body", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["text12::element_124", "text12::sec_33::chunk_12"], "required_fields": [{"field_id": "governance", "kind": "entity", "aliases": ["董事会", "最高决策机构", "风险管理委员会"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "three_lines", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["text12::sec_33::chunk_16", "text12::sec_33::chunk_17"], "required_fields": [{"field_id": "lines", "kind": "condition", "aliases": ["三道防线", "业务部门", "审计"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "fin_b_001",
+      "domain": "financial_reports",
+      "required_doc_groups": [
+        {"group_id": "byd_2025", "requirement": "any_of", "acceptable_doc_ids": ["annual_byd_2025_report"]}
+      ],
+      "fact_groups": [
+        {"group_id": "regional_revenue_table", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_byd_2025_report::sec_93::chunk_4"], "required_fields": [{"field_id": "region", "kind": "metric", "aliases": ["境外", "中国（包括港澳台）", "合计"], "match": "alias", "source": "evidence"}, {"field_id": "years", "kind": "period", "aliases": ["2025", "2024"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "fin_b_002",
+      "domain": "financial_reports",
+      "required_doc_groups": [
+        {"group_id": "byd_2025", "requirement": "any_of", "acceptable_doc_ids": ["annual_byd_2025_report"]}
+      ],
+      "fact_groups": [
+        {"group_id": "revenue_profit", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_byd_2025_report::metric_1"], "required_fields": [{"field_id": "income", "kind": "metric", "aliases": ["营业收入", "归属于上市公司股东的净利润"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "operating_cashflow", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_byd_2025_report::metric_17"], "required_fields": [{"field_id": "cashflow", "kind": "metric", "aliases": ["经营活动产生的现金流量净额"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "fin_b_003",
+      "domain": "financial_reports",
+      "required_doc_groups": [
+        {"group_id": "catl_2025", "requirement": "any_of", "acceptable_doc_ids": ["annual_catl_2025_report"]},
+        {"group_id": "midea_2025", "requirement": "any_of", "acceptable_doc_ids": ["annual_midea_2025_report"]}
+      ],
+      "fact_groups": [
+        {"group_id": "catl_revenue_profit", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_catl_2025_report::metric_3"], "required_fields": [{"field_id": "catl_income", "kind": "metric", "aliases": ["营业收入", "净利润"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "catl_cash_eps", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_catl_2025_report::metric_5", "annual_catl_2025_report::metric_23"], "required_fields": [{"field_id": "catl_cash", "kind": "metric", "aliases": ["经营活动产生的现金流量净额", "基本每股收益"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "midea_revenue_profit", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_midea_2025_report::metric_3"], "required_fields": [{"field_id": "midea_income", "kind": "metric", "aliases": ["营业收入", "净利润"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "midea_cash_eps", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_midea_2025_report::metric_5"], "required_fields": [{"field_id": "midea_cash", "kind": "metric", "aliases": ["经营活动产生的现金流量净额", "基本每股收益"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "fin_b_004",
+      "domain": "financial_reports",
+      "required_doc_groups": [
+        {"group_id": "byd", "requirement": "any_of", "acceptable_doc_ids": ["annual_byd_2025_report"]},
+        {"group_id": "catl", "requirement": "any_of", "acceptable_doc_ids": ["annual_catl_2025_report"]},
+        {"group_id": "midea", "requirement": "any_of", "acceptable_doc_ids": ["annual_midea_2025_report"]}
+      ],
+      "fact_groups": [
+        {"group_id": "byd_solvency", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["annual_byd_2025_report::sec_22::chunk_14"], "required_fields": [{"field_id": "byd_ratios", "kind": "metric", "aliases": ["资产负债率", "流动比率", "速动比率"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "catl_solvency", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["annual_catl_2025_report::sec_14::chunk_2"], "required_fields": [{"field_id": "catl_ratios", "kind": "metric", "aliases": ["资产负债率", "流动比率", "速动比率"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "midea_solvency", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["annual_midea_2025_report::sec_34::chunk_8"], "required_fields": [{"field_id": "midea_ratios", "kind": "metric", "aliases": ["资产负债率", "流动比率", "速动比率"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "fin_b_005",
+      "domain": "financial_reports",
+      "required_doc_groups": [
+        {"group_id": "catl", "requirement": "any_of", "acceptable_doc_ids": ["annual_catl_2025_report"]},
+        {"group_id": "midea", "requirement": "any_of", "acceptable_doc_ids": ["annual_midea_2025_report"]},
+        {"group_id": "cmb", "requirement": "any_of", "acceptable_doc_ids": ["annual_cmb_2025_report"]},
+        {"group_id": "cscec", "requirement": "any_of", "acceptable_doc_ids": ["annual_cscec_2025_report"]}
+      ],
+      "fact_groups": [
+        {"group_id": "catl_dividend_components", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_catl_2025_report::metric_28::chunk_2", "annual_catl_2025_report::sec_7::chunk_32"], "required_fields": [{"field_id": "catl_dividend", "kind": "metric", "aliases": ["中期", "现金分红", "每10股"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "midea_full_year_dividend", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_midea_2025_report::metric_2"], "required_fields": [{"field_id": "midea_dividend", "kind": "metric", "aliases": ["每10股派发现金", "中期", "年末"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "cmb_full_year_dividend", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_cmb_2025_report::metric_1", "annual_cmb_2025_report::sec_2::chunk_2"], "required_fields": [{"field_id": "cmb_dividend", "kind": "metric", "aliases": ["全年每股现金分红"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "cscec_dividend", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_cscec_2025_report::metric_43"], "required_fields": [{"field_id": "cscec_dividend", "kind": "metric", "aliases": ["每10股派息数"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "fin_b_008",
+      "domain": "financial_reports",
+      "required_doc_groups": [
+        {"group_id": "cscec_2025", "requirement": "any_of", "acceptable_doc_ids": ["annual_cscec_2025_report"]},
+        {"group_id": "cscec_2024", "requirement": "any_of", "acceptable_doc_ids": ["annual_cscec_2024_report"]}
+      ],
+      "fact_groups": [
+        {"group_id": "adjusted_column_binding", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["annual_cscec_2025_report::sec_5::chunk_1", "annual_cscec_2025_report::sec_5::chunk_3"], "required_fields": [{"field_id": "adjusted", "kind": "condition", "aliases": ["调整前", "调整后"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "cscec_2025_metrics", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_cscec_2025_report::sec_5::chunk_4"], "required_fields": [{"field_id": "metrics", "kind": "metric", "aliases": ["营业收入", "净利润", "现金流量净额", "每股收益"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "cscec_2024_disclosure", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_cscec_2024_report::sec_5::chunk_1"], "required_fields": [{"field_id": "year2024", "kind": "period", "aliases": ["2024"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "fin_b_009",
+      "domain": "financial_reports",
+      "required_doc_groups": [
+        {"group_id": "catl", "requirement": "any_of", "acceptable_doc_ids": ["annual_catl_2025_report"]},
+        {"group_id": "midea", "requirement": "any_of", "acceptable_doc_ids": ["annual_midea_2025_report"]}
+      ],
+      "fact_groups": [
+        {"group_id": "catl_research", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_catl_2025_report::sec_6::chunk_2", "annual_catl_2025_report::metric_21"], "required_fields": [{"field_id": "catl_rnd", "kind": "metric", "aliases": ["研发费用", "研发投入", "占营业收入比例"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "midea_research", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_midea_2025_report::sec_28::chunk_1", "annual_midea_2025_report::metric_19"], "required_fields": [{"field_id": "midea_rnd", "kind": "metric", "aliases": ["研发费用", "研发投入", "占营业收入比例"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "fin_b_010",
+      "domain": "financial_reports",
+      "required_doc_groups": [
+        {"group_id": "catl_2024_2025", "requirement": "all_of", "acceptable_doc_ids": ["annual_catl_2024_report", "annual_catl_2025_report"]},
+        {"group_id": "byd_2024_2025", "requirement": "all_of", "acceptable_doc_ids": ["annual_byd_2024_report", "annual_byd_2025_report"]}
+      ],
+      "fact_groups": [
+        {"group_id": "catl_three_year_solvency", "role": "operand", "requirement": "all_of", "acceptable_unit_ids": ["annual_catl_2025_report::sec_14::chunk_2", "annual_catl_2025_report::sec_14::chunk_3", "annual_catl_2024_report::sec_12::chunk_12"], "required_fields": [{"field_id": "catl_series", "kind": "metric", "aliases": ["资产负债率", "利息保障倍数", "现金利息保障倍数"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "byd_three_year_solvency", "role": "operand", "requirement": "all_of", "acceptable_unit_ids": ["annual_byd_2025_report::sec_22::chunk_14", "annual_byd_2025_report::sec_22::chunk_15", "annual_byd_2024_report::sec_24::chunk_13"], "required_fields": [{"field_id": "byd_series", "kind": "metric", "aliases": ["资产负债率", "利息保障倍数", "现金利息保障倍数"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "fin_b_011",
+      "domain": "financial_reports",
+      "required_doc_groups": [
+        {"group_id": "mobile", "requirement": "any_of", "acceptable_doc_ids": ["annual_chinamobile_2025_report"]},
+        {"group_id": "cscec", "requirement": "any_of", "acceptable_doc_ids": ["annual_cscec_2025_report"]},
+        {"group_id": "cmb", "requirement": "any_of", "acceptable_doc_ids": ["annual_cmb_2025_report"]},
+        {"group_id": "midea", "requirement": "any_of", "acceptable_doc_ids": ["annual_midea_2025_report"]}
+      ],
+      "fact_groups": [
+        {"group_id": "mobile_ebitda", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_chinamobile_2025_report::metric_4"], "required_fields": [{"field_id": "ebitda", "kind": "metric", "aliases": ["EBITDA", "营业收入"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "cscec_dividend", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_cscec_2025_report::metric_5", "annual_cscec_2025_report::metric_43"], "required_fields": [{"field_id": "cscec_cash", "kind": "metric", "aliases": ["每10股", "现金分红"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "cmb_dividend", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_cmb_2025_report::metric_1"], "required_fields": [{"field_id": "cmb_cash", "kind": "metric", "aliases": ["全年每股现金分红"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "midea_dividend", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_midea_2025_report::metric_2"], "required_fields": [{"field_id": "midea_cash", "kind": "metric", "aliases": ["中期", "年末", "每10股"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "fin_b_013",
+      "domain": "financial_reports",
+      "required_doc_groups": [
+        {"group_id": "byd_reports", "requirement": "all_of", "acceptable_doc_ids": ["annual_byd_2024_report", "annual_byd_2025_report"]}
+      ],
+      "fact_groups": [
+        {"group_id": "foreign_revenue_2024", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_byd_2024_report::sec_6::chunk_1"], "required_fields": [{"field_id": "foreign24", "kind": "metric", "aliases": ["境外", "营业收入"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "total_revenue_2024", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_byd_2024_report::metric_11"], "required_fields": [{"field_id": "total24", "kind": "metric", "aliases": ["营业收入"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "foreign_revenue_2025", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_byd_2025_report::sec_7::chunk_8"], "required_fields": [{"field_id": "foreign25", "kind": "metric", "aliases": ["境外", "营业收入"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "total_revenue_2025", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_byd_2025_report::metric_9"], "required_fields": [{"field_id": "total25", "kind": "metric", "aliases": ["营业收入"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "fin_b_014",
+      "domain": "financial_reports",
+      "required_doc_groups": [
+        {"group_id": "byd_reports", "requirement": "all_of", "acceptable_doc_ids": ["annual_byd_2024_report", "annual_byd_2025_report"]}
+      ],
+      "fact_groups": [
+        {"group_id": "revenue_profit_2024", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_byd_2024_report::metric_3"], "required_fields": [{"field_id": "income24", "kind": "metric", "aliases": ["营业收入", "净利润"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "cashflow_2024", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_byd_2024_report::metric_5"], "required_fields": [{"field_id": "cash24", "kind": "metric", "aliases": ["经营活动产生的现金流量净额"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "revenue_profit_2025", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_byd_2025_report::metric_1"], "required_fields": [{"field_id": "income25", "kind": "metric", "aliases": ["营业收入", "净利润"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "cashflow_2025", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_byd_2025_report::metric_3"], "required_fields": [{"field_id": "cash25", "kind": "metric", "aliases": ["经营活动产生的现金流量净额"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "fin_b_015",
+      "domain": "financial_reports",
+      "required_doc_groups": [
+        {"group_id": "catl", "requirement": "any_of", "acceptable_doc_ids": ["annual_catl_2025_report"]},
+        {"group_id": "midea", "requirement": "any_of", "acceptable_doc_ids": ["annual_midea_2025_report"]}
+      ],
+      "fact_groups": [
+        {"group_id": "catl_revenue", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_catl_2025_report::metric_3"], "required_fields": [{"field_id": "catl_revenue", "kind": "metric", "aliases": ["营业收入"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "catl_cashflow", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_catl_2025_report::metric_23", "annual_catl_2025_report::metric_5"], "required_fields": [{"field_id": "catl_cash", "kind": "metric", "aliases": ["经营活动产生的现金流量净额"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "midea_revenue", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_midea_2025_report::metric_31::chunk_1", "annual_midea_2025_report::metric_3"], "required_fields": [{"field_id": "midea_revenue", "kind": "metric", "aliases": ["营业收入"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "midea_cashflow", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_midea_2025_report::metric_20", "annual_midea_2025_report::metric_5"], "required_fields": [{"field_id": "midea_cash", "kind": "metric", "aliases": ["经营活动产生的现金流量净额"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "fin_b_016",
+      "domain": "financial_reports",
+      "required_doc_groups": [
+        {"group_id": "catl", "requirement": "any_of", "acceptable_doc_ids": ["annual_catl_2025_report"]},
+        {"group_id": "midea", "requirement": "any_of", "acceptable_doc_ids": ["annual_midea_2025_report"]},
+        {"group_id": "cmb", "requirement": "any_of", "acceptable_doc_ids": ["annual_cmb_2025_report"]},
+        {"group_id": "cscec", "requirement": "any_of", "acceptable_doc_ids": ["annual_cscec_2025_report"]}
+      ],
+      "fact_groups": [
+        {"group_id": "catl_interim", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_catl_2025_report::metric_26::chunk_1"], "required_fields": [{"field_id": "catl_mid", "kind": "metric", "aliases": ["中期", "每10股"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "catl_year_end", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_catl_2025_report::metric_37::chunk_1"], "required_fields": [{"field_id": "catl_end", "kind": "metric", "aliases": ["现金分红", "每10股"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "midea_full_year", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_midea_2025_report::metric_2"], "required_fields": [{"field_id": "midea", "kind": "metric", "aliases": ["每10股派发现金"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "cmb_full_year", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_cmb_2025_report::sec_2::chunk_2", "annual_cmb_2025_report::metric_1"], "required_fields": [{"field_id": "cmb", "kind": "metric", "aliases": ["全年每股现金分红"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "cscec_full_year", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_cscec_2025_report::metric_39", "annual_cscec_2025_report::metric_43"], "required_fields": [{"field_id": "cscec", "kind": "metric", "aliases": ["每10股派息"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "fin_b_019",
+      "domain": "financial_reports",
+      "required_doc_groups": [
+        {"group_id": "byd", "requirement": "any_of", "acceptable_doc_ids": ["annual_byd_2025_report"]},
+        {"group_id": "catl", "requirement": "any_of", "acceptable_doc_ids": ["annual_catl_2025_report"]},
+        {"group_id": "midea", "requirement": "any_of", "acceptable_doc_ids": ["annual_midea_2025_report"]}
+      ],
+      "fact_groups": [
+        {"group_id": "byd_debt_ratio", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_byd_2025_report::sec_22::chunk_14"], "required_fields": [{"field_id": "byd_ratio", "kind": "metric", "aliases": ["资产负债率"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "catl_debt_ratio", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_catl_2025_report::sec_14::chunk_2"], "required_fields": [{"field_id": "catl_ratio", "kind": "metric", "aliases": ["资产负债率"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "midea_debt_ratio", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["annual_midea_2025_report::sec_70::chunk_5"], "required_fields": [{"field_id": "midea_ratio", "kind": "metric", "aliases": ["资产负债率"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "ins_b_004",
+      "domain": "insurance",
+      "required_doc_groups": [
+        {"group_id": "zhiying", "requirement": "any_of", "acceptable_doc_ids": ["1"]},
+        {"group_id": "zengyibao", "requirement": "any_of", "acceptable_doc_ids": ["2"]},
+        {"group_id": "xinxing", "requirement": "any_of", "acceptable_doc_ids": ["15"]},
+        {"group_id": "fuhong", "requirement": "any_of", "acceptable_doc_ids": ["16"]}
+      ],
+      "fact_groups": [
+        {"group_id": "zengyibao_loan", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["2::sec_20::chunk_8"], "required_fields": [{"field_id": "loan80", "kind": "condition", "aliases": ["借款", "现金价值", "80%"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "xinxing_loan", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["15::sec_36"], "required_fields": [{"field_id": "arrears", "kind": "condition", "aliases": ["欠交保险费", "借款及利息", "百分之八十"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "fuhong_general_loan", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["16::sec_2::chunk_7"], "required_fields": [{"field_id": "general", "kind": "result", "aliases": ["保单贷款", "现金价值的80%"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "fuhong_pension_exception", "role": "exception", "requirement": "any_of", "acceptable_unit_ids": ["16::sec_2::chunk_8"], "required_fields": [{"field_id": "exception", "kind": "exception", "aliases": ["个人养老金制度", "不接受保单贷款申请"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": [
+        {"group_id": "zhiying_fulltext_loan_absence", "required_doc_ids": ["1"], "terms": ["保单贷款", "保险单借款", "借款"], "requirement": "full_document"}
+      ]
+    },
+    {
+      "qid": "ins_b_005",
+      "domain": "insurance",
+      "required_doc_groups": [
+        {"group_id": "zengyibao", "requirement": "any_of", "acceptable_doc_ids": ["2"]},
+        {"group_id": "anyoufu", "requirement": "any_of", "acceptable_doc_ids": ["4"]},
+        {"group_id": "transport", "requirement": "any_of", "acceptable_doc_ids": ["8"]},
+        {"group_id": "taibao", "requirement": "any_of", "acceptable_doc_ids": ["6"]}
+      ],
+      "fact_groups": [
+        {"group_id": "anyoufu_age_ratio", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["4::sec_143"], "required_fields": [{"field_id": "anyoufu_ratio", "kind": "result", "aliases": ["年龄不真实", "实付保险费", "应付保险费", "比例给付"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "taibao_age_ratio", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["6::sec_80"], "required_fields": [{"field_id": "taibao_ratio", "kind": "result", "aliases": ["补交保险费前", "发生保险事故", "比例给付"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": [
+        {"group_id": "zengyibao_age_scope", "required_doc_ids": ["2"], "terms": ["年龄错误", "风险保障费", "比例给付"], "requirement": "target_section"},
+        {"group_id": "transport_age_scope", "required_doc_ids": ["8"], "terms": ["年龄错误", "实付保险费", "应付保险费"], "requirement": "full_document"}
+      ]
+    },
+    {
+      "qid": "ins_b_007",
+      "domain": "insurance",
+      "required_doc_groups": [
+        {"group_id": "transport", "requirement": "any_of", "acceptable_doc_ids": ["8"]},
+        {"group_id": "pingan_special", "requirement": "any_of", "acceptable_doc_ids": ["9"]},
+        {"group_id": "zhongan_special", "requirement": "any_of", "acceptable_doc_ids": ["10"]},
+        {"group_id": "vaccination", "requirement": "any_of", "acceptable_doc_ids": ["7"]}
+      ],
+      "fact_groups": [
+        {"group_id": "pingan_escape_exclusion", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["9::sec_9", "9::sec_22", "9::sec_32::chunk_1"], "required_fields": [{"field_id": "pingan_escape", "kind": "condition", "aliases": ["交通肇事逃逸", "不负责赔偿"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "zhongan_escape_exclusion", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["10::sec_9", "10::sec_22", "10::sec_32"], "required_fields": [{"field_id": "zhongan_escape", "kind": "condition", "aliases": ["交通肇事逃逸", "不负责赔偿"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": [
+        {"group_id": "transport_exclusion_scope", "required_doc_ids": ["8"], "terms": ["交通肇事逃逸", "逃逸", "责任免除"], "requirement": "target_section"},
+        {"group_id": "vaccination_exclusion_scope", "required_doc_ids": ["7"], "terms": ["交通肇事逃逸", "逃逸", "责任免除"], "requirement": "target_section"}
+      ]
+    },
+    {
+      "qid": "ins_b_008",
+      "domain": "insurance",
+      "required_doc_groups": [
+        {"group_id": "pingan_special", "requirement": "any_of", "acceptable_doc_ids": ["9"]},
+        {"group_id": "zhongan_special", "requirement": "any_of", "acceptable_doc_ids": ["10"]},
+        {"group_id": "zhongan_food", "requirement": "any_of", "acceptable_doc_ids": ["13"]},
+        {"group_id": "pingan_food", "requirement": "any_of", "acceptable_doc_ids": ["14"]}
+      ],
+      "fact_groups": [
+        {"group_id": "pingan_mental_addon", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["9::sec_52::chunk_3"], "required_fields": [{"field_id": "pingan_addon", "kind": "result", "aliases": ["附加精神损害抚慰金责任险"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "zhongan_mental_addon", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["10::sec_54::chunk_3"], "required_fields": [{"field_id": "zhongan_addon", "kind": "result", "aliases": ["附加精神损害抚慰金责任险"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "zhongan_food_mental", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["13::sec_4"], "required_fields": [{"field_id": "zhongan_food", "kind": "condition", "aliases": ["精神损害赔偿", "人民法院判决", "可选责任"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "pingan_food_mental", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["14::sec_6"], "required_fields": [{"field_id": "pingan_food", "kind": "condition", "aliases": ["精神损害赔偿", "人民法院判决"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "ins_b_010",
+      "domain": "insurance",
+      "required_doc_groups": [
+        {"group_id": "zengyibao", "requirement": "any_of", "acceptable_doc_ids": ["2"]},
+        {"group_id": "anyoufu", "requirement": "any_of", "acceptable_doc_ids": ["4"]},
+        {"group_id": "leukemia", "requirement": "any_of", "acceptable_doc_ids": ["3"]},
+        {"group_id": "fuhong", "requirement": "any_of", "acceptable_doc_ids": ["16"]}
+      ],
+      "fact_groups": [
+        {"group_id": "zengyibao_minor_limit", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["2::sec_20::chunk_9", "2::sec_17"], "required_fields": [{"field_id": "zengyibao_limit", "kind": "condition", "aliases": ["未成年人身故保险金限制", "规定的限额"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "anyoufu_minor_limit", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["4::sec_144", "4::sec_22"], "required_fields": [{"field_id": "anyoufu_limit", "kind": "condition", "aliases": ["未成年人身故保险金限制", "规定的限额"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": [
+        {"group_id": "leukemia_minor_limit_scope", "required_doc_ids": ["3"], "terms": ["未成年人身故保险金限制", "身故保险金总和"], "requirement": "full_document"},
+        {"group_id": "fuhong_minor_limit_scope", "required_doc_ids": ["16"], "terms": ["未成年人身故保险金限制", "身故保险金总和"], "requirement": "full_document"}
+      ]
+    },
+    {
+      "qid": "ins_b_013",
+      "domain": "insurance",
+      "required_doc_groups": [
+        {"group_id": "zengyibao", "requirement": "any_of", "acceptable_doc_ids": ["2"]},
+        {"group_id": "home", "requirement": "any_of", "acceptable_doc_ids": ["11"]},
+        {"group_id": "transport", "requirement": "any_of", "acceptable_doc_ids": ["8"]},
+        {"group_id": "food", "requirement": "any_of", "acceptable_doc_ids": ["14"]}
+      ],
+      "fact_groups": [
+        {"group_id": "home_admin_judicial", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["11::sec_9"], "required_fields": [{"field_id": "home_exclusion", "kind": "condition", "aliases": ["行政行为或司法行为"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "food_admin_judicial", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["14::sec_9"], "required_fields": [{"field_id": "food_exclusion", "kind": "condition", "aliases": ["行政行为或司法行为"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "zengyibao_exclusion_scope", "role": "scope", "requirement": "all_of", "acceptable_unit_ids": ["2::sec_20::chunk_2", "2::sec_20::chunk_3"], "required_fields": [{"field_id": "life_exclusions", "kind": "scope", "aliases": ["责任免除"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "transport_exclusion_scope", "role": "scope", "requirement": "any_of", "acceptable_unit_ids": ["8::sec_1::chunk_3"], "required_fields": [{"field_id": "transport_exclusions", "kind": "scope", "aliases": ["责任免除"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": [
+        {"group_id": "zengyibao_admin_absence", "required_doc_ids": ["2"], "terms": ["行政行为", "司法行为"], "requirement": "target_section"},
+        {"group_id": "transport_admin_absence", "required_doc_ids": ["8"], "terms": ["行政行为", "司法行为"], "requirement": "target_section"}
+      ]
+    },
+    {
+      "qid": "ins_b_015",
+      "domain": "insurance",
+      "required_doc_groups": [
+        {"group_id": "leukemia", "requirement": "any_of", "acceptable_doc_ids": ["3"]},
+        {"group_id": "eshengbao", "requirement": "any_of", "acceptable_doc_ids": ["5"]},
+        {"group_id": "taibao", "requirement": "any_of", "acceptable_doc_ids": ["6"]},
+        {"group_id": "fuhong", "requirement": "any_of", "acceptable_doc_ids": ["16"]}
+      ],
+      "fact_groups": [
+        {"group_id": "leukemia_two_years", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["3::sec_2::chunk_8"], "required_fields": [{"field_id": "leukemia_limit", "kind": "period", "aliases": ["诉讼时效期间为二年"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "eshengbao_law_only", "role": "counterevidence", "requirement": "any_of", "acceptable_unit_ids": ["5::sec_36::chunk_4"], "required_fields": [{"field_id": "law_only", "kind": "modality", "aliases": ["适用现行有效法律规定"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "taibao_two_years", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["6::sec_100"], "required_fields": [{"field_id": "taibao_limit", "kind": "period", "aliases": ["诉讼时效期间为2年"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "fuhong_five_years", "role": "counterevidence", "requirement": "any_of", "acceptable_unit_ids": ["16::sec_2::chunk_10"], "required_fields": [{"field_id": "fuhong_limit", "kind": "period", "aliases": ["诉讼时效期间为 5 年", "诉讼时效期间为5年"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "reg_b_001",
+      "domain": "regulatory",
+      "required_doc_groups": [
+        {"group_id": "due_diligence", "requirement": "any_of", "acceptable_doc_ids": ["strict_v3_009_中国人民银行_国家金融监督管理总局_中国证券监督管理委员会令〔2025〕第11号（金融机构客户尽职调查和客户身份资料及交易记录保存管理办法）"]},
+        {"group_id": "beneficial_owner", "requirement": "any_of", "acceptable_doc_ids": ["strict_v3_008_中国人民银行令〔2025〕第12号（金融机构客户受益所有人识别管理办法）"]},
+        {"group_id": "aml_law", "requirement": "any_of", "acceptable_doc_ids": ["strict_v3_017_中华人民共和国反洗钱法"]}
+      ],
+      "fact_groups": [
+        {"group_id": "due_diligence_effective_date", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["strict_v3_009_中国人民银行_国家金融监督管理总局_中国证券监督管理委员会令〔2025〕第11号（金融机构客户尽职调查和客户身份资料及交易记录保存管理办法）::preamble"], "required_fields": [{"field_id": "effective", "kind": "period", "aliases": ["2026年1月1日", "施行"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "high_risk_transition", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["strict_v3_009_中国人民银行_国家金融监督管理总局_中国证券监督管理委员会令〔2025〕第11号（金融机构客户尽职调查和客户身份资料及交易记录保存管理办法）::第五十一条"], "required_fields": [{"field_id": "transition", "kind": "period", "aliases": ["较高风险", "半年"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "beneficial_owner_effective_date", "role": "counterevidence", "requirement": "any_of", "acceptable_unit_ids": ["strict_v3_008_中国人民银行令〔2025〕第12号（金融机构客户受益所有人识别管理办法）::preamble"], "required_fields": [{"field_id": "beneficial_effective", "kind": "period", "aliases": ["2026年1月20日", "施行"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "record_retention", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["strict_v3_017_中华人民共和国反洗钱法::第三十四条"], "required_fields": [{"field_id": "retention", "kind": "period", "aliases": ["业务关系结束后", "至少十年"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": [],
+      "known_unreachable": [
+        {"unit_id": "strict_v3_009_中国人民银行_国家金融监督管理总局_中国证券监督管理委员会令〔2025〕第11号（金融机构客户尽职调查和客户身份资料及交易记录保存管理办法）::第五十一条", "stage": "index", "reason": "The current regulatory index does not contain this article."}
+      ]
+    },
+    {
+      "qid": "res_b_005",
+      "domain": "research",
+      "required_doc_groups": [
+        {"group_id": "ev_report", "requirement": "any_of", "acceptable_doc_ids": ["pack2_text04"]}
+      ],
+      "fact_groups": [
+        {"group_id": "sales_and_battery_content", "role": "operand", "requirement": "any_of", "acceptable_unit_ids": ["pack2_text04::sec_2"], "required_fields": [{"field_id": "sales", "kind": "metric", "aliases": ["1300.4万辆", "乘用车单车带电量", "45.8kWh"], "match": "alias", "source": "evidence"}, {"field_id": "future_content", "kind": "value", "aliases": ["56kWh"], "match": "alias", "source": "question"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "res_b_010",
+      "domain": "research",
+      "required_doc_groups": [
+        {"group_id": "smart_driving", "requirement": "any_of", "acceptable_doc_ids": ["pack2_text07"]},
+        {"group_id": "asic", "requirement": "any_of", "acceptable_doc_ids": ["pack2_text09"]},
+        {"group_id": "printing", "requirement": "any_of", "acceptable_doc_ids": ["pack2_text18"]}
+      ],
+      "fact_groups": [
+        {"group_id": "china_led_smart_driving", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["pack2_text07::sec_5::chunk_1"], "required_fields": [{"field_id": "smart_driving", "kind": "result", "aliases": ["中方主导", "反向输出"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "overseas_self_developed_asic", "role": "counterevidence", "requirement": "any_of", "acceptable_unit_ids": ["pack2_text09::sec_1::chunk_27"], "required_fields": [{"field_id": "asic", "kind": "result", "aliases": ["自研ASIC", "ASIC"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "precision_3d_printing", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["pack2_text18::sec_1::chunk_23"], "required_fields": [{"field_id": "printing", "kind": "metric", "aliases": ["3D打印", "微米级", "复杂结构"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "res_b_014",
+      "domain": "research",
+      "required_doc_groups": [
+        {"group_id": "service_consumption", "requirement": "any_of", "acceptable_doc_ids": ["pack2_text03"]},
+        {"group_id": "pet_healthcare", "requirement": "any_of", "acceptable_doc_ids": ["pack2_text13"]}
+      ],
+      "fact_groups": [
+        {"group_id": "supply_demand_coordination", "role": "counterevidence", "requirement": "any_of", "acceptable_unit_ids": ["pack2_text03::sec_2::chunk_34", "pack2_text03::sec_2::chunk_35"], "required_fields": [{"field_id": "coordination", "kind": "result", "aliases": ["供需", "扩围提质", "长效"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "insurance_risk_hedge", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["pack2_text03::sec_3::chunk_2", "pack2_text03::sec_3::chunk_25"], "required_fields": [{"field_id": "insurance", "kind": "result", "aliases": ["保险", "风险对冲", "预防性储蓄"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "pet_hospital_specialization", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["pack2_text13::sec_2::chunk_5"], "required_fields": [{"field_id": "pet", "kind": "result", "aliases": ["宠物医院", "连锁", "专科"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    },
+    {
+      "qid": "res_b_018",
+      "domain": "research",
+      "required_doc_groups": [
+        {"group_id": "shengnong", "requirement": "any_of", "acceptable_doc_ids": ["pack2_text16"]},
+        {"group_id": "yuanwanggu", "requirement": "any_of", "acceptable_doc_ids": ["pack2_text19"]},
+        {"group_id": "dongfang", "requirement": "any_of", "acceptable_doc_ids": ["pack2_text05"]},
+        {"group_id": "han", "requirement": "any_of", "acceptable_doc_ids": ["pack2_text18"]}
+      ],
+      "fact_groups": [
+        {"group_id": "shengnong_brand_matrix", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["pack2_text16::sec_1::chunk_2", "pack2_text16::sec_5::chunk_8"], "required_fields": [{"field_id": "brand", "kind": "result", "aliases": ["品牌矩阵", "品牌溢价"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "yuanwanggu_operating_barrier", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["pack2_text19::sec_3::chunk_2"], "required_fields": [{"field_id": "operation", "kind": "condition", "aliases": ["运营经验", "同质化", "供应链"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "dongfang_content_quality", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["pack2_text05::sec_1::chunk_1", "pack2_text05::sec_3::chunk_7"], "required_fields": [{"field_id": "content", "kind": "condition", "aliases": ["内容", "选品", "品质"], "match": "alias", "source": "evidence"}]},
+        {"group_id": "han_technical_delivery", "role": "support", "requirement": "any_of", "acceptable_unit_ids": ["pack2_text18::sec_1::chunk_33", "pack2_text18::sec_1::chunk_37"], "required_fields": [{"field_id": "technical", "kind": "condition", "aliases": ["技术", "稳定性", "交付"], "match": "alias", "source": "evidence"}]}
+      ],
+      "negative_scope_groups": []
+    }
+  ]
+}

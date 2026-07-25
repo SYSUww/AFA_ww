@@ -29,6 +29,7 @@ from afa_agent.b_board.retrieval_llm_baseline import (
     EVIDENCE_QUOTA_STRATEGIES,
     PIPELINE_VERSION,
     PROMPT_VERSION,
+    QUERY_PLAN_STRATEGIES,
     build_answer_messages,
     build_answer_schema,
     build_frozen_answer_reasoning_messages,
@@ -68,6 +69,7 @@ RESEARCH_ONLY_EVIDENCE_QUOTA_STRATEGIES = {
     "document_balanced",
     "adaptive_multi_report_calculation",
     "metric_slot_coverage",
+    "obligation_coverage",
 }
 PROHIBITED_GENERATION_MODULE_FRAGMENTS = (
     ".solver",
@@ -100,6 +102,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--per-query-top-k", type=int, default=20)
     parser.add_argument("--final-top-k", type=int, default=10)
     parser.add_argument("--max-doc-candidates", type=int, default=6)
+    parser.add_argument(
+        "--query-plan-strategy",
+        choices=QUERY_PLAN_STRATEGIES,
+        default="semantic_slots_v1",
+        help=(
+            "semantic_slots_v1 preserves the incumbent query generator; "
+            "evidence_obligations_v2 builds answer-blind entity-period-fact "
+            "coverage queries"
+        ),
+    )
     parser.add_argument(
         "--document-candidate-strategy",
         choices=DOCUMENT_CANDIDATE_STRATEGIES,
@@ -364,6 +376,9 @@ def _run_one(
         evidence_quota_strategy=getattr(
             args, "evidence_quota_strategy", "primary_guard"
         ),
+        query_plan_strategy=getattr(
+            args, "query_plan_strategy", "semantic_slots_v1"
+        ),
     )
     active_retrieval_policy_version = str(
         retrieval.get(
@@ -371,6 +386,7 @@ def _run_one(
             retrieval_policy_version(
                 getattr(args, "document_candidate_strategy", "anchor_union"),
                 getattr(args, "evidence_quota_strategy", "primary_guard"),
+                getattr(args, "query_plan_strategy", "semantic_slots_v1"),
             ),
         )
     )
@@ -796,6 +812,11 @@ def _run_one_verified_calculation(
                         "anchor_union",
                     ),
                     getattr(args, "evidence_quota_strategy", "primary_guard"),
+                    getattr(
+                        args,
+                        "query_plan_strategy",
+                        "semantic_slots_v1",
+                    ),
                 ),
             )
         ),
@@ -895,6 +916,11 @@ def _validate_args(args: argparse.Namespace) -> None:
             "adaptive multi-document evidence strategies require "
             "anchor_first documents"
         )
+    retrieval_policy_version(
+        getattr(args, "document_candidate_strategy", "anchor_union"),
+        getattr(args, "evidence_quota_strategy", "primary_guard"),
+        getattr(args, "query_plan_strategy", "semantic_slots_v1"),
+    )
     research_only_strategy = (
         getattr(args, "evidence_quota_strategy", "primary_guard")
         in RESEARCH_ONLY_EVIDENCE_QUOTA_STRATEGIES
@@ -988,6 +1014,9 @@ def _public_config(
     evidence_quota_strategy = getattr(
         args, "evidence_quota_strategy", "primary_guard"
     )
+    query_plan_strategy = getattr(
+        args, "query_plan_strategy", "semantic_slots_v1"
+    )
     research_only_strategy = (
         evidence_quota_strategy in RESEARCH_ONLY_EVIDENCE_QUOTA_STRATEGIES
     )
@@ -997,6 +1026,7 @@ def _public_config(
         "retrieval_policy_version": retrieval_policy_version(
             document_candidate_strategy,
             evidence_quota_strategy,
+            query_plan_strategy,
         ),
         "created_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "model": {
@@ -1023,6 +1053,7 @@ def _public_config(
             "max_doc_candidates": args.max_doc_candidates,
             "document_candidate_strategy": document_candidate_strategy,
             "evidence_quota_strategy": evidence_quota_strategy,
+            "query_plan_strategy": query_plan_strategy,
             "research_only_strategy": research_only_strategy,
             "supplemental_weight": args.supplemental_weight,
             "max_queries_per_option": args.max_queries_per_option,
