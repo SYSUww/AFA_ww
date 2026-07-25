@@ -54,6 +54,35 @@
 }
 ```
 
+## 2026-07-25 Qwen Schema 兼容修复后的 100 题复现
+
+开始前已复核本日志。该运行仍是对已选中 `generic_anchor_first_document_candidates`
+A2 的生产候选复现，不是第四次方向尝试。相对上一失败运行只修改 Schema
+兼容性：删除服务不支持的负向前瞻，纯标点拒绝移入本地确定性校验；检索、
+Prompt、模型、并发度、重试上限及输出契约均保持不变。
+
+```json
+{
+  "experiment_id": "b-compliance-repair-final-direct-anchor-first-full100-schema-v2",
+  "status": "running",
+  "experiment_role": "promotion_reproduction_not_new_direction_attempt",
+  "frozen_source_commit": "d24c196b777919e4624a67f1ac5232f2494607ab",
+  "run_config": {
+    "calculation_mode": "direct",
+    "document_candidate_strategy": "anchor_first",
+    "evidence_quota_strategy": "primary_guard",
+    "evidence_compaction": "off",
+    "output_contract": "joint",
+    "workers": 8,
+    "max_format_retries": 1
+  },
+  "promotion_gate": "100/100 complete, all usage observable, compliance audit passes, and weighted proxy does not materially regress.",
+  "run_dir": "artifacts/b_board_actual/compliance_repair/final_direct_anchor_first_full100_schema_v2",
+  "official_accuracy": null,
+  "official_submission_count": 0
+}
+```
+
 ## 2026-07-25 生产候选复现失败：Qwen 原生 Schema 不支持前瞻正则
 
 本轮只复现已选中的 `generic_anchor_first_document_candidates` A2，不计为新的
