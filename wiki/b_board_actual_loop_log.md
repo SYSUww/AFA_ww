@@ -22,6 +22,162 @@
 }
 ```
 
+## 2026-07-25 每题仅投喂独立 Judge 决定性证据的 Qwen3.7 全100上界实验
+
+```json
+{
+  "experiment_id": "oracle_decisive_evidence_full100_qwen37_r1",
+  "recorded_at": "2026-07-25T15:36:00+08:00",
+  "status": "completed_incomplete_run_not_promoted",
+  "score_type": "offline_posthoc_evidence_oracle_pseudo99_match_not_official_accuracy",
+  "history_review": {
+    "loop_log_reviewed_before_attempt": true,
+    "purpose": "测量检索近似完美、每题仅保留决定性证据时Qwen生成器的准确率与Token上界",
+    "production_candidate": false
+  },
+  "oracle_evidence": {
+    "selection_source": "GPT-5.6独立解题阶段的independent_used_evidence_ids",
+    "question_count": 100,
+    "evidence_count": 338,
+    "evidence_char_count": 219279,
+    "mean_evidence_count_per_question": 3.38,
+    "answer_fields_stripped": true,
+    "generation_reference_loaded": false,
+    "qid_conditioned_posthoc_selection": true,
+    "artifact_sha256": "75a3f569528a46ecb3c4220569adf6b67e2a53f3018d487f4e53235c1a88e048"
+  },
+  "generation": {
+    "model": "qwen3.7-plus-2026-05-26",
+    "workers": 8,
+    "thinking_budget": 2048,
+    "output_contract": "joint",
+    "calculation_mode": "verified",
+    "max_format_retries": 1,
+    "question_count": 100,
+    "answered_question_count": 97,
+    "failed_question_count": 3,
+    "failed_qids": [
+      "reg_b_007",
+      "res_b_010",
+      "res_b_012"
+    ],
+    "raw_call_count": 133,
+    "format_retry_count": 0,
+    "transport_attempt_count": 133,
+    "transport_rejection_count": 0,
+    "prompt_tokens": 323420,
+    "completion_tokens": 179335,
+    "observed_total_tokens": 502755,
+    "token_efficiency_score": 89.9449,
+    "all_usage_from_provider_raw_fields": true,
+    "unobservable_usage_risk": false,
+    "call_purpose_breakdown": {
+      "initial_answer": {
+        "calls": 74,
+        "total_tokens": 250745
+      },
+      "calculation_plan": {
+        "calls": 26,
+        "total_tokens": 136113
+      },
+      "verified_calculation_reasoning": {
+        "calls": 24,
+        "total_tokens": 91563
+      },
+      "reasoning_only_retry_from_frozen_answer": {
+        "calls": 9,
+        "total_tokens": 24334
+      }
+    }
+  },
+  "accuracy": {
+    "official_accuracy": null,
+    "reference_label": "pseudo99_unsubmitted",
+    "reference_equivalent_match_count": 83,
+    "reference_equivalent_accuracy_percent": 83.0,
+    "reference_mismatch_count_including_failures": 17,
+    "by_domain_percent": {
+      "financial_contracts": 90.0,
+      "financial_reports": 90.0,
+      "insurance": 75.0,
+      "regulatory": 85.0,
+      "research": 75.0
+    },
+    "by_answer_format_percent": {
+      "calculation": 80.769231,
+      "mcq": 100.0,
+      "multi": 81.818182,
+      "tf": 100.0
+    },
+    "mismatch_qids": [
+      "fc_b_002",
+      "fc_b_007",
+      "fin_b_005",
+      "fin_b_010",
+      "ins_b_001",
+      "ins_b_002",
+      "ins_b_016",
+      "ins_b_017",
+      "ins_b_019",
+      "reg_b_001",
+      "reg_b_007",
+      "reg_b_009",
+      "res_b_005",
+      "res_b_010",
+      "res_b_012",
+      "res_b_018",
+      "res_b_019"
+    ]
+  },
+  "comparison": {
+    "vs_anchor_first_a3_balanced_full100": {
+      "pseudo99_match_point_delta": 18.0,
+      "prompt_token_delta": -98060,
+      "completion_token_delta": 19346,
+      "total_token_delta": -78714,
+      "total_token_delta_percent": -13.54,
+      "token_efficiency_delta": 1.57428
+    },
+    "vs_qwen37_full100_decisive_weight_a6_canonical_r1": {
+      "pseudo99_match_point_delta": 7.0,
+      "prompt_token_delta": -492945,
+      "completion_token_delta": -17883,
+      "total_token_delta": -510828,
+      "total_token_delta_percent": -50.4,
+      "token_efficiency_delta": 10.21656
+    }
+  },
+  "interpretation": [
+    "即使每题投喂GPT-5.6独立Judge实际采用的证据，Qwen也只与pseudo99匹配83/100；检索完美不等于生成准确率99%。",
+    "17个不匹配中3题为终态失败；ins_b_016属于材料证据支持ABD而pseudo99平台锁BD的已知冲突。",
+    "338个chunk是后验oracle证据选择，不能用于生产、提交或晋级；本实验只隔离测量检索之后的模型判断、计算执行和标签冲突上限。",
+    "Token由A3完整基线的581469降至502755，效率分由88.37062升至89.9449；Completion Token反而上升12.09%，说明决定性证据主要压缩Prompt，未压缩推理输出。"
+  ],
+  "compliance_boundary": {
+    "model_allowed": true,
+    "qid_absent_from_model_messages": true,
+    "answer_fields_stripped_before_generation": true,
+    "reference_loaded_by_generation": false,
+    "solver_used": false,
+    "fixed_locator_used": true,
+    "qid_conditioned_evidence_selection": true,
+    "submission_eligible": false,
+    "official_submission_count": 0
+  },
+  "provenance": {
+    "branch": "codex/b-board-oracle-evidence-upper-bound",
+    "code_commit": "caae10b",
+    "evidence_file": "artifacts/b_board_actual/oracle_evidence_upper_bound/decisive_evidence_only_v1.json",
+    "run_dir": "artifacts/b_board_actual/oracle_decisive_evidence_full100_qwen37_r1",
+    "manifest": "artifacts/b_board_actual/oracle_decisive_evidence_full100_qwen37_r1/run_manifest.json",
+    "accuracy_artifact": "artifacts/b_board_actual/oracle_decisive_evidence_full100_qwen37_r1/accuracy_evaluation.json",
+    "badcase_artifact": "artifacts/b_board_actual/oracle_decisive_evidence_full100_qwen37_r1/accuracy_badcases.md"
+  },
+  "promotion_result": "rejected_for_production_oracle_evaluation_only",
+  "next_step": "把17题按证据不足、Qwen判定偏差、计算执行失败、reasoning-answer不一致、平台标签冲突拆分；生产检索只学习通用证据特征，不加载QID证据映射。"
+}
+```
+
 ## 2026-07-24 最终答案与reasoning联合生成 A1：协议正确，但结论格式重试率过高
 
 ```json
