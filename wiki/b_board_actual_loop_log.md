@@ -178,6 +178,66 @@
 }
 ```
 
+## 2026-07-25 Oracle 83% 剩余17题证据充分性与输出漂移诊断
+
+```json
+{
+  "diagnosis_id": "oracle_decisive_evidence_17_badcase_diagnosis_v1",
+  "recorded_at": "2026-07-25T16:10:00+08:00",
+  "scope": {
+    "source_run": "oracle_decisive_evidence_full100_qwen37_r1",
+    "pseudo99_mismatch_count": 17,
+    "model_calls": 0,
+    "official_submission_count": 0
+  },
+  "primary_finding": {
+    "qwen_hidden_reasoning_to_structured_output_drift_count": 13,
+    "choice_answer_drift_count": 8,
+    "calculation_plan_json_drift_or_replay_failure_count": 5,
+    "genuine_or_partial_evidence_gap_count": 4,
+    "reference_or_platform_conflict_count": 2,
+    "note": "分类存在交集；例如ins_b_002和res_b_019既有证据缺口，也发生隐藏推理到最终JSON的答案漂移。"
+  },
+  "genuine_or_partial_evidence_gaps": {
+    "fc_b_007": "需要安克创新、普联软件完整风险章节或文档级否定检索，才能严格证明未出现新增产能消化风险；现有证据主要是间接缺失证明。",
+    "ins_b_002": "缺少国寿增益宝40周岁所在年龄区间及对应身故给付比例的完整表格，无法仅用当前chunk排除A。",
+    "res_b_018": "缺少四类企业品牌化难度的直接横向比较，以及鸡肉差异化、消费者品牌认知度和宠物硬件渠道覆盖的直接材料。",
+    "res_b_019": "缺少长久期政府债压低当期收益率的直接证据，以及两融/股票质押是否属于ALM工具并平滑券商收入的直接证据。"
+  },
+  "structured_output_drifts": {
+    "fc_b_002": "隐藏推理结论ACD，最终JSON改成CD；E02已直接支持A。",
+    "fc_b_007": "隐藏推理结论BC，最终JSON改成ABC。",
+    "fin_b_010": "隐藏推理正确区分百分点与相对增幅并得AD，最终JSON冻结ACD。",
+    "ins_b_001": "隐藏计算得到333.20，结构化计算计划遗漏国寿增益宝第3年2%退保费，冻结335.00。",
+    "ins_b_002": "隐藏推理结论BC，最终JSON改成ABC；但当前证据仍缺40周岁比例。",
+    "ins_b_019": "隐藏计算得到211.50，结构化计划把第5年错误映射到第6年及以后0%档，冻结212.00。",
+    "reg_b_001": "隐藏推理结论ACD，最终JSON把2026-01-01已施行错误解释为2026-01-15未生效，输出AD。",
+    "reg_b_007": "隐藏推理计划直接输出30，结构化计划新增未定义的到期日引用，Decimal回放失败。",
+    "reg_b_009": "隐藏推理结论BC，最终answer_parts写BCD，reasoning-only重试被迫围绕错误冻结答案解释D。",
+    "res_b_005": "隐藏推理识别1300.4万辆乘56kWh约为728.224GWh，结构化计划错误除以10000并冻结-98.78%。",
+    "res_b_010": "隐藏推理和公开reasoning均为AC，但answer_parts写ACD；冻结后重试无法自洽，终态失败。",
+    "res_b_012": "隐藏推理完整算出67.1，结构化计划没有显式统一亿元、万元和元，Decimal回放拒绝。",
+    "res_b_019": "隐藏推理结论AB，最终answer_parts写ABC，后续重试为冻结答案虚构C的支持。"
+  },
+  "semantic_or_reference_cases": {
+    "fin_b_005": "证据直接给出69.57、43、20.16、2.718，D的差额69.57-43=26.57成立；材料和独立Judge均支持ACD，pseudo99的AC可疑。",
+    "ins_b_016": "材料和独立Judge支持ABD，pseudo99平台锁BD，属于已知材料语义与平台标签冲突。",
+    "ins_b_017": "D虽未逐字写核爆炸/核污染，但明确列出放射性污染、核反应、核辐射；Qwen过度要求字面完全一致。",
+    "res_b_018": "Qwen使用常识断言鸡肉品牌化难度最大，当前证据只证明圣农已形成品牌矩阵和溢价，不能完成跨行业难度比较。"
+  },
+  "conclusion": [
+    "338个chunk不是全部17题都缺证据；严格缺失或排他性不足主要集中在4题。",
+    "最大问题是13题发生隐藏推理到最终结构化输出的语义漂移，JSON Schema只保证格式合法，不能保证内容继承正确推理。",
+    "下一轮若只增加chunk，最多直接解决4题，无法系统修复其余输出漂移、计算计划回放和平台标签问题。"
+  ],
+  "provenance": {
+    "accuracy_report": "artifacts/b_board_actual/oracle_decisive_evidence_full100_qwen37_r1/accuracy_evaluation.json",
+    "raw_calls": "artifacts/b_board_actual/oracle_decisive_evidence_full100_qwen37_r1/raw_calls",
+    "independent_audit": "artifacts/b_board_actual/candidates/i024_remaining93_p0/official94_plus_direct_source_five_v1/evaluation_gpt56_full100_evidence_audit_v10/confidence_audit.json"
+  }
+}
+```
+
 ## 2026-07-24 最终答案与reasoning联合生成 A1：协议正确，但结论格式重试率过高
 
 ```json
