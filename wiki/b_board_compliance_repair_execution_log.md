@@ -130,6 +130,42 @@ GPT-5.6 严格影子 Judge 的三个校准尝试均为 HTTP 502，因此该维�
 }
 ```
 
+### A2 全量运行
+
+开始前已再次阅读本日志，并完成三路独立只读复核。A2 只放宽 joint 首答中
+“无 `结论：`、但有强终局语义且与 answer_parts 完全匹配”的模型原文；冲突、
+否定、中间值和无 cue 响应仍冻结答案后进入 reasoning-only retry。源码冻结后
+使用新的空目录进行 100 题、8 worker 不可变实验。
+
+```json
+{
+  "experiment_id": "b-compliance-repair-choice-conclusion-equivalence-a2-full100",
+  "direction": "generic_choice_conclusion_contract_normalization",
+  "direction_attempt_count": 2,
+  "status": "running",
+  "history_reviewed_before_attempt": true,
+  "frozen_source_commit": "15c509cc4eafeab13ce4914209cdd3ce3d9bea56",
+  "independent_review": [
+    "review_spec:GO",
+    "review_standards:GO",
+    "schema_retry_review:GO"
+  ],
+  "run_config": {
+    "calculation_mode": "direct",
+    "document_candidate_strategy": "anchor_first",
+    "evidence_quota_strategy": "primary_guard",
+    "evidence_compaction": "off",
+    "output_contract": "joint",
+    "workers": 8,
+    "max_format_retries": 1
+  },
+  "run_dir": "artifacts/b_board_actual/compliance_repair/choice_conclusion_equivalence_a2_full100",
+  "promotion_gate": "100/100 complete, usage observable, compliance audit passed; Token gain may advance only with no material accuracy/reasoning regression.",
+  "official_accuracy": null,
+  "official_submission_count": 0
+}
+```
+
 ### A1 全量运行
 
 离线回放确认 Schema v2 的 29 道首次响应可避免 29 次 reasoning-only 调用，
