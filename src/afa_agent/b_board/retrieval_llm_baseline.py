@@ -1181,15 +1181,14 @@ def validate_answer_payload(
     payload: Mapping[str, Any],
 ) -> dict[str, Any]:
     normalized = validate_answer_shape_payload(question, payload)
-    separator_equivalence = _validate_reasoning_conclusion(
+    conclusion_mode = _validate_reasoning_conclusion(
         normalized["answer_parts"],
         normalized["reasoning"],
+        allow_missing_marker=True,
     )
-    if separator_equivalence:
+    if conclusion_mode != "none":
         normalized["decision_trace"] = {
-            "postprocessing_mode": (
-                "multi_choice_conclusion_separator_equivalence"
-            ),
+            "postprocessing_mode": conclusion_mode,
             "answer_source": "qwen_answer_parts",
             "answer_modified": False,
             "reasoning_modified": False,
@@ -1230,33 +1229,14 @@ def validate_joint_payload_with_format_recovery(
         }
         return validated
 
-    marker_index = max(
-        shaped["reasoning"].rfind("结论："),
-        shaped["reasoning"].rfind("结论:"),
+    conclusion_mode = _validate_reasoning_conclusion(
+        shaped["answer_parts"],
+        shaped["reasoning"],
+        allow_missing_marker=True,
     )
-    if marker_index < 0:
-        shaped["reasoning"] = (
-            shaped["reasoning"].rstrip()
-            + "\n结论："
-            + "；".join(shaped["answer_parts"])
-        )
+    if conclusion_mode != "none":
         shaped["decision_trace"] = {
-            "postprocessing_mode": "same_response_conclusion_assembly",
-            "answer_source": "qwen_answer_parts",
-            "reasoning_source": "same_qwen_response",
-            "answer_field_recovered": False,
-            "deterministic_format_normalization": normalized,
-            "semantic_correction": False,
-        }
-        return shaped
-    separator_equivalence = _validate_reasoning_conclusion(
-        shaped["answer_parts"], shaped["reasoning"]
-    )
-    if separator_equivalence:
-        shaped["decision_trace"] = {
-            "postprocessing_mode": (
-                "multi_choice_conclusion_separator_equivalence"
-            ),
+            "postprocessing_mode": conclusion_mode,
             "answer_source": "qwen_answer_parts",
             "answer_modified": False,
             "reasoning_modified": False,
@@ -1339,7 +1319,7 @@ def validate_frozen_answer_reasoning_payload(
     reasoning = payload["reasoning"]
     if not isinstance(reasoning, str) or len(reasoning.strip()) < 20:
         raise ValueError("reasoning must contain at least 20 characters")
-    separator_equivalence = _validate_reasoning_conclusion(
+    conclusion_mode = _validate_reasoning_conclusion(
         frozen_answer_parts, reasoning
     )
     result = {
@@ -1348,11 +1328,7 @@ def validate_frozen_answer_reasoning_payload(
         "decision_trace": {
             "answer_stage": "frozen_from_initial_qwen_response",
             "reasoning_stage": "reasoning_only_retry",
-            "postprocessing_mode": (
-                "multi_choice_conclusion_separator_equivalence"
-                if separator_equivalence
-                else "none"
-            ),
+            "postprocessing_mode": conclusion_mode,
             "reasoning_assembled_from_model_fields": False,
             "answer_modified": False,
             "reasoning_modified": False,
@@ -1663,16 +1639,31 @@ def _prompt_title(title_path: Sequence[Any]) -> str:
 def _validate_reasoning_conclusion(
     answer_parts: Sequence[str],
     reasoning: str,
-) -> bool:
+    *,
+    allow_missing_marker: bool = False,
+) -> str:
     marker_index = max(reasoning.rfind("结论："), reasoning.rfind("结论:"))
     if marker_index < 0:
-        raise ValueError("reasoning must end with an explicit 结论")
+        if not allow_missing_marker:
+            raise ValueError("reasoning must end with an explicit 结论")
+        explicit_cue = _extract_unmarked_explicit_answer_cue(reasoning)
+        if explicit_cue is not None:
+            if not _answer_cue_matches(answer_parts, explicit_cue):
+                raise ValueError(
+                    "reasoning conclusion explicit answer cue does not match "
+                    "answer_parts"
+                )
+        else:
+            raise ValueError(
+                "reasoning must end with an explicit 结论 or matching answer cue"
+            )
+        return "reasoning_without_explicit_conclusion"
     conclusion = reasoning[marker_index + 3 :]
     if not conclusion:
         raise ValueError("reasoning conclusion must not be empty")
     expected = "；".join(str(part) for part in answer_parts)
     if conclusion == expected:
-        return False
+        return "none"
     if (
         len(answer_parts) == 1
         and re.fullmatch(r"[A-D]{2,4}", expected)
@@ -1683,8 +1674,88 @@ def _validate_reasoning_conclusion(
             compact_conclusion == expected
             and re.fullmatch(r"[A-D](?:[；、， ]+[A-D])+", conclusion)
         ):
-            return True
+            return "multi_choice_conclusion_separator_equivalence"
     raise ValueError("reasoning conclusion does not exactly match answer_parts")
+
+
+def _extract_unmarked_explicit_answer_cue(reasoning: str) -> str | None:
+    choice_labels = r"[A-D](?:(?:[；、， ]+|和|与)[A-D])*"
+    clause_boundary = r"(?:^|[。；;，,!?！？]\s*)"
+    terminal_prefix = (
+        r"(?:因此|所以|故|最终|综合判断|综上(?:所述)?)[，,:：]?\s*"
+    )
+    patterns = (
+        clause_boundary
+        + r"(?:(?:最终(?:答案|结论|(?:计算|测算)?结果)|正确选项)|"
+        + terminal_prefix
+        + r"(?:最终)?(?:答案|结论|结果|正确选项))"
+        + r"\s*(?:应该|应当|应|只能|仅能)?\s*"
+        + r"(?:为|是|：|:|见|参见)\s*"
+        + r"(.+?)[。.!！]?\s*$",
+        clause_boundary
+        + terminal_prefix
+        + r"(?:应该|应当|应|只能|仅能)?\s*"
+        + r"(?:选择|选)\s*(?:的是|为)?\s*(?:选项)?"
+        + rf"({choice_labels})\s*(?:一)?(?:项|选项)?[。.!！]?\s*$",
+        clause_boundary
+        + terminal_prefix
+        + r"(?:应该|应当|应|只能|仅能)?\s*"
+        + r"(?:为|确定|可得|得到|得出)\s*"
+        + r"(.+?)[。.!！]?\s*$",
+        clause_boundary
+        + terminal_prefix
+        + r"(?:只有|仅有|唯有)?\s*"
+        + rf"({choice_labels})\s*(?:一)?(?:项|选项)\s*(?:均|都)?\s*"
+        + r"(?:是|为)?\s*(?:正确|成立|符合|应选|可选)"
+        + r"(?:的)?[。.!！]?\s*$",
+        clause_boundary
+        + terminal_prefix
+        + rf"({choice_labels})\s*(?:是|为)\s*"
+        + r"(?:正确|成立|符合|应选|可选)(?:的)?[。.!！]?\s*$",
+        clause_boundary
+        + terminal_prefix
+        + r"(?:证据中)?\s*"
+        + r"(?:只有|仅有|仅|唯有)\s*"
+        + rf"({choice_labels})\s*(?:一)?(?:项|选项)?\s*(?:可)?"
+        + r"(?:确认|支持|成立|符合)[。.!！]?\s*$",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, reasoning)
+        if match:
+            return match.group(1).strip()
+    tail = reasoning[-100:]
+    if re.search(
+        r"(?:答案|结论|正确选项|最终结果)",
+        tail,
+    ):
+        raise ValueError(
+            "reasoning conclusion explicit answer cue is not machine-readable"
+        )
+    return None
+
+
+def _answer_cue_matches(
+    answer_parts: Sequence[str],
+    explicit_cue: str,
+) -> bool:
+    cue = re.sub(r"[。.!！]+\s*$", "", explicit_cue.strip())
+    expected = "；".join(str(part) for part in answer_parts)
+    if cue == expected:
+        return True
+    if (
+        len(answer_parts) == 1
+        and re.fullmatch(r"[A-D]{1,4}", expected)
+        and expected == "".join(sorted(set(expected)))
+    ):
+        compact_cue = re.sub(r"(?:[；、， ]+|和|与)", "", cue)
+        return bool(
+            compact_cue == expected
+            and re.fullmatch(
+                r"[A-D](?:(?:[；、， ]+|和|与)[A-D])*",
+                cue,
+            )
+        )
+    return False
 
 
 def _format_instruction(question: BQuestion) -> str:

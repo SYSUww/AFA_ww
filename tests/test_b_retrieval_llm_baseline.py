@@ -627,15 +627,225 @@ class RetrievalLLMBaselineTests(unittest.TestCase):
                 },
             )
 
-    def test_reasoning_missing_conclusion_is_rejected_without_rewrite(self) -> None:
-        with self.assertRaisesRegex(ValueError, "explicit 结论"):
+    def test_reasoning_without_explicit_conclusion_is_preserved(self) -> None:
+        question = self.question(
+            answer_format="calculation",
+            question_type="计算题",
+            slots=1,
+            templates=("999999.99",),
+            options={},
+            question_text="计算目标指标并保留两位小数。",
+        )
+        reasoning = (
+            "将材料披露的分子与分母代入公式完成复核，最终答案为12.34。"
+        )
+        parsed = validate_answer_payload(
+            question,
+            {
+                "answer_parts": ["12.34"],
+                "reasoning": reasoning,
+            },
+        )
+
+        self.assertEqual(parsed["answer_parts"], ["12.34"])
+        self.assertEqual(parsed["reasoning"], reasoning)
+        self.assertEqual(
+            parsed["decision_trace"]["postprocessing_mode"],
+            "reasoning_without_explicit_conclusion",
+        )
+        self.assertFalse(parsed["decision_trace"]["answer_modified"])
+        self.assertFalse(parsed["decision_trace"]["reasoning_modified"])
+        self.assertFalse(parsed["decision_trace"]["semantic_correction"])
+
+    def test_reasoning_without_marker_rejects_conflicting_explicit_answer_cue(
+        self,
+    ) -> None:
+        for reasoning in (
+            "材料显示第一项和第三项成立，第二项与原文不符，因此最终答案为B。",
+            "材料显示第一项和第三项成立，第二项与原文不符，因此应该选择B。",
+            "材料显示第一项和第三项成立，第二项与原文不符，因此答案应为B。",
+            "材料显示第一项和第三项成立，第二项与原文不符，答案应该是B。",
+            "材料显示第一项和第三项成立，第二项与原文不符，因此结论是B。",
+            "材料显示第一项和第三项成立，第二项与原文不符，最终结果为B。",
+            "材料显示第一项和第三项成立，第二项与原文不符，因此只有B项正确。",
+            "材料显示第一项和第三项成立，第二项与原文不符，最终应为B。",
+            "材料显示第一项和第三项成立，第二项与原文不符，应选B项。",
+            "材料显示第一项和第三项成立，第二项与原文不符，最终选择B选项。",
+            "材料显示第一项和第三项成立，第二项与原文不符，应该选择选项B。",
+            "材料显示第一项和第三项成立，第二项与原文不符，只有B一项正确。",
+            "材料显示第一项和第三项成立，第二项与原文不符，B是正确的。",
+            "材料显示第一项和第三项成立，第二项与原文不符，最终确定B。",
+            "材料显示第一项和第三项成立，第二项与原文不符，证据中仅B可确认。",
+        ):
+            with self.subTest(reasoning=reasoning):
+                with self.assertRaises(ValueError):
+                    validate_answer_payload(
+                        self.question(),
+                        {
+                            "answer_parts": ["AC"],
+                            "reasoning": reasoning,
+                        },
+                    )
+
+    def test_choice_reasoning_without_marker_or_answer_cue_is_rejected(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(ValueError, "matching answer cue"):
             validate_answer_payload(
                 self.question(),
                 {
                     "answer_parts": ["AC"],
-                    "reasoning": "材料显示第一项和第三项成立，第二项与原文不符。",
+                    "reasoning": (
+                        "材料显示第一项和第三项成立，第二项与原文不符。"
+                    ),
                 },
             )
+
+    def test_reasoning_without_marker_accepts_matching_explicit_answer_cue(
+        self,
+    ) -> None:
+        for reasoning in (
+            "材料显示第一项和第三项成立，第二项与原文不符，因此最终答案为A、C。",
+            "材料显示第一项和第三项成立，第二项与原文不符，因此应该选择A、C。",
+            "材料显示第一项和第三项成立，第二项与原文不符，因此答案应为A和C。",
+            "材料显示第一项和第三项成立，第二项与原文不符，因此A、C项均正确。",
+        ):
+            with self.subTest(reasoning=reasoning):
+                parsed = validate_answer_payload(
+                    self.question(),
+                    {
+                        "answer_parts": ["AC"],
+                        "reasoning": reasoning,
+                    },
+                )
+
+                self.assertEqual(parsed["answer_parts"], ["AC"])
+                self.assertEqual(parsed["reasoning"], reasoning)
+                self.assertEqual(
+                    parsed["decision_trace"]["postprocessing_mode"],
+                    "reasoning_without_explicit_conclusion",
+                )
+
+    def test_reasoning_without_marker_rejects_unparseable_answer_tail(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(ValueError, "explicit answer cue"):
+            validate_answer_payload(
+                self.question(),
+                {
+                    "answer_parts": ["AC"],
+                    "reasoning": (
+                        "材料显示第一项和第三项成立，第二项与原文不符，"
+                        "最终答案见上述分析。"
+                    ),
+                },
+            )
+
+    def test_reasoning_without_marker_rejects_negative_or_intermediate_cue(
+        self,
+    ) -> None:
+        for reasoning in (
+            "材料显示第一项和第三项成立，但错误答案为A、C。",
+            "材料显示第一项和第三项成立，但排除的答案为A、C。",
+            "材料显示第一项和第三项成立，中间结果为A、C。",
+            "材料显示第一项和第三项成立，但不应该选择A、C。",
+            "材料显示第一项和第三项成立，并非只有A、C项正确。",
+        ):
+            with self.subTest(reasoning=reasoning):
+                with self.assertRaises(ValueError):
+                    validate_answer_payload(
+                        self.question(),
+                        {
+                            "answer_parts": ["AC"],
+                            "reasoning": reasoning,
+                        },
+                    )
+
+    def test_reasoning_without_marker_rejects_negative_prior_clause(
+        self,
+    ) -> None:
+        question = self.question(
+            answer_format="calculation",
+            question_type="计算题",
+            slots=1,
+            templates=("999999.99",),
+            options={},
+            question_text="计算目标指标并保留两位小数。",
+        )
+        for reasoning in (
+            "材料核验后，按错误口径，计算可得12.34。",
+            "材料核验后，该中间值不采用，结果为12.34。",
+        ):
+            with self.subTest(reasoning=reasoning):
+                with self.assertRaises(ValueError):
+                    validate_answer_payload(
+                        question,
+                        {
+                            "answer_parts": ["12.34"],
+                            "reasoning": reasoning,
+                        },
+                    )
+
+    def test_reasoning_without_marker_does_not_treat_result_noun_as_answer_cue(
+        self,
+    ) -> None:
+        question = self.question(
+            answer_format="calculation",
+            question_type="计算题",
+            slots=1,
+            templates=("999999.99",),
+            options={},
+            question_text="计算目标指标并保留两位小数。",
+        )
+        for reasoning in (
+            "材料中的计算结果显示同比保持增长，最终答案为12.34。",
+            "逐项核验后，上述结果与材料披露一致，最终答案为12.34。",
+            "核对主体、年份和指标后，所得结果支持前述判断，最终答案为12.34。",
+        ):
+            with self.subTest(reasoning=reasoning):
+                parsed = validate_answer_payload(
+                    question,
+                    {
+                        "answer_parts": ["12.34"],
+                        "reasoning": reasoning,
+                    },
+                )
+                self.assertEqual(parsed["reasoning"], reasoning)
+                self.assertEqual(
+                    parsed["decision_trace"]["postprocessing_mode"],
+                    "reasoning_without_explicit_conclusion",
+                )
+
+    def test_numeric_reasoning_without_marker_rejects_conflicting_final_cue(
+        self,
+    ) -> None:
+        question = self.question(
+            answer_format="calculation",
+            question_type="计算题",
+            slots=1,
+            templates=("999999.99",),
+            options={},
+            question_text="计算目标指标并保留两位小数。",
+        )
+        for reasoning in (
+            "根据材料中的数值代入公式并保留两位小数，计算可得56.78。",
+            "根据材料中的数值代入公式并保留两位小数，最终应为56.78。",
+            "材料披露12.34作为基数，复核后测算值为56.78。",
+            "12.34只是中间值，实际应取56.78。",
+            "原值为12.34，最后数值为56.78。",
+            "材料列示12.34，综合核验后最终采用56.78。",
+            "测算数值为112.34且过程完整，可以据此完成判断。",
+            "材料列示12.34，中间计算结果为12.34。",
+        ):
+            with self.subTest(reasoning=reasoning):
+                with self.assertRaises(ValueError):
+                    validate_answer_payload(
+                        question,
+                        {
+                            "answer_parts": ["12.34"],
+                            "reasoning": reasoning,
+                        },
+                    )
 
     def test_reasoning_mismatched_conclusion_is_rejected(self) -> None:
         with self.assertRaisesRegex(ValueError, "exactly match"):
@@ -806,6 +1016,18 @@ class RetrievalLLMBaselineTests(unittest.TestCase):
                 },
             )
 
+    def test_frozen_reasoning_still_requires_explicit_conclusion(self) -> None:
+        with self.assertRaisesRegex(ValueError, "explicit 结论"):
+            validate_frozen_answer_reasoning_payload(
+                ["AC"],
+                {
+                    "reasoning": (
+                        "材料显示第一项和第三项成立，第二项与原文不符，"
+                        "因此最终答案为B。"
+                    )
+                },
+            )
+
     def test_numeric_unit_is_deterministically_formatted_without_value_change(
         self,
     ) -> None:
@@ -832,24 +1054,27 @@ class RetrievalLLMBaselineTests(unittest.TestCase):
         )
         self.assertTrue(parsed["reasoning"].endswith("结论：30.00"))
 
-    def test_missing_conclusion_is_assembled_from_same_qwen_response(self) -> None:
+    def test_matching_answer_cue_is_preserved_from_same_qwen_response(self) -> None:
+        reasoning = (
+            "材料明确说明甲和丙满足题设范围，乙的条件与原文不符，"
+            "因此最终答案为A、C。"
+        )
         parsed = validate_joint_payload_with_format_recovery(
             self.question(),
             {
                 "answer_parts": ["AC"],
-                "reasoning": (
-                    "材料明确说明甲和丙满足题设范围，乙的条件与原文不符，"
-                    "因此应选择前述两个满足条件的选项。"
-                ),
+                "reasoning": reasoning,
             },
         )
 
         self.assertEqual(parsed["answer_parts"], ["AC"])
-        self.assertTrue(parsed["reasoning"].endswith("\n结论：AC"))
+        self.assertEqual(parsed["reasoning"], reasoning)
         self.assertEqual(
             parsed["decision_trace"]["postprocessing_mode"],
-            "same_response_conclusion_assembly",
+            "reasoning_without_explicit_conclusion",
         )
+        self.assertFalse(parsed["decision_trace"]["answer_modified"])
+        self.assertFalse(parsed["decision_trace"]["reasoning_modified"])
         self.assertFalse(parsed["decision_trace"]["semantic_correction"])
 
     def test_invalid_answer_field_recovers_from_same_response_conclusion(

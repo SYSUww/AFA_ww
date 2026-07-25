@@ -54,6 +54,82 @@
 }
 ```
 
+### A1 结果与 A2 假设
+
+```json
+{
+  "experiment_id": "b-compliance-repair-choice-conclusion-equivalence-a1-full100-result",
+  "direction": "generic_choice_conclusion_contract_normalization",
+  "direction_attempt_count": 1,
+  "status": "completed_not_promoted",
+  "metrics": {
+    "question_count": 100,
+    "answered_question_count": 88,
+    "failed_question_count": 12,
+    "raw_call_count": 140,
+    "format_consistency_retry_count": 3,
+    "reasoning_only_retry_count": 37,
+    "token_usage": {
+      "prompt_tokens": 558110,
+      "completion_tokens": 184299,
+      "total_tokens": 742409
+    },
+    "token_efficiency_score": 85.15182,
+    "pseudo99_equivalent_match_count": 61,
+    "official_accuracy": null,
+    "compliance_audit_passed": true,
+    "unobservable_usage_risk": false
+  },
+  "relative_to_schema_v2": {
+    "raw_call_delta": -31,
+    "total_token_delta": -140501,
+    "total_token_delta_percent": -15.91,
+    "answered_question_delta": 2,
+    "pseudo99_match_delta": -1
+  },
+  "promotion_result": "rejected_incomplete_and_below_retained_accuracy_proxy",
+  "official_submission_count": 0
+}
+```
+
+开始 A2 前再次复核日志与原始响应。`new.md` 要求 reasoning 对答案提供逻辑、
+完整性和清晰度支撑，并未要求必须逐字以 `结论：...` 结束。最初的宽松离线方案
+曾把 31 道无 marker 响应均视为可接受；独立复审发现其中包含“答案含 D、正文却
+明确写 D 错误”等真实冲突，因此该投影作废，未进入模型实验。
+
+A2 最终收窄为：所有题型都只有在同一响应末尾存在可机械解析、且与
+answer_parts 一致的答案提示时才免重试；任意位置出现同值、子串命中或中间值
+都不算一致性证据；普通“计算结果显示”等叙述也不视为答案提示。任何字段均不
+追加、不修改。安全回放仅能避免 2 次调用、节省 5197 Token，不再宣称能够恢复
+旧失败样本。
+GPT-5.6 严格影子 Judge 的三个校准尝试均为 HTTP 502，因此该维度仍不可数值化，
+不得用本地假分替代。
+
+```json
+{
+  "experiment_id": "b-compliance-repair-choice-conclusion-equivalence-a2-final-safe-projection",
+  "direction": "generic_choice_conclusion_contract_normalization",
+  "direction_attempt_count": 2,
+  "status": "implementation_review",
+  "history_reviewed_before_attempt": true,
+  "superseded_unsafe_projection": {
+    "avoidable_calls": 31,
+    "reason": "independent review found answer/reasoning semantic conflicts"
+  },
+  "safe_offline_projection_on_a1": {
+    "avoidable_calls": 2,
+    "avoidable_tokens": 5197,
+    "projected_total_tokens": 737212,
+    "projected_token_efficiency_score": 85.25576,
+    "projected_answered_question_count": 88,
+    "projected_pseudo99_equivalent_match_count": 61
+  },
+  "promotion_gate": "complete and observable; Token improvement cannot compensate a material accuracy or reasoning regression.",
+  "official_accuracy": null,
+  "official_submission_count": 0
+}
+```
+
 ### A1 全量运行
 
 离线回放确认 Schema v2 的 29 道首次响应可避免 29 次 reasoning-only 调用，

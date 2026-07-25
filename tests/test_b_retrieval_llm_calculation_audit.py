@@ -206,6 +206,42 @@ class CalculationModeContractTests(TestCase):
             },
         )
 
+    def test_reasoning_without_marker_replays_as_unmodified_model_fields(
+        self,
+    ) -> None:
+        reasoning = (
+            "逐项核验材料后，甲和丙有明确依据，乙不满足条件，"
+            "因此最终答案为A、C。"
+        )
+        call = {
+            "purpose": "initial_answer",
+            "content": json.dumps(
+                {"answer_parts": ["AC"], "reasoning": reasoning},
+                ensure_ascii=False,
+            ),
+        }
+
+        reconstructed = submission_assembler._reconstruct_final_payload(
+            question=self.choice_question(),
+            run_dir=Path("/unused"),
+            calls=[call],
+        )
+
+        self.assertEqual(reconstructed["answer_parts"], ["AC"])
+        self.assertEqual(reconstructed["reasoning"], reasoning)
+        self.assertEqual(
+            reconstructed["decision_trace"]["postprocessing_mode"],
+            "reasoning_without_explicit_conclusion",
+        )
+        self.assertEqual(
+            baseline_runner._postprocessing_record(reconstructed),
+            {
+                "answer_modified": False,
+                "reasoning_modified": False,
+                "csv_escaping_only": True,
+            },
+        )
+
     def test_evaluator_keeps_regular_joint_payload_unchanged(self) -> None:
         question = BQuestion(
             qid="choice",
@@ -1725,6 +1761,98 @@ class VerifiedCalculationAuditTests(TestCase):
         )
         self.assertEqual(result["calls"][1]["frozen_answer_parts"], ["AC"])
         self.assertEqual(result["token_usage"]["total_tokens"], 240)
+
+    def test_joint_reasoning_without_marker_does_not_retry(self) -> None:
+        question = BQuestion(
+            qid="joint_no_marker_qid",
+            domain="financial_reports",
+            split="B",
+            question="根据材料判断哪些说法正确？",
+            options={"A": "甲正确", "B": "乙正确", "C": "丙正确"},
+            answer_format="multi",
+            type="多选题",
+            answer_slots=1,
+            answer_slot_templates=("AB",),
+        )
+
+        class NoMarkerClient:
+            config = SimpleNamespace(model_name="qwen3.7-plus-2026-05-26")
+
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def chat_json(
+                self,
+                messages: list[dict[str, str]],
+                *,
+                response_schema: dict[str, object],
+                schema_name: str,
+                extra_body: dict[str, object],
+            ) -> LLMResponse:
+                self.calls += 1
+                reasoning = (
+                    "材料支持第一项与第三项，第二项的表述与原文不符，"
+                    "因此最终答案为A、C。"
+                )
+                usage = TokenUsage(100, 20, 120)
+                return LLMResponse(
+                    content=json.dumps(
+                        {"answer_parts": ["AC"], "reasoning": reasoning},
+                        ensure_ascii=False,
+                    ),
+                    token_usage=usage,
+                    raw_payload={"usage": usage.to_dict()},
+                    response_format_mode="native_json_schema_strict",
+                )
+
+        with TemporaryDirectory() as temporary:
+            run_dir = Path(temporary)
+            (run_dir / "raw_calls").mkdir()
+            args = SimpleNamespace(
+                calculation_mode="direct",
+                output_contract="joint",
+                evidence_compaction="off",
+                per_query_top_k=20,
+                final_top_k=10,
+                supplemental_weight=0.11,
+                max_queries_per_option=12,
+                max_doc_candidates=6,
+                max_hit_chars=1800,
+                max_evidence_chars=12000,
+                max_format_retries=1,
+                thinking_budget=256,
+                run_dir=run_dir,
+            )
+            client = NoMarkerClient()
+            with (
+                patch.object(
+                    baseline_runner,
+                    "retrieve_question_evidence",
+                    return_value={"final": {"hits": []}},
+                ),
+                patch.object(
+                    baseline_runner,
+                    "prepare_evidence_payload",
+                    return_value=self.evidence(),
+                ),
+            ):
+                result = baseline_runner._run_one(
+                    question,
+                    args=args,
+                    client=client,
+                    retriever=object(),
+                    all_doc_ids=["report"],
+                )
+
+        self.assertEqual(result["status"], "answered")
+        self.assertEqual(result["answer_parts"], ["AC"])
+        self.assertEqual(client.calls, 1)
+        self.assertEqual(len(result["calls"]), 1)
+        self.assertEqual(result["token_usage"]["total_tokens"], 120)
+        self.assertEqual(
+            result["decision_trace"]["postprocessing_mode"],
+            "reasoning_without_explicit_conclusion",
+        )
 
     def test_resume_from_frozen_checkpoint_does_not_rerun_answer_stage(self) -> None:
         with TemporaryDirectory() as temporary:

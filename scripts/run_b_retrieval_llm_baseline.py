@@ -1313,6 +1313,7 @@ def _postprocessing_record(result: dict[str, Any]) -> dict[str, Any]:
     if mode in {
         "none",
         "multi_choice_conclusion_separator_equivalence",
+        "reasoning_without_explicit_conclusion",
     }:
         return {
             "answer_modified": False,
