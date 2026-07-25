@@ -40011,3 +40011,106 @@
   "next_step": "本方向已满3轮，停止继续调参。候选仅在显式allow-research-only-strategy下启用；后续若继续优化，应切换到新的通用方向（例如相邻chunk合并），并先复核本日志。"
 }
 ```
+
+## 2026-07-25 A3 检索候选 proxy30 Qwen3.7 全流程回放
+
+```json
+{
+  "experiment_id": "qwen37_proxy30_obligation_a3_fullflow_r1",
+  "recorded_at": "2026-07-25T11:28:00+08:00",
+  "status": "completed_incomplete_run_not_promoted",
+  "score_type": "offline_pseudo99_reference_match_not_official_accuracy",
+  "history_review": {
+    "loop_log_reviewed_before_attempt": true,
+    "retrieval_candidate": "evidence_obligations_v2_proxy30_a3_type_adaptive",
+    "scope_origin": "anchor_first_a2_full100的30道proxy不匹配题",
+    "scope_is_random_sample": false
+  },
+  "generation": {
+    "model": "qwen3.7-plus-2026-05-26",
+    "workers": 8,
+    "thinking_budget": 2048,
+    "output_contract": "joint",
+    "calculation_mode": "direct",
+    "max_format_retries": 1,
+    "non_calculation_strategy": "evidence_obligations_v2+entity_coverage+obligation_coverage",
+    "calculation_fallback_strategy": "semantic_slots_v1+anchor_first+primary_guard",
+    "question_count": 30,
+    "answered_question_count": 28,
+    "failed_question_count": 2,
+    "raw_call_count": 36,
+    "reasoning_only_retry_count": 7,
+    "format_retry_count": 0,
+    "transport_attempt_count": 37,
+    "prompt_tokens": 126277,
+    "completion_tokens": 67370,
+    "observed_total_tokens": 193647,
+    "mean_observed_tokens_per_answered_question": 6915.96
+  },
+  "accuracy": {
+    "reference_equivalent_match_count": 11,
+    "reference_equivalent_accuracy_percent": 36.666667,
+    "answered_only_match_rate_percent": 39.285714,
+    "reference_mismatch_count_including_failures": 19,
+    "multi_match_count": 11,
+    "multi_question_count": 24,
+    "multi_match_rate_percent": 45.833333,
+    "calculation_match_count": 0,
+    "calculation_question_count": 6,
+    "calculation_match_rate_percent": 0.0,
+    "matched_qids": [
+      "fc_b_018",
+      "fin_b_001",
+      "fin_b_002",
+      "fin_b_004",
+      "fin_b_009",
+      "fin_b_011",
+      "ins_b_005",
+      "ins_b_007",
+      "ins_b_013",
+      "res_b_010",
+      "res_b_014"
+    ]
+  },
+  "failures": [
+    {
+      "qid": "fin_b_010",
+      "error_type": "response_validation_failed",
+      "error": "reasoning_missing_explicit_conclusion",
+      "provider_calls": 2,
+      "observed_tokens": 14749
+    },
+    {
+      "qid": "fin_b_019",
+      "error_type": "ReadTimeout",
+      "error": "read timeout=360s",
+      "provider_calls_with_observed_response": 0,
+      "transport_attempt_count": 1,
+      "unobservable_usage_risk": true,
+      "auto_replayed": false
+    }
+  ],
+  "compliance_boundary": {
+    "model_allowed": true,
+    "qid_absent_from_model_messages": true,
+    "reference_loaded_by_generation": false,
+    "solver_used": false,
+    "fixed_locator_used": false,
+    "research_only_strategy": true,
+    "submission_eligible": false,
+    "official_submission_count": 0
+  },
+  "interpretation": [
+    "36.67%只表示在30道历史困难题上的pseudo99等价匹配率，不是官网准确率，也不能直接外推100题准确率。",
+    "相对产生该scope的旧run在这30题上的0/30不匹配状态，本候选恢复11题；其余70题是否保持正确尚未通过本次运行验证。",
+    "计算题0/6是当前最强阻塞；其中5题答案不匹配、1题远端超时。非计算题义务检索有正向信号，但24题仍有13题未匹配。"
+  ],
+  "provenance": {
+    "run_dir": "artifacts/b_board_actual/compliance_repair/qwen37_proxy30_obligation_a3_fullflow_r1",
+    "accuracy_artifact": "artifacts/b_board_actual/compliance_repair/qwen37_proxy30_obligation_a3_fullflow_r1/accuracy_evaluation.json",
+    "badcase_artifact": "artifacts/b_board_actual/compliance_repair/qwen37_proxy30_obligation_a3_fullflow_r1/accuracy_badcases.md"
+  },
+  "promotion_result": "rejected_as_full_pipeline_candidate",
+  "next_step": "优先单独研究计算题完整变量矩阵和确定性计算；非计算题按badcase区分检索未覆盖与模型证据使用错误。"
+}
+```
