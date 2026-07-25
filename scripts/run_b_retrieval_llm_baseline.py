@@ -77,6 +77,18 @@ PROHIBITED_GENERATION_MODULE_FRAGMENTS = (
     "official_answer",
     "pseudo_accuracy",
 )
+ORACLE_EVIDENCE_SCHEMA_VERSION = "b_board_oracle_decisive_evidence_v1"
+ORACLE_RETRIEVAL_POLICY_VERSION = "oracle_decisive_evidence_only_v1"
+ORACLE_FORBIDDEN_KEY_FRAGMENTS = (
+    "answer",
+    "reference",
+    "official_lock",
+    "pseudo99",
+    "decision_summary",
+    "decision_trace",
+    "solution_summary",
+    "option_assessment",
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -142,6 +154,19 @@ def parse_args() -> argparse.Namespace:
             "Such runs are permanently ineligible for submission assembly."
         ),
     )
+    parser.add_argument(
+        "--oracle-evidence-file",
+        type=Path,
+        help=(
+            "Answer-free QID-to-evidence mapping for a permanently "
+            "submission-ineligible oracle upper-bound evaluation"
+        ),
+    )
+    parser.add_argument(
+        "--allow-oracle-evidence-upper-bound",
+        action="store_true",
+        help="Explicitly permit evaluator-only oracle evidence injection",
+    )
     parser.add_argument("--supplemental-weight", type=float, default=0.11)
     parser.add_argument("--max-queries-per-option", type=int, default=12)
     parser.add_argument("--max-hit-chars", type=int, default=1800)
@@ -202,6 +227,10 @@ def _main_locked(args: argparse.Namespace) -> None:
         if args.qid
         else all_questions
     )
+    oracle_evidence = _load_oracle_evidence_scope(
+        getattr(args, "oracle_evidence_file", None),
+        questions=questions,
+    )
 
     model_config = build_model_config(args.env_root, env_prefix="OPENAI")
     if model_config is None:
@@ -260,6 +289,11 @@ def _main_locked(args: argparse.Namespace) -> None:
                 retriever=retrievers[question.domain],
                 all_doc_ids=doc_ids[question.domain],
                 domain_units=index_payloads[question.domain]["units"],
+                oracle_evidence=(
+                    oracle_evidence["rows_by_qid"][question.qid]
+                    if oracle_evidence is not None
+                    else None
+                ),
             ): question
             for question in pending
         }
@@ -330,18 +364,25 @@ def _main_locked(args: argparse.Namespace) -> None:
             )
             for question in all_questions
         ]
+        output_name = (
+            "oracle_evaluation_output.csv"
+            if getattr(args, "oracle_evidence_file", None) is not None
+            else "research_submit.csv"
+        )
+        output_path = args.run_dir / output_name
         write_b_submission(
-            args.run_dir / "research_submit.csv",
+            output_path,
             all_questions,
             submission_answers,
             audit_ready=True,
         )
-        manifest["research_submission_path"] = str(
-            args.run_dir / "research_submit.csv"
+        output_key = (
+            "oracle_evaluation_output"
+            if getattr(args, "oracle_evidence_file", None) is not None
+            else "research_submission"
         )
-        manifest["research_submission_sha256"] = sha256_file(
-            args.run_dir / "research_submit.csv"
-        )
+        manifest[f"{output_key}_path"] = str(output_path)
+        manifest[f"{output_key}_sha256"] = sha256_file(output_path)
         _write_json(args.run_dir / "run_manifest.json", manifest)
     print(json.dumps(manifest, ensure_ascii=False, indent=2))
 
@@ -354,6 +395,7 @@ def _run_one(
     retriever: Any,
     all_doc_ids: list[str],
     domain_units: list[dict[str, Any]] | None = None,
+    oracle_evidence: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     compaction_mode = getattr(args, "evidence_compaction", "off")
     retrieval_top_k = (
@@ -361,25 +403,28 @@ def _run_one(
         if compaction_mode == "adjacent"
         else args.final_top_k
     )
-    retrieval = retrieve_question_evidence(
-        question,
-        retriever=retriever,
-        all_doc_ids=all_doc_ids,
-        per_query_top_k=args.per_query_top_k,
-        final_top_k=retrieval_top_k,
-        supplemental_weight=args.supplemental_weight,
-        max_queries_per_option=args.max_queries_per_option,
-        max_doc_candidates=args.max_doc_candidates,
-        document_candidate_strategy=getattr(
-            args, "document_candidate_strategy", "anchor_union"
-        ),
-        evidence_quota_strategy=getattr(
-            args, "evidence_quota_strategy", "primary_guard"
-        ),
-        query_plan_strategy=getattr(
-            args, "query_plan_strategy", "semantic_slots_v1"
-        ),
-    )
+    if oracle_evidence is not None:
+        retrieval = _oracle_retrieval_payload(question, oracle_evidence)
+    else:
+        retrieval = retrieve_question_evidence(
+            question,
+            retriever=retriever,
+            all_doc_ids=all_doc_ids,
+            per_query_top_k=args.per_query_top_k,
+            final_top_k=retrieval_top_k,
+            supplemental_weight=args.supplemental_weight,
+            max_queries_per_option=args.max_queries_per_option,
+            max_doc_candidates=args.max_doc_candidates,
+            document_candidate_strategy=getattr(
+                args, "document_candidate_strategy", "anchor_union"
+            ),
+            evidence_quota_strategy=getattr(
+                args, "evidence_quota_strategy", "primary_guard"
+            ),
+            query_plan_strategy=getattr(
+                args, "query_plan_strategy", "semantic_slots_v1"
+            ),
+        )
     active_retrieval_policy_version = str(
         retrieval.get(
             "policy_version",
@@ -880,6 +925,146 @@ def _run_one_verified_calculation(
     }
 
 
+def _assert_oracle_rows_answer_free(value: Any, *, path: str = "$") -> None:
+    if isinstance(value, Mapping):
+        for raw_key, nested in value.items():
+            key = str(raw_key).lower()
+            if any(
+                fragment in key
+                for fragment in ORACLE_FORBIDDEN_KEY_FRAGMENTS
+            ):
+                raise ValueError(f"forbidden oracle key at {path}.{raw_key}")
+            _assert_oracle_rows_answer_free(
+                nested,
+                path=f"{path}.{raw_key}",
+            )
+    elif isinstance(value, list):
+        for index, nested in enumerate(value):
+            _assert_oracle_rows_answer_free(
+                nested,
+                path=f"{path}[{index}]",
+            )
+
+
+def _load_oracle_evidence_scope(
+    path: Path | None,
+    *,
+    questions: list[Any],
+) -> dict[str, Any] | None:
+    if path is None:
+        return None
+    payload = _read_json_object(path, label="oracle evidence file")
+    if payload.get("schema_version") != ORACLE_EVIDENCE_SCHEMA_VERSION:
+        raise ValueError("unsupported oracle evidence schema")
+    if payload.get("artifact_class") != "research_only_oracle":
+        raise ValueError("oracle evidence artifact_class must be research_only_oracle")
+    if payload.get("production_load_policy") != "deny":
+        raise ValueError("oracle evidence production_load_policy must be deny")
+    if payload.get("contains_answers") is not False:
+        raise ValueError("oracle evidence must declare contains_answers=false")
+    if payload.get("submission_eligible") is not False:
+        raise ValueError("oracle evidence must be submission-ineligible")
+    rows = payload.get("rows")
+    if not isinstance(rows, list):
+        raise ValueError("oracle evidence rows must be an array")
+    _assert_oracle_rows_answer_free(rows, path="$.rows")
+    question_by_qid = {str(question.qid): question for question in questions}
+    rows_by_qid: dict[str, dict[str, Any]] = {}
+    for raw_row in rows:
+        if not isinstance(raw_row, Mapping):
+            raise ValueError("oracle evidence row must be an object")
+        row = dict(raw_row)
+        qid = str(row.get("qid", "")).strip()
+        if not qid or qid in rows_by_qid:
+            raise ValueError(f"invalid or duplicate oracle qid: {qid!r}")
+        question = question_by_qid.get(qid)
+        if question is None:
+            continue
+        if str(row.get("domain", "")) != str(question.domain):
+            raise ValueError(f"{qid}: oracle evidence domain mismatch")
+        evidence_items = row.get("evidence_items")
+        if not isinstance(evidence_items, list) or not evidence_items:
+            raise ValueError(f"{qid}: oracle evidence is empty")
+        seen_ids: set[str] = set()
+        normalized_items: list[dict[str, Any]] = []
+        for raw_item in evidence_items:
+            if not isinstance(raw_item, Mapping):
+                raise ValueError(f"{qid}: oracle evidence item is not an object")
+            unit_id = str(raw_item.get("unit_id", "")).strip()
+            doc_id = str(raw_item.get("doc_id", "")).strip()
+            text = str(raw_item.get("text", "")).strip()
+            if not unit_id or unit_id in seen_ids or not doc_id or not text:
+                raise ValueError(f"{qid}: invalid oracle evidence item {unit_id!r}")
+            seen_ids.add(unit_id)
+            normalized_items.append(
+                {
+                    "unit_id": unit_id,
+                    "doc_id": doc_id,
+                    "title_path": [
+                        str(part)
+                        for part in raw_item.get("title_path", [])
+                    ],
+                    "text": text,
+                    "metadata": {
+                        "unit_type": str(
+                            (raw_item.get("metadata") or {}).get(
+                                "unit_type", ""
+                            )
+                        )
+                    },
+                }
+            )
+        rows_by_qid[qid] = {
+            "qid": qid,
+            "domain": str(question.domain),
+            "evidence_items": normalized_items,
+        }
+    missing = sorted(set(question_by_qid) - set(rows_by_qid))
+    if missing:
+        raise ValueError(f"oracle evidence missing selected qids: {missing}")
+    declared_count = int(payload.get("question_count", -1))
+    if declared_count != len(rows):
+        raise ValueError("oracle evidence question_count mismatch")
+    return {
+        "path": str(path.resolve()),
+        "sha256": sha256_file(path),
+        "rows_by_qid": rows_by_qid,
+        "source": dict(payload.get("source") or {}),
+        "evidence_count": int(payload.get("evidence_count", 0)),
+        "evidence_char_count": int(payload.get("evidence_char_count", 0)),
+    }
+
+
+def _oracle_retrieval_payload(
+    question: Any,
+    oracle_evidence: Mapping[str, Any],
+) -> dict[str, Any]:
+    if str(oracle_evidence.get("qid")) != str(question.qid):
+        raise ValueError("oracle evidence qid mismatch")
+    hits = [
+        dict(item)
+        for item in oracle_evidence.get("evidence_items", [])
+        if isinstance(item, Mapping)
+    ]
+    if not hits:
+        raise ValueError(f"{question.qid}: oracle evidence is empty")
+    return {
+        "pipeline_version": PIPELINE_VERSION,
+        "policy_version": ORACLE_RETRIEVAL_POLICY_VERSION,
+        "requested_policy_version": ORACLE_RETRIEVAL_POLICY_VERSION,
+        "evaluation_only": True,
+        "production_load_policy": "deny",
+        "selected_doc_ids": list(
+            dict.fromkeys(str(hit["doc_id"]) for hit in hits)
+        ),
+        "final": {
+            "queries": [],
+            "ranked_ids": [str(hit["unit_id"]) for hit in hits],
+            "hits": hits,
+        },
+    }
+
+
 def _validate_args(args: argparse.Namespace) -> None:
     positive_fields = (
         "workers",
@@ -903,6 +1088,23 @@ def _validate_args(args: argparse.Namespace) -> None:
         raise ValueError("thinking_budget must not be negative")
     if args.max_format_retries not in {0, 1}:
         raise ValueError("max_format_retries must be zero or one")
+    oracle_path = getattr(args, "oracle_evidence_file", None)
+    oracle_allowed = bool(
+        getattr(args, "allow_oracle_evidence_upper_bound", False)
+    )
+    if oracle_path is not None and not oracle_allowed:
+        raise ValueError(
+            "oracle evidence requires --allow-oracle-evidence-upper-bound"
+        )
+    if oracle_path is None and oracle_allowed:
+        raise ValueError(
+            "--allow-oracle-evidence-upper-bound requires "
+            "--oracle-evidence-file"
+        )
+    if oracle_path is not None and getattr(
+        args, "evidence_compaction", "off"
+    ) != "off":
+        raise ValueError("oracle evidence is incompatible with compaction")
     if (
         getattr(args, "evidence_quota_strategy", "primary_guard")
         in {
@@ -1020,13 +1222,19 @@ def _public_config(
     research_only_strategy = (
         evidence_quota_strategy in RESEARCH_ONLY_EVIDENCE_QUOTA_STRATEGIES
     )
+    oracle_path = getattr(args, "oracle_evidence_file", None)
+    oracle_enabled = oracle_path is not None
     return {
         "pipeline_version": PIPELINE_VERSION,
         "prompt_version": PROMPT_VERSION,
-        "retrieval_policy_version": retrieval_policy_version(
-            document_candidate_strategy,
-            evidence_quota_strategy,
-            query_plan_strategy,
+        "retrieval_policy_version": (
+            ORACLE_RETRIEVAL_POLICY_VERSION
+            if oracle_enabled
+            else retrieval_policy_version(
+                document_candidate_strategy,
+                evidence_quota_strategy,
+                query_plan_strategy,
+            )
         ),
         "created_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "model": {
@@ -1054,7 +1262,21 @@ def _public_config(
             "document_candidate_strategy": document_candidate_strategy,
             "evidence_quota_strategy": evidence_quota_strategy,
             "query_plan_strategy": query_plan_strategy,
-            "research_only_strategy": research_only_strategy,
+            "research_only_strategy": (
+                research_only_strategy or oracle_enabled
+            ),
+            "oracle_evidence_upper_bound": oracle_enabled,
+            "retrieval_execution_mode": (
+                "oracle_decisive_evidence_only"
+                if oracle_enabled
+                else "answer_blind_retrieval"
+            ),
+            "oracle_evidence_file": (
+                str(oracle_path.resolve()) if oracle_path is not None else None
+            ),
+            "oracle_evidence_file_sha256": (
+                sha256_file(oracle_path) if oracle_path is not None else None
+            ),
             "supplemental_weight": args.supplemental_weight,
             "max_queries_per_option": args.max_queries_per_option,
             "max_hit_chars": args.max_hit_chars,
@@ -1101,18 +1323,31 @@ def _public_config(
             "source_files": {
                 str(path.relative_to(ROOT)): sha256_file(path) for path in source_files
             },
+            **(
+                {"oracle_evidence_file": sha256_file(oracle_path)}
+                if oracle_path is not None
+                else {}
+            ),
         },
         "answer_blind_contract": {
             "qid_in_model_messages": False,
             "reference_loaded_by_generation": False,
             "official_locks_loaded_by_generation": False,
             "solver_or_rule_layer_used": False,
-            "fixed_locator_used": False,
+            "fixed_locator_used": oracle_enabled,
+            "oracle_evidence_mapping_used": oracle_enabled,
+            "qid_conditioned_evidence_selection": oracle_enabled,
             "deterministic_calculation_executor_used": (
                 getattr(args, "calculation_mode", "direct") == "verified"
             ),
-            "document_scope": "all documents in the question domain index",
-            "research_only_strategy": research_only_strategy,
+            "document_scope": (
+                "evaluation-only posthoc decisive evidence scope"
+                if oracle_enabled
+                else "all documents in the question domain index"
+            ),
+            "research_only_strategy": (
+                research_only_strategy or oracle_enabled
+            ),
         },
     }
 
@@ -1518,6 +1753,20 @@ def _write_manifest(
                 if bool(
                     (public_config.get("retrieval") or {}).get(
                         "research_only_strategy"
+                    )
+                )
+                else []
+            ),
+            *(
+                [
+                    "evaluation_only_oracle_evidence",
+                    "qid_conditioned_evidence_selection",
+                    "historical_posthoc_evidence_loaded",
+                    "not_eligible_for_submission_or_promotion",
+                ]
+                if bool(
+                    (public_config.get("retrieval") or {}).get(
+                        "oracle_evidence_upper_bound"
                     )
                 )
                 else []
